@@ -1,0 +1,203 @@
+{
+  "metadata": {
+    "working_title": "Benchmarking DNA Foundation Models for Genomic Sequence Classification",
+    "venue": "Nature Communications",
+    "format": "single-column",
+    "page_limit": null,
+    "authors_placeholder": "[Author Names]",
+    "submission_cutoff": "2025-01-15"
+  },
+  "abstract_sketch": {
+    "problem": "Multiple DNA foundation language models (DNABERT-2, Nucleotide Transformer v2, HyenaDNA, Caduceus-Ph, GROVER) have been released with different architectures and training data, but no systematic head-to-head comparison exists across diverse genomic tasks.",
+    "gap": "Each model benchmarks on its own cherry-picked tasks; practitioners cannot make informed model selection; embedding pooling strategies are unstudied; the boundary between general-purpose and specialized models is unclear.",
+    "approach": "Unified benchmark evaluating 5 DNA foundation models as zero-shot feature extractors across 57 classification datasets spanning 4 task categories (sequence classification, gene expression, variant effect, TAD recognition), with systematic comparison of pooling strategies and controlled pre-training data ablations.",
+    "key_results": "No single model dominates. Mean token pooling outperforms default summary token pooling by 4-9% AUC. Caduceus-Ph leads on human genome classification, DNABERT-2 on splice sites, NT-v2 on pathogenic variant detection. General foundation models fail at QTL prediction where specialized models (AlphaGenome, Enformer) dominate.",
+    "impact": "Provides practitioners with evidence-based guidance for DNA foundation model selection and reveals fundamental limitations of current general-purpose genomic models."
+  },
+  "sections": [
+    {
+      "id": "intro",
+      "title": "Introduction",
+      "description": "Motivate the need for unified benchmarking of DNA foundation models. Establish context of the foundation model paradigm in genomics. Highlight the gap: no systematic comparison exists. State the 5 core contributions.",
+      "target_length": "1.5 pages",
+      "subsections": [],
+      "citation_hints": [
+        "Original DNABERT paper (Ji et al., 2021)",
+        "Foundation model paradigm in biology (survey/review papers)",
+        "Transfer learning in genomics",
+        "Genome Understanding Evaluation (GUE) benchmark"
+      ]
+    },
+    {
+      "id": "related",
+      "title": "Related Work",
+      "description": "Position against prior benchmarking efforts and individual model papers.",
+      "target_length": "1 page",
+      "subsections": [
+        {"title": "DNA Foundation Models", "focus": "DNABERT, DNABERT-2, NT-v2, HyenaDNA, Caduceus, GROVER architectures and training"},
+        {"title": "Genomic Sequence Classification", "focus": "Prior benchmarks (GUE, GenomicBenchmarks), standard tasks (splice sites, promoters, enhancers)"},
+        {"title": "Specialized Genomic Models", "focus": "Enformer, Sei, AlphaGenome for variant effect and gene expression"},
+        {"title": "Representation Learning for Genomics", "focus": "Embedding extraction, pooling strategies, transfer learning approaches"}
+      ],
+      "citation_hints": [
+        "DNABERT (Ji et al., 2021)",
+        "DNABERT-2 (Zhou et al., 2024)",
+        "Nucleotide Transformer (Dalla-Torre et al., 2023)",
+        "HyenaDNA (Nguyen et al., 2023)",
+        "Caduceus (Schiff et al., 2024)",
+        "GROVER (Sanabria et al., 2024)",
+        "Enformer (Avsec et al., 2021)",
+        "Sei (Chen et al., 2022)",
+        "GenomicBenchmarks (Grevsova et al., 2023)"
+      ]
+    },
+    {
+      "id": "method",
+      "title": "Methods",
+      "description": "Full technical description of the benchmarking framework.",
+      "target_length": "2.5 pages",
+      "subsections": [
+        {"title": "Models Under Evaluation", "focus": "5 foundation models + 3 specialized baselines + CNN baseline, with architecture details table"},
+        {"title": "Task Taxonomy and Datasets", "focus": "57 datasets across 4 categories: sequence classification (human, multi-species, epigenetic), gene expression, variant effect, TAD recognition"},
+        {"title": "Evaluation Framework", "focus": "Zero-shot embedding extraction, random forest classifiers, 5-fold CV, hyperparameter optimization"},
+        {"title": "Pooling Strategy Comparison", "focus": "Summary token vs mean token vs max pooling, statistical testing (DeLong's test)"},
+        {"title": "Pre-training Data Ablation", "focus": "HyenaDNA retrained on multi-species data, controlled comparison"}
+      ],
+      "citation_hints": [
+        "Random forest (Breiman, 2001)",
+        "DeLong's test for AUC comparison",
+        "Wilcoxon signed-rank test"
+      ]
+    },
+    {
+      "id": "experiments",
+      "title": "Results",
+      "description": "Systematic presentation of all benchmarking results.",
+      "target_length": "3 pages",
+      "subsections": [
+        {"title": "Sequence Classification", "focus": "Main comparison table across human genome, multi-species, and epigenetic tasks. Highlight task-specific winners."},
+        {"title": "Pooling Strategy Impact", "focus": "Mean vs summary token: 4-9% AUC improvement. DeLong significance. 35-42 of 52 datasets significantly better."},
+        {"title": "Gene Expression Prediction", "focus": "Short vs long context. HyenaDNA-450K vs Enformer. Near-zero performance at 6K bp."},
+        {"title": "Variant Effect Prediction", "focus": "Pathogenic SNPs: NT-v2 leads. QTL: specialized models dominate. DNABERT-2 surprisingly poor on SNPs."},
+        {"title": "Pre-training Data Diversity", "focus": "Multi-species HyenaDNA: 14/49 datasets improved, 5mC +5.9%."},
+        {"title": "Runtime Analysis", "focus": "Scaling behavior: GROVER fastest short, HyenaDNA scales best long."}
+      ],
+      "citation_hints": [
+        "AlphaGenome paper",
+        "Dataset source papers for each of the 57 datasets"
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "description": "Interpret findings, discuss practical implications for model selection, acknowledge limitations.",
+      "target_length": "1 page",
+      "subsections": [
+        {"title": "Practical Model Selection Guidelines", "focus": "Which model for which task type"},
+        {"title": "The Specialization Gap", "focus": "Why general models fail at QTL; implications for fine-tuning vs zero-shot"},
+        {"title": "Pooling as an Overlooked Hyperparameter", "focus": "Why default pooling is suboptimal"},
+        {"title": "Limitations", "focus": "Zero-shot only, RF classifiers, dataset coverage"}
+      ],
+      "citation_hints": []
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusion",
+      "description": "Summarize contributions, restate key findings, future directions.",
+      "target_length": "0.5 pages",
+      "subsections": [],
+      "citation_hints": []
+    }
+  ],
+  "visualization_plan": [
+    {
+      "id": "fig_overview",
+      "type": "conceptual_diagram",
+      "description": "Benchmarking framework overview: models -> embedding extraction -> RF classifier -> evaluation across 4 task categories",
+      "placement": "method",
+      "data_source": "idea summary method description"
+    },
+    {
+      "id": "tab_models",
+      "type": "table",
+      "description": "Model comparison table: architecture, parameters, embedding dim, max input, pre-training data",
+      "placement": "method",
+      "data_source": "experimental log Models Under Test table"
+    },
+    {
+      "id": "fig_pooling",
+      "type": "bar_chart",
+      "description": "Pooling strategy impact: AUC improvement (summary -> mean) per model with IQR error bars",
+      "placement": "experiments",
+      "data_source": "experimental log Pooling Strategy Impact"
+    },
+    {
+      "id": "tab_main_classification",
+      "type": "table",
+      "description": "Main sequence classification results: AUC across tasks for all 5 models (bold best per row)",
+      "placement": "experiments",
+      "data_source": "experimental log Sequence Classification Results"
+    },
+    {
+      "id": "fig_variant_effect",
+      "type": "bar_chart",
+      "description": "Variant effect prediction AUC: foundation models vs specialized models, grouped by task (SNP, eQTL, ipaQTL)",
+      "placement": "experiments",
+      "data_source": "experimental log Variant Effect Prediction"
+    },
+    {
+      "id": "tab_gene_expression",
+      "type": "table",
+      "description": "Gene expression prediction: Pearson correlation and MSE for short vs long context",
+      "placement": "experiments",
+      "data_source": "experimental log Gene Expression Prediction"
+    },
+    {
+      "id": "fig_runtime",
+      "type": "line_chart",
+      "description": "Runtime scaling: latency vs sequence length per model",
+      "placement": "experiments",
+      "data_source": "experimental log Runtime"
+    },
+    {
+      "id": "tab_ablation",
+      "type": "table",
+      "description": "Pre-training data diversity ablation: HyenaDNA original vs multi-species retrained",
+      "placement": "experiments",
+      "data_source": "experimental log Pre-training Data Diversity"
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "DNA foundation model genomics survey 2024",
+      "language model biological sequence representation learning",
+      "deep learning genomic sequence classification benchmark",
+      "transfer learning genomics computational biology"
+    ],
+    "micro_queries": [
+      "DNABERT DNABERT-2 genome language model",
+      "Nucleotide Transformer multi-species DNA",
+      "HyenaDNA long-range sequence modeling Hyena operator",
+      "Caduceus bidirectional equivariant DNA Mamba",
+      "Enformer gene expression prediction from sequence",
+      "Sei sequence-based regulatory activity",
+      "variant effect prediction deep learning pathogenic",
+      "embedding pooling strategy comparison NLP genomics",
+      "zero-shot genomic classification foundation model"
+    ],
+    "must_cite": [
+      "DNABERT-2: Zhou et al., ICLR 2024",
+      "Nucleotide Transformer: Dalla-Torre et al., 2023",
+      "HyenaDNA: Nguyen et al., NeurIPS 2023",
+      "Caduceus: Schiff et al., ICML 2024",
+      "GROVER: Sanabria et al., 2024",
+      "Enformer: Avsec et al., Nature Methods 2021",
+      "Sei: Chen et al., Nature Genetics 2022",
+      "AlphaGenome (variant effect predictor)",
+      "Original DNABERT: Ji et al., Bioinformatics 2021",
+      "GenomicBenchmarks: Grevsova et al., BMC Genomic Data 2023",
+      "Genome Understanding Evaluation (GUE) benchmark",
+      "Random Forest: Breiman 2001"
+    ]
+  }
+}
