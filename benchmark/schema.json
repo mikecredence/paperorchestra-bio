@@ -1,158 +1,68 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "BiomedWritingBench Entry Schema",
-  "description": "Schema for each benchmark entry in BiomedWritingBench, adapted from PaperWritingBench for biomedical papers",
+  "title": "BiomedWritingBench Entry Metadata Schema",
+  "description": "Schema for metadata.json in each test case directory",
   "type": "object",
-  "required": ["entry_id", "subfield", "preprint_doi", "published_doi", "title", "idea_summary", "experimental_log", "venue_info"],
+  "required": ["id", "title", "published_doi", "published_venue"],
   "properties": {
-    "entry_id": {
+    "id": {
       "type": "string",
-      "description": "Unique identifier (e.g., 'genomics_001')"
+      "description": "Unique identifier (e.g., 'genomics_001', 'dna-foundation-models')"
     },
-    "subfield": {
-      "type": "string",
-      "enum": ["genomics", "bioinformatics", "drug_discovery", "neuroscience", "immunology", "clinical", "cancer_biology", "structural_biology", "cell_biology", "epidemiology", "methods"]
+    "title": {
+      "type": "string"
     },
-    "preprint_doi": {
+    "biorxiv_doi": {
       "type": ["string", "null"],
       "description": "bioRxiv DOI (10.1101/...)"
     },
     "published_doi": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Published journal DOI"
     },
     "published_venue": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "published_year": {
-      "type": "integer"
-    },
-    "title": {
-      "type": "string"
+      "type": ["integer", "null"]
     },
     "authors": {
       "type": "array",
       "items": {"type": "string"}
     },
-    "idea_summary": {
-      "type": "object",
-      "required": ["research_question", "background_motivation", "proposed_approach", "key_innovations", "expected_contributions"],
-      "properties": {
-        "research_question": {
-          "type": "string",
-          "description": "Core question or hypothesis"
-        },
-        "background_motivation": {
-          "type": "string",
-          "description": "Why this problem matters, gap in literature"
-        },
-        "proposed_approach": {
-          "type": "string",
-          "description": "Methodology/technique in 2-3 sentences"
-        },
-        "key_innovations": {
-          "type": "array",
-          "items": {"type": "string"},
-          "description": "What is novel"
-        },
-        "expected_contributions": {
-          "type": "array",
-          "items": {"type": "string"},
-          "description": "Anticipated results/claims"
-        }
-      }
+    "category": {
+      "type": "string",
+      "enum": ["genomics", "bioinformatics", "drug_discovery", "neuroscience", "immunology", "clinical", "cancer_biology", "structural_biology", "cell_biology", "epidemiology", "methods"]
     },
-    "experimental_log": {
-      "type": "object",
-      "required": ["datasets", "methods_applied", "quantitative_results"],
-      "properties": {
-        "datasets": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {"type": "string"},
-              "description": {"type": "string"},
-              "source": {"type": "string", "description": "Repository + accession (GEO, dbGaP, TCGA, etc.)"},
-              "size": {"type": "string"}
-            }
-          }
-        },
-        "methods_applied": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "method_name": {"type": "string"},
-              "description": {"type": "string"},
-              "parameters": {"type": "string"}
-            }
-          }
-        },
-        "quantitative_results": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "metric": {"type": "string"},
-              "value": {},
-              "comparison_baseline": {"type": "string"},
-              "context": {"type": "string"}
-            }
-          }
-        },
-        "tables": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "table_id": {"type": "string"},
-              "caption": {"type": "string"},
-              "data": {"description": "Structured table contents"}
-            }
-          }
-        },
-        "figure_observations": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "figure_id": {"type": "string"},
-              "observation": {"type": "string"}
-            }
-          }
-        },
-        "statistical_tests": {
-          "type": "array",
-          "items": {"type": "string"}
-        },
-        "software_tools": {
-          "type": "array",
-          "items": {"type": "string"}
-        }
-      }
+    "subcategory": {
+      "type": ["string", "null"]
     },
-    "venue_info": {
-      "type": "object",
-      "properties": {
-        "journal_name": {"type": "string"},
-        "article_type": {"type": "string"},
-        "formatting_template": {"type": ["string", "null"]},
-        "typical_sections": {"type": "array", "items": {"type": "string"}},
-        "word_limit": {"type": ["integer", "null"]},
-        "reference_style": {"type": "string"}
-      }
+    "paper_type": {
+      "type": "string",
+      "enum": ["benchmark", "methods", "clinical", "clinical_validation", "atlas", "dataset", "research", "review"]
     },
-    "evaluation_metadata": {
-      "type": "object",
-      "properties": {
-        "has_comparison_table": {"type": "boolean"},
-        "num_figures": {"type": "integer"},
-        "num_tables": {"type": "integer"},
-        "num_references": {"type": "integer"},
-        "paper_length_words": {"type": "integer"},
-        "difficulty_tags": {"type": "array", "items": {"type": "string"}}
-      }
+    "format": {
+      "type": "string",
+      "default": "single-column"
+    },
+    "ground_truth_citation_count": {
+      "type": ["integer", "null"],
+      "description": "Number of references in the published paper"
+    },
+    "ground_truth_figure_count": {
+      "type": ["integer", "null"],
+      "description": "Number of figures in the published paper"
+    },
+    "ground_truth_table_count": {
+      "type": ["integer", "null"],
+      "description": "Number of tables in the published paper"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard"]
+    },
+    "notes": {
+      "type": "string"
     }
   }
 }

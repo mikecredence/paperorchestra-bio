@@ -178,6 +178,48 @@ Respond with the JSON evaluation only."""
     return prompt
 
 
+def build_absolute_prompt(text: str, axis: str) -> str:
+    """Construct a prompt for absolute scoring of a single paper (no comparison).
+
+    Used when ground truth full text is unavailable.
+    """
+    axis_desc = AXIS_DESCRIPTIONS[axis]
+
+    prompt = f"""\
+You are an expert biomedical research reviewer. You will be given a generated \
+research paper (or section). Score it on the following axis:
+
+{axis_desc}
+
+Instructions:
+1. Read the paper carefully.
+2. Score the paper from 0 to 100 on the axis described above.
+3. Provide a brief rationale (2-4 sentences) explaining your judgment.
+4. List 1-3 specific suggestions for improvement.
+
+Scoring guide:
+  90-100: Publication-ready, excellent quality
+  75-89:  Good quality, minor issues
+  60-74:  Acceptable, noticeable weaknesses
+  40-59:  Below average, significant issues
+  0-39:   Poor, major problems
+
+You MUST respond with valid JSON in exactly this format (no other text):
+{{
+  "axis": "{axis}",
+  "score": <int 0-100>,
+  "rationale": "<brief explanation>",
+  "suggestions": ["<suggestion 1>", "<suggestion 2>"]
+}}
+
+--- PAPER ---
+{text}
+
+Respond with the JSON evaluation only."""
+
+    return prompt
+
+
 # ---------------------------------------------------------------------------
 # API interaction
 # ---------------------------------------------------------------------------
@@ -237,37 +279,41 @@ def call_judge(prompt: str) -> dict:
 
 def evaluate_axis(
     generated_text: str,
-    gt_text: str,
+    gt_text: str | None,
     axis: str,
     dry_run: bool = False,
+    absolute: bool = False,
 ) -> dict:
     """Evaluate a single axis. Returns the evaluation dict or the prompt (dry run)."""
-    prompt = build_judge_prompt(generated_text, gt_text, axis)
+    if absolute or gt_text is None:
+        prompt = build_absolute_prompt(generated_text, axis)
+    else:
+        prompt = build_judge_prompt(generated_text, gt_text, axis)
 
     if dry_run:
         return {"axis": axis, "prompt": prompt}
 
     result = call_judge(prompt)
-    # Ensure axis label is set correctly
     result["axis"] = axis
+    result["mode"] = "absolute" if (absolute or gt_text is None) else "side_by_side"
     return result
 
 
 def evaluate_batch(
     generated_text: str,
-    gt_text: str,
+    gt_text: str | None,
     dry_run: bool = False,
+    absolute: bool = False,
 ) -> list[dict]:
     """Evaluate all non-overall axes plus the overall axis."""
-    # Evaluate the six specific axes, then overall
     axes_to_run = [a for a in AXES if a != "overall"] + ["overall"]
     results: list[dict] = []
 
     for axis in axes_to_run:
-        result = evaluate_axis(generated_text, gt_text, axis, dry_run=dry_run)
+        result = evaluate_axis(generated_text, gt_text, axis,
+                               dry_run=dry_run, absolute=absolute)
         results.append(result)
         if not dry_run:
-            # Print progress to stderr so stdout stays clean JSON
             print(f"  Evaluated: {axis}", file=sys.stderr)
 
     return results
@@ -345,8 +391,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--ground-truth",
-        required=True,
-        help="Path to the ground truth LaTeX section file.",
+        default=None,
+        help="Path to the ground truth LaTeX section file. "
+             "Not required when using --absolute mode.",
+    )
+    parser.add_argument(
+        "--absolute",
+        action="store_true",
+        help="Score a single paper without side-by-side comparison. "
+             "Use when ground truth full text is unavailable.",
     )
 
     axis_group = parser.add_mutually_exclusive_group(required=True)
@@ -393,27 +446,36 @@ def main() -> None:
     if not Path(args.generated).is_file():
         print(f"Error: Generated file not found: {args.generated}", file=sys.stderr)
         sys.exit(1)
-    if not Path(args.ground_truth).is_file():
+
+    if not args.absolute and args.ground_truth and not Path(args.ground_truth).is_file():
         print(f"Error: Ground truth file not found: {args.ground_truth}", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.absolute and not args.ground_truth:
+        print("Error: --ground-truth is required unless using --absolute mode.", file=sys.stderr)
         sys.exit(1)
 
     # Read and strip LaTeX
     generated_raw = Path(args.generated).read_text(encoding="utf-8")
-    gt_raw = Path(args.ground_truth).read_text(encoding="utf-8")
-
     generated_text = strip_latex(generated_raw)
-    gt_text = strip_latex(gt_raw)
+
+    gt_text = None
+    if args.ground_truth and not args.absolute:
+        gt_raw = Path(args.ground_truth).read_text(encoding="utf-8")
+        gt_text = strip_latex(gt_raw)
 
     if not generated_text.strip():
         print("Warning: Generated file produced empty text after LaTeX stripping.", file=sys.stderr)
-    if not gt_text.strip():
+    if gt_text is not None and not gt_text.strip():
         print("Warning: Ground truth file produced empty text after LaTeX stripping.", file=sys.stderr)
 
     # Evaluate
     if args.batch:
-        results = evaluate_batch(generated_text, gt_text, dry_run=args.dry_run)
+        results = evaluate_batch(generated_text, gt_text,
+                                 dry_run=args.dry_run, absolute=args.absolute)
     else:
-        result = evaluate_axis(generated_text, gt_text, args.axis, dry_run=args.dry_run)
+        result = evaluate_axis(generated_text, gt_text, args.axis,
+                               dry_run=args.dry_run, absolute=args.absolute)
         results = [result]
 
     # Output
