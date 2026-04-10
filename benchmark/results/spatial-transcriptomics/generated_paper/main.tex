@@ -1,0 +1,202 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{Systematic Benchmarking of High-Throughput Subcellular Spatial Transcriptomics Platforms Across Human Tumors}
+
+\author{%
+  Author A$^{1}$, Author B$^{1}$, Author C$^{2}$, Author D$^{3}$, Author E$^{1,*}$\\[6pt]
+  $^{1}$Department of Genomics, University of Science\\
+  $^{2}$Department of Pathology, Medical Center\\
+  $^{3}$Department of Computational Biology, Research Institute\\[4pt]
+  $^{*}$Corresponding author: \texttt{author.e@university.edu}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+Subcellular spatial transcriptomics (ST) platforms have rapidly proliferated, yet no study has systematically compared them on identical tissue samples using unified processing and annotation. Here we present the first comprehensive benchmark of five subcellular ST platforms---Stereo-seq v1.3, Visium HD FFPE, Visium HD FF, CosMx 6K, and Xenium 5K---applied to serial sections from three human tumor types: colon adenocarcinoma, hepatocellular carcinoma, and ovarian cancer. Using matched single-cell RNA sequencing and CODEX protein profiling as orthogonal ground truth, we evaluate seven quality dimensions: capture sensitivity, specificity, diffusion control, cell segmentation accuracy, cell type annotation robustness, spatial clustering concordance, and transcript--protein spatial alignment. Our results reveal that imaging-based platforms, particularly Xenium 5K, achieve superior cell segmentation fidelity, annotation robustness, and CODEX concordance, while sequencing-based platforms such as Visium HD FFPE offer broader gene detection. We identify elevated background noise and spatial signal aggregation in CosMx 6K relative to Xenium 5K, and substantially greater transcript diffusion in Stereo-seq v1.3 compared to Visium HD. We publicly release a uniformly processed 8.13 million cell multi-omics dataset through the SPATCH portal, providing a community resource for computational method development.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+
+Spatial transcriptomics technologies enable the measurement of gene expression while preserving tissue architecture, providing critical insights into the cellular organization of complex tissues \citep{moses2022museum, rao2021exploring}. Recent technological advances have produced subcellular-resolution platforms that detect individual transcripts within cells, opening new avenues for studying tumor microenvironments \citep{williams2022introduction, moffitt2022emerging}.
+
+Two major classes of subcellular ST platforms have emerged. Sequencing-based spatial transcriptomics (sST) platforms, including Stereo-seq and Visium HD, capture whole-transcriptome information through spatially barcoded arrays \citep{chen2022spatiotemporal, kleshchevnikov2022cell2location}. Imaging-based spatial transcriptomics (iST) platforms, such as CosMx and Xenium, detect targeted gene panels through fluorescence in situ hybridization \citep{he2022high, janesick2023high}. Each class presents distinct trade-offs: sST platforms offer unbiased gene detection at the cost of potential transcript diffusion, while iST platforms provide single-molecule resolution within targeted panels but are limited by optical crowding effects \citep{zhuang2021spatially, marx2021method}.
+
+Despite the proliferation of these platforms, practitioners and core facilities lack objective guidance for platform selection. Existing comparisons employ different tissues, processing pipelines, and evaluation metrics, precluding direct head-to-head assessment \citep{walker2023deciphering, lee2024benchmarking}. Furthermore, no public resource provides uniformly processed multi-platform spatial data suitable for computational method development.
+
+Here we address these gaps by presenting the first unified benchmark of five subcellular ST platforms on serial sections from three human tumor types. We establish a multi-metric evaluation framework spanning seven quality dimensions and validate findings against orthogonal scRNA-seq and CODEX protein data. Our analysis of 8.13 million cells reveals platform-specific strengths and limitations, providing actionable guidance for the spatial transcriptomics community.
+
+% ============================================================
+\section{Related Work}
+
+Early spatial transcriptomics methods such as ST and Slide-seq established the paradigm of spatially resolved gene expression measurement \citep{stahl2016visualization, rodriques2019slide}. The Visium platform subsequently became widely adopted for tissue-scale spatial profiling \citep{andersson2021single}. More recently, subcellular-resolution platforms including MERFISH \citep{chen2015spatially}, seqFISH+ \citep{eng2019transcriptome}, Stereo-seq \citep{chen2022spatiotemporal}, Visium HD, CosMx \citep{he2022high}, and Xenium \citep{janesick2023high} have dramatically increased spatial resolution and throughput.
+
+Several studies have compared subsets of these platforms. \citet{walker2023deciphering} evaluated Visium and MERFISH on mouse brain tissue, while \citet{lee2024benchmarking} compared imaging-based platforms on cell lines. \citet{long2023benchmarking} assessed computational deconvolution methods across platforms but did not directly compare raw platform performance. These efforts, while valuable, used different tissues, preprocessing pipelines, and evaluation criteria, limiting cross-study comparisons.
+
+Cell segmentation quality is a critical determinant of downstream analysis accuracy in spatial transcriptomics \citep{petukhov2022cell}. Nuclear segmentation tools such as StarDist \citep{schmidt2018cell} and Cellpose \citep{stringer2020cellpose} have been widely adopted, but platform-specific segmentation pipelines vary substantially in their fidelity to true cell boundaries.
+
+Cell type annotation methods including SELINA, Celltypist \citep{dominguez2022cross}, Tangram \citep{biancalani2021deep}, and TACCO \citep{li2023tacco} each bring different algorithmic approaches to the problem of assigning cell identities in spatial data. Multi-tool consensus annotation has been advocated as a strategy for robust cell typing \citep{abdelaal2019comparison}.
+
+% ============================================================
+\section{Methods}
+
+\subsection{Tissue Samples and Platform Processing}
+
+Serial tissue sections were collected from three human cancer types: colon adenocarcinoma (COAD), hepatocellular carcinoma (HCC), and ovarian cancer (OV). FFPE-embedded sections were processed on Stereo-seq v1.3, Visium HD FFPE, CosMx 6K, and Xenium 5K according to manufacturer protocols. Fresh-frozen OCT-embedded sections were processed on Visium HD FF. Matched single-cell suspensions were prepared from the same samples for scRNA-seq profiling using the 10x Chromium platform (cellranger v7.0.0). Adjacent sections were profiled with CODEX for protein-level spatial ground truth.
+
+\subsection{Platform Specifications}
+
+Five subcellular ST platforms were evaluated (Table~\ref{tab:platforms}). Sequencing-based platforms (Stereo-seq v1.3, Visium HD FFPE, Visium HD FF) provide whole-transcriptome capture, while imaging-based platforms (CosMx 6K, Xenium 5K) target defined gene panels of 6,175 and 5,001 genes, respectively.
+
+\begin{table}[ht]
+\centering
+\caption{Subcellular spatial transcriptomics platforms evaluated in this study.}
+\label{tab:platforms}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+Platform & Type & Resolution & Gene Panel & Pipeline & Version \\
+\midrule
+Stereo-seq v1.3 & sST & 0.5\,$\mu$m & 17,134 (WTx) & SAW & v8.0 \\
+Visium HD FFPE & sST & 2\,$\mu$m & 18,085 (WTx) & Space Ranger & v3.0.0 \\
+Visium HD FF & sST & 2\,$\mu$m & 18,085 (WTx) & Space Ranger & v3.0.0 \\
+CosMx 6K & iST & Single-mol. & 6,175 (targeted) & Atomx & v1.3.2 \\
+Xenium 5K & iST & Single-mol. & 5,001 (targeted) & Xenium OBA & v3.1.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Processing and Analysis}
+
+All platforms were processed through their respective manufacturer pipelines (Table~\ref{tab:platforms}). Downstream analysis was unified using scanpy v1.10.3 for clustering and dimensionality reduction \citep{wolf2018scanpy}. Nuclear segmentation was performed with StarDist v0.5.0 \citep{schmidt2018cell}. Spatial clustering was conducted using CellCharter for spatial domain identification. Image registration between platforms and CODEX was performed with SimpleITK v2.4.0. Nearest neighbor analysis utilized scikit-learn v1.5.2.
+
+\subsection{Evaluation Framework}
+
+Seven evaluation dimensions were assessed:
+
+\begin{enumerate}
+    \item \textbf{Capture sensitivity}: Transcript and gene counts per 8\,$\mu$m bin for cross-platform comparison at matched resolution.
+    \item \textbf{Specificity}: Negative control probe signal proportions and spatial autocorrelation (Moran's I) for background noise characterization.
+    \item \textbf{Diffusion control}: Extra-tissue to intra-tissue transcript count ratios for sST platforms.
+    \item \textbf{Cell segmentation accuracy}: Comparison against 72,405 manually annotated cells across five 500$\times$500\,$\mu$m regions.
+    \item \textbf{Cell type annotation robustness}: Consensus across five independent annotation tools (SELINA, Celltypist, Spoint, Tangram, TACCO).
+    \item \textbf{Spatial clustering concordance}: Silhouette scores and alignment with CODEX protein spatial domains.
+    \item \textbf{Transcript--protein alignment}: Gene signature spatial correlations with CODEX for immune and stromal cell types.
+\end{enumerate}
+
+% ============================================================
+\section{Results}
+
+\subsection{Capture Sensitivity}
+
+At matched 8\,$\mu$m bin resolution, Visium HD FFPE demonstrated enhanced transcript and gene detection compared to Stereo-seq v1.3 across HCC and OV samples. However, Stereo-seq v1.3 exhibited a higher proportion of reads passing UMI quality control relative to both Visium HD FFPE and scRNA-seq, indicating improved retention of valid transcript information. Visium HD FFPE showed lower sequencing saturation at comparable sequencing depths.
+
+Among imaging-based platforms restricted to 2,522 shared genes, Xenium 5K detected higher numbers of transcripts and genes per bin compared to CosMx 6K in HCC tissue. CosMx 6K detected higher total transcripts overall, driven by its larger panel size of 6,175 genes versus 5,001 for Xenium 5K.
+
+Sequencing-based platforms detected substantially more unique genes due to whole-transcriptome capture, though at single-cell-scale binning, sST platforms detected only a few hundred to approximately 1,000 genes per cell.
+
+\subsection{Specificity and Background Noise}
+
+Analysis of negative control probes revealed that CosMx 6K showed elevated negative control signal proportions across all quality control thresholds, while Xenium 5K maintained consistently lower background signals. The primary background source was identified as nonspecific probe binding in CosMx 6K.
+
+Spatial autocorrelation analysis using Moran's I demonstrated that CosMx 6K exhibited stronger spatial aggregation of negative control signals, indicating spatially structured noise. Xenium 5K showed reduced spatial variation in background signal, consistent with lower systematic noise.
+
+\subsection{Diffusion Control}
+
+Among sST platforms, Stereo-seq v1.3 demonstrated substantially greater transcript diffusion beyond tissue boundaries across all samples. Visium HD FFPE exhibited more effective diffusion control, with significantly lower extra-tissue to intra-tissue transcript count ratios. This diffusion artifact in Stereo-seq is likely attributable to the capture bead array design and RNA migration during the permeabilization step.
+
+\subsection{Cell Segmentation Accuracy}
+
+Using 72,405 manually annotated cells as ground truth, CosMx 6K and Xenium 5K default segmentation pipelines closely matched manual cell counts. Stereo-seq v1.3 exhibited reduced segmentation accuracy relative to manual annotations. CosMx 6K produced larger, more convex, and more circular cell boundaries, while Xenium 5K captured more irregular and realistic cell morphologies that better matched native tissue architecture. StarDist nuclear segmentation applied to Xenium 5K data identified nuclei with higher gene and transcript counts per nucleus compared to other platforms.
+
+\subsection{Gene Expression Correlation with scRNA-seq}
+
+Gene-wise Pearson correlation analysis against matched scRNA-seq references revealed that Stereo-seq v1.3, Visium HD FFPE, and Xenium 5K all achieved high correlation with scRNA-seq expression profiles. CosMx 6K exhibited substantial deviation from the scRNA-seq reference with lower correlation values. This pattern was consistent when restricting the analysis to 2,522 genes shared across the Xenium 5K panel.
+
+\subsection{Cell Type Annotation Robustness}
+
+Five-tool consensus annotation analysis demonstrated that Xenium 5K achieved the highest proportion of cells consistently annotated across all tools (Table~\ref{tab:annotation}). Imaging-based platforms recovered a greater number of distinct cell types compared to sequencing-based platforms. For T cell subtype recovery, both CosMx 6K and Xenium 5K detected the highest number of subtypes, with Xenium 5K demonstrating superior annotation reliability for immune cell subtypes across tools.
+
+\begin{table}[ht]
+\centering
+\caption{Platform ranking for cell type annotation consistency based on five-tool consensus (SELINA, Celltypist, Spoint, Tangram, TACCO). Rank 1 indicates highest annotation robustness.}
+\label{tab:annotation}
+\begin{tabular}{@{}llc@{}}
+\toprule
+Rank & Platform & Type \\
+\midrule
+1 & Xenium 5K & iST \\
+2 & CosMx 6K & iST \\
+3 & Visium HD FFPE & sST \\
+4 & Visium HD FF & sST \\
+5 & Stereo-seq v1.3 & sST \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Spatial Clustering and CODEX Concordance}
+
+Silhouette score analysis indicated that scRNA-seq provided the most effective cell population separation, while iST platforms achieved better cluster resolution than sST platforms. CellCharter-based spatial clustering showed comparable concordance across most platforms when aligned to CODEX protein spatial domains, with the exception of Stereo-seq v1.3, which showed notably low concordance in HCC tissue.
+
+For transcript--protein spatial concordance, Xenium 5K exhibited the strongest overall concordance with CODEX spatial patterns across cell types, followed by Visium HD FFPE (Table~\ref{tab:codex}). Xenium 5K was particularly strong for immune cell populations including T cells, macrophages, and B cells. All platforms performed comparably for epithelial cell detection, while stromal cell concordance varied more substantially.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of platform strengths and weaknesses across evaluation metrics.}
+\label{tab:codex}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Metric & Best Platform & Worst Platform \\
+\midrule
+Gene detection breadth & Visium HD FFPE & Xenium 5K \\
+UMI quality retention & Stereo-seq v1.3 & Visium HD FFPE \\
+Specificity (low background) & Xenium 5K & CosMx 6K \\
+Diffusion control & Visium HD FFPE & Stereo-seq v1.3 \\
+Cell segmentation accuracy & CosMx 6K / Xenium 5K & Stereo-seq v1.3 \\
+scRNA-seq correlation & Stereo-seq / Visium HD / Xenium & CosMx 6K \\
+Annotation robustness & Xenium 5K & Stereo-seq v1.3 \\
+Immune cell type recovery & Xenium 5K / CosMx 6K & sST platforms \\
+CODEX concordance & Xenium 5K & Stereo-seq v1.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Discussion}
+
+Our systematic benchmark reveals that no single platform dominates across all evaluation dimensions, underscoring the importance of matching platform selection to experimental objectives. Imaging-based platforms, particularly Xenium 5K, demonstrate clear advantages in cell segmentation fidelity, annotation robustness, specificity, and concordance with orthogonal protein-level measurements. These strengths make iST platforms particularly well suited for studies requiring accurate cell typing and spatial mapping of immune and stromal compartments in the tumor microenvironment \citep{wu2021single, zhang2021single}.
+
+Conversely, sequencing-based platforms offer whole-transcriptome coverage that is essential for discovery-oriented studies where the genes of interest are not known a priori \citep{chen2022spatiotemporal, stickels2021highly}. Visium HD FFPE, in particular, combines broad gene detection with effective diffusion control and reasonable CODEX concordance, making it a versatile choice for exploratory analyses.
+
+The elevated background noise and spatial signal aggregation observed in CosMx 6K relative to Xenium 5K highlight the importance of specificity assessment in platform evaluation \citep{he2022high}. The nonspecific probe binding identified as the primary noise source in CosMx 6K suggests that panel design and probe chemistry are critical determinants of data quality.
+
+The substantially greater transcript diffusion in Stereo-seq v1.3 compared to Visium HD has important implications for spatial analyses at fine resolution. This artifact, likely related to the capture bead array design and RNA migration during permeabilization, may confound cell-level analyses and should be considered when interpreting Stereo-seq data \citep{chen2022spatiotemporal}.
+
+Our five-tool consensus annotation strategy provides a robust assessment of cell typing accuracy that is less susceptible to individual tool biases \citep{abdelaal2019comparison, dominguez2022cross}. The finding that iST platforms recover more distinct cell types, particularly immune subtypes, reflects the importance of targeted panel design in capturing cell-type-discriminating genes \citep{janesick2023high}.
+
+A limitation of this study is that platform performance may vary with tissue type and preservation method beyond the three tumor types tested here. Additionally, the targeted panels of iST platforms are continually expanding, and future panel iterations may shift the balance of platform trade-offs.
+
+% ============================================================
+\section{Conclusion}
+
+We present the first unified benchmark of five subcellular spatial transcriptomics platforms across three human tumor types, evaluated against orthogonal scRNA-seq and CODEX protein ground truth. Our multi-metric evaluation framework reveals that Xenium 5K achieves the strongest overall performance for cell segmentation, annotation robustness, and protein concordance, while Visium HD FFPE provides the broadest gene detection. These findings, together with the publicly released 8.13 million cell SPATCH dataset, provide both actionable platform selection guidance and a community resource for method development in the spatial transcriptomics field.
+
+% ============================================================
+\section*{Data Availability}
+All data are available via the SPATCH portal for interactive visualization and download. The uniformly processed and annotated multi-omics dataset is released for community use.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

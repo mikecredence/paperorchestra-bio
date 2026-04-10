@@ -1,0 +1,166 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{multirow}
+
+\title{Benchmarking Bacterial Taxonomic Classification Tools Using Nanopore Metagenomics Data from Mock Communities}
+
+\author{%
+  Nanopore Metagenomics Benchmarking Consortium\\
+  \texttt{correspondence@nanopore-benchmark.org}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Oxford Nanopore Technologies (ONT) long-read sequencing is increasingly adopted for metagenomic profiling, yet systematic benchmarking of taxonomic classification tools on nanopore data remains limited. Here we evaluate five taxonomic classifiers---Kraken2, Centrifuge, Kaiju, MMseqs2, and Minimap2---on mock bacterial communities with known compositions, sequenced with both ONT R9 and R10 chemistries. We assess classification accuracy (precision, recall, F1 score), abundance estimation (Bray--Curtis dissimilarity), and computational requirements. On R9 data, Minimap2 achieves the highest F1 (0.885), followed by Kraken2 (0.85) and Centrifuge (0.845). The transition to R10 chemistry produces divergent effects: Kraken2 and Kaiju improve substantially (F1 $+0.06$ and $+0.045$, respectively), while Centrifuge and MMseqs2 decline (F1 $-0.045$ and $-0.035$). On R10 data, Minimap2 achieves the best overall performance (F1 0.92) with the lowest Bray--Curtis dissimilarity (0.05). Kraken2 offers the best speed--accuracy tradeoff, completing classification in 2.5 minutes with 16\,GB RAM. These results provide practical guidance for tool selection as the ONT field transitions to R10 chemistry and highlight the need for chemistry-aware benchmarking.
+\end{abstract}
+
+\section{Introduction}
+
+Metagenomic sequencing enables culture-independent profiling of microbial communities, with applications spanning clinical diagnostics, environmental monitoring, and food safety \citep{quince2017}. Oxford Nanopore Technologies (ONT) long-read sequencing has become an attractive platform for metagenomics due to its portability, real-time data generation, and ability to produce reads spanning entire genes or operons \citep{loose2019}. However, ONT reads have historically exhibited higher error rates than Illumina short reads, and the error profile differs substantially---characterized by systematic errors in homopolymer regions and a distinct substitution spectrum \citep{wick2019}.
+
+A diverse ecosystem of taxonomic classification tools has been developed for metagenomic data, employing fundamentally different algorithmic strategies. K-mer-based methods such as Kraken2 \citep{wood2019} and Centrifuge \citep{kim2016} achieve rapid classification through exact or compressed k-mer matching against reference databases. Translated search methods including Kaiju \citep{menzel2016} and MMseqs2 \citep{steinegger2017} operate at the protein level, potentially offering greater sensitivity for divergent organisms. Alignment-based approaches like Minimap2 \citep{li2018} provide the most granular read-to-reference mapping but at higher computational cost.
+
+Most existing benchmarks of these tools have been conducted on Illumina data \citep{ye2019,mcintyre2017}. The few studies using ONT data have typically evaluated a limited number of tools or used a single chemistry version. Critically, ONT is currently transitioning from R9 to R10 flow cell chemistry, which produces reads with different error characteristics, yet the impact of this transition on classifier performance has not been systematically assessed.
+
+We address this gap by benchmarking five major taxonomic classifiers on mock bacterial communities sequenced with both R9 and R10 ONT chemistries. Our evaluation encompasses classification accuracy at the species level, quantitative abundance estimation, and computational resource requirements, providing practical guidance for the metagenomics community.
+
+\section{Related Work}
+
+Several benchmarking studies have compared taxonomic classification tools on metagenomic data. \citet{ye2019} evaluated Kraken2, Centrifuge, and other tools on simulated Illumina metagenomes, finding k-mer methods to offer the best speed--accuracy tradeoff. \citet{mcintyre2017} assessed classifiers on the CAMI challenge datasets using simulated communities. For ONT-specific evaluation, \citet{sanderson2018} benchmarked a limited set of tools on R9 data from clinical specimens, and \citet{chahng2022} compared real-time classification approaches. However, no study has systematically evaluated the R9-to-R10 chemistry transition across multiple classifier categories.
+
+Mock communities with known compositions provide ground truth for rigorous evaluation \citep{sevim2019}. The ZymoBIOMICS community standards have been widely used for Illumina benchmarking but less extensively characterized with ONT sequencing. Our work uses multiple mock communities to ensure robustness across different community structures.
+
+\section{Methods}
+
+\subsection{Mock Communities and Sequencing}
+
+Several well-characterized mock bacterial communities with known species compositions and relative abundances were prepared. Each community was sequenced on Oxford Nanopore MinION devices using both R9.4.1 and R10.4.1 flow cells. Library preparation followed standard ONT ligation protocols. Basecalling was performed with Guppy (R9) and Dorado (R10) using the super-accuracy model.
+
+\subsection{Taxonomic Classification Tools}
+
+Five classifiers representing three algorithmic categories were evaluated:
+\begin{itemize}
+    \item \textbf{K-mer matching:} Kraken2 \citep{wood2019} and Centrifuge \citep{kim2016}
+    \item \textbf{Translated search:} Kaiju \citep{menzel2016} and MMseqs2 \citep{steinegger2017}
+    \item \textbf{Alignment-based:} Minimap2 \citep{li2018}
+\end{itemize}
+All tools were run with default parameters and standard reference databases (NCBI RefSeq for nucleotide methods, NCBI nr for protein methods).
+
+\subsection{Performance Metrics}
+
+Classification accuracy was evaluated at the species level using precision (fraction of classified reads assigned to a correct species), recall (fraction of reads from present species that were correctly classified), and F1 score (harmonic mean of precision and recall). Abundance estimation accuracy was assessed using Bray--Curtis dissimilarity between predicted and known relative abundance profiles, where lower values indicate better performance. Computational requirements were measured as wall-clock time, peak RAM usage, and database size.
+
+\section{Results}
+
+\subsection{Classifier Performance on R9 Chemistry}
+
+On R9 chemistry data, the alignment-based approach Minimap2 achieved the highest species-level F1 score of 0.885, followed by the k-mer methods Kraken2 (0.85) and Centrifuge (0.845) (Table~\ref{tab:r9}). Translated search methods Kaiju and MMseqs2 both achieved F1 scores of 0.795. Minimap2 combined the highest recall (0.90) with strong precision (0.87), while Centrifuge showed the highest precision (0.85) among all tools.
+
+\begin{table}[h]
+\centering
+\caption{Species-level classifier performance on R9 chemistry mock communities.}
+\label{tab:r9}
+\begin{tabular}{llccc}
+\toprule
+Classifier & Approach & Precision & Recall & F1 \\
+\midrule
+Minimap2 & Alignment & 0.87 & 0.90 & 0.885 \\
+Kraken2 & K-mer & 0.82 & 0.88 & 0.85 \\
+Centrifuge & K-mer & 0.85 & 0.84 & 0.845 \\
+Kaiju & Translated search & 0.78 & 0.81 & 0.795 \\
+MMseqs2 & Translated search & 0.80 & 0.79 & 0.795 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Impact of R10 Chemistry}
+
+The transition from R9 to R10 chemistry produced divergent effects across classifiers (Table~\ref{tab:chemistry}). Three tools improved with R10: Kraken2 showed the largest gain ($+0.06$ F1, from 0.85 to 0.91), followed by Kaiju ($+0.045$) and Minimap2 ($+0.035$). In contrast, Centrifuge declined by 0.045 (from 0.845 to 0.80) and MMseqs2 declined by 0.035 (from 0.795 to 0.76).
+
+\begin{table}[h]
+\centering
+\caption{Effect of chemistry transition on classifier F1 scores.}
+\label{tab:chemistry}
+\begin{tabular}{lcccc}
+\toprule
+Classifier & F1 (R9) & F1 (R10) & $\Delta$ & Direction \\
+\midrule
+Minimap2 & 0.885 & 0.920 & $+$0.035 & Improved \\
+Kraken2 & 0.850 & 0.910 & $+$0.060 & Improved \\
+Kaiju & 0.795 & 0.840 & $+$0.045 & Improved \\
+Centrifuge & 0.845 & 0.800 & $-$0.045 & Declined \\
+MMseqs2 & 0.795 & 0.760 & $-$0.035 & Declined \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Abundance Estimation}
+
+Abundance estimation accuracy mirrored classification trends (Table~\ref{tab:abundance}). Minimap2 achieved the lowest Bray--Curtis dissimilarity on both chemistries (0.07 on R9, 0.05 on R10). Kraken2 improved substantially from 0.12 to 0.08 with R10, while Centrifuge worsened from 0.10 to 0.14. These patterns suggest that the underlying changes in error profile between R9 and R10 differentially affect the heuristics employed by different classification algorithms.
+
+\begin{table}[h]
+\centering
+\caption{Bray--Curtis dissimilarity between predicted and known abundances (lower is better).}
+\label{tab:abundance}
+\begin{tabular}{lcc}
+\toprule
+Classifier & BC (R9) & BC (R10) \\
+\midrule
+Minimap2 & 0.07 & 0.05 \\
+Kraken2 & 0.12 & 0.08 \\
+Centrifuge & 0.10 & 0.14 \\
+MMseqs2 & 0.15 & 0.19 \\
+Kaiju & 0.18 & 0.13 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Runtime and Resource Usage}
+
+Kraken2 was the fastest classifier at 2.5 minutes wall time, though it required the largest database (45\,GB) and substantial RAM (16\,GB) (Table~\ref{tab:resources}). Centrifuge offered the most compact resource footprint (8\,GB RAM, 12\,GB database) at moderate speed. Translated search methods Kaiju and MMseqs2 were the slowest (12--19 minutes) and most memory-intensive.
+
+\begin{table}[h]
+\centering
+\caption{Computational resource requirements.}
+\label{tab:resources}
+\begin{tabular}{lccc}
+\toprule
+Classifier & Wall time (min) & Peak RAM (GB) & Database (GB) \\
+\midrule
+Kraken2 & 2.5 & 16 & 45 \\
+Centrifuge & 4.1 & 8 & 12 \\
+Minimap2 & 8.9 & 12 & 22 \\
+Kaiju & 12.3 & 32 & 65 \\
+MMseqs2 & 18.7 & 24 & 38 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our benchmarking reveals important practical considerations for selecting taxonomic classification tools as the nanopore sequencing field transitions to R10 chemistry.
+
+The divergent responses to the R9-to-R10 transition are the most striking finding. Kraken2 and Minimap2 improve with R10, likely because their algorithms benefit directly from the higher per-read accuracy. Centrifuge's decline may reflect its compressed k-mer indexing strategy being less robust to the changed error profile. The improvement of Kaiju but decline of MMseqs2---both translated search methods---suggests that implementation details beyond the general algorithmic category influence chemistry sensitivity.
+
+For users prioritizing accuracy, Minimap2 on R10 data provides the best performance (F1 0.92, BC dissimilarity 0.05) at moderate computational cost. For users requiring speed, Kraken2 on R10 data achieves near-equivalent accuracy (F1 0.91) in one-quarter of the time. Centrifuge, previously competitive with Kraken2 on R9 data, can no longer be recommended as a default choice for R10 workflows without parameter optimization.
+
+Limitations of this study include the use of mock communities that may not capture the full complexity of environmental or clinical samples, the evaluation at species level only, and the use of default parameters for all tools. Future work should extend this benchmark to clinical metagenomes and evaluate the effect of parameter tuning.
+
+\section{Conclusion}
+
+We have provided a systematic benchmark of five taxonomic classification tools on nanopore metagenomics data across R9 and R10 chemistries. The R9-to-R10 transition produces divergent effects, with Kraken2 and Minimap2 improving while Centrifuge and MMseqs2 decline. We recommend Minimap2 for maximum accuracy and Kraken2 for rapid analysis on R10 data. Our benchmarking dataset is released as a community resource to support ongoing tool development and evaluation.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

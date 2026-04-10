@@ -1,0 +1,187 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+
+\title{ScopeDTI: Semi-Inductive Dataset Construction and Framework Optimisation for Practical Drug--Target Interaction Prediction}
+
+\author{%
+  Author A$^{1,*}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1,2}$ \\[6pt]
+  $^{1}$Department of Computational Biology, University of Research, City, Country \\
+  $^{2}$School of Pharmacy, Research Institute, City, Country \\
+  $^{*}$Corresponding author: authora@university.edu
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Deep learning methods for drug--target interaction (DTI) prediction have achieved strong performance on standard benchmarks but exhibit limited real-world applicability, partly due to small, biased datasets and insufficient evaluation under inductive settings where both drugs and targets are unseen during training. Here, we present ScopeDTI, comprising (i) a large-scale, balanced semi-inductive human DTI dataset aggregated from 13 public repositories, expanding data volume up to 100-fold over common benchmarks (685,020 interactions; 98,234 unique drugs; 4,815 unique proteins), and (ii) the SCOPE model, which integrates 3D protein structure and 3D molecular conformation representations through graph neural networks with bilinear attention for cross-domain interaction modelling. On the semi-inductive new-compound split, SCOPE achieves AUROC of 0.923 on BindingDB, 0.942 on Human, and 0.896 on KIBA, outperforming DrugBAN, MolTrans, GraphDTA, DeepDTA, and DeepConv-DTI by 5.2--10.3 percentage points. On the SCOPE dataset itself, the model attains AUROC of 0.961 (transductive), 0.935 (semi-inductive), and 0.878 (fully inductive). Ablation studies confirm the contributions of 3D protein representations ($-$0.027 AUROC), 3D compound representations ($-$0.021), bilinear attention ($-$0.034), and bias filtering ($-$0.017). Experimental validation of top predictions confirms binding for 76\% of the top-50 and 65\% of the top-100 predicted interactions. ScopeDTI establishes new benchmarks for practical DTI prediction and provides open-access tools and datasets to the community.
+\end{abstract}
+
+\section{Introduction}
+
+Identifying interactions between drugs and their protein targets is fundamental to drug discovery, enabling both the elucidation of drug mechanisms and the identification of novel therapeutic candidates \citep{hopkins2008,santos2017}. Computational prediction of drug--target interactions (DTIs) has the potential to dramatically accelerate this process by prioritising candidates for experimental validation \citep{chen2018,bagherian2021}.
+
+Deep learning approaches have demonstrated substantial promise in DTI prediction, leveraging molecular representations and protein sequence features to learn interaction patterns from data \citep{ozturk2018,nguyen2021,bai2023}. Methods such as DeepDTA \citep{ozturk2018}, GraphDTA \citep{nguyen2021}, MolTrans \citep{huang2021}, and DrugBAN \citep{bai2023} have achieved high accuracy on standard benchmarks. However, several critical limitations impede translation to real-world drug discovery applications.
+
+First, widely used benchmark datasets---Human \citep{liu2015}, BindingDB \citep{gilson2016}, and KIBA \citep{tang2014}---are relatively small (6,738 to 31,686 interactions) and lack the diversity needed to train models that generalise to novel chemical and protein spaces. Second, most evaluations employ transductive splits where both drugs and proteins in the test set appear during training, inflating apparent performance \citep{huang2021,luo2017}. The more practically relevant inductive setting, where both the drug and target are unseen, remains highly challenging. Third, few methods exploit 3D structural information for both compounds and proteins, despite evidence that spatial features are critical for binding prediction \citep{stepniewska2018,zheng2020}.
+
+We address these gaps with ScopeDTI, comprising a large-scale semi-inductive dataset and the SCOPE model. The SCOPE dataset aggregates and curates interaction data from 13 public databases, yielding 685,020 balanced interactions involving 98,234 unique drugs and 4,815 unique proteins---a 100-fold expansion over the Human benchmark. The SCOPE model encodes 3D protein structures and 3D molecular conformations with graph neural networks and captures cross-domain interactions through bilinear attention. We evaluate across transductive, semi-inductive, and fully inductive splits, and validate top predictions experimentally.
+
+\section{Related Work}
+
+\subsection{Deep learning for DTI prediction}
+Early deep learning DTI methods operated on sequence-level representations. DeepDTA \citep{ozturk2018} uses convolutional neural networks on SMILES strings and protein sequences to predict binding affinity. DeepConv-DTI \citep{lee2019} introduced convolutional feature extraction from protein sequences. GraphDTA \citep{nguyen2021} represented molecules as graphs, achieving improved performance over sequence-based methods. More recently, MolTrans \citep{huang2021} applied transformer architectures to capture sub-structural interaction patterns, while DrugBAN \citep{bai2023} introduced bilinear attention networks for pairwise interaction modelling.
+
+\subsection{Benchmark limitations}
+Several studies have highlighted limitations of existing DTI benchmarks. The Human dataset \citep{liu2015} contains only 3,369 positive interactions, limiting model capacity. BindingDB \citep{gilson2016} and KIBA \citep{tang2014} are larger but still constrained in chemical diversity. Critically, transductive evaluation splits allow information leakage through shared drugs or targets between training and test sets \citep{huang2021,luo2017}.
+
+\subsection{3D structural representations}
+Incorporating 3D structural information has shown benefits in related tasks. Methods leveraging protein pocket geometry \citep{stepniewska2018} and 3D molecular conformations \citep{zheng2020} have demonstrated improved binding prediction. However, joint integration of 3D representations for both drug and target in DTI prediction remains underexplored \citep{jiang2022}.
+
+\section{Methods}
+
+\subsection{SCOPE dataset construction}
+We aggregated DTI data from 13 public repositories, including BindingDB, ChEMBL, DrugBank, UniProt, and others. Positive interactions were defined by experimentally validated binding with activity thresholds ($K_d$, $K_i$, or IC$_{50}$ $\leq$ 1~$\mu$M). Negative pairs were sampled using a balanced strategy to avoid trivial negatives. Bias filtering was applied to remove annotation artifacts (e.g., assay-specific biases, over-represented scaffolds). The final SCOPE dataset contains 342,510 positive and 342,510 negative pairs (Table~\ref{tab:dataset}).
+
+\begin{table}[htbp]
+\centering
+\caption{Dataset scale comparison across DTI benchmarks.}
+\label{tab:dataset}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Dataset & Pos.\ pairs & Neg.\ pairs & Total & Unique drugs & Unique proteins \\
+\midrule
+Human (orig)  & 3,369   & 3,369   & 6,738   & 2,726  & 852   \\
+BindingDB     & 15,843  & 15,843  & 31,686  & 10,665 & 1,413 \\
+KIBA          & 12,068  & 12,068  & 24,136  & 2,111  & 229   \\
+SCOPE dataset & 342,510 & 342,510 & 685,020 & 98,234 & 4,815 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Split strategies}
+We evaluate three data splitting strategies: (i) \textit{transductive}, where drugs and proteins in the test set may appear in training; (ii) \textit{semi-inductive} (new compound), where test compounds are absent from training but proteins may overlap; and (iii) \textit{fully inductive}, where both test drugs and proteins are absent from training. The semi-inductive setting is the primary evaluation scenario, as it reflects the common real-world task of predicting interactions for novel drug candidates against known targets.
+
+\subsection{SCOPE model architecture}
+The SCOPE model consists of three modules:
+
+\paragraph{3D protein encoder.} Protein structures (from AlphaFold2-predicted or experimentally determined structures) are represented as residue-level graphs with 3D coordinates. A geometric GNN with message passing over spatial neighbours produces per-residue embeddings that capture local and global structural context.
+
+\paragraph{3D compound encoder.} Small molecules are represented as atomic graphs with 3D conformations (generated by RDKit). A molecular GNN processes atom-level features and 3D coordinates to produce a compound embedding.
+
+\paragraph{Bilinear attention interaction module.} The protein and compound embeddings are combined through a bilinear attention mechanism that computes pairwise interaction scores between drug sub-structures and protein residues, producing a global interaction prediction via attentive pooling.
+
+\subsection{Training and evaluation}
+Models were trained using binary cross-entropy loss with Adam optimiser and cosine learning rate scheduling. Evaluation metrics include AUROC, AUPRC, accuracy, sensitivity, and specificity.
+
+\section{Results}
+
+\subsection{Classification performance on benchmark datasets}
+
+SCOPE consistently outperforms all baseline methods across three benchmark datasets under the semi-inductive new-compound split (Table~\ref{tab:benchmark}). On BindingDB, SCOPE achieves AUROC of 0.923, surpassing DrugBAN (0.871) by 5.2 percentage points and DeepConv-DTI (0.820) by 10.3 percentage points. Similar improvements are observed on the Human dataset (AUROC 0.942 vs.\ 0.905 for DrugBAN) and KIBA (0.896 vs.\ 0.854).
+
+\begin{table}[htbp]
+\centering
+\caption{Classification performance under semi-inductive new-compound split.}
+\label{tab:benchmark}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\multirow{2}{*}{Model} & \multicolumn{2}{c}{BindingDB} & \multicolumn{2}{c}{Human} & \multicolumn{2}{c}{KIBA} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+ & AUROC & AUPRC & AUROC & AUPRC & AUROC & AUPRC \\
+\midrule
+SCOPE (ours)  & 0.923 & 0.918 & 0.942 & 0.938 & 0.896 & 0.882 \\
+DrugBAN       & 0.871 & 0.862 & 0.905 & 0.897 & 0.854 & 0.838 \\
+MolTrans      & 0.856 & 0.843 & 0.889 & 0.878 & 0.841 & 0.822 \\
+GraphDTA      & 0.848 & 0.835 & 0.876 & 0.862 & 0.832 & 0.815 \\
+DeepDTA       & 0.831 & 0.818 & 0.862 & 0.848 & 0.818 & 0.798 \\
+DeepConv-DTI  & 0.820 & 0.805 & 0.851 & 0.835 & 0.805 & 0.782 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance across split types on SCOPE dataset}
+
+Evaluation on the SCOPE dataset reveals expected performance gradients across split types (Table~\ref{tab:splits}). Transductive evaluation yields the highest AUROC (0.961), while the semi-inductive setting shows a modest decline to 0.935. The fully inductive scenario---where both drug and target are novel---is most challenging, with AUROC of 0.878. Notably, even in this demanding setting, SCOPE maintains strong performance, with accuracy of 0.821 and balanced sensitivity (0.798) and specificity (0.843).
+
+\begin{table}[htbp]
+\centering
+\caption{SCOPE model performance across data split types on the SCOPE dataset.}
+\label{tab:splits}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Split type & AUROC & AUPRC & Accuracy & Sensitivity & Specificity \\
+\midrule
+Transductive    & 0.961 & 0.955 & 0.912 & 0.895 & 0.928 \\
+Semi-inductive  & 0.935 & 0.928 & 0.886 & 0.871 & 0.902 \\
+Fully inductive & 0.878 & 0.865 & 0.821 & 0.798 & 0.843 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablation study}
+
+Ablation experiments on the SCOPE dataset under the semi-inductive split quantify the contribution of each architectural component (Table~\ref{tab:ablation}). Removing bilinear attention produces the largest performance drop ($-$0.034 AUROC), confirming its importance for capturing drug-protein cross-domain interactions. The 3D protein representation contributes $-$0.027 and the 3D compound representation $-$0.021, demonstrating that structural information from both domains is beneficial. Bias filtering during dataset construction contributes $-$0.017, validating the data curation strategy.
+
+\begin{table}[htbp]
+\centering
+\caption{Ablation study on the SCOPE dataset (semi-inductive split).}
+\label{tab:ablation}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Variant & AUROC & AUPRC \\
+\midrule
+Full SCOPE model         & 0.935          & 0.928          \\
+w/o 3D protein repr.     & 0.908 ($-$0.027) & 0.899 ($-$0.029) \\
+w/o 3D compound repr.    & 0.914 ($-$0.021) & 0.906 ($-$0.022) \\
+w/o bilinear attention   & 0.901 ($-$0.034) & 0.892 ($-$0.036) \\
+w/o bias filtering       & 0.918 ($-$0.017) & 0.910 ($-$0.018) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experimental validation}
+
+To assess practical utility, we experimentally validated top-ranked SCOPE predictions using drug--target binding assays (Table~\ref{tab:validation}). Among the top-50 predictions, 38 (76\%) were confirmed to bind. The confirmation rate decreases with prediction rank, with 65\% of the top-100 and 56\% of the top-200 confirmed. These results demonstrate that SCOPE predictions are enriched for true interactions and can prioritise experimental testing.
+
+\begin{table}[htbp]
+\centering
+\caption{Experimental validation of SCOPE predictions.}
+\label{tab:validation}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Prediction rank & Validated & Confirmed binding & Confirmation rate \\
+\midrule
+Top 50  & 50  & 38  & 76\% \\
+Top 100 & 100 & 65  & 65\% \\
+Top 200 & 200 & 112 & 56\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+ScopeDTI addresses two fundamental limitations in computational DTI prediction: data scale and structural representation. The SCOPE dataset, aggregated from 13 repositories and containing 685,020 interactions, provides unprecedented scale and diversity for training DTI models. The 100-fold expansion over the Human benchmark (6,738 interactions) enables learning of more generalisable interaction patterns, as evidenced by the strong performance in inductive settings.
+
+The SCOPE model's integration of 3D structural representations for both drugs and proteins, combined with bilinear attention, captures physicochemical complementarity that sequence-based methods miss. The ablation study confirms that each component contributes meaningfully, with bilinear attention providing the largest single contribution ($-$0.034 AUROC). The 3D protein representation is particularly important for generalisation to unseen targets, as structural features are more conserved than sequence across protein families \citep{stepniewska2018}.
+
+The experimental validation results are encouraging: a 76\% confirmation rate for top-50 predictions represents substantial enrichment over random screening. The declining confirmation rate with rank (76\% to 56\% for top-200) is expected and reflects the calibration of the model's prediction scores.
+
+Several limitations merit discussion. First, the SCOPE dataset, while large, is derived from public databases that inherit biases toward well-studied drug-target families \citep{bagherian2021}. The bias filtering step mitigates but does not fully eliminate these biases. Second, the 3D structure encoder requires structural data (predicted or experimental), which may introduce noise for proteins with low-confidence AlphaFold2 predictions \citep{jumper2021}. Third, the current model treats binding as binary; extending to continuous affinity prediction is a natural next step.
+
+\section{Conclusion}
+
+We present ScopeDTI, a comprehensive framework for drug--target interaction prediction comprising a large-scale semi-inductive dataset (685,020 interactions from 13 repositories) and the SCOPE model integrating 3D structural representations with bilinear attention. SCOPE achieves state-of-the-art performance across multiple benchmarks and split strategies, with experimental validation confirming 76\% of top-50 predictions. By addressing dataset limitations and leveraging structural information, ScopeDTI advances DTI prediction toward practical applicability in drug discovery.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

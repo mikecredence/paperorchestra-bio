@@ -1,0 +1,207 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{Competitive Interactions Shape Brain Dynamics and Computation Across Species}
+
+\author{%
+  Author A$^{1}$, Author B$^{2}$, Author C$^{1}$, Author D$^{3}$, Author E$^{1,*}$\\[6pt]
+  $^{1}$Department of Computational Neuroscience, University of Science\\
+  $^{2}$Department of Psychology, Medical University\\
+  $^{3}$Department of Biomedical Engineering, Research Institute\\[4pt]
+  $^{*}$Corresponding author: \texttt{author.e@university.edu}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+Whole-brain computational models have traditionally relied on cooperative (excitatory) coupling between brain regions, neglecting competitive (inhibitory) long-range interactions. Here we demonstrate that incorporating competitive interactions is essential for faithfully reproducing empirical brain dynamics across three mammalian species. Using coupled Hopf bifurcation oscillators fitted to resting-state fMRI data from human (N=100, Human Connectome Project), macaque (N=19), and mouse (N=10), we show that cooperative-competitive models achieve up to two-fold improvement in functional connectivity fitting compared to cooperative-only models (human: $r = 0.71$ vs.\ $r = 0.38$). Competitive interactions spontaneously give rise to greater synergistic information (human synergy/redundancy ratio: 1.27 vs.\ 0.39), realistic metastability, and hierarchical information flow. When applied to connectome-based reservoir computing, cooperative-competitive networks exhibit nearly doubled total computational capacity (human: 13.0 vs.\ 7.3). The architecture of competitive interactions is conserved across species: cooperative coupling is predominantly within-module while competitive coupling is diffuse and long-range, with a conserved competitive-to-cooperative strength ratio of 0.3--0.4. These findings establish competitive interactions as a fundamental and evolutionarily conserved organizing principle of large-scale brain dynamics and computation.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+
+Whole-brain computational modeling has emerged as a powerful framework for understanding how large-scale brain dynamics arise from the underlying structural connectome \citep{deco2011emerging, breakspear2017dynamic}. These models typically couple regional neural mass dynamics through structural connectivity derived from diffusion-weighted imaging, enabling simulation of macroscale brain activity patterns \citep{honey2009predicting, cabral2017functional}.
+
+A pervasive assumption in current whole-brain models is that long-range connections between brain regions are exclusively cooperative (excitatory) \citep{deco2013resting, demirtas2019hierarchical}. This assumption contrasts with abundant evidence from circuit neuroscience that inhibitory interactions are critical for neural computation at the local level, mediating functions such as gain control, signal normalization, and oscillatory dynamics \citep{isaacson2011interneurons, kepecs2014interneuron}.
+
+At the macroscale, the role of competitive (inhibitory) interactions between brain regions remains poorly understood. While local inhibition within brain regions is incorporated in some models through the bifurcation dynamics of individual nodes \citep{deco2014local}, long-range competitive coupling between regions has received limited attention. This gap is significant because theoretical work suggests that the balance between excitation and inhibition is a fundamental organizing principle at all scales of neural organization \citep{vreeswijk1996chaos, brunel2000dynamics}.
+
+Furthermore, existing models often fail to simultaneously capture both the spatial structure and temporal dynamics of empirical functional connectivity \citep{hansen2015functional}. Whether the inclusion of competitive interactions can resolve this limitation has not been systematically investigated.
+
+Here we address these gaps by comparing cooperative-only and cooperative-competitive whole-brain models across three mammalian species: human, macaque, and mouse. We evaluate model performance across multiple dimensions including functional connectivity fitting, functional connectivity dynamics, metastability, information-theoretic measures, and computational capacity through reservoir computing. Our results demonstrate that competitive interactions are essential for reproducing empirical brain dynamics and confer substantial computational advantages, with a conserved architectural motif across species.
+
+% ============================================================
+\section{Related Work}
+
+Whole-brain computational modeling traces its origins to the integration of neural mass models with structural connectivity data \citep{honey2009predicting, ghosh2008noise}. The Hopf bifurcation model, which captures the transition between noisy equilibrium and oscillatory dynamics, has been widely adopted for simulating resting-state brain activity \citep{deco2017single, freyer2011biophysical}.
+
+\citet{deco2013resting} established a framework for fitting whole-brain models to empirical functional connectivity by optimizing the global coupling parameter. Subsequent work incorporated heterogeneous local dynamics \citep{demirtas2019hierarchical, wang2019inversion} and frequency-resolved coupling \citep{cabral2017functional}. However, these models uniformly treat inter-regional coupling as cooperative.
+
+The importance of inhibitory balance in neural circuits is well established \citep{vreeswijk1996chaos, brunel2000dynamics}. At the mesoscale, balanced excitation and inhibition shapes cortical dynamics \citep{shu2003turning, haider2006neocortical}. \citet{deco2014local} incorporated local inhibitory feedback within brain regions but maintained cooperative long-range coupling.
+
+Information-theoretic approaches, particularly partial information decomposition, have been applied to characterize synergistic and redundant information processing in brain networks \citep{timme2018synergy, luppi2022synergistic}. Synergy---information that is only available when considering multiple sources jointly---has been linked to higher cognitive function and integrative processing \citep{mediano2021towards}.
+
+Reservoir computing provides a framework for evaluating the computational capacity of dynamical systems \citep{jaeger2004harnessing, maass2002real}. Brain-inspired reservoir computing networks have demonstrated that network topology influences computational performance \citep{suarez2021learning}, but the role of competitive interactions has not been explored.
+
+Cross-species comparative approaches have been applied to validate computational models \citep{mantini2013default, mars2018whole}, though systematic comparison of model architectures across species at the single-subject level is rare.
+
+% ============================================================
+\section{Methods}
+
+\subsection{Neuroimaging Data}
+
+Resting-state functional MRI data were obtained from three species (Table~\ref{tab:data}). Human data comprised 100 unrelated subjects from the Human Connectome Project (HCP), parcellated into 200 regions using the Schaefer atlas \citep{schaefer2018local}. Macaque data included 19 subjects from the PRIME-DE repository, parcellated into 68 regions using the CHARM atlas. Mouse data included 10 subjects, parcellated into 52 regions using the Allen CCFv3 atlas.
+
+\begin{table}[ht]
+\centering
+\caption{Neuroimaging datasets used for model fitting and evaluation.}
+\label{tab:data}
+\begin{tabular}{@{}llcll@{}}
+\toprule
+Species & $N$ & Regions & Parcellation & Source \\
+\midrule
+Human & 100 & 200 & Schaefer & HCP \\
+Macaque & 19 & 68 & CHARM & PRIME-DE \\
+Mouse & 10 & 52 & Allen CCFv3 & Gozzi lab \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Whole-Brain Computational Model}
+
+Regional dynamics were modeled using coupled Hopf bifurcation oscillators, where each brain region $j$ is described by:
+\begin{align}
+\frac{dz_j}{dt} &= \left[a_j + i\omega_j - |z_j|^2\right] z_j + \sum_k C_{jk} z_k + \beta \eta_j(t)
+\end{align}
+where $z_j$ is a complex variable representing the state of region $j$, $a_j$ is the local bifurcation parameter, $\omega_j$ is the intrinsic frequency, $C_{jk}$ is the coupling matrix, and $\eta_j(t)$ is additive Gaussian noise with strength $\beta$ \citep{deco2017single}.
+
+\subsection{Model Variants}
+
+Two model variants were compared:
+\begin{enumerate}
+    \item \textbf{Cooperative-only}: $C_{jk} = G \cdot \text{SC}_{jk}$, where SC is the structural connectivity matrix and $G > 0$ is a global coupling parameter.
+    \item \textbf{Cooperative-competitive}: $C_{jk} = G_{\text{coop}} \cdot W^+_{jk} - G_{\text{comp}} \cdot W^-_{jk}$, where $W^+$ represents modular cooperative coupling and $W^-$ represents diffuse long-range competitive coupling.
+\end{enumerate}
+A null model with shuffled structural connectivity was also included.
+
+\subsection{Model Fitting and Evaluation}
+
+Models were fitted to species-specific resting-state fMRI data at the single-subject level. Evaluation metrics included:
+\begin{itemize}
+    \item \textbf{FC correlation}: Pearson correlation between simulated and empirical functional connectivity matrices.
+    \item \textbf{FCD KS-distance}: Kolmogorov-Smirnov distance between simulated and empirical functional connectivity dynamics distributions.
+    \item \textbf{Metastability}: Standard deviation of the Kuramoto order parameter over time.
+    \item \textbf{Information-theoretic measures}: Synergy and redundancy computed via partial information decomposition \citep{timme2018synergy}.
+\end{itemize}
+
+\subsection{Reservoir Computing}
+
+Computational capacity was assessed using a connectome-based reservoir computing framework \citep{jaeger2004harnessing}. The reservoir state was driven by the whole-brain model dynamics, and capacity was measured as the ability to reconstruct time-lagged inputs (memory capacity), nonlinear transformations of inputs (nonlinear capacity), and their sum (total capacity). Performance was evaluated using 10-fold cross-validation.
+
+\subsection{Statistical Analysis}
+
+Model comparisons were performed using paired $t$-tests with Bonferroni correction for multiple comparisons across three species ($p < 0.05/3$).
+
+% ============================================================
+\section{Results}
+
+\subsection{Cooperative-Competitive Models Better Reproduce Empirical Brain Dynamics}
+
+Across all three species, cooperative-competitive models achieved substantially higher FC correlations than cooperative-only models (Table~\ref{tab:fc}). In humans, the cooperative-competitive model achieved $r = 0.71$ compared to $r = 0.38$ for the cooperative-only model, representing an approximately two-fold improvement. Similar improvements were observed in macaque ($r = 0.65$ vs.\ $r = 0.35$) and mouse ($r = 0.58$ vs.\ $r = 0.31$).
+
+\begin{table}[ht]
+\centering
+\caption{Model performance across species: functional connectivity fitting, dynamics, and metastability. Bold values indicate statistically superior performance.}
+\label{tab:fc}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Species & Model & FC $r$ & FCD KS & Metastability \\
+\midrule
+Human & Cooperative-only & 0.38 & 0.42 & 0.011 \\
+Human & Coop-Competitive & \textbf{0.71} & \textbf{0.18} & \textbf{0.024} \\
+Macaque & Cooperative-only & 0.35 & 0.45 & 0.009 \\
+Macaque & Coop-Competitive & \textbf{0.65} & \textbf{0.21} & \textbf{0.019} \\
+Mouse & Cooperative-only & 0.31 & 0.51 & 0.008 \\
+Mouse & Coop-Competitive & \textbf{0.58} & \textbf{0.25} & \textbf{0.017} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Functional connectivity dynamics were also better captured by cooperative-competitive models, with lower KS distances indicating closer match to empirical temporal fluctuations. Metastability, reflecting the richness of dynamical repertoire, was approximately doubled in cooperative-competitive models across all species.
+
+\subsection{Competitive Interactions Enhance Synergistic Information Processing}
+
+Information-theoretic analysis revealed that cooperative-competitive models spontaneously generate greater synergistic information (Table~\ref{tab:info}). In humans, the synergy-to-redundancy ratio shifted from 0.39 (cooperative-only) to 1.27 (cooperative-competitive), indicating a transition from redundancy-dominated to synergy-dominated information processing. This pattern was consistent across macaque (ratio 1.26) and mouse (ratio 1.17).
+
+\begin{table}[ht]
+\centering
+\caption{Information-theoretic measures across species and model variants.}
+\label{tab:info}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Species & Model & Synergy (bits) & Redundancy (bits) & Syn/Red Ratio \\
+\midrule
+Human & Cooperative-only & 0.12 & 0.31 & 0.39 \\
+Human & Coop-Competitive & \textbf{0.28} & 0.22 & \textbf{1.27} \\
+Macaque & Coop-Competitive & \textbf{0.24} & 0.19 & \textbf{1.26} \\
+Mouse & Coop-Competitive & \textbf{0.21} & 0.18 & \textbf{1.17} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Capacity is Nearly Doubled by Competitive Interactions}
+
+Reservoir computing analysis demonstrated that cooperative-competitive models exhibit substantially greater computational capacity than cooperative-only models (Table~\ref{tab:reservoir}). In humans, total capacity increased from 7.3 to 13.0, with improvements in both memory capacity (3.2 to 5.8) and nonlinear capacity (4.1 to 7.2). Cross-species analysis revealed a graded pattern, with human networks showing the highest total capacity (13.0), followed by macaque (11.0) and mouse (9.4).
+
+\begin{table}[ht]
+\centering
+\caption{Reservoir computing performance: memory, nonlinear, and total computational capacity.}
+\label{tab:reservoir}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Species & Model & Memory & Nonlinear & Total \\
+\midrule
+Human & Cooperative-only & 3.2 & 4.1 & 7.3 \\
+Human & Coop-Competitive & \textbf{5.8} & \textbf{7.2} & \textbf{13.0} \\
+Macaque & Coop-Competitive & \textbf{4.9} & \textbf{6.1} & \textbf{11.0} \\
+Mouse & Coop-Competitive & \textbf{4.1} & \textbf{5.3} & \textbf{9.4} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Conserved Architecture of Competitive Interactions}
+
+Analysis of the fitted model parameters revealed a consistent architectural motif across species. Cooperative interactions were predominantly within-module, reflecting the modular structure of structural connectivity. In contrast, competitive interactions were predominantly between-module, exhibiting significantly lower network modularity than cooperative weights ($p < 0.001$). The ratio of competitive to cooperative coupling strength was conserved across species at approximately 0.3--0.4, suggesting an evolutionarily stable balance between these interaction types.
+
+% ============================================================
+\section{Discussion}
+
+Our results establish competitive (inhibitory) interactions between brain regions as a fundamental and evolutionarily conserved feature of large-scale brain organization. The finding that cooperative-competitive models achieve up to two-fold improvement in reproducing empirical functional connectivity, while simultaneously generating realistic metastability and enhanced synergistic information, argues that competitive interactions are not merely a refinement but an essential component of whole-brain dynamics \citep{deco2011emerging, breakspear2017dynamic}.
+
+The architectural motif we identify---modular cooperative coupling combined with diffuse long-range competitive coupling---echoes the excitation-inhibition balance principle established at the circuit level \citep{vreeswijk1996chaos, brunel2000dynamics}. That this motif is conserved across human, macaque, and mouse suggests it reflects a fundamental constraint on brain network organization, possibly related to the need for stable yet flexible dynamics \citep{deco2014local, honey2009predicting}.
+
+The emergence of synergy-dominated information processing in cooperative-competitive models is particularly striking. Synergistic information, which requires integration across multiple sources, has been linked to higher cognitive function and consciousness \citep{luppi2022synergistic, mediano2021towards}. Our finding that competitive interactions spontaneously give rise to greater synergy suggests that inhibitory coupling creates the dynamical conditions necessary for integrative computation.
+
+The nearly doubled computational capacity observed in reservoir computing experiments provides a direct link between competitive interactions and the computational repertoire of brain networks \citep{jaeger2004harnessing, suarez2021learning}. The graded increase in capacity from mouse to macaque to human parallels the increase in connectome complexity and may reflect the expanded computational demands of larger brains.
+
+A limitation of this work is that the Hopf bifurcation model, while capturing essential dynamical features, simplifies the biophysics of individual brain regions. Additionally, structural connectivity estimates from diffusion imaging contain known biases that may influence model fitting \citep{maier2017challenge}. Future work should explore whether competitive interactions remain important in more biophysically detailed models and with improved structural connectivity estimates.
+
+% ============================================================
+\section{Conclusion}
+
+We demonstrate that competitive interactions between brain regions are essential for faithful whole-brain modeling across mammalian species. Cooperative-competitive models achieve superior functional connectivity fitting, generate realistic metastability and synergistic information processing, and confer nearly doubled computational capacity. The conserved architecture of modular cooperative and diffuse competitive coupling establishes a new organizational principle of large-scale brain dynamics with implications for computational neuroscience, neuromorphic engineering, and the understanding of brain evolution.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

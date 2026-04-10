@@ -1,0 +1,246 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{xcolor}
+\usepackage{authblk}
+\usepackage{lineno}
+\usepackage{setspace}
+\usepackage{caption}
+
+\doublespacing
+\linenumbers
+
+% --- Title ---
+\title{\textbf{Disseminating Cells in Human Oral Tumours Acquire an EMT Stem-Cell Phenotype that Predicts Metastatic Outcome}}
+
+\author[1]{First Author}
+\author[1]{Second Author}
+\author[2]{Third Author}
+\author[1,2,*]{Corresponding Author}
+\affil[1]{Department of Cell Biology, University Medical Centre, City, Country}
+\affil[2]{Department of Oral and Maxillofacial Surgery, University Hospital, City, Country}
+\affil[*]{Corresponding author: \texttt{corresponding@university.edu}}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% ================================================================
+%  ABSTRACT
+% ================================================================
+\begin{abstract}
+Cancer stem cells (CSCs) undergoing epithelial--mesenchymal transition (EMT) have been implicated in metastasis in experimental models, yet direct evidence for their existence and clinical relevance in human tumour specimens has remained elusive. Here we performed multi-marker immunofluorescence for EpCAM, CD24, and Vimentin across 84~human oral squamous cell carcinoma (OSCC) specimens, analysing more than 12{,}000 imaging fields to identify and characterise single cells disseminating beyond the tumour body at the invasive front. We found that triple-positive EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} cells---bearing a hybrid epithelial--mesenchymal CSC phenotype---were significantly enriched among disseminating cells in specimens from patients who developed lymph node metastasis compared with non-metastatic cases ($p < 0.05$). An artificial neural network trained on disseminating-cell features achieved 87--89\% cross-validated accuracy in predicting metastatic outcome. These results provide the first direct observation of EMT CSCs actively disseminating in human tumour tissue and establish a quantitative, marker-based framework with clinical predictive value for metastasis in OSCC.
+\end{abstract}
+
+\textbf{Keywords:} epithelial--mesenchymal transition; cancer stem cells; oral squamous cell carcinoma; metastasis; disseminating tumour cells; EpCAM; CD24; Vimentin
+
+% ================================================================
+%  1. INTRODUCTION
+% ================================================================
+\section{Introduction}
+
+Oral squamous cell carcinoma (OSCC) represents one of the most common malignancies of the head and neck region, with a global incidence exceeding 370{,}000 new cases annually and a five-year survival rate that has remained stubbornly around 50--60\% for decades~\cite{warnakulasuriya2009,tanaka2023}. The principal determinant of poor prognosis is the development of regional lymph node metastasis, yet the biological mechanisms that endow tumour cells with the capacity to detach from the primary mass, invade surrounding stroma, and ultimately colonise distant sites remain incompletely understood.
+
+Epithelial--mesenchymal transition (EMT) has emerged as a central conceptual framework for understanding tumour cell invasion and dissemination~\cite{thiery2009,nieto2016}. During EMT, epithelial carcinoma cells down-regulate cell--cell adhesion molecules and acquire mesenchymal traits---including enhanced motility, matrix remodelling capacity, and resistance to apoptosis---that collectively facilitate detachment from the primary tumour and infiltration into the surrounding tissue~\cite{brabletz2018,lambert2017}. Importantly, EMT does not proceed as a binary switch but rather encompasses a spectrum of intermediate or partial states, and cells residing in these hybrid epithelial--mesenchymal (E/M) states may possess unique biological properties~\cite{pastushenko2019,jolly2015}.
+
+A seminal observation linking EMT to tumour-initiating capacity was the demonstration that induction of EMT in mammary epithelial cells generates cells with properties of stem cells~\cite{mani2008}. This connection between EMT and cancer stem cell (CSC) identity has since been corroborated across multiple tumour types and has profound implications for metastasis: if disseminating cells must not only escape the primary tumour but also possess self-renewal capacity to seed new colonies at distant sites, then the EMT--CSC axis may represent a critical bottleneck in the metastatic cascade~\cite{shibue2017,dongre2019}. In head and neck squamous cell carcinoma, CSC populations have been identified using markers such as CD44 and CD24, and these populations exhibit enhanced tumorigenic and metastatic potential in experimental models~\cite{prince2007,biddle2011}.
+
+Despite these advances, a fundamental gap persists between experimental observations and clinical reality. While EMT--CSC coupling has been demonstrated in cell-line experiments, mouse models, and circulating tumour cell analyses~\cite{yu2013,grosse-wilde2015}, it has not been directly observed in cells that are actively disseminating from human primary tumours \textit{in situ}. The tumour invasive front---the interface between the tumour body and surrounding stroma where single cells detach and begin their metastatic journey---constitutes the most clinically relevant site for studying this process, yet systematic characterisation of disseminating cells at this interface using combined EMT and CSC markers has not been performed.
+
+In this study, we addressed this gap by developing a multi-marker immunofluorescence protocol to simultaneously detect epithelial identity (EpCAM), CSC surface phenotype (CD24), and mesenchymal acquisition (Vimentin) in single cells disseminating beyond the tumour body in human OSCC specimens. We quantified the prevalence and marker co-expression patterns of these disseminating cells across a cohort of 84~specimens with known metastatic outcome, and we trained an artificial neural network to evaluate whether disseminating-cell features could predict lymph node metastasis. Our findings reveal that triple-positive EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} disseminating cells are significantly enriched in metastatic cases and that their quantitative features predict metastatic outcome with high accuracy, thereby providing the first direct clinical evidence for EMT CSCs as drivers of metastatic dissemination in human tumours.
+
+% ================================================================
+%  2. RELATED WORK
+% ================================================================
+\section{Related Work}
+
+\subsection{EMT and the Metastatic Cascade}
+
+The concept that epithelial tumour cells must undergo phenotypic conversion to acquire invasive properties was formalised through the EMT framework, which describes the molecular programme by which polarised epithelial cells lose intercellular junctions and acquire mesenchymal characteristics~\cite{thiery2009}. The relevance of EMT to cancer metastasis has been debated, with some studies questioning whether full mesenchymal conversion is necessary for invasion~\cite{williams2019}. More recent work has emphasised that partial or hybrid EMT states, rather than complete transitions, may be the most relevant for metastatic dissemination~\cite{pastushenko2019,jolly2015}. Cells in these intermediate states co-express both epithelial and mesenchymal markers and exhibit enhanced collective migration, anoikis resistance, and tumour-initiating capacity relative to cells at either phenotypic extreme.
+
+\subsection{Cancer Stem Cells and EMT Coupling}
+
+The cancer stem cell hypothesis posits that a subpopulation of tumour cells possesses self-renewal and differentiation capacity, and that these cells are responsible for tumour maintenance and recurrence~\cite{al-hajj2003}. The landmark study by Mani~et~al.\ demonstrated that EMT induction in immortalised human mammary epithelial cells generated cells with CSC surface markers and functional stem-cell properties, establishing a direct molecular link between EMT and stemness~\cite{mani2008}. Subsequent work confirmed that hybrid E/M cells possess maximal stem-like properties compared with cells at either epithelial or mesenchymal extremes~\cite{grosse-wilde2015}. In squamous cell carcinoma, Biddle~et~al.\ showed that CSCs can switch between migratory and proliferative phenotypes corresponding to different positions along the EMT spectrum~\cite{biddle2011}.
+
+\subsection{EMT and CSCs in Head and Neck Cancer}
+
+Head and neck squamous cell carcinoma, including OSCC, has served as an important model for studying CSC biology. Prince~et~al.\ identified a CD44-positive CSC population in HNSCC with enhanced tumorigenic capacity~\cite{prince2007}. Single-cell transcriptomic analyses have revealed partial EMT programmes operating at the invasive front of HNSCC tumours, with cells at the leading edge displaying hybrid epithelial--mesenchymal gene expression signatures~\cite{puram2017}. However, these studies relied on dissociated tumour tissue and could not directly visualise or quantify cells in the act of dissemination from the tumour body. Analysis of circulating tumour cells in breast cancer has demonstrated dynamic shifts between epithelial and mesenchymal phenotypes during disease progression~\cite{yu2013}, suggesting that EMT plasticity is clinically relevant, but the phenotype of cells at the point of departure from the primary tumour has remained uncharacterised.
+
+\subsection{Predictive Biomarkers for Metastasis in OSCC}
+
+The clinical management of OSCC relies heavily on staging parameters, particularly the presence of cervical lymph node metastasis. Histopathological features such as depth of invasion, perineural invasion, and tumour budding have been investigated as predictive markers, but none has achieved sufficient accuracy for routine clinical use. Machine-learning approaches have been applied to histopathological features for outcome prediction in various cancers, but the combination of quantitative disseminating-cell phenotyping with neural network classification for metastasis prediction in OSCC has not been previously reported.
+
+% ================================================================
+%  3. METHODS
+% ================================================================
+\section{Methods}
+
+\subsection{Patient Cohort and Specimen Selection}
+
+A retrospective cohort of 84~human OSCC specimens was assembled from surgical resection archives. All specimens were formalin-fixed, paraffin-embedded (FFPE) tissue blocks with documented follow-up data including lymph node metastatic status. Specimens were stratified into metastatic (patients with histologically confirmed lymph node involvement) and non-metastatic groups. The study was approved by the institutional ethics review board, and all specimens were handled in accordance with applicable regulations for the use of archival human tissue.
+
+\subsection{Multi-Marker Immunofluorescence Staining}
+
+A triple immunofluorescence staining protocol was developed and optimised for simultaneous detection of three markers on FFPE oral cancer sections:
+
+\begin{itemize}
+    \item \textbf{EpCAM} (Epithelial Cell Adhesion Molecule): a transmembrane glycoprotein broadly expressed on epithelial cells, used here to confirm epithelial lineage of disseminating cells and to distinguish them from stromal cells.
+    \item \textbf{CD24}: a glycosylphosphatidylinositol-anchored surface glycoprotein associated with CSC phenotype in multiple tumour types, used here as a marker of stemness.
+    \item \textbf{Vimentin}: a type~III intermediate filament protein characteristic of mesenchymal cells, used here to detect mesenchymal acquisition indicative of EMT.
+\end{itemize}
+
+Tissue sections (4~\textmu{}m) were deparaffinised, subjected to heat-induced antigen retrieval, blocked for non-specific binding, and incubated sequentially with primary antibodies against EpCAM, CD24, and Vimentin followed by species-specific fluorophore-conjugated secondary antibodies. Nuclear counterstaining was performed with DAPI. The staining protocol was optimised over iterative rounds to minimise cross-reactivity and ensure reliable detection of all three markers in triple-stained sections.
+
+\subsection{Quantitative Imaging and Disseminating-Cell Identification}
+
+Stained sections were imaged using a fluorescence microscope equipped with appropriate filter sets for each fluorophore channel. A total of more than 12{,}000 imaging fields were acquired across the 84~specimens, with systematic sampling focused on the tumour invasive front---the interface between the tumour body and adjacent stroma.
+
+Disseminating cells were operationally defined as single cells or very small clusters (two to three cells) located beyond the contiguous tumour body in the peritumoral stroma. For each disseminating cell identified, fluorescence intensity in the EpCAM, CD24, and Vimentin channels was recorded and used to classify cells into phenotypic categories based on marker co-expression:
+
+\begin{itemize}
+    \item EpCAM\textsuperscript{+} only (epithelial, non-EMT)
+    \item Vimentin\textsuperscript{+} only (mesenchymal/stromal)
+    \item EpCAM\textsuperscript{+}/Vimentin\textsuperscript{+} (partial EMT)
+    \item EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} (triple-positive, EMT CSC phenotype)
+\end{itemize}
+
+\subsection{Statistical Analysis}
+
+Differences in disseminating-cell counts and phenotype distributions between metastatic and non-metastatic groups were assessed using appropriate non-parametric statistical tests. Enrichment of specific marker combinations in the metastatic group was evaluated, with a significance threshold of $p < 0.05$.
+
+\subsection{Artificial Neural Network for Metastasis Prediction}
+
+An artificial neural network (ANN) was trained to predict lymph node metastatic status from quantitative features derived from the disseminating-cell analysis. Input features comprised disseminating-cell counts and marker co-expression proportions for each specimen. The network was trained and evaluated using cross-validation on the full cohort of 84~specimens to estimate generalisation performance. Classification accuracy, defined as the proportion of correctly classified specimens, was the primary performance metric.
+
+% ================================================================
+%  4. RESULTS
+% ================================================================
+\section{Results}
+
+\subsection{Disseminating Cells Are Identifiable at the Tumour Invasive Front}
+
+Multi-marker immunofluorescence staining reliably detected EpCAM, CD24, and Vimentin in FFPE oral cancer sections. Analysis of more than 12{,}000 imaging fields across 84~specimens revealed single cells and small cell clusters located beyond the contiguous tumour body at the invasive front. These disseminating cells were distinguishable from resident stromal cells by their EpCAM positivity, confirming their epithelial tumour origin.
+
+\subsection{Triple-Positive Disseminating Cells Are Enriched in Metastatic Specimens}
+
+Quantitative comparison of disseminating-cell phenotypes between metastatic and non-metastatic specimen groups revealed a clear and significant difference. Table~\ref{tab:enrichment} summarises the disseminating-cell enrichment analysis.
+
+\begin{table}[ht]
+\centering
+\caption{Enrichment of disseminating cell phenotypes in metastatic versus non-metastatic OSCC specimens.}
+\label{tab:enrichment}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Cell Phenotype & Metastatic & Non-Metastatic & Significance \\
+\midrule
+EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} (triple+) & Enriched & Low frequency & $p < 0.05$ \\
+All single disseminating cells & High count & Low count & Significant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Triple-positive EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} cells---co-expressing epithelial, stem-cell, and mesenchymal markers---were significantly enriched among disseminating cells in metastatic specimens compared with non-metastatic specimens ($p < 0.05$). In contrast, cells expressing only single markers or the dual EpCAM\textsuperscript{+}/Vimentin\textsuperscript{+} combination showed weaker or non-significant associations with metastatic status.
+
+\subsection{Marker Co-Expression Patterns and Association with Clinical Outcome}
+
+Analysis of marker co-expression patterns across all disseminating cells revealed a hierarchy of associations with both dissemination propensity and metastatic outcome. Table~\ref{tab:coexpression} presents these associations.
+
+\begin{table}[ht]
+\centering
+\caption{Marker co-expression patterns and their association with dissemination and metastasis.}
+\label{tab:coexpression}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Marker Combination & Dissemination Association & Metastasis Association \\
+\midrule
+EpCAM\textsuperscript{+} only & Non-disseminating & Weak \\
+Vimentin\textsuperscript{+} only & Stromal (mesenchymal) & Not predictive \\
+EpCAM\textsuperscript{+}/Vimentin\textsuperscript{+} & Partial EMT & Moderate \\
+EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} & EMT CSC phenotype & Strong predictor \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+EpCAM-only-positive cells were predominantly located within the contiguous tumour body and showed a weak association with metastatic outcome. Vimentin-only-positive cells in the peritumoral stroma were confirmed as resident mesenchymal/stromal cells and were not predictive. The dual EpCAM\textsuperscript{+}/Vimentin\textsuperscript{+} phenotype, indicative of partial EMT, showed a moderate association with metastasis. Critically, the strongest predictor was the triple-positive EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} combination, representing cells that had acquired mesenchymal features (Vimentin) while retaining epithelial identity (EpCAM) and expressing a stem-cell marker (CD24).
+
+\subsection{Neural Network Predicts Metastasis with High Accuracy}
+
+The artificial neural network trained on disseminating-cell quantitative features achieved a cross-validated classification accuracy of 87--89\% in predicting lymph node metastatic status across the cohort of 84~specimens. Table~\ref{tab:ann} summarises the ANN performance.
+
+\begin{table}[ht]
+\centering
+\caption{Artificial neural network performance for metastasis prediction.}
+\label{tab:ann}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Parameter & Value \\
+\midrule
+Model type & Artificial neural network \\
+Input features & Disseminating-cell counts and marker co-expression \\
+Cohort size & 84 specimens \\
+Validation strategy & Cross-validation \\
+Classification accuracy & 87--89\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This result demonstrates that the quantitative profile of disseminating cells at the invasive front---particularly the proportion and absolute count of triple-positive EMT CSC cells---contains sufficient information to discriminate between patients who will develop metastasis and those who will not with clinically meaningful accuracy.
+
+% ================================================================
+%  5. DISCUSSION
+% ================================================================
+\section{Discussion}
+
+The present study provides, to our knowledge, the first direct observation of EMT cancer stem cells in the act of disseminating from human primary tumours, and it establishes the clinical predictive value of these cells for metastatic outcome in OSCC.
+
+\subsection{Bridging the Gap Between Models and Clinical Specimens}
+
+The coupling of EMT and CSC phenotypes has been extensively documented in cell-line experiments~\cite{mani2008} and mouse models~\cite{shibue2017}, and dynamic EMT has been observed in circulating tumour cells~\cite{yu2013}. However, the critical question of whether tumour cells at the point of departure from the primary mass---the most proximal step in the metastatic cascade---exhibit this coupled EMT--CSC phenotype had not been addressed in human tissue. By developing a triple immunofluorescence protocol for simultaneous detection of epithelial (EpCAM), mesenchymal (Vimentin), and stem-cell (CD24) markers, and by applying it systematically to more than 12{,}000 imaging fields across 84~specimens, we were able to identify and characterise individual cells that had physically separated from the tumour body at the invasive front. The significant enrichment of triple-positive disseminating cells in metastatic cases provides direct clinical evidence that the EMT--CSC coupling observed in experimental systems operates in human tumours and is associated with metastatic competence.
+
+\subsection{The Hybrid EMT State and Metastatic Potential}
+
+Our marker co-expression analysis revealed that neither purely epithelial (EpCAM-only) nor purely mesenchymal (Vimentin-only) phenotypes were associated with metastatic outcome. Instead, the dual EpCAM\textsuperscript{+}/Vimentin\textsuperscript{+} and especially the triple-positive EpCAM\textsuperscript{+}/CD24\textsuperscript{+}/Vimentin\textsuperscript{+} phenotypes showed progressive strength of association. This finding aligns with the emerging view that hybrid or partial EMT states, rather than complete mesenchymal conversion, are the most metastatically relevant~\cite{pastushenko2019,jolly2015,grosse-wilde2015}. Cells in these intermediate states may retain sufficient epithelial character to undergo mesenchymal--epithelial transition (MET) at distant sites while possessing the motility and invasive capacity conferred by mesenchymal features. The addition of CD24 positivity to this hybrid state marks the intersection of EMT and stemness, identifying a subpopulation that combines invasive capacity with self-renewal potential---precisely the attributes required for successful metastatic colonisation.
+
+\subsection{Predictive Value and Clinical Implications}
+
+The 87--89\% cross-validated accuracy achieved by the neural network classifier demonstrates that disseminating-cell features are not merely correlative but contain genuinely predictive information about metastatic outcome. In the clinical management of OSCC, the decision to perform elective neck dissection for clinically node-negative patients remains controversial, and improved predictive tools are needed. A marker-based assessment of disseminating cells at the invasive front, potentially combined with machine-learning analysis, could contribute to more accurate risk stratification and treatment planning.
+
+\subsection{Relationship to Single-Cell Genomic Studies}
+
+Recent single-cell RNA-sequencing studies of HNSCC have identified partial EMT gene expression programmes at the tumour invasive front~\cite{puram2017}. Our protein-level, \textit{in situ} observations complement and extend these transcriptomic findings by demonstrating that cells expressing hybrid E/M markers are not merely present at the invasive front but are actively disseminating into surrounding tissue, and that their abundance predicts clinical outcome. The combination of spatial resolution (immunofluorescence) and molecular detail (single-cell transcriptomics) in future studies could provide a comprehensive picture of the disseminating-cell phenotype.
+
+\subsection{Limitations}
+
+Several limitations should be acknowledged. First, the cohort size of 84~specimens, while substantial for this type of analysis, limits the statistical power for multivariate analyses and subgroup stratification. Second, the cross-sectional nature of the immunofluorescence analysis captures a snapshot of disseminating-cell phenotype and cannot directly demonstrate the temporal dynamics of EMT in these cells. Third, while the ANN achieved high cross-validated accuracy, prospective validation in independent cohorts is necessary before clinical translation. Fourth, the three-marker panel, while informative, does not capture the full molecular complexity of EMT and CSC states; additional markers such as CD44, ALDH1, and transcription factors including ZEB1 and SNAI1 could further refine the characterisation in future studies.
+
+% ================================================================
+%  6. CONCLUSION
+% ================================================================
+\section{Conclusion}
+
+This study demonstrates that tumour cells disseminating from the invasive front of human oral squamous cell carcinomas acquire a hybrid epithelial--mesenchymal cancer stem cell phenotype characterised by co-expression of EpCAM, CD24, and Vimentin. These triple-positive disseminating cells are significantly enriched in specimens from patients who develop lymph node metastasis, and their quantitative features enable neural-network-based prediction of metastatic outcome with 87--89\% cross-validated accuracy. These findings provide the first direct observation of EMT cancer stem cells in the act of dissemination in human tumour tissue, bridging a longstanding gap between experimental models and clinical relevance. The disseminating EMT--CSC phenotype represents a promising candidate biomarker for metastatic risk stratification in OSCC and a potential therapeutic target for preventing metastatic spread.
+
+% ================================================================
+%  ACKNOWLEDGEMENTS
+% ================================================================
+\section*{Acknowledgements}
+The authors thank the patients and clinical staff who contributed to the tumour specimen collection, and the microscopy core facility for technical support.
+
+% ================================================================
+%  REFERENCES
+% ================================================================
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

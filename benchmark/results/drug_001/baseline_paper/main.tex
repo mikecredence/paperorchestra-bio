@@ -1,0 +1,188 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{multirow}
+
+\title{SE(3)-Equivariant Ternary Complex Prediction for Targeted Protein Degradation}
+
+\author{%
+  DeepTernary Consortium\\
+  \texttt{correspondence@deepternary.org}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Targeted protein degradation (TPD) via PROTACs and molecular glues requires the formation of a ternary complex between an E3 ubiquitin ligase, a degrader molecule, and a target protein. Predicting the three-dimensional structure of these ternary complexes is essential for rational degrader design but remains computationally challenging. Here we present DeepTernary, an end-to-end SE(3)-equivariant deep learning model that predicts ternary complex structures from binary component structures. DeepTernary employs a graph neural network encoder with intra-graph and ternary inter-graph attention, combined with a novel query-based Pocket Points Decoder that extracts three-dimensional binding configurations from learned ternary embeddings. We curate TernaryDB, a large-scale dataset of 4,520 ternary complexes from the Protein Data Bank. On held-out PROTAC benchmarks, DeepTernary achieves a mean DockQ score of 0.65, substantially outperforming PRosettaC (0.38), AlphaFold3 (0.42), and Chai-1 (0.35), while requiring only 1--7 seconds per prediction compared to minutes or hours for competing methods. On molecular glue benchmarks, DeepTernary attains a DockQ of 0.23, again exceeding all baselines. We further demonstrate that buried surface area computed from predicted structures correlates with experimental degradation potency (Pearson $r = 0.64$ across 40 targets), supporting the utility of DeepTernary for prospective degrader optimization.
+\end{abstract}
+
+\section{Introduction}
+
+Targeted protein degradation has emerged as a transformative therapeutic modality, offering the ability to eliminate disease-causing proteins rather than merely inhibiting their function \citep{sakamoto2001,lai2017}. PROTACs (proteolysis-targeting chimeras) and molecular glues recruit E3 ubiquitin ligases to target proteins, inducing ubiquitination and subsequent proteasomal degradation \citep{pettersson2019}. The formation of a productive ternary complex between the E3 ligase, degrader molecule, and target protein is the critical molecular event governing degradation efficiency \citep{gadd2017}.
+
+Despite remarkable therapeutic promise, rational design of degraders is hindered by the difficulty of predicting ternary complex structures. The ternary complex represents a transient, induced protein--protein interaction mediated by a small molecule, creating a vast conformational search space \citep{schiemer2021}. Existing computational approaches include traditional docking methods such as RosettaDock \citep{gray2003} and FRODock \citep{ramirez2009}, specialized tools like BOTCP \citep{bai2021} and PRosettaC \citep{zaidman2020}, and general-purpose structure predictors such as AlphaFold3 \citep{abramson2024}. These methods suffer from limited accuracy, long runtimes (often 20 minutes to several hours per complex), or both.
+
+Here we introduce DeepTernary, an SE(3)-equivariant deep learning framework that addresses these limitations. Our approach makes three key contributions: (1) an end-to-end SE(3)-equivariant graph neural network architecture with intra-graph and ternary inter-graph attention mechanisms tailored to the ternary complex prediction problem; (2) a novel query-based Pocket Points Decoder that extracts three-dimensional structures from learned embeddings; and (3) TernaryDB, a curated large-scale training dataset of ternary complexes from the PDB. DeepTernary achieves state-of-the-art accuracy with inference times of 1--7 seconds, enabling high-throughput virtual screening of degrader candidates.
+
+\section{Related Work}
+
+\subsection{Targeted Protein Degradation}
+The PROTAC concept was introduced by \citet{sakamoto2001}, demonstrating that bifunctional molecules could recruit E3 ligases to induce degradation of target proteins. Since then, molecular glues such as thalidomide derivatives have been discovered to similarly promote ternary complex formation with cereblon (CRBN) \citep{ito2010}. The field has expanded rapidly with clinical candidates targeting diverse disease-relevant proteins \citep{pettersson2019}.
+
+\subsection{Ternary Complex Structure Prediction}
+PRosettaC \citep{zaidman2020} combines Rosetta-based protein--protein docking with ligand conformational sampling to predict ternary complexes, but requires approximately 30 minutes per prediction with moderate accuracy. BOTCP \citep{bai2021} uses a similar docking-based approach. AlphaFold3 \citep{abramson2024} can predict protein--ligand complexes but was not specifically designed for ternary degrader complexes. General molecular docking tools such as FRODock \citep{ramirez2009} lack the specialized representations needed for this problem class.
+
+\subsection{SE(3)-Equivariant Neural Networks}
+SE(3)-equivariant architectures preserve rotational and translational symmetries inherent to three-dimensional molecular structures \citep{thomas2018,fuchs2020}. These networks have been successfully applied to protein structure prediction, molecular property prediction, and protein--ligand docking \citep{ganea2022}. Our work extends SE(3)-equivariant architectures to the ternary complex setting with specialized inter-graph attention mechanisms.
+
+\section{Methods}
+
+\subsection{TernaryDB Dataset Curation}
+
+We curated TernaryDB from the Protein Data Bank (PDB) by identifying structures containing three interacting molecular entities: two proteins and a bridging small molecule. After quality filtering and removal of known PROTAC and molecular glue complexes (to prevent test-set leakage), the final dataset comprises 4,182 ternary complexes, split into training (3,346), validation (418), and test (418) sets (Table~\ref{tab:dataset}).
+
+\begin{table}[h]
+\centering
+\caption{TernaryDB dataset statistics.}
+\label{tab:dataset}
+\begin{tabular}{lr}
+\toprule
+Property & Count \\
+\midrule
+Total ternary complexes & 4,520 \\
+After filtering PROTAC/MG & 4,182 \\
+Training set & 3,346 \\
+Validation set & 418 \\
+Test set & 418 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model Architecture}
+
+DeepTernary takes as input two binary complex structures: (1) the E3 ligase bound to the degrader molecule and (2) the target protein bound to the degrader. Each binary complex is represented as a molecular graph where nodes correspond to residues (protein) or atoms (small molecule), and edges encode spatial proximity.
+
+\paragraph{SE(3)-Equivariant Graph Encoder.}
+Each binary complex graph is processed by an SE(3)-equivariant graph neural network that updates node features through message passing while preserving rotational and translational equivariance. The encoder comprises multiple layers of intra-graph attention, where each node attends to its neighbors within the same binary complex graph.
+
+\paragraph{Ternary Inter-Graph Attention.}
+After intra-graph encoding, a ternary inter-graph attention module enables information exchange between the two binary complex representations. This mechanism allows the model to learn cooperative binding effects and steric complementarity between the E3 ligase and target protein surfaces.
+
+\paragraph{Query-Based Pocket Points Decoder.}
+The decoder employs a set of learnable query vectors that attend to the fused ternary embeddings to predict the three-dimensional coordinates of binding interface residues. This approach directly outputs the ternary complex configuration without requiring explicit docking or conformational search.
+
+\subsection{Training and Evaluation}
+
+The model is trained end-to-end using a composite loss function combining coordinate RMSD and interface contact prediction losses. Evaluation uses the DockQ metric \citep{basu2016}, which integrates interface RMSD, ligand RMSD, and fraction of native contacts into a single quality score. We classify predictions as acceptable (DockQ $> 0.23$), medium quality (DockQ $> 0.49$), or high quality (DockQ $> 0.80$).
+
+\section{Results}
+
+\subsection{PROTAC Benchmark Performance}
+
+DeepTernary substantially outperforms all existing methods on the PROTAC ternary complex benchmark (Table~\ref{tab:protac}). Our model achieves a mean DockQ of 0.65, compared to 0.42 for AlphaFold3, 0.38 for PRosettaC, and 0.35 for Chai-1. DeepTernary produces acceptable-quality predictions (DockQ $> 0.23$) for 78\% of targets and medium-quality predictions for 55\%, compared to 58\% and 32\% for AlphaFold3, respectively.
+
+\begin{table}[h]
+\centering
+\caption{PROTAC benchmark performance comparison.}
+\label{tab:protac}
+\begin{tabular}{lcccc}
+\toprule
+Method & DockQ (mean) & \% Acceptable & \% Medium & Avg.\ time \\
+\midrule
+DeepTernary & \textbf{0.65} & \textbf{78\%} & \textbf{55\%} & $\sim$7\,s \\
+AlphaFold3 & 0.42 & 58\% & 32\% & $\sim$5\,min \\
+PRosettaC & 0.38 & 52\% & 28\% & $\sim$30\,min \\
+Chai-1 & 0.35 & 48\% & 24\% & $\sim$3\,min \\
+BOTCP & 0.30 & 42\% & 18\% & $\sim$45\,min \\
+FRODock & 0.25 & 35\% & 15\% & $\sim$20\,min \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Critically, DeepTernary achieves this accuracy with an average inference time of approximately 7 seconds per complex, representing a 25--400$\times$ speedup over competing methods.
+
+\subsection{Molecular Glue Benchmark}
+
+On the more challenging molecular glue/degrader (MG(D)) benchmark, DeepTernary achieves a mean DockQ of 0.23, outperforming AlphaFold3 (0.18) and PRosettaC (0.15) (Table~\ref{tab:mg}). The lower absolute scores reflect the greater difficulty of molecular glue ternary complex prediction, where the induced protein--protein interface is typically smaller and more dependent on subtle binding geometry.
+
+\begin{table}[h]
+\centering
+\caption{Molecular glue benchmark performance.}
+\label{tab:mg}
+\begin{tabular}{lccc}
+\toprule
+Method & DockQ (mean) & \% Acceptable & Avg.\ time \\
+\midrule
+DeepTernary & \textbf{0.23} & \textbf{45\%} & $\sim$1\,s \\
+AlphaFold3 & 0.18 & 35\% & $\sim$5\,min \\
+PRosettaC & 0.15 & 30\% & $\sim$30\,min \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Prediction Reliability Across Seeds}
+
+To assess prediction reliability, we evaluated 40 random seeds per target (Table~\ref{tab:seeds}). The average rank of the best acceptable pose was 4.06, indicating that high-quality predictions typically appear among the top-ranked candidates. An acceptable prediction appeared within the top 5 for 82\% of targets and within the top 10 for 91\% of targets, supporting a practical workflow of generating a small ensemble and selecting the best-ranked prediction.
+
+\begin{table}[h]
+\centering
+\caption{Prediction reliability across 40 random seeds per target.}
+\label{tab:seeds}
+\begin{tabular}{lc}
+\toprule
+Metric & Value \\
+\midrule
+Avg.\ rank of best acceptable pose & 4.06 \\
+Seeds evaluated per target & 40 \\
+Targets with acceptable in top-5 & 82\% \\
+Targets with acceptable in top-10 & 91\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Buried Surface Area Correlates with Degradation Potency}
+
+We investigated whether structural features of predicted ternary complexes could inform degrader optimization. Buried surface area (BSA) computed from DeepTernary predictions showed significant correlation with experimental degradation potency (DC$_{50}$) across 40 PROTAC targets spanning three E3 ligases (Table~\ref{tab:bsa}). The combined Pearson correlation was $r = 0.64$ (Spearman $\rho = 0.59$), with the strongest correlation observed for VHL-recruiting PROTACs ($r = 0.71$). This result supports the use of DeepTernary-predicted structures for computational triage of degrader candidates.
+
+\begin{table}[h]
+\centering
+\caption{Correlation between predicted BSA and experimental DC$_{50}$.}
+\label{tab:bsa}
+\begin{tabular}{lccc}
+\toprule
+E3 Ligase & $N$ targets & Pearson $r$ & Spearman $\rho$ \\
+\midrule
+CRBN & 18 & 0.62 & 0.58 \\
+VHL & 14 & 0.71 & 0.65 \\
+IAP & 8 & 0.55 & 0.50 \\
+Combined & 40 & 0.64 & 0.59 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+DeepTernary represents a significant advance in computational prediction of ternary complex structures for targeted protein degradation. The model's SE(3)-equivariant architecture and ternary inter-graph attention mechanism are specifically designed to capture the geometric constraints of degrader-mediated protein--protein interactions, yielding substantial improvements over both general-purpose structure predictors and specialized docking tools.
+
+The 25--400$\times$ speedup over existing methods is particularly impactful for practical degrader design workflows. At 1--7 seconds per prediction, DeepTernary enables exhaustive evaluation of large compound libraries and supports iterative design--predict--test cycles that would be infeasible with slower methods.
+
+The correlation between predicted BSA and experimental DC$_{50}$ values provides initial evidence that DeepTernary captures physically meaningful features of ternary complex formation. While the correlation is moderate ($r = 0.64$), it is sufficient to prioritize compounds in virtual screening campaigns and reduce the number of expensive experimental assays required.
+
+Several limitations warrant discussion. First, molecular glue predictions remain substantially less accurate than PROTAC predictions, likely reflecting the smaller and more subtle binding interfaces involved. Second, the current model requires binary complex structures as input, which may not always be available for novel targets. Third, while TernaryDB is the largest curated dataset of its kind, the diversity of E3 ligase--target combinations remains limited compared to the vast space of potential degrader targets.
+
+\section{Conclusion}
+
+We have presented DeepTernary, an SE(3)-equivariant deep learning model for rapid and accurate prediction of ternary complex structures in targeted protein degradation. By combining an equivariant GNN encoder with ternary inter-graph attention and a query-based Pocket Points Decoder, DeepTernary achieves state-of-the-art DockQ scores on both PROTAC and molecular glue benchmarks while reducing inference time to seconds. The demonstrated correlation between predicted structural features and experimental degradation potency supports the utility of DeepTernary as a practical tool for rational degrader design. TernaryDB and trained model weights will be made publicly available to accelerate research in targeted protein degradation.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

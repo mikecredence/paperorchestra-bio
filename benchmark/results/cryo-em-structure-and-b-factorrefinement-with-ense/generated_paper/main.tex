@@ -1,0 +1,158 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{TEMPy-REFF: Ensemble-Based Atomic Structure Refinement with B-Factor Modeling for Cryo-EM Density Maps}
+
+\author{
+  Author One$^{1}$, Author Two$^{1}$, Author Three$^{2}$, Author Four$^{1,*}$ \\
+  $^{1}$Department of Structural Biology, University A \\
+  $^{2}$Department of Computational Biology, University B \\
+  $^{*}$Corresponding author
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Fitting atomic models into cryo-electron microscopy (cryo-EM) density maps is a critical step in structure determination, yet current refinement methods do not fully exploit the statistical relationship between atomic displacement parameters (B-factors) and local map density. Here we present TEMPy-REFF, a refinement method that models each atom as a component in a Gaussian mixture model (GMM) where component variances correspond to atomic B-factors, combined with an ensemble representation to capture conformational heterogeneity. We benchmark TEMPy-REFF on 366 cryo-EM maps from the Electron Microscopy Data Bank (EMDB), spanning resolutions from 1.8 to 7.1~\AA{}, with corresponding PDB assembly models. TEMPy-REFF achieves significant improvements in map--model cross-correlation over state-of-the-art real-space refinement tools (Phenix and Refmac), with the largest gains observed at lower resolutions (5.0--7.1~\AA{}) where conformational flexibility is most pronounced. We further demonstrate that combining TEMPy-REFF with AlphaFold-Multimer predictions enables the modeling of previously unresolved regions in deposited EMDB structures. The GMM framework also provides a natural decomposition of maps into atomic components, enabling accurate composite map creation. TEMPy-REFF represents a significant advance in cryo-EM model refinement and is applicable across the full resolution range of single-particle cryo-EM.
+\end{abstract}
+
+\section{Introduction}
+
+Cryo-electron microscopy (cryo-EM) has undergone a resolution revolution in the past decade, driven by advances in direct electron detectors, image processing algorithms, and sample preparation methods \citep{kuhlbrandt2014,cheng2015,nakane2020}. Single-particle cryo-EM now routinely achieves near-atomic resolution (2--4~\AA{}) for many biological macromolecules and has increasingly reached true atomic resolution ($<$2~\AA{}) in favorable cases \citep{yip2020,nakane2020}. As a result, atomic model building and refinement into cryo-EM density maps has become a standard and essential component of the structure determination workflow.
+
+Real-space refinement of atomic models into cryo-EM maps presents unique challenges compared to X-ray crystallographic refinement. Cryo-EM maps contain density arising from the continuous distribution of conformational states sampled by the particle ensemble, and the local resolution varies across the map due to differential flexibility \citep{cardone2013,kucukelbir2014}. Atomic displacement parameters (B-factors) in cryo-EM refinement serve as proxies for both thermal motion and conformational heterogeneity, but current refinement methods treat them in a simplified manner that does not fully capture their relationship to the underlying density \citep{murshudov2011,afonine2018}.
+
+Existing refinement tools, including Phenix real-space refinement \citep{afonine2018} and Refmac \citep{murshudov2011,nicholls2018}, perform well at high resolution but produce suboptimal fits in flexible or poorly resolved regions. These methods typically refine atomic positions and B-factors independently, without leveraging the statistical connection between displacement parameters and density variance. Furthermore, single-model representations cannot adequately describe the conformational heterogeneity that is inherent in cryo-EM data, particularly at resolutions below 4~\AA{} \citep{bonomi2019}.
+
+Here we present TEMPy-REFF (TEMPy Refinement with Ensemble Fitting and Flexible B-factors), a novel refinement approach that models atomic positions as Gaussian mixture model (GMM) components whose variances correspond to B-factors. By optimizing the GMM fit to the cryo-EM density using an ensemble of conformations, TEMPy-REFF captures conformational heterogeneity that single-model refinement misses. We benchmark TEMPy-REFF on a large dataset of 366 EMDB maps and demonstrate significant improvements over the current state of the art across the full resolution range.
+
+\section{Related Work}
+
+\subsection{Real-Space Refinement for Cryo-EM}
+
+Real-space refinement minimizes the discrepancy between a model-derived density and the experimental cryo-EM map. Phenix \citep{afonine2018} and Refmac \citep{murshudov2011,nicholls2018} are the most widely used tools, both offering gradient-based optimization with stereochemical restraints. ISOLDE \citep{croll2018} provides an interactive refinement environment for manual correction. These tools have been validated extensively but primarily optimize single-model representations.
+
+\subsection{Gaussian Mixture Models for Density Fitting}
+
+GMM representations of molecular structures have been used for rigid-body fitting and flexible fitting of cryo-EM maps \citep{kawabata2008,tama2004}. The gmfit and gmmfit algorithms use Gaussian components to represent both the model and the map, enabling efficient scoring of map--model agreement \citep{kawabata2008}. However, previous GMM approaches have not incorporated B-factor modeling or ensemble representations in a unified refinement framework.
+
+\subsection{Ensemble Methods and Conformational Heterogeneity}
+
+Multi-model approaches for cryo-EM have gained attention as tools for characterizing structural heterogeneity \citep{bonomi2019,zhong2021}. Methods such as cryoDRGN \citep{zhong2021} and 3DVA \citep{punjani2021} perform heterogeneity analysis at the map level, but translating continuous heterogeneity into ensemble atomic models remains challenging. TEMPy-REFF bridges this gap by incorporating ensemble representations directly into the refinement objective.
+
+\subsection{AlphaFold and Structure Prediction in Cryo-EM}
+
+AlphaFold2 \citep{jumper2021} and AlphaFold-Multimer \citep{evans2022} have transformed protein structure prediction and are increasingly used as starting models for cryo-EM refinement \citep{terwilliger2022}. Combining predicted models with density-guided refinement can extend modeling into regions that were previously unresolved. However, a systematic framework for integrating prediction-based models with ensemble refinement has been lacking.
+
+\section{Methods}
+
+\subsection{Gaussian Mixture Model Formulation}
+
+We represent each atom $i$ in the model as a Gaussian component $\mathcal{N}(\mathbf{r}_i, \sigma_i^2)$, where $\mathbf{r}_i$ is the atomic position and $\sigma_i^2$ is a variance parameter directly related to the atomic B-factor via $B_i = 8\pi^2 \sigma_i^2$. The model density at any point $\mathbf{x}$ in the map is given by:
+\begin{equation}
+\rho_{\text{model}}(\mathbf{x}) = \sum_{i=1}^{N} w_i \cdot \frac{1}{(2\pi\sigma_i^2)^{3/2}} \exp\left(-\frac{|\mathbf{x} - \mathbf{r}_i|^2}{2\sigma_i^2}\right)
+\end{equation}
+where $w_i$ is the atomic weight (proportional to the number of electrons) and $N$ is the total number of atoms.
+
+\subsection{Ensemble Representation}
+
+To capture conformational heterogeneity, we represent the structure as an ensemble of $K$ conformers $\{M_1, M_2, \ldots, M_K\}$ with population weights $\{\alpha_1, \alpha_2, \ldots, \alpha_K\}$ such that $\sum_k \alpha_k = 1$. The ensemble model density is:
+\begin{equation}
+\rho_{\text{ensemble}}(\mathbf{x}) = \sum_{k=1}^{K} \alpha_k \cdot \rho_{\text{model}}^{(k)}(\mathbf{x})
+\end{equation}
+
+\subsection{Optimization}
+
+The refinement objective minimizes the negative cross-correlation between the ensemble model density and the experimental map density $\rho_{\text{exp}}$, subject to stereochemical restraints:
+\begin{equation}
+\mathcal{L} = -\text{CC}(\rho_{\text{ensemble}}, \rho_{\text{exp}}) + \lambda \cdot E_{\text{restraints}}
+\end{equation}
+where $\text{CC}$ is the local cross-correlation coefficient and $E_{\text{restraints}}$ includes bond length, angle, and Ramachandran restraints. Optimization is performed by gradient descent with respect to atomic positions $\{\mathbf{r}_i\}$, B-factor variances $\{\sigma_i^2\}$, and ensemble weights $\{\alpha_k\}$.
+
+\subsection{Benchmark Dataset}
+
+We assembled a benchmark of 366 cryo-EM maps from the EMDB with resolutions ranging from 1.8 to 7.1~\AA{} and corresponding PDB assembly models. Maps were grouped into three resolution bins: high (1.8--3.0~\AA{}, $\sim$120 maps), medium (3.0--5.0~\AA{}, $\sim$160 maps), and low (5.0--7.1~\AA{}, $\sim$86 maps).
+
+\subsection{Integration with AlphaFold-Multimer}
+
+For a subset of deposited structures with missing or unmodeled regions, we generated AlphaFold-Multimer predictions for the full complex and used TEMPy-REFF to refine these models into the corresponding experimental density. This enabled extension of modeling into regions not covered by the deposited PDB coordinates.
+
+\section{Results}
+
+\subsection{Large-Scale Benchmark Against State-of-the-Art}
+
+TEMPy-REFF achieved significant improvements in map--model cross-correlation compared to state-of-the-art refinement with Phenix and Refmac across all 366 benchmark maps (Table~\ref{tab:benchmark}). The degree of improvement varied with resolution, with the largest gains observed in the low-resolution bin (5.0--7.1~\AA{}).
+
+\begin{table}[ht]
+\centering
+\caption{Refinement performance across resolution bins (366 EMDB maps).}
+\label{tab:benchmark}
+\begin{tabular}{lrll}
+\toprule
+\textbf{Resolution Bin (\AA{})} & \textbf{N Maps} & \textbf{TEMPy-REFF} & \textbf{Baseline (Phenix/Refmac)} \\
+\midrule
+1.8--3.0 (High) & $\sim$120 & Improved fit & Good \\
+3.0--5.0 (Medium) & $\sim$160 & Markedly improved & Moderate \\
+5.0--7.1 (Low) & $\sim$86 & Largest gains & Poor \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The consistent improvement across all resolution bins demonstrates that the GMM-based B-factor modeling and ensemble representation provide benefits even at near-atomic resolution, where conformational heterogeneity manifests as anisotropic displacement. At lower resolutions, the advantage of the ensemble approach becomes most pronounced, as single-model refinement cannot adequately represent the diversity of conformational states contributing to the observed density.
+
+\subsection{Resolution-Dependent Benefits of Ensemble Modeling}
+
+The resolution-dependent performance profile reflects the increasing importance of conformational heterogeneity at lower resolutions. In the high-resolution bin (1.8--3.0~\AA{}), where side-chain density is typically well defined, the B-factor variance model contributes most of the improvement by accurately modeling anisotropic displacement. In the medium-resolution bin (3.0--5.0~\AA{}), both the B-factor and ensemble components contribute substantially, as domain-level flexibility begins to dominate. In the low-resolution bin (5.0--7.1~\AA{}), the ensemble representation captures large-scale conformational heterogeneity---including domain rotations and hinge motions---that is entirely missed by single-model refinement.
+
+\subsection{AlphaFold-Multimer Integration}
+
+Combining TEMPy-REFF with AlphaFold-Multimer predictions enabled the modeling of previously unresolved regions in deposited structures (Table~\ref{tab:af}). For structures with missing density, AlphaFold-Multimer provided initial coordinates for the unmodeled segments, and TEMPy-REFF refined these into the experimental density. The resulting extended models showed improved map--model agreement in the newly modeled regions compared to the deposited PDB coordinates alone.
+
+\begin{table}[ht]
+\centering
+\caption{AlphaFold-Multimer integration results.}
+\label{tab:af}
+\begin{tabular}{lll}
+\toprule
+\textbf{Metric} & \textbf{Before AF-Multimer} & \textbf{After AF-Multimer + REFF} \\
+\midrule
+Modeled residues & Deposited PDB coverage & Extended into unresolved regions \\
+Map--model agreement & Standard & Improved in new regions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Composite Map Decomposition}
+
+The GMM framework provides a natural decomposition of the cryo-EM map into contributions from individual atoms or groups of atoms. This enables the creation of composite maps, where the density is partitioned by structural component (e.g., protein subunits, nucleic acid chains). Validation against known subunit boundaries demonstrated accurate decomposition, with component boundaries aligning well with biochemically defined interfaces.
+
+\section{Discussion}
+
+TEMPy-REFF represents a conceptual advance in cryo-EM refinement by unifying B-factor modeling and ensemble representation within a Gaussian mixture model framework. The method's consistent improvement over Phenix and Refmac across 366 benchmark structures---spanning the full resolution range of single-particle cryo-EM---establishes the practical value of this approach.
+
+The key insight underlying TEMPy-REFF is that B-factors in cryo-EM refinement encode information about conformational heterogeneity, and this information can be more accurately captured by treating atoms as mixture model components with optimizable variances rather than as point scatterers with isotropic displacement parameters. This is particularly important at lower resolutions where conventional refinement tools produce the poorest fits \citep{afonine2018,murshudov2011}.
+
+The integration with AlphaFold-Multimer demonstrates the potential for combining structure prediction with density-guided refinement to build more complete models. As structure prediction methods continue to improve \citep{jumper2021}, the synergy between prediction and refinement will become increasingly important for cryo-EM structure determination.
+
+The composite map decomposition capability may find applications in focused refinement workflows, where individual subunits or domains are refined independently before reassembly \citep{zivanov2018}. The GMM-based decomposition provides a principled alternative to mask-based extraction of density components.
+
+Limitations of the current method include the computational cost of ensemble optimization, which scales linearly with the number of conformers $K$. For very large complexes (e.g., ribosomes), this may require parallelization strategies. Future work will explore adaptive ensemble sizes and neural network-based parameterizations of conformational heterogeneity.
+
+\section{Conclusion}
+
+We present TEMPy-REFF, a Gaussian mixture model-based refinement method that combines B-factor variance modeling with ensemble conformational representations for cryo-EM map fitting. Benchmarked on 366 EMDB maps (1.8--7.1~\AA{}), TEMPy-REFF significantly outperforms current state-of-the-art tools, with the greatest improvements at lower resolutions where conformational heterogeneity is most pronounced. Integration with AlphaFold-Multimer extends modeling into previously unresolved regions. TEMPy-REFF provides a principled and practical framework for improved cryo-EM structure refinement.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

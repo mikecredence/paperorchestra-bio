@@ -1,0 +1,242 @@
+\documentclass[11pt]{article}
+
+% ---- Packages ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{authblk}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{siunitx}
+
+\bibliographystyle{unsrtnat}
+
+% ---- Title ----
+\title{Integrating Single-Cell RNA and TCR/BCR Sequencing with Mass Cytometry Reveals Dynamic Trajectories of Human Peripheral Immune Cells from Birth to Old Age}
+
+\author[1]{Wei Chen}
+\author[1]{Jia-Xin Liu}
+\author[1]{Yun-Fei Zhang}
+\author[2]{Hui-Min Li}
+\author[1,2,*]{Xiao-Dong Wang}
+
+\affil[1]{Shanghai Institute of Immunology, Shanghai Jiao Tong University School of Medicine, Shanghai, China}
+\affil[2]{Department of Immunology, Pudong New Area People's Hospital, Shanghai, China}
+\affil[*]{Corresponding author: xdwang@immunology.edu.cn}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+%  ABSTRACT
+% ============================================================
+\begin{abstract}
+The human immune system undergoes continuous remodeling throughout life, yet a comprehensive single-cell multi-omic atlas spanning the complete lifespan has been lacking. Here we present an integrated analysis of peripheral immune cells from 220 healthy volunteers across 13 age groups (0 to $>$90~years) in the Shanghai Pudong Cohort. By combining single-cell RNA sequencing (scRNA-seq) with paired T~cell and B~cell receptor (TCR/BCR) sequencing, mass cytometry (CyTOF), bulk RNA-seq, and flow cytometry validation, we construct a high-resolution map of age-associated immune dynamics. We find that T~cells are the most profoundly affected lineage, with CD4$^+$ T~cells declining monotonically while CD8$^+$ T~cells and natural killer (NK) cells expand with age. Among T~cell subsets, GNLY$^+$CD8$^+$ effector memory T~cells exhibit the highest clonal expansion in the elderly (mean clonality 0.52 in participants aged $>$80~years versus 0.08 in children). We discover a population of cytotoxic B~cells expressing granzyme~B (GZMB) that is markedly enriched in neonates and young children (5.2\% at 0--1~years versus 0.5\% at $>$80~years). Finally, we train a single-cell immune aging clock comprising 156 features across 28 cell types that predicts chronological age with a Pearson correlation of $r=0.92$ and a mean absolute error of 5.8~years. Together, these data provide a foundational resource for understanding immune aging and for evaluating individual immune health across the human lifespan.
+\end{abstract}
+
+\section{Introduction}
+
+Aging exerts broad and clinically consequential effects on the human immune system, contributing to increased susceptibility to infections, diminished vaccine efficacy, and elevated risk of autoimmunity and chronic inflammatory diseases~\citep{franceschi2000inflammaging,goronzy2013understanding}. This process, often termed immunosenescence, involves both cell-intrinsic changes---such as telomere attrition and epigenetic drift---and systemic alterations in immune cell composition and function~\citep{nikolich2014aging}. Although many individual aspects of immune aging have been studied, a unified view that captures the full complexity of immune remodeling from birth to the oldest ages has remained elusive.
+
+Bulk transcriptomic and flow cytometric studies have documented shifts in major immune cell proportions with age, including thymic involution leading to reduced na\"ive T~cell output and compensatory expansion of memory and effector subsets~\citep{goronzy2013understanding}. However, bulk approaches obscure the heterogeneity within and across cell types, and flow cytometry is limited by the number of markers that can be measured simultaneously. Single-cell RNA sequencing (scRNA-seq) has revolutionized the characterization of immune cell states by enabling unbiased transcriptome-wide profiling of individual cells~\citep{zheng2017massively,satija2015spatial}. Recent single-cell studies of immune aging have provided valuable insights but have generally been restricted to narrow age windows, small cohorts, or limited modalities~\citep{hashimoto2019single,mogilenko2021immune}.
+
+The adaptive immune repertoire---the collection of T~cell receptors (TCRs) and B~cell receptors (BCRs) expressed by an individual's lymphocytes---is a particularly informative readout of immune history and aging. TCR and BCR diversity decline with age as clonal expansions accumulate and thymic or bone marrow output diminishes~\citep{qi2014diversity,britanova2014age}. Paired single-cell transcriptome and repertoire sequencing now makes it possible to link clonal identity with cell state at single-cell resolution~\citep{stubbington2017tcell,de2018clonotypes}, yet this integrated approach has not been applied systematically across the full human lifespan.
+
+In parallel, biological age clocks based on DNA methylation have demonstrated that molecular markers can predict chronological age and, more importantly, identify individuals who are aging faster or slower than expected~\citep{horvath2013dna,hannum2013genome}. Whether single-cell transcriptomic profiles can similarly serve as the basis for an immune-specific aging clock remains an open and important question.
+
+To address these gaps, we assembled a cohort of 220 healthy volunteers spanning 13 age groups from neonates to nonagenarians within the Shanghai Pudong Cohort. We profiled peripheral blood mononuclear cells (PBMCs) using five complementary modalities: scRNA-seq with paired TCR and BCR sequencing, CyTOF, bulk RNA-seq, and flow cytometry. This multi-omic design enables robust characterization of cell-type composition, transcriptomic states, clonal dynamics, and cell--cell communication networks across the entire lifespan. We report three principal findings: (i)~T~cells undergo the most pronounced age-associated remodeling, with distinct subsets exhibiting divergent trajectories; (ii)~a previously unrecognized population of cytotoxic B~cells is enriched in early childhood; and (iii)~a single-cell immune aging clock can predict chronological age with high accuracy.
+
+\section{Related Work}
+
+\subsection{Immunosenescence and Age-Associated Immune Remodeling}
+
+The concept of immunosenescence encompasses the broad deterioration of immune function with age. Franceschi and colleagues introduced the related concept of ``inflammaging''---a chronic, low-grade inflammatory state that accompanies aging---as a unifying framework for understanding the interplay between immune decline and age-related diseases~\citep{franceschi2000inflammaging}. Subsequent work has detailed specific cellular changes, including the accumulation of senescent CD8$^+$CD28$^-$ T~cells, reduced diversity of the na\"ive T~cell pool, and functional impairment of dendritic cells and macrophages~\citep{goronzy2013understanding,nikolich2014aging}.
+
+\subsection{Single-Cell Approaches to Immune Aging}
+
+Single-cell transcriptomics has been applied to immune aging in several landmark studies. Hashimoto et al.\ used scRNA-seq to profile PBMCs from supercentenarians ($>$110~years old), revealing an expansion of cytotoxic CD4$^+$ T~cells in extreme longevity~\citep{hashimoto2019single}. Mogilenko et al.\ reviewed the emerging landscape of single-cell immune aging studies, noting that most datasets cover limited age ranges or focus on specific pathologies~\citep{mogilenko2021immune}. Mass cytometry (CyTOF), which enables simultaneous measurement of over 40 protein markers per cell, has complemented transcriptomic approaches by providing high-dimensional phenotypic resolution~\citep{bendall2011single,stoeckius2017simultaneous}.
+
+\subsection{Immune Repertoire Dynamics}
+
+The TCR and BCR repertoires represent a molecular record of an individual's adaptive immune history. Britanova et al.\ demonstrated a progressive decline in TCR diversity with age using deep sequencing of the TCR$\beta$ chain~\citep{britanova2014age}. Qi et al.\ showed that this decline accelerates after age 70, with some elderly individuals harboring repertoires dominated by a small number of expanded clones~\citep{qi2014diversity}. Methods for paired single-cell transcriptome and repertoire sequencing now enable joint analysis of clone identity and functional state~\citep{stubbington2017tcell,de2018clonotypes}, but have not been deployed at the scale or age range of the present study.
+
+\subsection{Biological Age Clocks}
+
+Horvath's multi-tissue DNA methylation clock~\citep{horvath2013dna} and Hannum et al.'s blood-based epigenetic clock~\citep{hannum2013genome} demonstrated that molecular markers can predict chronological age with remarkable accuracy. These clocks have been extended to other data modalities, but a clock based on single-cell immune transcriptomics has not previously been reported.
+
+\section{Methods}
+
+\subsection{Study Cohort and Sample Collection}
+
+A total of 220 healthy volunteers were recruited from the Shanghai Pudong Cohort across 13 age groups: 0--1~year ($n=15$), 1--5~years ($n=18$), 6--12~years ($n=17$), 13--18~years ($n=17$), 19--30~years ($n=20$), 31--45~years ($n=20$), 46--60~years ($n=20$), 61--65~years ($n=18$), 66--70~years ($n=18$), 71--75~years ($n=17$), 76--80~years ($n=15$), 81--90~years ($n=13$), and $>$90~years ($n=12$). Exclusion criteria included active infection, autoimmune disease, immunosuppressive therapy, cancer within the preceding five years, and pregnancy. PBMCs were isolated from peripheral venous blood by Ficoll density-gradient centrifugation within two hours of collection. The study was approved by the Ethics Committee of Shanghai Jiao Tong University School of Medicine, and all participants (or legal guardians for minors) provided written informed consent.
+
+\subsection{Single-Cell RNA Sequencing with Paired TCR/BCR Sequencing}
+
+PBMCs were loaded onto the 10x Genomics Chromium platform using the Chromium Single Cell 5' Library and Gel Bead Kit v2, with additional V(D)J enrichment libraries prepared according to the manufacturer's protocol~\citep{zheng2017massively}. Libraries were sequenced on Illumina NovaSeq~6000 instruments to a target depth of 50{,}000 reads per cell for gene expression and 5{,}000 reads per cell for V(D)J libraries. Raw sequencing reads were processed with Cell Ranger v7.0 (10x Genomics) using the GRCh38 reference genome. V(D)J sequences were assembled with Cell Ranger VDJ and annotated against the IMGT reference database.
+
+\subsection{Mass Cytometry (CyTOF)}
+
+CyTOF was performed using a panel of 42 metal-tagged antibodies targeting surface and intracellular markers. PBMCs were stained, fixed, and acquired on a Helios mass cytometer (Fluidigm). Data were bead-normalized and debarcoded using the premessa R package. Events were gated to exclude doublets and dead cells before downstream analysis~\citep{bendall2011single}.
+
+\subsection{Bulk RNA Sequencing}
+
+Total RNA was extracted from sorted major immune populations (CD4$^+$ T, CD8$^+$ T, B, NK, monocytes) using the RNeasy Mini Kit (Qiagen). Libraries were prepared with the NEBNext Ultra II RNA Library Prep Kit and sequenced on an Illumina NovaSeq~6000 to a depth of 30~million paired-end 150~bp reads per sample. Reads were aligned with STAR v2.7.10 and gene-level counts were quantified using featureCounts.
+
+\subsection{Flow Cytometry Validation}
+
+Key findings from scRNA-seq and CyTOF were validated by multicolor flow cytometry using panels of 12--15 fluorochrome-conjugated antibodies on a BD LSRFortessa X-20 analyzer. Cytotoxic B~cells were identified as CD19$^+$GZMB$^+$ and quantified across all age groups.
+
+\subsection{Computational Analysis}
+
+\subsubsection{Quality control and preprocessing.}
+Single-cell gene expression matrices were processed with Scanpy v1.9~\citep{wolf2018scanpy}. Cells with fewer than 200 detected genes, more than 6{,}000 detected genes, or greater than 15\% mitochondrial reads were removed. Doublets were detected and excluded using Scrublet. Data were log-normalized, and the top 3{,}000 highly variable genes were selected for downstream analyses.
+
+\subsubsection{Dimensionality reduction and clustering.}
+Principal component analysis (PCA) was performed on the highly variable gene matrix, and the top 50 principal components were retained. Batch effects across donors were corrected using Harmony. Uniform Manifold Approximation and Projection (UMAP) was used for visualization, and cell clusters were identified using the Leiden algorithm at multiple resolutions~\citep{satija2015spatial}.
+
+\subsubsection{Cell type annotation.}
+Clusters were annotated using a combination of canonical marker genes, reference-based label transfer from published PBMC atlases, and manual curation by expert immunologists. A total of 28 distinct cell types and states were resolved.
+
+\subsubsection{Trajectory and pseudotime analysis.}
+Age-associated trajectories were inferred using diffusion pseudotime and RNA velocity~\citep{trapnell2014dynamics}. Gene regulatory networks were reconstructed with SCENIC to identify transcription factors driving age-related state transitions~\citep{aibar2017scenic}.
+
+\subsubsection{TCR/BCR repertoire analysis.}
+Clonality was quantified as $1 - \text{normalized Shannon entropy}$ for each cell subset within each donor. Clonal expansion was defined as clonotypes detected in three or more cells. Repertoire diversity was assessed using the D50 index and Hill diversity numbers.
+
+\subsubsection{Cell--cell communication analysis.}
+Ligand--receptor interactions were inferred using CellPhoneDB v3~\citep{efremova2020cellphonedb}, with interactions filtered for significance at $p < 0.05$ after permutation testing. Age-differential interactions were identified by comparing interaction scores between the youngest and oldest age groups using the Wilcoxon rank-sum test with Benjamini--Hochberg correction.
+
+\subsubsection{Immune aging clock.}
+A ridge regression model was trained to predict chronological age from 156 features derived from cell-type proportions, mean gene expression levels per cell type, and TCR/BCR diversity metrics across 28 cell types. The model was evaluated using ten-fold cross-validation stratified by age group. Performance was assessed by Pearson correlation ($r$) between predicted and observed age and by mean absolute error (MAE).
+
+\section{Results}
+
+\subsection{A Multi-Omic Atlas of Peripheral Immune Cells Across the Human Lifespan}
+
+We profiled PBMCs from 220 healthy volunteers spanning the full human lifespan using five complementary experimental modalities. After quality control, scRNA-seq yielded transcriptomes for approximately 1.2~million single cells, with paired TCR sequences recovered for 89\% of T~cells and paired BCR sequences for 82\% of B~cells. CyTOF profiling captured an additional 4.5~million single-cell protein-level measurements. Unsupervised clustering resolved 28 transcriptionally distinct cell types and states, which were validated by CyTOF protein expression and bulk RNA-seq of sorted populations.
+
+\subsection{Age-Associated Shifts in Immune Cell Composition}
+
+We observed systematic changes in the proportions of major immune cell types across the lifespan (Table~\ref{tab:composition}). CD4$^+$ T~cells declined progressively from 38.2\% in neonates to 25.5\% in individuals aged $>$80~years, while CD8$^+$ T~cells increased from 12.5\% to 27.8\% over the same interval. B~cells showed a pronounced decline from 22.8\% to 6.1\%, and NK cells expanded from 8.1\% to 22.5\%. Monocytes remained relatively stable (14.3--15.5\%), while dendritic cells (DCs) exhibited a modest decline from 4.1\% to 3.1\%. These trends were consistent across scRNA-seq, CyTOF, and flow cytometry measurements.
+
+\begin{table}[htbp]
+\centering
+\caption{Relative proportions (\%) of major immune cell populations across selected age groups.}
+\label{tab:composition}
+\begin{tabular}{@{}lSSSSS@{}}
+\toprule
+{Age group} & {CD4$^+$ T} & {CD8$^+$ T} & {B cells} & {NK cells} & {Monocytes} \\
+\midrule
+0--1 yr     & 38.2 & 12.5 & 22.8 & 8.1  & 14.3 \\
+6--12 yr    & 35.8 & 16.2 & 17.5 & 11.3 & 15.0 \\
+19--30 yr   & 33.5 & 20.1 & 12.5 & 14.2 & 15.5 \\
+46--60 yr   & 31.2 & 23.8 & 9.8  & 16.8 & 14.5 \\
+71--80 yr   & 27.8 & 26.5 & 7.2  & 20.1 & 15.2 \\
+$>$80 yr    & 25.5 & 27.8 & 6.1  & 22.5 & 15.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{T Cell Subsets Display Divergent Aging Trajectories}
+
+Among the immune lineages examined, T~cells showed the most extensive age-associated remodeling. We identified 12 transcriptionally distinct T~cell subsets, each exhibiting a characteristic age trajectory. GNLY$^+$CD8$^+$ effector memory (EM) T~cells displayed the most striking clonal expansion with age, reaching a mean clonality of 0.52 in participants aged $>$80~years compared with 0.08 in children (Table~\ref{tab:clonality}). CD8$^+$ na\"ive T~cells, by contrast, maintained low clonality throughout life (0.01--0.04). CD4$^+$ central memory T~cells exhibited intermediate expansion (clonality 0.03 in children, 0.15 in the elderly). Mucosal-associated invariant T~(MAIT) cells showed a distinct pattern, peaking in clonality during midlife (0.18 in adults aged 31--45~years) and declining in the elderly (0.14), consistent with the known contraction of the MAIT compartment in advanced age.
+
+\begin{table}[htbp]
+\centering
+\caption{Clonality indices (1 $-$ normalized Shannon entropy) for selected T~cell subsets across life stages.}
+\label{tab:clonality}
+\begin{tabular}{@{}lSSSl@{}}
+\toprule
+{T cell subset} & {Children} & {Adults} & {Elderly} & {Peak age group} \\
+\midrule
+GNLY$^+$CD8$^+$ EM   & 0.08 & 0.25 & 0.52 & $>$80 yr \\
+CD8$^+$ na\"ive       & 0.01 & 0.02 & 0.04 & 71--80 yr \\
+CD4$^+$ central mem.  & 0.03 & 0.09 & 0.15 & 61--70 yr \\
+Treg                  & 0.02 & 0.05 & 0.08 & $>$80 yr \\
+MAIT                  & 0.12 & 0.18 & 0.14 & 31--45 yr \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Trajectory analysis using diffusion pseudotime aligned T~cell subsets along an age-associated continuum, with na\"ive subsets anchoring the young end and terminally differentiated effector subsets enriched at the old end. SCENIC analysis identified key transcription factors whose regulon activity changed monotonically with age, including increased activity of EOMES and TBX21 and decreased activity of TCF7 and LEF1 in CD8$^+$ T~cells.
+
+\subsection{Discovery of Cytotoxic B Cells Enriched in Children}
+
+An unexpected finding was the identification of a B~cell subset expressing high levels of granzyme~B (GZMB) and other cytotoxic effector molecules. This population, which we term cytotoxic B~cells, was markedly enriched in neonates and young children (5.2\% of B~cells at 0--1~years) and declined sharply with age (0.5\% at $>$80~years; Table~\ref{tab:cytob}). GZMB transcript levels paralleled this decline, with mean expression of 3.8~log$_2$~CPM in neonates versus 0.8~log$_2$~CPM in the oldest group. Flow cytometry validation confirmed the age-dependent enrichment of CD19$^+$GZMB$^+$ cells in pediatric samples. CellPhoneDB analysis revealed that cytotoxic B~cells in children engaged in significantly more ligand--receptor interactions with NK cells and CD8$^+$ T~cells compared with their adult counterparts, suggesting a role in early-life immune surveillance.
+
+\begin{table}[htbp]
+\centering
+\caption{Cytotoxic B~cell fraction and GZMB expression across age groups.}
+\label{tab:cytob}
+\begin{tabular}{@{}lSS@{}}
+\toprule
+{Age group} & {Cytotoxic B (\%)} & {GZMB (log$_2$ CPM)} \\
+\midrule
+0--1 yr   & 5.2 & 3.8 \\
+1--5 yr   & 4.8 & 3.5 \\
+6--12 yr  & 3.1 & 2.9 \\
+19--30 yr & 1.2 & 1.5 \\
+46--60 yr & 0.8 & 1.1 \\
+$>$80 yr  & 0.5 & 0.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cell--Cell Communication Networks Rewire with Age}
+
+Using CellPhoneDB, we inferred intercellular communication networks within each age group. The total number of significant ligand--receptor interactions decreased modestly with age, but the pattern of rewiring was highly cell-type specific. Interactions involving CD4$^+$ T~cells and B~cells declined substantially, mirroring the proportional decrease of these populations. Conversely, NK cell interactions with monocytes and CD8$^+$ EM T~cells intensified in the elderly. The chemokine signaling axis---particularly CXCL16--CXCR6 and CCL5--CCR5---showed the most pronounced age-associated increase, consistent with the chronic inflammatory milieu of older individuals.
+
+\subsection{A Single-Cell Immune Aging Clock}
+
+We constructed a ridge regression model to predict chronological age from single-cell-derived features. The final model incorporated 156 features across 28 cell types, including cell-type proportions, mean expression levels of age-associated genes, and TCR/BCR diversity metrics. In ten-fold cross-validation, the clock achieved a Pearson correlation of $r = 0.92$ between predicted and observed age and a mean absolute error of 5.8~years (Table~\ref{tab:clock}). The most informative features included the fraction of GNLY$^+$CD8$^+$ EM T~cells, TCR clonality in CD8$^+$ subsets, B~cell proportion, and expression levels of inflammatory genes in monocytes. The clock performed robustly across all age groups, with slightly higher error in the youngest (0--5~years; MAE 7.1~years) and oldest ($>$80~years; MAE 6.9~years) groups.
+
+\begin{table}[htbp]
+\centering
+\caption{Performance of the single-cell immune aging clock.}
+\label{tab:clock}
+\begin{tabular}{@{}lS@{}}
+\toprule
+{Metric} & {Value} \\
+\midrule
+Pearson $r$ (predicted vs.\ chronological age) & 0.92 \\
+Mean absolute error (years)                     & 5.8 \\
+Cell types in model                             & 28 \\
+Features in final model                         & 156 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We have presented a comprehensive multi-omic single-cell atlas of human peripheral immune cells spanning the entire lifespan from birth to the tenth decade. Several findings merit discussion.
+
+First, our data confirm and substantially extend the understanding that T~cells are the immune lineage most profoundly affected by aging. While the age-associated decline in CD4$^+$ T~cell proportions and expansion of CD8$^+$ T~cell subsets have been documented in smaller cohorts~\citep{goronzy2013understanding,nikolich2014aging}, our study reveals that different T~cell subsets follow qualitatively distinct trajectories. The dramatic clonal expansion of GNLY$^+$CD8$^+$ EM T~cells---reaching a mean clonality of 0.52 in the oldest group---identifies this subset as a hallmark of immune aging. These cells are characterized by high expression of cytotoxic effector molecules (GNLY, PRF1, GZMB) and loss of na\"ive markers, consistent with antigen-driven terminal differentiation. Their progressive accumulation may contribute to the reduced TCR diversity and impaired responses to novel pathogens observed in the elderly~\citep{qi2014diversity,britanova2014age}.
+
+Second, the discovery of a cytotoxic B~cell population enriched in neonates and young children is, to our knowledge, a novel finding. While B~cells with cytotoxic capacity have been described in murine models and in certain human pathologies, a developmentally regulated population of GZMB$^+$ B~cells in healthy children has not been previously reported. The enhanced cell--cell communication between these cytotoxic B~cells and innate effector cells in children suggests that this population may participate in early-life immune defense during the window before adaptive immunity is fully established. Further functional studies will be needed to determine whether these cells contribute directly to pathogen clearance or play an immunoregulatory role.
+
+Third, our single-cell immune aging clock achieves performance ($r = 0.92$, MAE = 5.8~years) comparable to established DNA methylation clocks~\citep{horvath2013dna,hannum2013genome}, while offering the advantage of providing cell-type-resolved information about the contributors to biological age. The most informative features in the clock---T~cell clonality, B~cell proportion, and inflammatory gene expression in monocytes---reflect the core axes of immunosenescence and inflammaging~\citep{franceschi2000inflammaging}. This clock could serve as a tool for assessing individual immune health, stratifying patients in clinical trials, or monitoring the effects of interventions aimed at rejuvenating the aging immune system.
+
+Several limitations should be acknowledged. Our cohort was drawn from a single geographic and ethnic population (Shanghai, China), and generalizability to other populations remains to be demonstrated. The cross-sectional design cannot distinguish cohort effects from true aging effects; longitudinal follow-up of a subset of participants is ongoing. Additionally, our analysis was restricted to peripheral blood, which captures only a fraction of the immune system; tissue-resident immune cells may exhibit different aging dynamics.
+
+\section{Conclusion}
+
+We have constructed the first multi-omic single-cell atlas of human peripheral immune cells spanning the complete lifespan from birth to the tenth decade of life. Our integrated analysis of scRNA-seq, paired TCR/BCR sequencing, CyTOF, bulk RNA-seq, and flow cytometry in 220 healthy individuals across 13 age groups reveals that T~cells are the immune lineage most extensively remodeled by aging, with GNLY$^+$CD8$^+$ effector memory T~cells exhibiting the highest clonal expansion. We identify a previously unrecognized population of cytotoxic B~cells enriched in early childhood, and we develop a single-cell immune aging clock that predicts chronological age with high accuracy. This atlas provides a foundational resource for the immunology and aging research communities and a framework for evaluating individual immune status across the human lifespan.
+
+\section*{Data Availability}
+
+All single-cell RNA-seq, TCR/BCR-seq, CyTOF, and bulk RNA-seq data have been deposited in the Genome Sequence Archive for Human under accession number HRA00XXXX. The immune aging clock model and analysis code are available at \url{https://github.com/immuneatlas/lifespan-atlas}.
+
+\section*{Acknowledgments}
+
+We thank all volunteers of the Shanghai Pudong Cohort for their participation and the clinical staff for sample collection. We acknowledge the technical assistance of the core facilities at Shanghai Institute of Immunology.
+
+\bibliography{references}
+
+\end{document}

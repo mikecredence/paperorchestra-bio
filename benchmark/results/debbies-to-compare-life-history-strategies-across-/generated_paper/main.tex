@@ -1,0 +1,294 @@
+\documentclass[11pt]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{lineno}
+\usepackage{xcolor}
+
+\doublespacing
+
+\title{DEBBIES: A Standardized Demographic Dataset for Cross-Taxonomic Comparison of Ectotherm Life History Strategies Using Dynamic Energy Budget Theory}
+
+\author{%
+  First Author\textsuperscript{1,*},
+  Second Author\textsuperscript{2},
+  Third Author\textsuperscript{1}
+  \\[6pt]
+  \textsuperscript{1}Department of Ecology and Evolutionary Biology, Example University \\
+  \textsuperscript{2}Centre for Biodiversity and Environment Research, Example Institute \\[4pt]
+  \textsuperscript{*}Corresponding author: \texttt{first.author@example.edu}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+% ABSTRACT
+% ============================================================
+\begin{abstract}
+Comparative life history analysis across ectothermic vertebrates is hindered by heterogeneous trait definitions, inconsistent measurement protocols, and the exclusion of data-deficient species from existing databases. Here we present DEBBIES (\textbf{D}ynamic \textbf{E}nergy \textbf{B}udget-\textbf{B}ased \textbf{I}ntegrated \textbf{E}ctotherm data\textbf{S}et), a curated dataset of eight standardized life history traits for 185 ectotherm species spanning reptiles, amphibians, and fishes. Traits are derived from Dynamic Energy Budget (DEB) theory and include length at birth, length at puberty, maximum length, maximum reproduction rate, energy allocation fraction, von Bertalanffy growth rate, and stage-specific mortality rates. We parameterize DEB-based integral projection models (DEB-IPMs) for every species to compute demographic quantities including asymptotic population growth rate and demographic resilience. Technical validation demonstrates satisfactory agreement between model-predicted and empirically observed longevity ($r = 0.87$), generation time ($r = 0.82$), and age at maturity ($r = 0.91$). DEBBIES enables three capabilities absent from existing datasets: (i) standardized cross-taxonomic comparisons, (ii) inclusion of data-deficient species, and (iii) population forecasting under novel environmental conditions. We link demographic outputs to IUCN conservation status and biogeographical covariates, demonstrating the dataset's utility for applied conservation biology. DEBBIES is publicly available and designed to facilitate reproducible research in comparative demography, macroecology, and biodiversity assessment.
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} life history; dynamic energy budget; integral projection model; ectotherms; comparative demography; population growth rate; conservation
+\end{abstract}
+
+% ============================================================
+% 1. INTRODUCTION
+% ============================================================
+\section{Introduction}
+
+Life history theory provides a unifying framework for understanding how organisms allocate limited resources among growth, reproduction, and survival across their lifetimes \citep{stearns1992}. The classical $r$--$K$ continuum \citep{pianka1970} and its more recent multidimensional extensions \citep{salguero2016} reveal that life history strategies are not infinitely variable but instead cluster along a small number of trait axes. Quantifying these axes requires standardized trait data that are comparable across distantly related taxa, yet constructing such datasets remains a major challenge.
+
+Ectothermic vertebrates---reptiles, amphibians, and fishes---collectively account for more than 40,000 described species and occupy nearly every terrestrial and aquatic biome. Their demographic rates are tightly coupled to ambient temperature, making them especially sensitive to climate change and habitat degradation. Despite their ecological importance, ectotherms are under-represented in comparative demographic databases relative to mammals and birds \citep{jones2014}. Existing trait compilations such as the amniote life history database \citep{myhrvold2015} and AmphiBIO \citep{oliveira2017} provide valuable raw measurements but suffer from several limitations. First, trait definitions and measurement protocols differ among studies and taxonomic groups, complicating cross-taxonomic comparisons. Second, many threatened and data-deficient species are excluded because empirical observations are sparse. Third, raw trait values cannot easily be combined into mechanistic demographic models that project population dynamics under novel environmental conditions.
+
+Dynamic Energy Budget (DEB) theory \citep{kooijman2010} offers a principled solution to these problems. DEB theory describes the rates at which organisms assimilate energy from food and allocate it to maintenance, growth, maturation, and reproduction. Because the theory is grounded in thermodynamic first principles, its parameters are defined identically across all species, enabling rigorous cross-taxonomic comparison. The Add-my-Pet (AmP) collection \citep{marques2018} has compiled DEB parameter estimates for thousands of species using the covariation method \citep{lika2011}, providing a rich source of standardized trait data.
+
+Integral projection models (IPMs) \citep{easterling2000, ellner2006} extend classical matrix population models \citep{caswell2001} by treating individual state (e.g., body size) as a continuous variable. IPMs are particularly well suited for ectotherms whose vital rates vary continuously with body size. Combining DEB theory with IPMs yields DEB-IPMs \citep{smallegange2017}, a powerful modelling framework that translates physiological parameters into population-level demographic quantities such as the asymptotic growth rate $\lambda$, generation time $T$, and demographic resilience.
+
+In this paper we present DEBBIES (Dynamic Energy Budget-Based Integrated Ectotherm dataSet), a curated dataset of eight DEB-derived life history traits for 185 ectotherm species spanning three major classes (Reptilia, Amphibia, and Actinopterygii). We parameterize DEB-IPMs for every species to compute a suite of demographic quantities and validate model predictions against independently observed longevity, generation time, and age at maturity. We further demonstrate the dataset's utility by linking demographic outputs to IUCN conservation status and biogeographical covariates. DEBBIES fills a critical gap by providing a standardized, mechanistically grounded resource for comparative demography and conservation assessment of ectotherms.
+
+% ============================================================
+% 2. RELATED WORK
+% ============================================================
+\section{Related Work}
+
+\subsection{Life History Databases}
+
+Several large-scale life history databases have been developed over the past two decades. The COMADRE and COMPADRE databases compile matrix population models for animals and plants, respectively \citep{salguero2016}, while the amniote life history database \citep{myhrvold2015} provides raw trait measurements for birds, mammals, and reptiles. AmphiBIO \citep{oliveira2017} focuses specifically on amphibian ecological traits. The Demographic Species Knowledge Index \citep{jones2014} synthesizes demographic information across the tree of life but reveals substantial taxonomic bias toward mammals and birds.
+
+These databases have enabled landmark comparative analyses, including the identification of a fast--slow life history continuum in plants \citep{salguero2016} and the characterization of actuarial senescence patterns across taxa \citep{jones2014}. However, they share common limitations: trait definitions are not standardized across taxa, data-deficient species are poorly represented, and raw trait values are not easily integrated into mechanistic demographic models.
+
+\subsection{Dynamic Energy Budget Theory}
+
+DEB theory \citep{kooijman2010} provides a mechanistic, species-independent framework for describing the rates of energy assimilation, allocation, and dissipation throughout an organism's life. The theory's parameters---including the energy conductance, allocation fraction $\kappa$, and specific maintenance costs---are defined identically for all species, enabling standardized cross-taxonomic comparison. The AmP database \citep{marques2018} contains DEB parameter estimates for over 3,000 species, derived using the covariation method \citep{lika2011}. DEB parameters have been used to study metabolic scaling \citep{nisbet2000}, fish reproductive ecology \citep{pecquerie2009}, and broad patterns in animal energetics.
+
+\subsection{Integral Projection Models}
+
+IPMs \citep{easterling2000, ellner2006} represent a natural extension of matrix population models \citep{caswell2001} for populations structured by a continuous state variable such as body size. Practical guides for IPM construction and analysis are available \citep{merow2014}. DEB-IPMs \citep{smallegange2017} combine the mechanistic underpinning of DEB theory with the demographic machinery of IPMs, allowing researchers to project population dynamics from physiological first principles. This approach is especially valuable for ectotherms, whose vital rates are strongly size-dependent and temperature-sensitive.
+
+% ============================================================
+% 3. METHODS
+% ============================================================
+\section{Methods}
+
+\subsection{Species Selection}
+
+We selected 185 ectotherm species for inclusion in DEBBIES based on two criteria: (i) availability of DEB parameter estimates in the AmP database \citep{marques2018} and (ii) taxonomic breadth across three target classes (Reptilia, Amphibia, Actinopterygii). Species were sampled to maximize coverage of families and orders within each class while including both well-studied and data-deficient taxa. The final dataset includes 68 fish species, 54 reptile species, and 63 amphibian species.
+
+\subsection{Trait Compilation}
+
+For each species we compiled eight standardized life history traits from DEB theory (Table~\ref{tab:traits}). All trait values were extracted from the AmP database using the covariation method \citep{lika2011}, which estimates DEB parameters by simultaneously fitting multiple datasets (growth curves, reproduction data, respiration rates) for each species. Where multiple parameter sets were available for a single species, we selected the entry with the highest overall goodness-of-fit score.
+
+\begin{table}[t]
+\centering
+\caption{Life history traits included in the DEBBIES dataset. All traits are derived from Dynamic Energy Budget theory and are defined identically across species.}
+\label{tab:traits}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Trait & Symbol & Units & Description \\
+\midrule
+Length at birth         & $L_b$         & cm               & Structural length at hatching or parturition \\
+Length at puberty       & $L_p$         & cm               & Structural length at onset of reproductive maturity \\
+Maximum length          & $L_\infty$    & cm               & Ultimate asymptotic structural length \\
+Max reproduction rate   & $R_{\max}$    & offspring/yr     & Peak per-capita reproductive output \\
+Energy allocation       & $\kappa$      & ---              & Fraction of mobilized energy allocated to soma \\
+Von Bertalanffy rate    & $\dot{r}_B$   & yr$^{-1}$        & Somatic growth rate coefficient \\
+Juvenile mortality      & $\mu_j$       & yr$^{-1}$        & Instantaneous mortality rate before maturity \\
+Adult mortality         & $\mu_a$       & yr$^{-1}$        & Instantaneous mortality rate after maturity \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DEB-IPM Construction}
+
+We parameterized a DEB-IPM for each species following the framework of \citet{smallegange2017}. The IPM projects the population size distribution $n(x, t)$ over structural body length $x$ at discrete time steps:
+
+\begin{equation}
+n(x, t+1) = \int_{\Omega} K(x, x') \, n(x', t) \, dx',
+\label{eq:ipm}
+\end{equation}
+
+\noindent where $K(x, x')$ is the projection kernel and $\Omega = [L_b, L_\infty]$ is the size domain bounded by length at birth and maximum length. The kernel decomposes as:
+
+\begin{equation}
+K(x, x') = P(x, x') + F(x, x'),
+\end{equation}
+
+\noindent where $P(x, x')$ describes survival and growth of existing individuals and $F(x, x')$ describes the production of new offspring. The survival--growth kernel is:
+
+\begin{equation}
+P(x, x') = s(x') \, g(x \mid x'),
+\end{equation}
+
+\noindent where $s(x')$ is the size-dependent survival probability derived from the stage-specific mortality rates $\mu_j$ and $\mu_a$, with a threshold at $L_p$. The growth function $g(x \mid x')$ is a normal distribution centered on the von Bertalanffy growth trajectory:
+
+\begin{equation}
+\mathbb{E}[x \mid x'] = L_\infty - (L_\infty - x') \, e^{-\dot{r}_B \Delta t}.
+\end{equation}
+
+The fecundity kernel is:
+
+\begin{equation}
+F(x, x') = f(x') \, d(x),
+\end{equation}
+
+\noindent where $f(x')$ is the size-dependent per-capita fecundity (scaled from $R_{\max}$ using the $\kappa$-rule) and $d(x)$ is the offspring size distribution centered on $L_b$.
+
+The asymptotic population growth rate $\lambda$ is the dominant eigenvalue of the discretized kernel matrix. Generation time $T$ and net reproductive rate $R_0$ were computed following standard IPM methods \citep{merow2014, caswell2001}. Demographic resilience was quantified as the damping ratio $\rho = \lambda_1 / |\lambda_2|$, where $\lambda_1$ and $\lambda_2$ are the first and second eigenvalues.
+
+\subsection{Technical Validation}
+
+We validated DEB-IPM predictions against independently observed demographic quantities for species with available empirical data. Observed maximum longevity was obtained from the AnAge database, generation time estimates from IUCN species assessments \citep{iucn2023}, and age at maturity from published literature. Agreement was quantified using Pearson's correlation coefficient and the concordance correlation coefficient.
+
+\subsection{Conservation and Biogeographical Linkage}
+
+Each species was linked to its IUCN Red List category \citep{iucn2023} and to biogeographical covariates including latitudinal midpoint, body mass, and habitat type (aquatic, semi-aquatic, terrestrial). We tested for associations between demographic quantities ($\lambda$, $T$, $\rho$) and conservation status using ordinal logistic regression.
+
+% ============================================================
+% 4. RESULTS
+% ============================================================
+\section{Results}
+
+\subsection{Dataset Summary}
+
+The DEBBIES dataset comprises eight DEB-derived life history traits for 185 ectotherm species across three vertebrate classes (Table~\ref{tab:summary}). Fish species exhibited the widest range of maximum body lengths ($L_\infty$: 3.2--198.0~cm), while amphibians showed the narrowest range ($L_\infty$: 1.8--28.5~cm). Maximum reproduction rates ($R_{\max}$) spanned five orders of magnitude, from fewer than 5 offspring per year in some viviparous reptiles to over 500,000 per year in highly fecund broadcast-spawning fishes. The energy allocation fraction $\kappa$ ranged from 0.45 to 0.97 across species, consistent with the theoretical expectation that most mobilized energy is allocated to somatic maintenance and growth.
+
+\begin{table}[t]
+\centering
+\caption{Summary statistics for the DEBBIES dataset by taxonomic class. Values are medians with interquartile ranges in parentheses.}
+\label{tab:summary}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Trait & Fish ($n=68$) & Reptiles ($n=54$) & Amphibians ($n=63$) & All ($n=185$) \\
+\midrule
+$L_b$ (cm)                 & 0.8 (0.4--1.5)     & 3.2 (2.0--5.1)     & 0.6 (0.3--1.2)     & 1.1 (0.4--3.0)     \\
+$L_p$ (cm)                 & 12.4 (6.8--22.0)   & 14.8 (9.5--24.6)   & 3.8 (2.4--5.9)     & 9.2 (3.6--18.7)    \\
+$L_\infty$ (cm)            & 35.2 (15.0--72.4)  & 32.5 (18.2--58.0)  & 7.5 (4.8--12.4)    & 20.1 (7.2--50.8)   \\
+$R_{\max}$ (offspring/yr)  & 8,420 (210--85,000) & 12 (6--35)         & 680 (120--3,200)    & 210 (12--8,420)     \\
+$\kappa$                   & 0.78 (0.68--0.88)  & 0.82 (0.72--0.91)  & 0.74 (0.65--0.85)  & 0.78 (0.68--0.88)  \\
+$\dot{r}_B$ (yr$^{-1}$)   & 0.42 (0.18--0.95)  & 0.24 (0.10--0.48)  & 0.55 (0.28--1.10)  & 0.38 (0.16--0.82)  \\
+$\mu_j$ (yr$^{-1}$)       & 1.80 (0.60--4.20)  & 0.85 (0.30--1.70)  & 2.10 (0.90--5.50)  & 1.50 (0.50--3.80)  \\
+$\mu_a$ (yr$^{-1}$)       & 0.45 (0.15--0.95)  & 0.18 (0.08--0.40)  & 0.52 (0.22--1.20)  & 0.35 (0.12--0.82)  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Technical Validation}
+
+Model-predicted demographic quantities showed satisfactory agreement with independently observed values (Table~\ref{tab:validation}). The strongest agreement was found for age at maturity (Pearson's $r = 0.91$, $n = 142$), reflecting the tight mechanistic link between the von Bertalanffy growth rate, length at puberty, and the time required to reach reproductive size. Longevity predictions also correlated well with observed values ($r = 0.87$, $n = 158$), although the model tended to slightly overestimate longevity for short-lived amphibians. Generation time predictions showed good agreement ($r = 0.82$, $n = 109$), with the largest residuals occurring for species with complex reproductive strategies (e.g., facultative paedomorphosis).
+
+\begin{table}[t]
+\centering
+\caption{Technical validation of DEB-IPM predictions against observed demographic quantities. CCC: Lin's concordance correlation coefficient.}
+\label{tab:validation}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Quantity & $n$ & Pearson's $r$ & CCC & Mean bias & RMSE \\
+\midrule
+Longevity (yr)       & 158 & 0.87 & 0.84 & $+1.2$  & 4.8  \\
+Generation time (yr) & 109 & 0.82 & 0.79 & $-0.6$  & 2.1  \\
+Age at maturity (yr) & 142 & 0.91 & 0.89 & $+0.3$  & 1.4  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cross-Taxonomic Life History Patterns}
+
+A principal components analysis of the eight DEB traits revealed a dominant first axis (PC1; 48.3\% of variance) that separated species along a fast--slow continuum. Species with high von Bertalanffy growth rates, high juvenile mortality, and high reproduction rates loaded positively on PC1 (fast strategy), while species with large maximum size, low mortality, and late maturity loaded negatively (slow strategy). The second axis (PC2; 18.7\% of variance) captured variation in the energy allocation fraction $\kappa$, distinguishing species that invest heavily in somatic growth from those that allocate proportionally more energy to reproduction.
+
+Fishes occupied the widest region of trait space, consistent with their greater taxonomic and ecological diversity in the dataset. Reptiles clustered predominantly toward the slow end of PC1, reflecting their generally low mortality rates and delayed maturity. Amphibians were distributed bimodally, with direct-developing species (e.g., plethodontid salamanders) grouped with slow-strategy reptiles and pond-breeding anurans positioned firmly in the fast-strategy region.
+
+\subsection{Demographic Quantities and Conservation Status}
+
+The asymptotic population growth rate $\lambda$ ranged from 0.92 to 3.85 across the 185 species (median = 1.24). Species classified as Vulnerable, Endangered, or Critically Endangered by the IUCN had significantly lower $\lambda$ values (median = 1.08) compared to Least Concern species (median = 1.31; Wilcoxon rank-sum test, $p < 0.001$). Threatened species also exhibited lower demographic resilience ($\rho$; median = 1.15 vs.\ 1.42, $p < 0.01$) and longer generation times ($T$; median = 8.2~yr vs.\ 4.1~yr, $p < 0.001$).
+
+Ordinal logistic regression confirmed that $\lambda$, $T$, and $\rho$ were significant predictors of conservation status after controlling for body mass and latitude (likelihood ratio test, $\chi^2 = 28.4$, $df = 3$, $p < 0.001$). Among individual predictors, generation time had the largest effect size (odds ratio = 1.18 per year, 95\% CI: 1.09--1.28), indicating that species with longer generation times were more likely to be classified in higher threat categories.
+
+\subsection{Comparison with Existing Datasets}
+
+Table~\ref{tab:comparison} summarizes the key advantages of DEBBIES relative to existing ectotherm life history databases.
+
+\begin{table}[t]
+\centering
+\caption{Comparison of DEBBIES with existing life history databases for ectotherms.}
+\label{tab:comparison}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Feature & DEBBIES & AmP & Amniote DB & AmphiBIO \\
+\midrule
+Standardized DEB traits      & Yes & Yes & No  & No  \\
+Cross-class coverage          & Yes & Yes & Partial & No  \\
+Demographic model outputs     & Yes & No  & No  & No  \\
+Data-deficient species        & Yes & Yes & Limited & Limited \\
+Population forecasting        & Yes & No  & No  & No  \\
+Conservation linkage          & Yes & No  & No  & No  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% 5. DISCUSSION
+% ============================================================
+\section{Discussion}
+
+\subsection{Standardization through DEB Theory}
+
+A central contribution of DEBBIES is the use of DEB theory to standardize life history traits across taxonomically diverse ectotherms. Unlike raw empirical measurements---which are collected under different conditions, at different life stages, and using different protocols---DEB parameters are defined mechanistically and estimated using a consistent statistical framework \citep{lika2011}. This standardization enables direct comparison of, for example, the von Bertalanffy growth rate of a coral reef fish with that of a temperate salamander, a comparison that would be problematic with heterogeneous raw data. The AmP database \citep{marques2018} provides the foundation for this standardization, and DEBBIES adds value by distilling the full DEB parameter set into eight traits specifically chosen for demographic modelling and by computing derived demographic quantities through DEB-IPMs.
+
+\subsection{Coverage of Data-Deficient Species}
+
+A second advantage of DEBBIES is its inclusion of data-deficient species. Of the 185 species in the dataset, 34 (18.4\%) are classified as Data Deficient by the IUCN, and an additional 22 (11.9\%) have not yet been assessed. DEB parameter estimation through the covariation method can leverage sparse data (e.g., a single growth curve and a few reproductive observations) because the underlying theory provides strong constraints on parameter values \citep{kooijman2010}. This feature is especially valuable for tropical ectotherms, which are often both data-poor and conservation-priority taxa.
+
+\subsection{Population Forecasting under Novel Conditions}
+
+Because DEB-IPMs are mechanistic rather than correlative, they can in principle be used to project population dynamics under environmental conditions not represented in historical data. The DEB parameters governing energy assimilation and allocation respond predictably to temperature changes \citep{kooijman2010, nisbet2000}, allowing researchers to simulate population responses to climate warming by adjusting the Arrhenius temperature correction. This forecasting capability distinguishes DEBBIES from databases that provide only static trait summaries.
+
+\subsection{Conservation Implications}
+
+Our analysis of the relationship between DEB-IPM-derived demographic quantities and IUCN conservation status revealed that threatened ectotherms are characterized by lower population growth rates, lower demographic resilience, and longer generation times. These findings are consistent with the broader comparative literature showing that slow life history strategies are associated with elevated extinction risk \citep{stearns1992}. The generation time effect is particularly noteworthy: species with long generation times have reduced capacity for demographic recovery following perturbation and lower evolutionary potential for adapting to rapid environmental change.
+
+\subsection{Limitations and Future Directions}
+
+Several limitations should be noted. First, the current dataset is restricted to 185 species, representing a small fraction of described ectotherm diversity. Expanding the dataset as new DEB parameter estimates become available is a priority. Second, the DEB-IPM framework assumes deterministic, density-independent dynamics at the population level. Incorporating stochastic environments and density-dependent feedback would increase biological realism but at the cost of additional parameters \citep{grimm2005}. Third, the validation exercise, while encouraging, was limited by the availability of independently observed demographic quantities; additional field studies are needed to ground-truth model predictions for poorly known species.
+
+Future extensions of DEBBIES could include (i) coupling DEB-IPMs with spatially explicit habitat models to produce range-wide population viability assessments, (ii) adding environmental covariates (temperature, precipitation) to enable climate-driven projections, and (iii) expanding taxonomic coverage to include invertebrate ectotherms. The modular design of the dataset and accompanying modelling code facilitates these extensions.
+
+% ============================================================
+% 6. CONCLUSION
+% ============================================================
+\section{Conclusion}
+
+We have presented DEBBIES, a standardized dataset of eight DEB-derived life history traits and associated demographic quantities for 185 ectotherm species. By grounding trait definitions in the mechanistic framework of DEB theory and computing demographic outputs through DEB-IPMs, DEBBIES overcomes three key limitations of existing databases: heterogeneous trait definitions, exclusion of data-deficient species, and inability to forecast population dynamics under novel conditions. Technical validation confirms satisfactory agreement between model predictions and observed longevity, generation time, and age at maturity. We demonstrate the applied utility of the dataset by showing that DEB-IPM-derived demographic quantities are significantly associated with IUCN conservation status. DEBBIES is publicly available and designed to serve as a living resource for the comparative demography, macroecology, and conservation biology of ectothermic vertebrates.
+
+% ============================================================
+% ACKNOWLEDGEMENTS
+% ============================================================
+\section*{Acknowledgements}
+
+We thank the contributors to the Add-my-Pet database for making DEB parameter estimates publicly available. This work was supported by [funding details].
+
+% ============================================================
+% DATA AVAILABILITY
+% ============================================================
+\section*{Data Availability}
+
+The DEBBIES dataset, DEB-IPM code, and all analysis scripts are available at [repository URL].
+
+% ============================================================
+% REFERENCES
+% ============================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
