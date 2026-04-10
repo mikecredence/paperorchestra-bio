@@ -1,0 +1,130 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{DEBBIES to compare life history strategies across ectotherms}
+
+\author{
+Isabel M.\ Smallegange$^{1,*}$ \and Collaborators$^{1,2}$\\
+\\
+\small $^{1}$Institute for Biodiversity and Ecosystem Dynamics, University of Amsterdam, The Netherlands\\
+\small $^{2}$Department of Biology, Vrije Universiteit Amsterdam, The Netherlands\\
+\small $^{*}$Corresponding author
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Demographic models are used to explore how life history traits structure life history strategies across species. This study presents the DEBBIES dataset that contains estimates of eight life history traits (length at birth, puberty and maximum length, maximum reproduction rate, fraction energy allocated to respiration versus reproduction, von Bertalanffy growth rate, mortality rates) for 185 ectotherm species. The dataset can be used to parameterise dynamic energy budget integral projection models (DEB-IPMs) to calculate key demographic quantities like population growth rate and demographic resilience, but also link to conservation status or biogeographical characteristics. Our technical validation shows a satisfactory agreement between observed and predicted longevity, generation time, age at maturity across all species. Compared to existing datasets, DEBBIES accommodates (i) easy cross-taxonomical comparisons, (ii) many data-deficient species, and (iii) population forecasts to novel conditions because DEB-IPMs include a mechanistic description of the trade-off between growth and reproduction. This dataset has the potential for biologists to unlock general predictions on ectotherm population responses from only a few key life history traits.
+\end{abstract}
+
+\section{Background \& Summary}
+
+Understanding the diversity of life history strategies is a central goal in ecology and evolutionary biology. Species vary enormously in traits such as growth rate, reproductive output, body size, and survival, and these traits jointly determine population dynamics and extinction risk \citep{salguero2016,paniw2018,healy2020}. Comparative analyses of life history strategies have revealed key organising axes such as the fast--slow continuum \citep{salguero2017} and reproductive strategy axis \citep{salguero2016}, but extending these frameworks across broad taxonomic groups remains challenging, particularly for data-deficient species.
+
+Several databases support structured demographic modelling, including COMPADRE for plant matrix models \citep{salguero2015}, COMADRE for animal matrix models \citep{salguero2016b}, PADRINO for integral projection models \citep{jongejans2022}, and MOSAIC for trait data \citep{pottier2023}. However, these databases either lack mechanistic underpinning or have limited taxonomic coverage of ectotherms, which represent the vast majority of vertebrate diversity.
+
+Dynamic energy budget (DEB) theory \citep{kooijman2010,kooijman2019} provides a mechanistic framework linking individual-level energy allocation to population-level demographics. By combining DEB theory with integral projection models (IPMs) \citep{ellner2012,merow2014}, DEB-IPMs \citep{smallegange2017} explicitly model the trade-off between growth and reproduction as a function of body size and food availability. This mechanistic foundation enables predictions under novel environmental conditions, a capability that purely empirical approaches lack.
+
+Here, we present DEBBIES (Dynamic Energy Budget Biodiversity Information on Ectotherm Species), a dataset containing estimates of eight life history traits for 185 ectotherm species from 18 orders. These traits are sufficient to parameterise DEB-IPMs, enabling calculation of population growth rates, demographic resilience, and other key quantities. DEBBIES complements existing databases by (i) enabling easy cross-taxonomical comparisons through a standardised trait set, (ii) including many data-deficient species for which matrix models or detailed demographic data are unavailable, and (iii) supporting population forecasts under novel conditions through the mechanistic DEB-IPM framework.
+
+\section{Methods}
+
+\subsection{Brief description of a DEB-IPM}
+
+The three demographic rates of survival, growth, and reproduction, together with the parent--offspring size relationship, are captured in the DEB-IPM by four fundamental functions \citep{smallegange2017,deangelis2000}:
+
+\begin{enumerate}
+    \item The survival function $S(L(t))$, describing the probability of surviving from time $t$ to $t+1$.
+    \item The growth function $G(L', L(t))$, describing the probability that an individual of body length $L$ at time $t$ grows to length $L'$ at $t+1$, conditional on survival.
+    \item The reproduction function $R(L(t))$, giving the number of offspring produced between time $t$ and $t+1$ by an individual of length $L$.
+    \item The parent--offspring function $D(L', L(t))$, describing the association between parental body length and offspring length.
+\end{enumerate}
+
+The dynamics of the body length distribution from time $t$ to $t+1$ can be written as:
+
+\begin{equation}
+N(L', t+1) = \int_{\Omega} \left[ G(L', L) S(L) + D(L', L) R(L) \right] N(L, t) \, dL
+\end{equation}
+
+\noindent where the closed interval $\Omega$ denotes the length domain.
+
+\subsection{The eight life history traits}
+
+Each species in DEBBIES is characterised by the following eight traits:
+
+\begin{enumerate}
+    \item $L_b$: length at birth
+    \item $L_p$: length at puberty (maturation)
+    \item $L_m$: maximum (asymptotic) body length
+    \item $\dot{R}_m$: maximum reproduction rate
+    \item $\kappa$: fraction of mobilised energy allocated to somatic maintenance and growth (versus reproduction)
+    \item $\dot{r}_B$: von Bertalanffy growth rate
+    \item $h_a$: age-dependent mortality rate (ageing acceleration)
+    \item $h_b$: background (size-independent) mortality rate
+\end{enumerate}
+
+\subsection{Data collation}
+
+Life history trait values were collated from the Add-my-Pet database, which provides DEB parameter estimates for thousands of species \citep{kooijman2019}. For species not in the database, we estimated parameters from published literature on growth curves, maximum sizes, ages at maturity, and reproductive output \citep{dureuil2022}. Mortality parameters were estimated from maximum observed lifespan and published survival estimates where available \citep{dulvy2016,smith1998,musick2004}. For data-deficient species, allometric relationships were used to fill gaps \citep{jabado2020,simpfendorfer2023}.
+
+\subsection{Technical validation}
+
+We validated the dataset by comparing DEB-IPM predictions of longevity, generation time, and age at maturity against observed values from published literature. Predictions were generated at three levels of experienced feeding level: $E(Y) = 0.9$ (high food), $E(Y) = 0.7$ (moderate food), and $E(Y) = 0.5$ (low food).
+
+For each species, we calculated the population growth rate $\lambda$ as the dominant eigenvalue of the discretised IPM kernel, using 100 mesh points. We then compared predicted and observed values using linear regression models without an intercept ($y \sim x$), assessing slope and $R^2$.
+
+\section{Data Records}
+
+The DEBBIES dataset is provided as a single data file where each row corresponds to a species and columns describe (Table~1):
+
+\begin{itemize}
+    \item Species taxonomy (class, order, family, genus, species)
+    \item The eight life history trait values ($L_b$, $L_p$, $L_m$, $\dot{R}_m$, $\kappa$, $\dot{r}_B$, $h_a$, $h_b$)
+    \item Data sources and quality flags
+    \item Conservation status (IUCN Red List category)
+    \item Biogeographical region
+\end{itemize}
+
+The dataset currently covers 185 species across 18 orders, with representation from fishes (sharks, rays, bony fishes), reptiles, and amphibians.
+
+\section{Technical Validation}
+
+Our technical validation demonstrates satisfactory agreement between observed and predicted demographic quantities (Figure~2, Table~2). Linear regressions of predicted versus observed values yielded slopes close to unity and high $R^2$ values for generation time and longevity across all three feeding levels. Predicted age at maturity also showed good agreement, though with somewhat greater scatter for species with very early or very late maturation.
+
+The frequency distribution of predicted population growth rates $\lambda$ showed that most species have $\lambda$ values slightly above 1.0 at high food availability, as expected for populations near equilibrium (Figure~2a). At reduced food levels, $\lambda$ decreased, reflecting the energetic constraints on growth and reproduction captured by the DEB-IPM framework.
+
+From the eight life history traits, nine additional derived demographic quantities can be calculated, including generation time, net reproductive rate, and elasticities of $\lambda$ to survival, growth, and reproduction (Table~3). MatLab code for these calculations is provided.
+
+\section{Usage Notes}
+
+DEBBIES can be used for several applications:
+
+\begin{enumerate}
+    \item \textbf{Comparative life history analysis.} The standardised trait set enables comparison of life history strategies across taxa, contributing to frameworks such as the fast--slow continuum \citep{salguero2016}.
+    \item \textbf{Conservation risk assessment.} DEB-IPM-derived demographic rates can inform extinction risk assessments, particularly for data-deficient species \citep{musick2004,jabado2020}.
+    \item \textbf{Population forecasting.} Because DEB-IPMs mechanistically model energy allocation, they can project population dynamics under novel environmental conditions such as altered food availability or temperature \citep{vanbeveren1997,smallegange2023}.
+    \item \textbf{Integration with existing databases.} DEBBIES can feed into Essential Biodiversity Variables \citep{kissling2018}, MOSAIC \citep{pottier2023}, and other open trait databases \citep{schneider2020}.
+\end{enumerate}
+
+\section*{Code Availability}
+
+MatLab code for parameterising DEB-IPMs from the eight life history traits and for calculating derived demographic quantities is available from the corresponding author.
+
+\section*{Acknowledgments}
+
+We acknowledge the Add-my-Pet database community for maintaining the DEB parameter repository.
+
+\bibliography{references}
+
+\end{document}

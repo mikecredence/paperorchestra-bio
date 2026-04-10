@@ -1,0 +1,99 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{sRNAfrag: A Pipeline and Suite of Tools to Analyze Fragmentation in Small RNA Sequencing Data}
+\author{Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Fragments derived from small RNAs such as small nucleolar RNAs hold biological relevance. However, they remain poorly understood, calling for more comprehensive methods for analysis. We developed sRNAfrag, a standardized workflow and set of scripts to quantify and analyze sRNA fragmentation of any biotype. In a benchmark, sRNAfrag detects loci of mature microRNAs fragmented from precursors and, utilizing multi-mapping events, the conserved 5' seed sequence of miRNAs, which we believe may extrapolate to other small RNA fragments. The tool detected 1,411 snoRNA fragment conservation events between eukaryotic species, providing the opportunity to explore motifs and fragmentation patterns not only within species, but between. sRNAfrag is freely available at \url{https://github.com/kenminsoo/sRNAfrag}.
+\end{abstract}
+
+\section{Introduction}
+
+Evidence of transfer RNA (tRNA) fragmentation has been reported since at least 1969 \citep{Bayev1969}. However, it was only recently that their functional roles in disease were revealed \citep{Huang2020,Tao2022}. Fragmentation of other small RNAs (sRNAs) such as small nucleolar RNAs (snoRNAs) and ribosomal RNAs (rRNAs) have also been reported, with the majority derived from the 3' and 5' ends of the primary transcript \citep{Li2012}. snoRNA-derived fragments have been shown to be processed into microRNA-like molecules that regulate alternative splicing and promote cancer cell invasion \citep{Kishore2010,Patterson2017,Pandarakalam2022}. Computational analyses have further identified rRNA fragments as potential regulators of gene expression \citep{Peng2021}, and snoRNA-derived fragments can associate with Argonaute proteins \citep{Ender2008,Czech2020}.
+
+While much of the sRNA fragment literature has focused on tRNA-derived fragments, there is rising evidence that fragments derived from other biotypes of sRNAs have mechanistic roles in disease and normal biology. Reanalysis of PAR-CLIP sequencing datasets has revealed that fragments derived from snoRNAs and rRNAs associate with Argonaute proteins, suggesting functional relevance. Despite these observations, existing tools for small RNA analysis are largely focused on specific biotypes. MINTbase and MINTmap provide comprehensive tRNA fragment profiling \citep{Pliatsika2018,Loher2017}, FlaiMapper offers computational annotation of small ncRNA-derived fragments \citep{Hoogstrate2015}, and MGcount addresses multi-mapping alignments \citep{Marre2022}. However, no existing tool provides a unified framework for analyzing fragmentation across all sRNA biotypes.
+
+To address this gap, we developed sRNAfrag, a standardized pipeline and suite of tools for quantifying and analyzing sRNA fragmentation of any biotype. The pipeline processes raw sequencing data through alignment, peak calling, fragment clustering, and cross-species comparison, while also accounting for multi-mapping events that are particularly informative for understanding fragment conservation. Our approach enables systematic exploration of fragmentation patterns across species and biotypes, facilitating new insights into sRNA biology.
+
+\section{Methods}
+
+\subsection{Pipeline Overview and Annotation Data Sources}
+
+sRNAfrag is organized into three distinct modules: P1 (initial processing), S1 (summary statistics), and P2 (post-processing) (Figure~\ref{fig:pipeline}). Users configure the pipeline by modifying a YAML configuration file specifying the location of files, adapter sequences, and which modules to run. A modified annotation file in General Transfer Format (GTF), along with a folder of gzipped FASTQ files, is used as input.
+
+Annotation scripts parse NCBI annotations for three common model species: \textit{M. musculus}, \textit{C. elegans}, and \textit{A. thaliana} \citep{NCBI2023}. Human annotations were derived from snoDB (snoRNA), RNAcentral (snRNA), and the Integrated Transcript Annotation for small RNA (rRNA) \citep{Fafard2022,RNAcentral2021,Patel2022}. GNU Parallel was used for parallel processing \citep{Tange2011}.
+
+\subsection{P1 Module -- Initial Processing}
+
+Raw reads are processed for UMIs and adapters using standard tools. Reads are aligned to reference sequences from the provided annotation file, generating BAM files. A lookup table is constructed mapping every possible fragment (defined by start position, end position, and source transcript) to enable rapid identification. Counts are extracted from aligned reads and associated with corresponding entries in the lookup table.
+
+\subsection{Peak Calling and Fragment Detection}
+
+A smoothing function prevents spurious peak calls when large peaks exist nearby (Figure~\ref{fig:smoothing}). Sandwiched zeros (positions with zero counts flanked by non-zero positions) are assigned to the count value of the adjacent locus under the assumption that these tend to represent sequencing gaps rather than true zero-expression positions. Clusters are assigned using a logic-based algorithm requiring fragments to be at least 10 nucleotides long before the cluster ID counter increments (Figure~\ref{fig:clustering}).
+
+\subsection{P2 Module -- Post-Processing and Cross-Species Comparison}
+
+The P2 module merges fragment counts within clusters and performs cross-species comparison using a license-plating approach. Fragments from different species are compared based on sequence similarity using Hamming distance. Conservation events are defined as pairs of fragments from different species with a Hamming distance of at most 3.
+
+\subsection{Multi-Mapping Analysis}
+
+Multi-mapping events, where a fragment aligns to multiple source transcripts, are systematically captured and analyzed. For each cluster of fragments with more than one potential source, the most commonly shared fragment between sources is identified and compared to the most highly expressed fragment.
+
+\section{Results}
+
+\subsection{sRNAfrag Effectively Calls Peaks and Counts}
+
+sRNAfrag extracts both counts and potential start/end loci for users. In a benchmark using human miRNA data, sRNAfrag identified 597 pre-miRNAs with supporting fragments after filtering, compared to 642 obtained by FlaiMapper \citep{Hoogstrate2015}. Of these pre-miRNAs, sRNAfrag called 94.7\% and 86.5\% of start and end loci within 1 bp of their true position (Figure~\ref{fig:peakcalling}A). This is comparable to FlaiMapper, which called 92.4\% and 85.2\% of start and end loci with default settings.
+
+Comparing the counts used to call peaks to those from AASRA \citep{Xu2021} shows that sRNAfrag utilizes counts that are comparable to more standard small RNA-seq workflows during peak calling, affirming that loci-count relationships are properly preserved (Figure~\ref{fig:peakcalling}B). When counts are merged (fragments clustered together), results are closer to those of AASRA (Figure~\ref{fig:peakcalling}C). The slight underestimation of slope (0.983) and negative intercept is partially due to AASRA's behavior of assigning alignments with 1 nucleotide offset to starting positions prior to the first locus of the annotation.
+
+\subsection{Multi-Mapping Events Reveal Conserved Sequences}
+
+The 5' seed sequence of miRNAs represents the functionally important portion of the molecule \citep{Grimson2007}. miRNA families, arising from duplication events, are likely subject to evolutionary pressures to retain the same seed sequence \citep{Zhang2013}. The mir-30 family had four fragments shared amongst all potential sources, each aligned at their 5' ends, representing the beginning of the 5'-derived mature miRNA (hsa-miR-30c-5p) (Figure~\ref{fig:multimapping}A).
+
+Investigating all clusters of fragments with more than one potential source transcript, the 5' end of the most counted fragment matched the most commonly shared fragment 65.9\% of the time (Figure~\ref{fig:multimapping}B). For snoRD115, a fragment was shared between 12 source transcripts with slight sequence differences. Exploring the location of these fragmentation events showed that 40\% of conservation events were at the terminal portion of the source transcript, compared to just 1.5\% for miRNAs (Figure~\ref{fig:multimapping}D).
+
+\subsection{License Plating Allows Conserved Fragments to be Detected}
+
+Given that orthologous snoRNA genes are fairly common, we investigated whether fragments of similar sequence could be detected across species. Using our license-plating method, 1,411 conservation events between two species were found with a Hamming distance of at most 3, the majority shared between \textit{M. musculus} and \textit{H. sapiens} (Figure~\ref{fig:conservation}A).
+
+We investigated one shared fragment derived from the 3' ends of primary transcripts in 3 of 4 chosen species. RNAfold and RNAplot were used to generate minimum free energy structures of source transcripts \citep{Lorenz2011}. The \textit{C. elegans} snoRNA was the most different, with a Hamming distance of two (Figure~\ref{fig:conservation}B), while \textit{H. sapiens} and \textit{M. musculus} shared the same sequence (Figure~\ref{fig:conservation}C--D). These fragments were derived from SNORD15A, annotated in \textit{M. musculus} and \textit{H. sapiens} and with an ortholog in snOPY \citep{Yoshihama2013}. This is a proof of concept that exploring fragmentation between species may be fruitful and is facilitated by sRNAfrag.
+
+\subsection{Run Time and Scalability}
+
+The run time of sRNAfrag exhibits a linear relationship with the number of fragments discovered, largely independent of the number of sequenced reads (Figure~\ref{fig:runtime}A). For every 1,000 additional unique fragments discovered, users can expect an additional 23 seconds of run time. Especially large run times were observed for rRNA fragments, which is unsurprising given that the pipeline processed 20,000--200,000 fragments.
+
+Lookup table generation occurs at a rate of 11,000 fragments per second. The theoretical maximum number of fragments for protein-coding genes (approximately 1.3 billion possible fragments over 20,000 genes \citep{Piovesan2021}) would make full analysis computationally prohibitive. However, fragmentation typically represents a small fraction of possible sequences, with snRNAs showing only 0.06\% of fragments out of all possible.
+
+Most reads from outside-map fragments aligned to piRNAs (Figure~\ref{fig:runtime}B--D). Interestingly, snRNA U1 has been found to be similar to tandem repeat tRNA, which may explain why snRNA fragment alignments were annotated as tRNAs \citep{Marz1985}.
+
+\section{Discussion}
+
+We have presented sRNAfrag, a standardized pipeline and suite of tools for analyzing small RNA fragmentation across any biotype. In benchmarks against existing tools, sRNAfrag demonstrates comparable accuracy in peak calling to FlaiMapper while providing additional capabilities for multi-mapping analysis and cross-species comparison.
+
+The multi-mapping analysis reveals that the conserved 5' seed sequence of miRNAs can be detected through fragment sharing patterns, and this principle may extend to other sRNA biotypes. The detection of 1,411 snoRNA fragment conservation events across eukaryotic species opens new avenues for studying fragmentation biology in an evolutionary context.
+
+Several limitations should be noted. When the number of fragments surpasses 8,000, sampling of the smallest fragments is conducted, which is slow. Memory limitations also constrain the analysis of very long transcripts. Future development could incorporate more efficient data structures and parallel processing to address these scalability challenges.
+
+The modular design of sRNAfrag, with its three-part architecture (P1, S1, P2), allows users to customize their analysis workflow. The YAML configuration and standardized annotation processing make the tool accessible to researchers working with diverse model organisms. By providing a unified framework for sRNA fragment analysis, sRNAfrag enables systematic investigation of fragmentation patterns that have previously been studied only in isolation.
+
+\section*{Data Availability}
+
+sRNAfrag is freely available at \url{https://github.com/kenminsoo/sRNAfrag}. All processing scripts and annotation files are documented on the public repository.
+
+\bibliography{references}
+
+\end{document}

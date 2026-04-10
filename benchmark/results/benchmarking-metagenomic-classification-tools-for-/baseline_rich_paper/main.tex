@@ -1,0 +1,104 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{multirow}
+
+\title{Comprehensive Benchmarking of Metagenomic Classification Tools for Long-Read Sequencing Data}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Long reads have gained popularity in the analysis of metagenomics data. Therefore, we comprehensively assessed metagenomics classification tools at the species taxonomic level. We analysed kmer-based tools, mapping-based tools and two general-purpose long read mappers. We evaluated more than 20 pipelines which use either nucleotide or protein databases and selected 13 for an extensive benchmark. We prepared seven synthetic datasets to test various scenarios, including the presence of a host, unknown species and related species. Moreover, we used available sequencing data from three well-defined mock communities and six real gut microbiomes.
+
+General-purpose mappers Minimap2 and Ram achieved similar or better accuracy on most metrics than best-performing classification tools, while being up to ten times slower than the fastest kmer-based tools but requiring up to four times less RAM. All tested tools were prone to report organisms not present in datasets, except CLARK-S, and they underperformed in the case of high host genetic material presence. Tools using protein databases performed worse than those based on nucleotide databases. Longer read lengths made classification easier, but using only the longest reads reduced accuracy due to differences in read length distributions among species. The comparison of real gut microbiome datasets shows similar abundance profiles for the same type of tools but discordance in the number of reported organisms and abundances between types.
+\end{abstract}
+
+\section{Introduction}
+
+Metagenomic sequencing enables culture-independent analysis of microbial communities, with applications spanning clinical diagnostics, environmental monitoring, and human microbiome research~\citep{quince2017shotgun,mcfall2013animals,turnbaugh2009microbial}. Long-read sequencing technologies from Oxford Nanopore Technologies (ONT) and Pacific Biosciences (PacBio) offer advantages over short reads for metagenomics, including improved taxonomic resolution and the ability to span repetitive regions~\citep{bertrand2019hybrid,luo2022short,xie2022finding,tedersoo2020testing,nicholls2019ultra}.
+
+Previous benchmarking studies have evaluated classification tools primarily on short-read data or on limited long-read scenarios~\citep{escobar2020benchmarking,portik2022evaluation}. However, a comprehensive assessment of the growing number of classification approaches on long-read data, including both synthetic communities with controlled ground truth and real microbiome samples, has been lacking.
+
+Here, we present a comprehensive benchmark of 13 classification pipelines spanning four categories: kmer-based tools (Kraken2~\citep{wood2019improved}, Bracken~\citep{lu2017bracken}, Centrifuge~\citep{kim2016centrifuge}, CLARK~\citep{ounit2015clark}, CLARK-S~\citep{ounit2016clarks}), mapping-based tools (MetaMaps~\citep{dilthey2019metamaps}, MEGAN-LR with nucleotide database~\citep{huson2018megan}, deSAMBA~\citep{yang2021deSAMBA}), general-purpose mappers (Minimap2~\citep{li2018minimap2}, Ram~\citep{vaser2021raven}), and protein-database tools (Kaiju~\citep{menzel2016kaiju}, MEGAN-P). We evaluated these tools across seven synthetic datasets, three mock communities, and six real gut microbiomes, assessing read-level classification, abundance estimation, organism detection, and computational resource usage.
+
+\section{Methods}
+
+\subsection{Classification Pipelines}
+
+We reviewed over 20 tools and selected 13 for extensive benchmarking based on their ability to process long-read data without crashing during database creation or producing consistently poor results. The tools fall into four categories based on their algorithmic approach. Kmer-based tools index reference databases using $k$-mers for rapid classification. Mapping-based tools use sequence alignment tailored for long reads. General-purpose mappers (Minimap2 and Ram) were adapted for metagenomic classification by assigning taxonomy based on best alignment hits. Protein-database tools translate reads and align to protein references.
+
+\subsection{Synthetic Datasets}
+
+We constructed seven synthetic communities from existing PacBio and ONT reads:
+\begin{itemize}
+\item \textbf{ONT1, PB1, PB4:} Bacterial communities without eukaryotic species (3--50 species, abundances from 0.005\% to 20\%)
+\item \textbf{ONT2, PB2:} Communities including eukaryotic species alongside bacteria
+\item \textbf{PB3:} Host-dominated dataset (99\% human reads with two low-abundance bacterial species)
+\item \textbf{PB1+NEG:} PB1 supplemented with randomized human genome reads
+\end{itemize}
+
+All synthetic datasets were subsampled to approximately 1 Gbp for fair comparison.
+
+\subsection{Mock Communities and Real Datasets}
+
+Three mock community datasets with known compositions were used: Zymo (ONT and PacBio HiFi) and ATCC (PacBio HiFi), with species abundances varying from 0.0001\% to 20\%. Six real gut microbiome samples (three ONT, three PacBio HiFi) were analysed to assess tool agreement on complex biological samples.
+
+\subsection{Assessment Metrics}
+
+Tools were evaluated on: (1) read-level classification accuracy at species and genus levels; (2) abundance estimation error (L1 distance between reported and true abundances using relative read count, genome length, and genome count normalization); (3) true/false positive organism detection at various thresholds; and (4) computational resource usage (runtime and memory).
+
+\section{Results}
+
+\subsection{Read-Level Classification}
+
+Off-the-shelf mappers and mapping-based tools outperformed others on almost all datasets at both species and genus levels, with differences up to 10\% compared to kmer-based tools. Minimap2 with alignment achieved the highest accuracy overall, followed by mapping-based tools (deSAMBA, MetaMaps) and Ram. Protein-database pipelines significantly underperformed.
+
+For datasets containing species absent from the database (ONT1, ONT2 with two \textit{Vibrio} species), tools showed contrasting behaviour: CLARK-S and Ram had highest species-level accuracy but lowest genus-level accuracy, while Minimap2 and MEGAN-N performed best at genus level but worse at species level, as they assigned reads to related database species.
+
+Analysis of read length effects confirmed that longer reads improve classification accuracy. However, restricting analysis to only the longest 30\% of reads reduced overall accuracy due to species-specific differences in read length distributions, creating biased representation.
+
+\subsection{Abundance Estimation}
+
+Abundance estimation results were mostly consistent across different normalization approaches for PacBio HiFi reads but varied for ONT reads due to wider read length distributions. Minimap2 with alignment outperformed other tools in absolute abundance differences for most datasets, with mean differences typically below 2\%.
+
+The presence of host genetic material substantially degraded performance. When human read percentage approached 100\% (PB3 dataset), accuracy of most tools declined significantly. MetaMaps performed best on ONT2, Ram on PB2, and CLARK-S on PB4. Bracken significantly improved Kraken2 results for PacBio datasets.
+
+For species not present in the sample, CLARK-S surpassed all other tools in minimizing false positive reports, followed by MetaMaps, Ram, and MEGAN-N. In contrast, Minimap2 was more prone to reporting absent organisms, and kmer-based tools (Kraken2, Centrifuge) often reported an order of magnitude more species than mapping-based tools.
+
+\subsection{Organism Detection}
+
+Application of read count thresholds (1, 10, 50 minimum reads) substantially reduced false positives while also affecting true positive detection for low-abundance species. For very low abundance species (0.005\%--0.02\%), increasing thresholds lowered true positive detections, representing an inherent trade-off between sensitivity and specificity.
+
+\subsection{Real Gut Microbiome Analysis}
+
+PCA and hierarchical clustering of abundance profiles from real gut datasets revealed that tools of the same type cluster together: kmer-based tools (Kraken2, Bracken, Centrifuge) produced similar profiles, while mappers (Minimap2, Ram) and MetaMaps grouped separately. CLARK-S, Kaiju, and MEGAN-P diverged from other tools.
+
+Important discordances emerged: abundance estimates for \textit{Faecalibacterium prausnitzii} differed substantially between kmer-based (12--14\%) and mapping-based tools (17--18\%). Several prevalent gut bacteria were absent from protein databases (\textit{Lachnospiraceae bacterium}, \textit{Eubacterium rectale}) or nucleotide databases (\textit{Prevotella copri}, \textit{Ruminococcus torques}), highlighting the critical impact of database completeness.
+
+Classification rates for ONT gut samples rarely exceeded 50\%, compared to above 80\% for PacBio samples for some tools. The remaining unclassified reads likely reflect species absent from databases.
+
+\subsection{Computational Resources}
+
+Kraken2 was the fastest tool for larger datasets, with Centrifuge fastest for smaller ones. General-purpose mappers were up to 10 times slower than kmer-based tools but required 2--4 times less memory. CLARK, CLARK-S, deSAMBA, and MetaMaps required 10--15 times more memory than the most efficient tools. Database indexing accounted for approximately 1000 seconds for both Ram and Minimap2, dominating runtime for smaller datasets.
+
+\section{Discussion}
+
+Our comprehensive benchmark reveals that no single tool dominates across all evaluation criteria. Kmer-based tools offer rapid analysis well-suited for preliminary screening, while general-purpose mappers like Minimap2 provide slightly superior accuracy at a computational cost that remains practical for most applications. The choice of tool should be guided by the specific requirements of the analysis, considering the trade-offs between speed, accuracy, memory usage, and sensitivity to database completeness.
+
+The consistent underperformance of protein-database tools, the vulnerability of all tools to host contamination, and the substantial impact of database completeness on results highlight areas requiring continued development. The discordances observed between tool types on real gut microbiome data suggest that combining diverse tool categories may provide the most comprehensive view of complex microbial communities.
+
+Regular updates and curation of reference databases are essential, as database completeness was found to be a primary determinant of classification quality across all tested tools.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

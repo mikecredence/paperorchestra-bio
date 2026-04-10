@@ -5,7 +5,7 @@ from pathlib import Path
 
 results_dir = Path(__file__).parent.parent / "results"
 
-for condition in ["generated_paper", "baseline_paper", "rich_paper"]:
+for condition in ["baseline_paper", "generated_paper", "baseline_rich_paper", "rich_paper"]:
     count = 0
     total_secs = total_tabs = total_figs = total_cites = total_bib = total_kb = 0
     papers = []
@@ -48,7 +48,12 @@ for condition in ["generated_paper", "baseline_paper", "rich_paper"]:
             "kb": round(kb, 1),
         })
 
-    label = {"generated_paper": "SKILL (ABSTRACT INPUT)", "baseline_paper": "SINGLE-AGENT BASELINE", "rich_paper": "SKILL (FULL-TEXT INPUT)"}[condition]
+    label = {
+        "baseline_paper": "BASELINE (ABSTRACT)",
+        "generated_paper": "SKILL (ABSTRACT)",
+        "baseline_rich_paper": "BASELINE (FULL-TEXT)",
+        "rich_paper": "SKILL (FULL-TEXT)",
+    }[condition]
     if count == 0:
         print(f"\n=== {label}: no papers yet ===")
         continue

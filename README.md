@@ -10,7 +10,23 @@ A multi-agent pipeline for automated biomedical research paper writing, inspired
 - **Anti-leakage protocol**: Prevents content generation from pre-training memory
 - **Score-tracked refinement**: 0-100 scoring on 6 axes with filesystem rollback
 - **Citation audit**: Automated orphan detection and coverage enforcement (>=90% target)
-- **BiomedWritingBench**: Benchmark corpus with 3 test cases and 25 candidates across 6 biomedical subfields
+- **BiomedWritingBench**: Benchmark of 60 test cases across 10 biomedical subfields with full 2x2 factorial evaluation
+
+## Key Finding
+
+A 2x2 factorial experiment (Pipeline x Input Richness, n=15 paired papers) reveals that **pipeline and input quality are synergistic**:
+
+```
+                    Abstract Input    Full-Text Input
+Baseline:           80.2              80.9  (+0.7)
+Skill Pipeline:     80.7  (+0.5)     84.3  (+3.4)
+```
+
+- The pipeline alone adds little with sparse inputs (+0.5)
+- Rich inputs alone add little without the pipeline (+0.7)
+- **Combined, they add +4.1 points** — the pipeline amplifies the value of rich inputs
+- Skill+FullText wins 9/15 papers (60%) on overall quality
+- Biggest gains in substance: rigor (+6.6), completeness (+4.2), citations (+4.4)
 
 ## Pipeline
 
