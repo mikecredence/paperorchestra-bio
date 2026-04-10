@@ -1,0 +1,183 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{adjustbox}
+
+\title{sRNAfrag: A Pipeline and Suite of Tools to Analyze Fragmentation in Small RNA Sequencing Data}
+
+\author{
+Author A$^{1}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1}$ \\
+$^{1}$Department of Biomedical Informatics, Institution One \\
+$^{2}$Department of Molecular Biology, Institution Two
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Fragments derived from small RNAs such as small nucleolar RNAs hold biological relevance. However, they remain poorly understood, calling for more comprehensive methods for analysis. We developed sRNAfrag, a standardized workflow and set of scripts to quantify and analyze sRNA fragmentation of any biotype. In a benchmark, it is able to detect loci of mature microRNAs fragmented from precursors and, utilizing multi-mapping events, the conserved 5$'$ seed sequence of miRNAs which we believe may extrapolate to other small RNA fragments. The tool detected 1,411 snoRNA fragment conservation events between 2/4 eukaryotic species, providing the opportunity to explore motifs and fragmentation patterns not only within species, but between. Availability: \url{https://github.com/kenminsoo/sRNAfrag}.
+\end{abstract}
+
+\section{Introduction}
+
+Evidence of transfer RNA (tRNA) fragmentation has been reported since at least 1969 \citep{bayev1969reconstitution}. However, it was only recently that their functional roles in disease were revealed \citep{chen2020mechanisms, xie2022comprehensive}. Fragmentation of other small RNAs (sRNAs) such as small nucleolar RNAs (snoRNAs) and ribosomal RNAs (rRNAs) have also been reported, with the majority derived from the 3$'$ and 5$'$ ends of the primary transcript \citep{taft2012extensive, kishore2010snoRNA, yu2017human, lemus2022microRNA, zong2021computational, he2020human, falaleeva2017argonaute, taft2009small}.
+
+While much of the sRNA fragment literature has focused on tRNA-derived fragments, rising evidence shows that fragments derived from other biotypes have mechanistic roles in disease and normal biology. Reanalysis of PAR-CLIP sequencing datasets revealed that fragments derived from snoRNAs and rRNAs associate with Argonaute proteins \citep{falaleeva2017argonaute}, suggesting potential regulatory functions analogous to miRNAs.
+
+Existing tools for sRNA fragment analysis are limited. MINTbase \citep{pliatsika2018mintbase} and MINTmap \citep{loher2017mintmap} focus specifically on tRNA fragments. FlaiMapper \citep{hoogstrate2015flairmapper} provides computational annotation of small ncRNA-derived fragments but with limited cross-species capabilities. MGcount \citep{miani2022mgcount} addresses multi-mapping and multi-overlapping alignments but does not specifically target fragmentation analysis. SURFr offers fragment detection but lacks the comprehensive cross-species analysis capabilities needed for evolutionary studies.
+
+To address these gaps, we developed sRNAfrag, a standardized pipeline and suite of tools to quantify and analyze sRNA fragmentation across any biotype and multiple species. The pipeline incorporates peak calling, count quantification, multi-mapping event analysis, cross-species fragment conservation detection, and comprehensive reporting.
+
+\section{Methods}
+
+\subsection{Pipeline Overview}
+
+sRNAfrag consists of three modules: P1 (initial processing), S1 (summary statistics), and P2 (post-processing and analysis). Users configure the pipeline by modifying a YAML configuration file. Input consists of a modified annotation file in General Transfer Format (GTF) and a folder of gzipped FASTQ files. GNU Parallel is used for parallel processing \citep{tange2011gnu}.
+
+\subsection{P1 Module: Initial Processing}
+
+Raw reads are processed for UMIs and adapters using standard tools. Reads are then aligned to reference genomes, and a lookup table is generated that maps all possible fragment sequences to their source transcripts and positions. The lookup table approach enables rapid identification of fragment origins.
+
+\subsection{S1 Module: Summary Statistics}
+
+The S1 module computes comprehensive statistics on fragment distributions, including fragment length distributions, positional biases, and biotype-specific fragmentation patterns.
+
+\subsection{P2 Module: Post-Processing and Analysis}
+
+The P2 module performs peak calling to identify fragment loci, merges overlapping fragments into clusters, and conducts cross-species conservation analysis using a ``license plating'' approach based on Hamming distance matching.
+
+\subsection{Annotation Data Sources}
+
+Annotations were derived from multiple sources: snoDB for snoRNAs, RNAcentral for snRNAs, and Integrated Transcript Annotation for rRNAs in humans \citep{dupuis2019snodb, rnacentral2021, williams2020ita}. Scripts were created for three additional model species: \textit{M.~musculus}, \textit{C.~elegans}, and \textit{A.~thaliana} \citep{ncbi2023annotations}.
+
+\subsection{Peak Calling Algorithm}
+
+Peaks are called using a smoothing function that prevents spurious peak detection near large peaks. Sandwiched zeros (zero-count positions between non-zero positions) are assigned counts equal to the next locus under the assumption that they tend to represent true fragments. Clusters must be at least 10 nucleotides long before the ID counter increments.
+
+\subsection{Cross-Species Conservation}
+
+Conservation events are detected by comparing fragment sequences between species using Hamming distance with a maximum threshold of 3 mismatches. This ``license plating'' approach leverages snoRNA orthology \citep{dupuis2019snodb, yoshihama2013snopy} to identify evolutionarily conserved fragmentation patterns.
+
+\subsection{Benchmark Against FlaiMapper and AASRA}
+
+We benchmarked sRNAfrag against FlaiMapper \citep{hoogstrate2015flairmapper} for peak calling accuracy using mature miRNA loci as ground truth, and against AASRA \citep{koenig2021aasra} for count quantification accuracy.
+
+\section{Results}
+
+\subsection{Effective Peak and Count Calling}
+
+sRNAfrag had 597 pre-miRNAs with supporting fragments after filtering compared to 642 obtained by FlaiMapper. Of these pre-miRNAs, sRNAfrag called 94.7\% and 86.5\% of start and end loci within 1~bp of their true position (Figure~1A). This is comparable to FlaiMapper, which called 92.4\% and 85.2\% of start and end loci with default settings.
+
+Comparing counts used for peak calling to AASRA-generated counts confirmed that sRNAfrag utilizes counts comparable to standard small RNA-seq workflows during peak calling, affirming that loci-count relationships are properly preserved (Figure~1B). When counts are merged (fragments clustered together), results are closer to AASRA output (Figure~1C), with a slope of 0.983. The slight underestimation and negative intercept are partially due to AASRA's behavior of assigning alignments with 1~nt overhang to the nearest annotation boundary.
+
+\subsection{Multi-Mapping Events Reveal Conserved Motifs}
+
+The 5$'$ seed sequence of miRNAs represents the functionally important portion of the molecule \citep{wu2012stability}. miRNA families, arising from duplication events, are likely subject to evolutionary pressures to retain the same seed sequence \citep{meunier2013novel}.
+
+The mir-30 family had four fragments (three depicted, with the final being 1~nt longer) shared amongst all potential sources (Figure~2A), each aligned at their 5$'$ ends representing the beginning of the 5$'$-derived mature miRNA (hsa-miR-30c-5p). Across all clusters of fragments with more than one potential source transcript, the 5$'$ end of the most counted fragment matched the most commonly shared fragment 65.9\% of the time (Figure~2B).
+
+For snoRD115, a fragment was shared between 12 source transcripts with slight sequence differences (Figure~2B). Exploring fragmentation event locations showed that 40\% of conservation events occurred at terminal portions of the source transcript compared to just 1.5\% for miRNAs (Figure~2D).
+
+\subsection{Cross-Species snoRNA Fragment Conservation}
+
+Using Hamming distance matching, 1,411 conservation events between two species were detected with a maximum Hamming distance of 3, with the majority shared between \textit{M.~musculus} and \textit{H.~sapiens} (Figure~3A).
+
+One investigated shared fragment was derived from the 3$'$ ends of primary transcripts in 3/4 species. The \textit{C.~elegans} snoRNA was the most different, with a Hamming distance of two (Figure~3B), while \textit{H.~sapiens} and \textit{M.~musculus} shared the same sequence (Figure~3C--D). Fragments were derived from SNORD15A, annotated for \textit{M.~musculus} and \textit{H.~sapiens}. RNA secondary structures were generated using RNAfold and RNAplot from the ViennaRNA Package \citep{lorenz2011viennarna}.
+
+\subsection{Runtime Performance}
+
+The runtime of sRNAfrag exhibits a linear relationship with the number of fragments discovered, mostly independent of the number of sequenced reads (Figure~4A). For every 1,000 additional unique fragments discovered, users can expect approximately 23 additional seconds of runtime. This is slower than SURFr's reported average of 4.5 minutes, but sRNAfrag realigns fragments back to the reference genome, which requires significant additional time.
+
+Especially large runtimes were observed for rRNA fragments, processing 20,000--200,000 fragments. Fragment sampling is conducted when fragment count surpasses 8,000.
+
+\begin{table}[htbp]
+\centering
+\caption{Possible maximum number of fragments generated by provided annotation files and percentage found in test data.}
+\label{tab:fragments}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+Species / Biotype & Max Possible Fragments & Found (\%) & Runtime Impact \\
+\midrule
+\textit{H.~sapiens} snoRNA & Moderate & Small fraction & Manageable \\
+\textit{H.~sapiens} snRNA & Moderate & $\sim$0.06\% & Manageable \\
+\textit{H.~sapiens} rRNA & Very Large & Small fraction & Large runtime \\
+\textit{M.~musculus} snoRNA & Moderate & Small fraction & Manageable \\
+\textit{C.~elegans} snoRNA & Small & Small fraction & Fast \\
+\textit{A.~thaliana} snoRNA & Small & Small fraction & Fast \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+The upper maximum number of fragments that could be generated in the lookup table follows $\sum_{k=15}^{m} (n - k + 1)$ when $m$ is maximum length, $n$ is source transcript length, and 15 is minimum fragment length. Analyzing fragmentation over 20,000 protein-coding genes would yield a theoretical 1.3 billion possible fragments, taking approximately 5 hours to run assuming snRNA-like fragmentation rates (0.06\%).
+
+\subsection{Outside-Map Composition}
+
+Analysis of fragments mapping outside their source annotations showed that most reads from fragments map to piRNAs (Figure~4B--D). Interestingly, snRNA U1 has been found to be similar to tandem repeat tRNA \citep{mountweiss1985u1}, which may explain why snRNA fragment alignments were annotated as tRNAs.
+
+\begin{table}[htbp]
+\centering
+\caption{Lookup table entries contain information regarding source transcript and position. Start locations are standardized to fall between 0--1.}
+\label{tab:lookup}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcccc}
+\toprule
+Field & Description & Example & Multi-source & Delimiter \\
+\midrule
+Fragment ID & Unique identifier & frag\_001 & -- & -- \\
+Source transcript & Origin annotation & SNORD15A & Yes & Special char \\
+Start position & Normalized (0--1) & 0.75 & Averaged & -- \\
+5$'$ flanking & Upstream sequence & ACGT... & Yes & Special char \\
+3$'$ flanking & Downstream sequence & TGCA... & Yes & Special char \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Sample information for datasets used in benchmarking.}
+\label{tab:samples}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+Sample & Species & Biotype & Platform \\
+\midrule
+Human sRNA-seq & \textit{H.~sapiens} & snoRNA, snRNA, rRNA & Illumina \\
+Mouse sRNA-seq & \textit{M.~musculus} & snoRNA & Illumina \\
+\textit{C.~elegans} sRNA-seq & \textit{C.~elegans} & snoRNA & Illumina \\
+\textit{A.~thaliana} sRNA-seq & \textit{A.~thaliana} & snoRNA & Illumina \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\section{Discussion}
+
+sRNAfrag provides a comprehensive and standardized pipeline for analyzing small RNA fragmentation across biotypes and species. Its peak-calling performance is comparable to FlaiMapper (94.7\% vs.\ 92.4\% for start loci within 1~bp), while offering additional capabilities including multi-mapping event analysis, cross-species conservation detection, and support for arbitrary sRNA biotypes.
+
+The multi-mapping analysis revealed that the 5$'$ seed conservation observed in miRNA families may serve as a general principle for understanding fragment function across other sRNA biotypes. The finding that 65.9\% of multi-mapping fragments share the same 5$'$ end as the most counted fragment supports the biological importance of 5$'$ end conservation in sRNA fragments.
+
+The detection of 1,411 cross-species snoRNA fragment conservation events demonstrates that fragmentation patterns are evolutionarily conserved, opening new avenues for understanding fragment biogenesis and function. The predominance of 3$'$-terminal conservation events in snoRNA fragments (40\%) versus miRNAs (1.5\%) suggests distinct fragmentation mechanisms.
+
+The linear runtime scaling with fragment count (23 seconds per 1,000 fragments) makes sRNAfrag practical for most small RNA biotypes, though rRNA analysis may require substantial computation time due to the large number of potential fragments. The lookup table approach, while memory-intensive for very large transcript sets, provides rapid fragment identification during analysis.
+
+Future directions include extending the license plating approach to additional species, incorporating long-read sequencing data for full-length fragment characterization, and developing statistical frameworks for identifying functionally significant conservation events. The modular design of sRNAfrag facilitates community contributions and extensions to new biotypes and analysis modules.
+
+\section{Conclusion}
+
+sRNAfrag is a comprehensive pipeline for small RNA fragmentation analysis that provides standardized peak calling, count quantification, multi-mapping event analysis, and cross-species conservation detection. It effectively identifies miRNA loci from precursors, reveals conserved seed sequences through multi-mapping analysis, and detects over 1,400 snoRNA fragment conservation events across eukaryotic species. The tool and all annotations are publicly available at \url{https://github.com/kenminsoo/sRNAfrag}.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

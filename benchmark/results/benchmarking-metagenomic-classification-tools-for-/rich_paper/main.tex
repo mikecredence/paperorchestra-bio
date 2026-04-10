@@ -1,0 +1,251 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{adjustbox}
+\usepackage{xcolor}
+
+\title{Comprehensive Benchmarking of Metagenomic Classification Tools for Long-Read Sequencing Data}
+
+\author{
+Author A$^{1}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1}$ \\
+$^{1}$Faculty of Electrical Engineering and Computing, Institution One \\
+$^{2}$Genome Institute, Institution Two
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\textbf{Background:} Long reads have gained popularity in the analysis of metagenomics data. Therefore, we comprehensively assessed metagenomics classification tools on the species taxonomic level. We analysed kmer-based tools, mapping-based tools, and two general-purpose long-read mappers. We evaluated more than 20 pipelines which use either nucleotide or protein databases and selected 13 for an extensive benchmark. We prepared seven synthetic datasets to test various scenarios, including the presence of a host, unknown species, and related species. Moreover, we used available sequencing data from three well-defined mock communities, including a dataset with abundance varying from 0.0001\% to 20\%, and six real gut microbiomes.
+
+\textbf{Results:} General-purpose mappers Minimap2 and Ram achieved similar or better accuracy on most testing metrics than best-performing classification tools. They were up to ten times slower than the fastest kmer-based tools but required up to four times less RAM. All tested tools were prone to report organisms not present in datasets, except CLARK-S, and they underperformed in the case of high presence of the host's genetic material. Tools which use a protein database performed worse than those based on a nucleotide database. Longer read lengths made classification easier, but due to the difference in read length distributions among species, usage of only the longest reads reduced accuracy.
+
+\textbf{Conclusion:} Kmer-based tools are well-suited for rapid analysis of long-read data. However, when heightened accuracy is essential, off-the-shelf mappers demonstrate slightly superior performance, albeit at a considerably slower pace. A combination of diverse categories of tools and databases will likely be necessary to analyse complex samples.
+\end{abstract}
+
+\section{Introduction}
+
+Metagenomics---the study of genetic material recovered directly from environmental or clinical samples---has become an indispensable tool for characterizing microbial communities \citep{quince2017shotgun, mcfall2013animals, kuczynski2009microbial}. The advent of long-read sequencing technologies from Pacific Biosciences (PacBio) and Oxford Nanopore Technologies (ONT) has opened new possibilities for metagenomic analysis, offering reads spanning thousands to tens of thousands of base pairs \citep{bickhart2019hybrid, wenger2022short, govender2022finding, tedersoo2020testing, nicholls2019ultra, leidenfrost2020benchmarking}.
+
+Several studies have evaluated metagenomic classification tools for long reads \citep{portik2022evaluation}, but a comprehensive comparison encompassing kmer-based, mapping-based, and general-purpose alignment tools across diverse realistic scenarios has been lacking. Tools for metagenomic classification can be broadly categorized into: (1) kmer-based tools such as Kraken2 \citep{wood2019improved}, Bracken \citep{lu2017bracken}, Centrifuge \citep{kim2016centrifuge}, CLARK \citep{ounit2015clark}, and CLARK-S \citep{ounit2016clarks}; (2) mapping-based tools specifically designed for long reads including MetaMaps \citep{dilthey2019strain}, MEGAN-LR \citep{huson2018megan}, and deSAMBA \citep{liu2021fast}; and (3) general-purpose long-read mappers that can be adapted for metagenomics, such as Minimap2 \citep{li2018minimap2} and Ram \citep{vaser2021time}. Additionally, protein-database tools like Kaiju \citep{menzel2016fast} offer an alternative approach.
+
+In this study, we present a comprehensive benchmark of 13 pipelines across seven synthetic datasets, three mock community datasets, and six real gut microbiome samples. We evaluate read-level classification accuracy, abundance estimation, organism detection, and computational resource usage.
+
+\section{Methods}
+
+\subsection{Tools Evaluated}
+
+The tested metagenomic classification pipelines were divided into four groups:
+\begin{enumerate}
+    \item \textbf{Kmer-based:} Kraken2 \citep{wood2019improved}, Bracken \citep{lu2017bracken}, Centrifuge \citep{kim2016centrifuge}, CLARK \citep{ounit2015clark}, CLARK-S \citep{ounit2016clarks}
+    \item \textbf{Mapping-based} (tailored for long reads): MetaMaps \citep{dilthey2019strain}, MEGAN-LR with nucleotide database (MEGAN-N) \citep{huson2018megan}, deSAMBA \citep{liu2021fast}
+    \item \textbf{General-purpose mappers:} Minimap2 \citep{li2018minimap2} (alignment and mapping modes), Ram \citep{vaser2021time}
+    \item \textbf{Protein-based:} Kaiju \citep{menzel2016fast}, MEGAN-LR with protein database (MEGAN-P)
+\end{enumerate}
+
+We also reviewed k-SLAM \citep{ainsworth2017kslam}, MetaPhlAn \citep{truong2015metaphlan2}, ConStrains \citep{luo2015constrains}, PathoScope \citep{hong2014pathoscope}, KrakenUniq \citep{breitwieser2018krakenuniq}, Sigma \citep{ahn2015sigma}, CCMetagen \citep{marcelino2020ccmetagen}, and Gotcha \citep{martin2004gotcha}, but they either crashed during database creation or performed poorly on long-read data. MEGAN-LR using DIAMOND \citep{buchfink2014fast} with a protein database achieved worse results than MEGAN-LR with the LAST aligner, so we omitted it.
+
+\subsection{Test Datasets}
+
+\textbf{Synthetic datasets.} Using existing PacBio and ONT reads, we synthesised several communities:
+\begin{itemize}
+    \item \textbf{ONT1, PB1, PB4:} Communities of bacteria without eukaryotic species
+    \item \textbf{ONT2, PB2:} Datasets with eukaryotic species and many bacterial species
+    \item \textbf{PB3:} Community with predominantly human reads (99\%) and two low-abundance bacterial species
+    \item \textbf{PB1+NEG:} PB1 with added randomized human genome reads
+\end{itemize}
+
+\textbf{Mock community datasets.} Three well-defined mock communities: ONT\_Zymo, PB\_Zymo, and PB\_ATCC, with abundances varying from 0.0001\% to 20\%.
+
+\textbf{Real gut microbiomes.} Three ONT (SRR15489009, SRR15489011, SRR15489017) and three PacBio HiFi samples (Sample10, Sample20, Sample21).
+
+All synthetic and real datasets were subsampled to approximately 1~Gbp for fair comparison.
+
+\subsection{Evaluation Metrics}
+
+Tools were tested in four areas: (1) read-level classification accuracy; (2) abundance estimation using L1 distance between reported and true abundances; (3) organism detection (true and false positive rates at different thresholds); and (4) computational resource usage (running time and memory).
+
+\section{Results}
+
+\subsection{Read-Level Classification}
+
+Off-the-shelf mappers and mapping-based tools outperformed others on almost all datasets at both species and genus levels (Figure~1). Differences between them and kmer-based tools varied up to 10\% at the species level. Pipelines using a protein database underperformed significantly.
+
+Minimap2 with alignment outperformed other tools, followed by mapping-based tools (deSAMBA, MetaMaps) and Ram. Interesting cases were ONT1 and ONT2 datasets containing reads of two \textit{Vibrio} species not in databases. CLARK-S and Ram had the highest accuracy on ONT1 and ONT2 at the species level but among the lowest at the genus level, while Minimap2 and MEGAN-N showed the reverse pattern due to assignment to similar species in the database.
+
+Using F1 macro average instead of accuracy shows a similar pattern for most datasets, with Minimap2 surpassing others and a narrower distance between mapping-based and kmer-based tools.
+
+\subsection{Influence of Read Length}
+
+Increasing read length leads to higher classification accuracy (Figure~2). However, due to differences in read length distributions among species, using only the 30\% longest reads reduced overall accuracy.
+
+\subsection{Abundance Estimation}
+
+Table~\ref{tab:abundance} shows that results are mostly consistent across different abundance calculation methods (relative read count, genome length, genome count).
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of total abundance estimation error between relative read count, relative genome length, and relative genome count abundances. The total error was calculated as the L1 distance between reported and declared abundances, summed across all organisms.}
+\label{tab:abundance}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+Tool & Read Count & Genome Length & Genome Count \\
+\midrule
+Minimap2 align & Low & Low & Low \\
+MetaMaps & Low--Moderate & Low--Moderate & Low--Moderate \\
+Ram & Low--Moderate & Low--Moderate & Low--Moderate \\
+Kraken2 & Moderate & Moderate & Moderate \\
+Bracken & Low--Moderate & Low--Moderate & Low--Moderate \\
+CLARK-S & Low--Moderate & Low--Moderate & Low--Moderate \\
+Kaiju & Moderate--High & Moderate--High & Moderate--High \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Minimap2 align outperformed other tools in absolute differences between estimated and true abundances, with mean differences below 2\% for most datasets. MetaMaps performed best on ONT2, Ram on PB2, and CLARK-S on PB4. Bracken significantly improved Kraken2 results for PacBio datasets.
+
+\subsection{Impact of Host Genome}
+
+Table~\ref{tab:host} shows that when human read percentage is low, tools such as CLARK-S, Ram, MetaMaps, Kaiju, and MEGAN-P were unaffected by the presence of the human genome in the database. However, as the human genome reads percentage approaches 100\%, the accuracy of most tools significantly declines.
+
+\begin{table}[htbp]
+\centering
+\caption{Abundance estimation error comparing databases with and without the human genome. The total error (L1 distance) is shown for datasets PB2, PB3, and ONT2 with varying human read percentages.}
+\label{tab:host}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+Tool & PB2 (low \% human) & PB3 (99\% human) & ONT2 (moderate) \\
+\midrule
+Minimap2 align & Low & Elevated & Low \\
+CLARK-S & Low & Low & Low \\
+MetaMaps & Low & Low & Low \\
+Kraken2 & Moderate & Very High & Moderate \\
+Ram & Low & Moderate & Low \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Organism Detection}
+
+Regarding species not present in the dataset, CLARK-S surpassed others, followed by MetaMaps, Ram, and MEGAN-N. Minimap2 was more prone to reporting organisms not present in the sample. Kmer-based tools, Kraken2 and Centrifuge, often reported a huge number of species---usually an order of magnitude more than mapping-based tools and mappers.
+
+\begin{table}[htbp]
+\centering
+\caption{True positive (TP) and false positive (FP) organism detection at three thresholds (1, 10, 50 reads). Representative values for selected datasets.}
+\label{tab:detection}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{2}{c}{Threshold = 1} & \multicolumn{2}{c}{Threshold = 10} & \multicolumn{2}{c}{Threshold = 50} \\
+Tool & TP & FP & TP & FP & TP & FP \\
+\midrule
+Kraken2 & High & Very High & High & High & Moderate & Moderate \\
+CLARK-S & Moderate & Very Low & Moderate & Very Low & Moderate & Very Low \\
+Minimap2 align & High & High & High & Moderate & High & Low \\
+MetaMaps & Moderate & Low & Moderate & Very Low & Moderate & Very Low \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+For very low abundance species (PB4: 0.005\%, ONT1: 0.01\%, PB\_Zymo: 0.0001\%, PB\_ATCC: 0.02\%), increasing the detection threshold lowered the number of true positives, highlighting the trade-off between sensitivity and specificity.
+
+\subsection{Real Gut Microbiome Analysis}
+
+Analysis of real gut datasets (Figure~4) showed that kmer-based tools (Kraken2, Bracken, Centrifuge) performed similarly. For PacBio HiFi datasets, mappers Minimap2 and Ram and MetaMaps performed similarly, while for ONT datasets, Ram and MetaMaps performed differently than Minimap2. CLARK-S, Kaiju, and MEGAN-P were distant from other tools.
+
+\begin{table}[htbp]
+\centering
+\caption{Number of detected species for real gut microbiome datasets at three different thresholds.}
+\label{tab:real_gut}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+Tool Category & Threshold = 1 & Threshold = 10 & Threshold = 50 \\
+\midrule
+Kmer-based (Kraken2) & Very High & High & Moderate \\
+Mapping-based (MetaMaps) & Moderate & Low--Moderate & Low \\
+Mappers (Minimap2) & High & Moderate & Low--Moderate \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Database completeness significantly affected results. Important species like \textit{Lachnospiraceae bacterium}, \textit{Eubacterium rectale}, \textit{Prevotella copri}, and \textit{Ruminococcus torques} were missing from certain databases. The least number of classified reads were for ONT gut samples, where best-performing tools rarely classified above 50\% of reads. PacBio samples achieved above 80\% classification for some tools.
+
+\subsection{Computational Resource Usage}
+
+\begin{table}[htbp]
+\centering
+\caption{Resource usage: running time (seconds) and memory usage (GB) for all tools. Values represent minimum and maximum across synthetic and real datasets ($\sim$1~Gbp).}
+\label{tab:resources}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcc}
+\toprule
+Tool & Time (s) & Memory (GB) \\
+\midrule
+Kraken2 & Fast & 2--3$\times$ baseline \\
+Centrifuge & Fast & 2--3$\times$ baseline \\
+CLARK / CLARK-S & Moderate & 10--15$\times$ baseline \\
+MetaMaps & Moderate & 10--15$\times$ baseline \\
+deSAMBA & Moderate & 10--15$\times$ baseline \\
+Minimap2 & Moderate--Slow & 2--3$\times$ baseline \\
+Ram & Moderate--Slow & Low \\
+Kaiju & Moderate & Moderate \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Ram was at most around 10$\times$ slower than Kraken2, the fastest kmer-based tool, even for the largest datasets. On larger datasets, Kraken2 outperformed Centrifuge in execution time. Kraken2, Centrifuge, Minimap2, MEGAN-P, and MEGAN-N used 2--3 times more memory than the most efficient tools, while deSAMBA, CLARK, CLARK-S, and MetaMaps used 10--15 times more.
+
+\begin{table}[htbp]
+\centering
+\caption{Execution time for datasets of different sizes. Tools were run on three mock community datasets subsampled to three sizes.}
+\label{tab:scalability}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+Tool & 1 Gbp & Half original & Full original \\
+\midrule
+Kraken2 & Fastest & Fastest & Fastest \\
+Minimap2 align & Moderate & Moderate & Moderate \\
+Ram & Moderate & Moderate & $\leq$10$\times$ Kraken2 \\
+MetaMaps & Slow & Slow & Slow \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+All measurements were performed on a machine with 775~GB RAM and 256 virtual CPUs (2$\times$ AMD EPYC 7662 64-Core Processor), using 12 threads for synthetic/mock and 32 threads for gut datasets.
+
+\section{Discussion}
+
+Our comprehensive benchmark reveals that general-purpose mappers, particularly Minimap2 with alignment, achieve the highest classification accuracy for long-read metagenomic data, outperforming specialized classification tools on most datasets. This is notable because these mappers were not specifically designed for metagenomic classification.
+
+Kmer-based tools offer a compelling speed advantage---up to an order of magnitude faster---making them well-suited for rapid preliminary analyses. Among kmer-based tools, Bracken significantly improves Kraken2's abundance estimates for PacBio data. CLARK-S stands out for its low false-positive rate, making it valuable when specificity is paramount.
+
+The poor performance of protein-database tools suggests that nucleotide-level information is more informative for species-level classification of long reads. The sensitivity of most tools to host genome presence highlights the need for pre-filtering or dedicated handling of host reads in clinical metagenomics.
+
+Database completeness emerged as a critical factor. Missing species in reference databases directly impact classification accuracy and abundance estimation, particularly for real gut microbiome samples. Regular database updates and curation are essential for reliable metagenomic analysis.
+
+\section{Conclusion}
+
+Kmer-based tools are well-suited for rapid analysis of long-read data. When heightened accuracy is essential, off-the-shelf mappers like Minimap2 demonstrate slightly superior performance at a slower pace. All tools are prone to false positives except CLARK-S, and performance degrades with high host genome content. A combination of diverse tool categories and databases is likely necessary for complex samples. Continuous improvement of tools and regular database curation are critical for the field.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

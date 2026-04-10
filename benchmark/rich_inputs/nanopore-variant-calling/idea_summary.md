@@ -1,0 +1,24 @@
+# Idea Summary: Benchmarking reveals superiority of deep learning variant callers on bacterial nanopore sequence data
+
+## Working title
+Benchmarking reveals superiority of deep learning variant callers on bacterial nanopore sequence data
+
+## Core question
+AbstractVariant calling is fundamental in bacterial genomics, underpinning the identification of disease transmission clusters, the construction of phylogenetic trees, and antimicrobial resistance prediction. This study presents a comprehensive benchmarking of SNP and indel variant calling accuracy across 14 diverse bacterial species using Oxford Nanopore Technologies (ONT) and Illumina sequencing. We generate gold standard reference genomes and project variations from closely-related strains on
+
+## Motivation / gap
+- IntroductionVariant calling is a cornerstone of bacterial genomics as well as one of the major applications of next generation sequencing.
+- Its downstream applications include identification of disease transmission clusters, prediction of antimicrobial resistance, and phylogenetic tree construction and subsequent evolutionary analyses, to
+- Variant calling is used extensively in public health laboratories to inform decisions on managing bacterial outbreaks [5] and in molecular diagnostic laboratories as the basis for clinical decisions o
+- However, nanopore sequencing on devices from Oxford Nanopore Technologies (ONT) have emerged as an alternative technology.
+- One of the major advantages of ONT sequencing from an infectious diseases public health perspective is the ability to generate sequencing data in near real-time, as well as the portability of the devi
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractVariant calling is fundamental in bacterial genomics, underpinning the identification of disease transmission clusters, the construction of phylogenetic trees, and antimicrobial resistance prediction. This study presents a comprehensive benchmarking of SNP and indel variant calling accuracy across 14 diverse bacterial species using Oxford Nanopore Technologies (ONT) and Illumina sequencing. We generate gold standard reference genomes and project variations from closely-related strains onto them, creating biologically realistic distributions of SNPs and indels.Our results demonstrate that ONT variant calls from deep learning-based tools delivered higher SNP and indel accuracy than traditional methods and Illumina, with Clair3 providing the most accurate results overall. We investigate the causes of missed and false calls, highlighting the limitations inherent in short reads and discover that ONT’s traditional limitations with homopolymer-induced indel errors are absent with high-accuracy basecalling models and deep learning-based variant calls. Furthermore, our findings on the impact of read depth on variant calling offer valuable insights for sequencing projects with limited resources, showing that 10x depth is sufficient to achieve variant calls that match or exceed Illumina.In conclusion, our research highlights the superior accuracy of deep learning tools in SNP and indel detection with ONT sequencing, challenging the primacy of short-read sequencing. The reduction of systematic errors and the ability to attain high accuracy at lower read depths enhance the viability of ONT for widespread use in clinical and public health bacterial genomics.
+
+## Method in brief
+MethodsSequencingBacterial isolates were streaked onto agar plates and grown overnight at 37°C. Mycobacterium tu-berculosis, Streptococcus pyogenes, and Streptococcus dysgalatiae subsp. equisimilis were grown in liquid media of 7H9 or TSB with shaking until reaching high cell density (OD ∼ 1; see Suppl. Section S1 for Streptococcus sample selection). The cultures were centrifuged at 13000rpm for 10 minutes and cell pellets were collected. Bacteria were lysed with appropriate enzymatic treatment except for Mycobacterium and Streptococcus, which were lysed by bead beating (PowerBead, 0.5mm glass beads [13116-50] or Lysing Matrix Y [116960050-CF] and Precellys or Tissue lyser [Qiagen]). DNA extraction was performed by sodium acetate precipitation and further Ampure XP bead purification (Beckman Coulter) or either Beckman Coulter GenFind V2 (A41497) or QIAGEN Blood and Tissue DNEasy kit (69506). Illumina library preparation was performed using Illumina DNA prep (20060059) using quarter reagents and Illumina DNA/RNA UD Indexes. Short-read whole-genome sequencing was performed on an Illumina NextSeq 500 for the M. tuberculosis (AMtb_1 202402), S. pyogenes (RDH275 202311), and S. dysgalactiae (MMC234 202311) samples and a NextSeq 2000 for all other samples, with a 150bp PE kit. ONT library preparation was performed using either Rapid Barcoding Kit V14 (SQK-RBK114.96) or Native Barcoding Kit V14 (SQK-NBD114.96). Long-read whole-genome sequencing was performed on a MinION Mk1b or Grid
+
+## Target venue
+eLife

@@ -1,0 +1,129 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{adjustbox}
+
+\title{Competitive Interactions Shape Brain Dynamics and Computation Across Species}
+
+\author{
+Author A$^{1,2}$, Author B$^{3}$, Author C$^{1}$ \\
+$^{1}$Department of Psychiatry, University of Oxford \\
+$^{2}$Centre for Eudaimonia and Human Flourishing, University of Oxford \\
+$^{3}$Centre for Brain and Cognition, Universitat Pompeu Fabra
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Adaptive cognition relies on cooperation across anatomically distributed brain circuits. However, specialised neural systems are also in constant competition for limited processing resources. How does the brain's network architecture enable it to balance these cooperative and competitive tendencies? Here we use computational whole-brain modelling to examine the dynamical and computational relevance of cooperative and competitive interactions in the mammalian connectome. Across human, macaque, and mouse we show that the architecture of the models that most faithfully reproduce brain activity consistently combines modular cooperative interactions with diffuse, long-range competitive interactions. The model with competitive interactions consistently outperforms the cooperative-only model, with excellent fit to both spatial and dynamical properties of the living brain, which were not explicitly optimised but rather emerge spontaneously. Competitive interactions in the effective connectivity produce greater levels of synergistic information and local-global hierarchy, and lead to superior computational capacity when used for neuromorphic computing. Altogether, this work provides a mechanistic link between network architecture, dynamical properties, and computation in the mammalian brain.
+\end{abstract}
+
+\section{Introduction}
+
+A central goal of neuroscience is to understand how the architecture of the brain governs information processing \citep{bassett2019physics, suarez2024brain, avena2018communication}. To support cognition, the brain must orchestrate the constant competition between specialised functional circuits, each arising from the cooperation of anatomically distributed regions \citep{cocchi2013dynamic, dehaene2011experimental, rissman2012competitive, mashour2020conscious}. Spontaneous haemodynamics and electrodynamics provide evidence for both cooperative and antagonistic processes in the mammalian brain, exhibiting systematic and recurrent patterns of coordinated and anticorrelated activity \citep{fox2005human, mantini2012large, stafford2014large, boly2022functional}.
+
+Although the behavioural and physiological relevance of functional anticorrelations is well established, their mechanistic origin remains unclear \citep{fox2005human}. How does the brain orchestrate its cooperative and antagonistic tendencies? Interactions between brain regions unfold dynamically over a complex network of anatomical connections---the structural connectome \citep{sporns2013structure, zamora2023linking}. Computational modelling provides a powerful framework for studying these structure-function relationships \citep{honey2009predicting, deco2014great, kringelbach2024brain, naskar2021multiscale, breakspear2017dynamic, suarez2023learning, sanz2015mathematical}, allowing researchers to probe how network architecture shapes the dynamical repertoire of the brain \citep{deco2020brain, luppi2024unravelling, vasa2022computational, wang2021computational}.
+
+Whole-brain computational models typically comprise two key ingredients: a mathematical representation of local dynamics, and a wiring diagram of inter-regional coupling \citep{breakspear2017dynamic, deco2014great}. Traditionally, these models have assumed exclusively cooperative (positive) interactions between brain regions. Here, we systematically investigate the role of competitive (negative) interactions in whole-brain modelling across three mammalian species: human, macaque, and mouse.
+
+\section{Materials and Methods}
+
+\subsection{Neuroimaging Data}
+
+\textbf{Human fMRI data.} The dataset came from the Human Connectome Project (HCP), Release Q3 \citep{glasser2021human, vanessen2013wustl}. We used data from 100 unrelated subjects ($N=100$). Anatomical T1-weighted images were acquired with FOV = 224$\times$224~mm, voxel size 0.7~mm$^3$ isotropic, TR = 2,400~ms, TE = 2.14~ms. Functional MRI data (1,200 volumes) were acquired with EPI, 2~mm isotropic voxels, TR = 720~ms, TE = 33.1~ms.
+
+\textbf{Macaque data.} We used fMRI recordings from $N=19$ macaques \citep{xu2020interindividual}, with structural connectivity from diffusion tractography augmented with axonal tract-tracing from the CoCoMac database \citep{kotter2004online}.
+
+\textbf{Mouse data.} We used fMRI recordings from $N=10$ mice \citep{grandjean2016large}, with structural connectivity from the Allen Mouse Brain Connectivity Atlas \citep{oh2014mesoscale}.
+
+\subsection{Whole-Brain Model}
+
+Our model of local dynamics consists of nonlinear Stuart-Landau oscillators poised near (but just below) the critical Hopf bifurcation \citep{deco2017dynamics}. The edge-of-bifurcation dynamical working point has been shown to produce the most faithful representation of functional connectivity and dynamical properties of the brain \citep{deco2017dynamics, deco2020revisiting, luppi2024unravelling, cabral2017functional}.
+
+We coupled these oscillators according to species-specific structural connectivity: subject-specific diffusion tractography (human); diffusion tractography augmented with tract-tracing (macaque); and axonal tract-tracing (mouse). Each model was fitted to species-specific fMRI recordings at the single-subject level. Following a recent approach, we allowed connection weights to vary individually, turning the initial structural connectivity into a generative effective connectivity (GEC) \citep{deco2020revisiting, gilson2020model}.
+
+Critically, we compared two model variants: (1) a cooperative-only model in which effective connectivity weights are constrained to be non-negative; and (2) a cooperative+competitive model in which weights are allowed to take both positive and negative values.
+
+\subsection{Analysis of Dynamical Properties}
+
+\textbf{Metastability} was operationalised as the temporal standard deviation of the Kuramoto order parameter (KOP) \citep{deco2017dynamics, shanahan2010metastable}.
+
+\textbf{Local-global hierarchy} was quantified through intrinsic-driven ignition, measuring the capacity of local events to propagate globally \citep{deco2019awakening, dehaene2011experimental, mashour2020conscious}.
+
+\textbf{Send-receive asymmetry} was quantified through temporal irreversibility, reflecting the departure from equilibrium \citep{deco2020revisiting}.
+
+\textbf{Synergy} was computed using partial information decomposition (PID), measuring information carried jointly by two brain regions that is not available from either alone \citep{luppi2022synergistic, mediano2021towards, rosas2019quantifying}.
+
+\textbf{Cognitive matching} quantified the spatial correlation between simulated brain activity and 123 meta-analytic brain maps from the NeuroSynth engine and Cognitive Atlas \citep{luppi2022synergistic, yarkoni2011large, poldrack2011cognitive}.
+
+\subsection{Reservoir Computing}
+
+We employed connectome-based reservoir computing \citep{suarez2021connectome, zamora2023functional} using each individual's GEC as the network. Input nodes were defined as visual cortex regions and output nodes as motor regions.
+
+\section{Results}
+
+\subsection{Competitive Interactions Generate More Realistic Structure-Function Relationships}
+
+When the model is allowed to include competitive interactions, it consistently takes advantage of this possibility. Across species, approximately 25--40\% of edges in the GEC are negative (Human: 25\% $\pm$ 8\%; Macaque: 38\% $\pm$ 7\%; Mouse: 28\% $\pm$ 4\%), and negative edges were found in every single individual.
+
+We observe a significant increase in the model's ability to reproduce empirical functional connectivity (FC). For the mouse and macaque, the group-wise FC generated by the cooperative+competitive model is visually indistinguishable from the empirical FC, with correlations of 0.87 (macaque) and 0.95 (mouse). The human results show the largest improvement: the cooperative+competitive model more than doubles the group-level correlation, going from 0.42 (cooperative-only) to 0.87.
+
+The presence of competitive interactions also produced a substantially higher prevalence of negative FC edges (anticorrelations), much closer to empirically observed levels.
+
+\subsection{Greater Subject-Specificity}
+
+The model with competitive interactions exhibits significantly larger differential identifiability---the mean difference between self-self and self-other FC similarity. For humans: 0.12 $\pm$ 0.06 (cooperative-only) vs.\ 0.26 $\pm$ 0.07 (cooperative+competitive); $t(99) = -16.97$; $p < 0.001$; Hedge's $g = 2.15$. Similar patterns were observed for macaque and mouse.
+
+\subsection{Topology of Competitive Interactions}
+
+Negative effective connections are less modular than positive connections, exhibit a lower clustering coefficient, and are weaker and longer than positive connections. This suggests that competitive interactions are diffuse and long-range, while cooperative interactions are modular and local.
+
+\subsection{Dynamical Consequences}
+
+\textbf{Metastability.} The cooperative-only model exhibits unrealistically high metastability in all three species. Including competitive interactions produces more balanced levels, closer to empirical values.
+
+\textbf{Local-global hierarchy.} The model with competitive interactions consistently shows a greater hierarchy of intrinsic-driven ignition, with events spanning a broader range from local to global.
+
+\textbf{Send-receive asymmetry.} Competitive interactions induce more hierarchical organisation of temporal asymmetry, with greater divergence in regions' preference for sending or receiving information, closer to empirical brain dynamics.
+
+\textbf{Synergy.} Although both models fall short of empirical synergy levels, the competitive model produces significantly higher synergy, consistently exceeding the cooperative-only model across all three species.
+
+\subsection{Cognitive Matching}
+
+The cognitive matching index of the competitive model is significantly higher than the cooperative-only model (mean (SD) = 0.29 $\pm$ 0.01 for cooperative-only; 0.35 $\pm$ 0.05 for cooperative+competitive; $t(99) = -13.96$; $p < 0.001$; Hedge's $g = 1.68$), indicating that the competitive model co-activates regions that belong to the same cognitive circuits in the real brain.
+
+\subsection{Superior Computational Capacity}
+
+Reservoir computing reveals that GEC networks obtained from the competitive model exhibit superior computational capacity, consistently outperforming cooperative-only networks across all three species.
+
+\subsection{Robustness Analyses}
+
+Results were replicated: (1) with global signal regression (GSR), achieving even better fit for human FC; (2) with the finer-grained Schaefer-200 parcellation; (3) after adding homotopic connections to the human connectome; and (4) preserving asymmetries in macaque and mouse connectomes. Critically, turning competitive interactions cooperative (sign-flipping) led to dramatic loss of FC structure and dynamical realism, confirming that the competitive nature of interactions---not merely their number and weight---is important.
+
+\section{Discussion}
+
+Our results provide a mechanistic link between network architecture, dynamical properties, and computation in the mammalian brain. Across three species, we demonstrate that models combining modular cooperative interactions with diffuse, long-range competitive interactions most faithfully reproduce brain activity. The competitive model achieves excellent fit to both spatial (FC) and dynamical (metastability, hierarchy, synergy) properties that were not explicitly optimised.
+
+The finding that approximately 25--40\% of edges in the optimal effective connectivity are negative provides a mechanistic explanation for the well-documented phenomenon of functional anticorrelations in the resting brain \citep{fox2005human}. The diffuse, long-range topology of competitive interactions complements the modular, local topology of cooperative interactions, suggesting a separation of scales in brain network organisation.
+
+The superior computational capacity of competitive networks, demonstrated through reservoir computing, connects network architecture to function. Competition may enhance the dynamic repertoire available for information processing, consistent with theories positing that the balance between integration and segregation is fundamental to cognition \citep{dehaene2011experimental, mashour2020conscious}.
+
+The consistency of these findings across human, macaque, and mouse suggests that the interplay of cooperation and competition in the connectome is a conserved feature of mammalian brain organisation, potentially reflecting a universal principle of neural circuit design \citep{suarez2023learning, deco2014great}.
+
+\section{Conclusion}
+
+We have demonstrated that competitive interactions are an essential feature of effective connectivity in the mammalian brain. Models incorporating both cooperative and competitive interactions achieve superior fit to empirical brain activity, produce more realistic dynamical properties, generate higher levels of synergistic information, and exhibit greater computational capacity. These findings establish competition as a fundamental organising principle of brain network dynamics.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
