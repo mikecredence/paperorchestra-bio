@@ -1,0 +1,97 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{Fiora: Predicting Tandem Mass Spectra via Local Neighborhood-Aware Graph Neural Networks Modeling Individual Bond Dissociations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Non-targeted metabolomics is fundamentally limited by incomplete spectral reference libraries, with the vast majority of experimental MS/MS spectra remaining unannotated. In silico spectral prediction methods can bridge this gap, but current approaches achieve limited accuracy: the best tools reached only $\sim$34\% recall in the 2016 CASMI challenge and below 30\% in 2022. Here we present Fiora, an open-source graph neural network (GNN)-based fragmentation algorithm that models fragment ions as consequences of individual bond dissociations, learning local molecular neighbourhood context through graph convolutions. On the NIST 2017 test set, MS-Dial test set, and CASMI 2016/2022 challenge compounds, Fiora outperforms state-of-the-art algorithms ICEBERG and CFM-ID in median cosine similarity across all test sets and ionization modes. Fiora achieves high prediction quality with as few as 3--6 graph convolution layers, demonstrating that short-range structural context is sufficient. Unlike existing tools, Fiora predicts spectra at arbitrary continuous collision energies and for both positive and negative ionization modes in a single unified model, and additionally predicts retention time and collision cross section from the same molecular graph embeddings. GPU acceleration enables rapid large-scale spectral library expansion. Fiora substantially advances compound identification capabilities for non-targeted metabolomics.
+\end{abstract}
+
+\section{Introduction}
+
+Non-targeted metabolomics using liquid chromatography coupled with tandem mass spectrometry (LC-MS/MS) is a powerful approach for discovering biomarkers, characterizing metabolic pathways, and understanding complex biological systems \citep{wishart2019metabolomics,duhrkop2021systematic}. However, compound identification remains the central bottleneck: spectral reference libraries cover only a small fraction of known chemical space, leaving the majority of experimental MS/MS spectra unannotated---the so-called ``dark matter'' of metabolomics \citep{daSilva2015illuminating}.
+
+Chemical structure databases such as PubChem and HMDB contain orders of magnitude more compounds than spectral databases such as GNPS and METLIN, creating a coverage gap that in silico spectral prediction can bridge. By computationally generating predicted MS/MS spectra for all known structures, one can build expanded reference libraries for spectral matching against experimental data.
+
+Existing in silico fragmentation approaches fall into two categories. Combinatorial methods such as CFM-ID \citep{allen2015cfm} systematically enumerate possible bond breaks and predict fragment intensities at fixed discrete energy levels. Neural network approaches such as ICEBERG \citep{goldman2023iceberg} use global molecular embeddings to predict spectra. Both approaches have limitations: CFM-ID's combinatorial enumeration is computationally expensive and restricted to fixed energy levels, while global embeddings may miss the local structural context that determines fragmentation behaviour.
+
+The physics of fragmentation suggests that local molecular environment is critical: bond dissociation depends primarily on the atoms and functional groups in the immediate vicinity of the breaking bond \citep{allen2015cfm}. Graph neural networks (GNNs) are naturally suited to capture this local context through message-passing over molecular graphs, where each node aggregates information from its neighbours over multiple convolution layers.
+
+Here we present Fiora, a GNN-based fragmentation algorithm that explicitly models fragment ions as consequences of removing individual edges from the molecular graph, predicting fragment abundance values based on the local neighbourhood of each bond as learned through graph convolutions.
+
+\section{Results}
+
+\subsection{Architecture and training}
+
+Fiora represents each molecule as a graph with atoms as nodes and bonds as edges. A graph neural network (GCN or RGCN architecture) performs multiple convolution layers to aggregate local neighbourhood information into hidden representations of each bond. For each bond, the model predicts abundance values ($\theta_f$) for all possible fragment ions---defined as subgraph pairs arising from single edge removal, combined with up to 4 hydrogen rearrangements. A precursor stability parameter ($\sigma$) is also predicted. Fragment probabilities are computed via softmax:
+\begin{equation}
+    P(f) = \frac{\exp(\theta_f)}{\exp(\sigma) + \sum_{f'} \exp(\theta_{f'})}
+\end{equation}
+
+Covariates including ionization mode, collision energy (continuous), instrument type, and molecular weight are incorporated at the intensity prediction level. Auxiliary neural network submodules predict retention time (RT) and collision cross section (CCS) from the same molecular graph embeddings.
+
+Training used merged NIST 2017 and MS-Dial spectral libraries (80\% train, 10\% validation, 10\% test). Architecture comparison (Figure~2) showed that GCN and RGCN architectures outperformed attention-based mechanisms (GAT and Transformer). Peak performance was reached between 3 and 6 convolution layers, with deeper networks showing diminishing or degraded performance---demonstrating that short-range local structural context is sufficient for high-quality spectral prediction.
+
+\subsection{Fiora outperforms existing algorithms}
+
+On held-out test sets and independent challenge datasets, Fiora surpassed both ICEBERG and CFM-ID in median cosine similarity (Table~1). The improvement was consistent across the NIST 2017 test set, MS-Dial test set, and CASMI 2016 and 2022 challenge compounds, in both positive and negative ionization modes.
+
+Notably, ICEBERG operates only in positive ionization mode, while Fiora's unified model handles both positive and negative spectra. The performance gain over CFM-ID was particularly large for negative ionization spectra, where CFM-ID's discrete energy level approach is further from experimental conditions.
+
+Stratification by Tanimoto structural similarity to training data (Morgan fingerprints, 2048 bits, radius~3) showed that Fiora maintained higher cosine scores across all similarity ranges (Figure~3), including compounds with very low similarity to the training set (Tanimoto 0.0--0.2). This generalization to structurally novel compounds is essential for expanding coverage beyond known chemical space.
+
+\subsection{Meaningful molecular embeddings}
+
+UMAP visualization of Fiora's learned molecular graph embeddings, colour-coded by ClassyFire compound superclass, showed clear clustering (Figure~4a), demonstrating that the model learns chemically meaningful structural representations. Prediction quality varied by compound superclass (Figure~4b), with well-represented classes such as benzenoids and organic acids showing the highest cosine similarities.
+
+\subsection{Multi-property prediction}
+
+Fiora is the only tool providing simultaneous prediction of MS/MS spectra, retention time, and collision cross section from molecular structure. Parity plots comparing predicted versus ground-truth RT values (BMDMS-NP library) and CCS values (MS-Dial library) showed good agreement (Figure~5), with most predictions falling within $\pm$30~seconds (RT) and $\pm$10\% (CCS) of experimental values.
+
+\subsection{Collision energy flexibility and multi-CE merging}
+
+Unlike CFM-ID, which predicts at fixed discrete energy levels, Fiora models collision energy as a continuous covariate, enabling prediction at any specified CE value. For the CASMI 2016 challenge, merging spectra predicted at the three experimental CE steps yielded better accuracy than predicting at the average CE alone (Figure~6), demonstrating the practical value of continuous CE modelling.
+
+\subsection{Computational efficiency}
+
+Fiora with GPU acceleration was substantially faster than both ICEBERG and CFM-ID (Table~2), enabling predictions for all compounds at all collision energies in the benchmark. This throughput makes large-scale spectral library expansion---generating predicted spectra for millions of known structures---computationally feasible.
+
+\section{Discussion}
+
+Fiora advances in silico spectral prediction by combining two key insights: that fragmentation is fundamentally a local process driven by individual bond dissociation, and that graph neural networks can efficiently learn the relevant local molecular context through neighbourhood aggregation.
+
+The finding that 3--6 convolution layers suffice for near-optimal performance is theoretically significant. In a molecular graph, $k$ convolution layers aggregate information from the $k$-hop neighbourhood of each node. Three to six hops covers most of the structurally relevant context for bond dissociation---the immediate functional groups, ring systems, and electronic effects that govern fragmentation propensity \citep{allen2015cfm}. Deeper networks, which aggregate information from more distant parts of the molecule, do not improve performance, consistent with the local nature of fragmentation chemistry.
+
+The unified model for positive and negative ionization modes is a practical advance. Many metabolomics workflows acquire data in both modes, and having a single model that handles both reduces complexity and training overhead. The continuous collision energy modelling provides further flexibility, enabling precise matching of experimental conditions.
+
+Several limitations remain. Fiora models only single bond breaks and up to four hydrogen rearrangements, which may miss fragment ions arising from multiple sequential dissociations or complex rearrangement reactions. The performance gap between compounds similar and dissimilar to training data, while smaller than for competing methods, indicates room for improvement in generalization. Expanding training data with additional spectral libraries and incorporating multi-step fragmentation could address these limitations.
+
+\section{Methods}
+
+\subsection{Data preparation}
+Spectral libraries from NIST 2017 and MS-Dial were merged and deduplicated, then split into 80\% training, 10\% validation, and 10\% test. External evaluation used CASMI 2016 and 2022 challenge datasets. Molecular structures were converted from SMILES to graph representations.
+
+\subsection{Fragment space construction}
+For each molecule, the fragment ion space $F(G)$ was constructed as all subgraph pairs arising from single edge removal, combined with 0--4 hydrogen losses per fragment. Fragment m/z values were computed from exact molecular formulas.
+
+\subsection{Model architecture}
+GCN and RGCN architectures with 3--6 graph convolution layers were compared. Atom properties served as node features and bond properties as edge features. Edge-level predictions of fragment abundances were converted to spectral intensities via softmax normalization.
+
+\subsection{Evaluation}
+Performance was measured by cosine similarity between predicted and experimental spectra, stratified by Tanimoto structural similarity, compound superclass, and peak intensity coverage. RT was evaluated against BMDMS-NP library values; CCS against MS-Dial library values.
+
+\bibliography{references}
+
+\end{document}

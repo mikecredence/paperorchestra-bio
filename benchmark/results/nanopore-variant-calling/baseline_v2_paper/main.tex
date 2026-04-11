@@ -1,0 +1,94 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{Benchmarking Deep Learning Variant Callers for Bacterial SNP and Indel Detection Using Oxford Nanopore R10.4.1 Sequencing}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Accurate bacterial variant calling is critical for outbreak tracking, antimicrobial resistance prediction, and phylogenetics, yet comprehensive benchmarks for Oxford Nanopore Technology (ONT) in bacteria are essentially nonexistent. Here we present a systematic evaluation of seven ONT variant callers and Illumina/Snippy across 14 diverse bacterial species (GC content 30--66\%) using biologically realistic variant truthsets derived from closely related donor genomes ($\sim$99.5\% ANI). On R10.4.1 data basecalled with the sup model, the deep learning caller Clair3 achieves a median SNP F1 of 99.99\% and indel F1 of 99.53\%, surpassing Illumina (SNP F1 99.45\%, indel F1 95.76\%) by roughly an order of magnitude in error rate. Homopolymer-driven false indel calls---the historical weakness of nanopore sequencing---are effectively eliminated with sup basecalling combined with deep learning callers, with Clair3 producing only 8 false indel calls across all 14 species. ONT at just 10$\times$ read depth with sup basecalling matches or exceeds full-depth Illumina accuracy for both SNPs and indels, while 5$\times$ duplex sup achieves SNP accuracy comparable to Illumina. We demonstrate that Illumina's lower recall is driven by alignment difficulties in variant-dense and repetitive regions that long reads largely circumvent. These results establish ONT R10.4.1 with deep learning variant callers as a viable---and in many respects superior---alternative to Illumina for bacterial variant detection.
+\end{abstract}
+
+\section{Introduction}
+
+Bacterial variant calling underpins critical applications including infectious disease outbreak tracking, antimicrobial resistance (AMR) surveillance, and phylogenetic reconstruction \citep{didelot2012transforming,quainoo2017whole}. Short-read Illumina sequencing has been the de facto standard for these applications, but Oxford Nanopore Technologies (ONT) long-read sequencing offers compelling advantages: real-time sequencing, portable devices suitable for field deployment, and reads spanning repetitive regions that confound short-read alignment \citep{wang2021nanopore}.
+
+Historically, nanopore sequencing has been limited by systematic basecalling errors, particularly in homopolymer tracts where the ion current signal is relatively featureless \citep{rang2018squiggly}. These errors manifested primarily as false indel calls, making ONT unreliable for precise variant detection. However, recent advances in pore chemistry (R10.4.1), duplex reading capability, and neural network-based basecallers have substantially improved raw read accuracy \citep{loman2023nanopore}.
+
+Deep learning variant callers such as Clair3 \citep{zheng2022haplotype} and DeepVariant \citep{poplin2018universal} represent a paradigm shift from traditional pileup-based approaches, learning complex error patterns from training data rather than relying on fixed statistical models. However, these tools were trained exclusively on human genomes, raising questions about their generalizability to bacterial genomes with very different k-mer distributions, DNA modification patterns, and GC content ranges. No systematic evaluation has addressed this question.
+
+Here we present the first comprehensive benchmark of variant calling accuracy on ONT R10.4.1 bacterial data across 14 species, comparing seven ONT callers against Illumina/Snippy. We evaluate the impact of basecalling model (fast/hac/sup), read type (simplex/duplex), and read depth (5$\times$ to 100$\times$) on SNP and indel detection accuracy, and investigate error sources including homopolymer artifacts and variant-dense regions.
+
+\section{Results}
+
+\subsection{Read quality across basecalling models}
+
+Fourteen bacterial species spanning 30--66\% GC content were sequenced on both ONT R10.4.1 (MinION) and Illumina (NextSeq) platforms from the same DNA extractions. ONT reads were basecalled with Dorado v0.5.0 using three accuracy models (fast, hac, sup) for both simplex and duplex read types. Median alignment-based read identity against ground truth assemblies revealed clear stratification across configurations (Figure~1): duplex sup achieved the highest per-read accuracy at 99.93\% (Q32), followed by duplex hac (99.79\%, Q27), simplex sup (99.26\%, Q21), simplex hac (98.31\%, Q18), and simplex fast (94.09\%, Q12). Within each configuration, inter-sample spread was minimal, indicating consistent quality across the diverse species panel.
+
+\subsection{Deep learning callers on ONT surpass Illumina accuracy}
+
+Seven ONT variant callers (BCFtools, Clair3, DeepVariant, FreeBayes, Longshot, Medaka, NanoCaller) and Illumina/Snippy were evaluated using vcfdist, with precision, recall, and F1 computed at each quality score threshold (Figures~2--3).
+
+At 100$\times$ depth with sup basecalling, Clair3 achieved a median SNP F1 of 99.99\% and DeepVariant matched this performance, both surpassing Illumina/Snippy (99.45\%) by roughly an order of magnitude in error rate. For indels, Clair3 (99.53\%) and DeepVariant (99.61\%) dramatically outperformed Illumina (95.76\%). Traditional callers (BCFtools, FreeBayes) performed substantially worse, while Medaka and NanoCaller fell between the deep learning leaders and traditional methods.
+
+The precision-recall curves (Figure~3) were particularly informative. Clair3 and DeepVariant exhibited characteristic right-angle curves, indicating simultaneous high precision and recall with minimal quality filtering required---for sup SNPs, no filtering was optimal, and a quality threshold of~4 provided the best F1 for duplex indels. Traditional callers showed gradual precision-recall trade-offs requiring careful threshold optimization.
+
+Performance was strongly dependent on basecalling model: sup results were approximately an order of magnitude better than fast model results, with hac intermediate and close to sup. The fast model generally failed to match Illumina accuracy even with the best variant callers.
+
+\subsection{Homopolymer indel errors are effectively eliminated}
+
+The historical Achilles heel of nanopore sequencing---homopolymer-driven false indel calls---was comprehensively evaluated across basecalling models and variant callers (Figure~5).
+
+With the fast basecalling model, Clair3 showed a clear cluster of false positive indels associated with homopolymer tracts, representing the dominant error source. The hac model reduced this pattern but did not eliminate it. With sup basecalling, however, Clair3 produced only 8 false positive indels across all 14 species, of which 5 were homopolymer-associated and 3 occurred near similar-sequence insertions unrelated to homopolymers. DeepVariant showed a similar profile (11 total FP indels, 8 homopolymer-associated).
+
+Notably, traditional callers did not share this improvement: BCFtools continued to show persistent homopolymer indel errors even on sup data, demonstrating that the elimination of this error class requires the combination of high-accuracy basecalling and deep learning variant calling, not either alone.
+
+\subsection{Illumina errors concentrated in variant-dense and repetitive regions}
+
+Investigation of Illumina error sources revealed that its lower F1 was driven primarily by reduced recall rather than reduced precision (Figure~4). False negative calls followed a bimodal density distribution, with one peak at low variant density and a second peak at approximately 20 variants per 100-bp window (Figure~4a). This bimodal pattern was absent from Illumina's true positive and false positive distributions, and completely absent from Clair3's performance, which showed a unimodal distribution with very few missed calls at any variant density (Figure~4b).
+
+Masking repetitive genomic regions improved Illumina F1 from 99.3\% to 99.7\% (a gain of 0.4\%), while Clair3 gained only 0.003\% (Figure~4c). This confirms that repetitive regions and variant-dense genomic loci---where 150-bp Illumina reads suffer alignment ambiguity---represent a fundamental limitation that long nanopore reads largely circumvent.
+
+\subsection{Low-depth ONT matches Illumina accuracy}
+
+Subsampling analysis across depths of 5$\times$, 10$\times$, 25$\times$, 50$\times$, and 100$\times$ revealed that ONT at 10$\times$ depth with sup simplex basecalling matched or exceeded full-depth Illumina accuracy for both SNPs and indels using Clair3 or DeepVariant (Figures~6--7). At 5$\times$ duplex sup, SNP accuracy was comparable to full-depth Illumina, although indel performance was more variable. Below 25$\times$, confidence intervals widened substantially.
+
+\subsection{Clair3 offers the best accuracy-to-resource trade-off}
+
+Computational benchmarking (Figure~8) revealed that Clair3 processed data at a median of 0.86 s/Mbp with 1.6~GB peak memory---approximately 7$\times$ faster and 5$\times$ less memory-intensive than DeepVariant (5.7 s/Mbp, 8~GB), with near-identical accuracy. FreeBayes showed extreme runtime variability (up to 597 s/Mbp). Sup basecalling on a single NVIDIA A100 GPU required only 0.77 s/Mbp, faster than most variant callers and therefore not a computational bottleneck.
+
+\section{Discussion}
+
+Our results demonstrate that ONT R10.4.1 sequencing with deep learning variant callers has crossed a critical threshold: it now surpasses Illumina short-read accuracy for bacterial SNP and indel detection. The combination of improved pore chemistry, high-accuracy basecalling models, and deep learning variant callers effectively eliminates the two historical weaknesses of nanopore variant calling---homopolymer indel artifacts and lower overall accuracy---while retaining the intrinsic advantages of long reads for spanning repetitive regions.
+
+The practical implications are substantial. For resource-limited field settings, 10$\times$ ONT sup simplex data with Clair3 matches full-depth Illumina accuracy while requiring minimal sequencing investment. For clinical and public health applications, 25$\times$ coverage provides a comfortable margin above Illumina performance. The combination of Clair3's accuracy, speed (under 6 minutes for a typical 4~Mbp bacterial genome at 100$\times$), and modest memory requirements makes it immediately deployable in production pipelines \citep{zheng2022haplotype}.
+
+The generalization of Clair3 and DeepVariant---both trained on human genomes---to bacterial data with GC content ranging from 30\% to 66\% is noteworthy. While performance was consistently high across this range, the training data mismatch suggests that bacterial-specific training could yield further improvements, particularly for organisms with extreme base composition.
+
+\section{Methods}
+
+\subsection{Sequencing}
+Fourteen bacterial species were sequenced using ONT R10.4.1 MinION flowcells (Rapid Barcoding V14 or Native Barcoding V14) and Illumina NextSeq (150-bp paired-end) from the same DNA extractions. ONT reads were basecalled with Dorado v0.5.0 (fast/hac/sup models), filtered ($>$1000~bp, Q$>$10) with SeqKit v2.6.1, and subsampled with Rasusa v0.8.0. Illumina reads were processed with fastp v0.23.4.
+
+\subsection{Ground truth generation}
+Consensus assemblies were built via Trycycler v0.5.4 from 24 sub-assemblies per sample, polished with both long and short reads. Variant truthsets were constructed by selecting donor genomes at $\sim$99.5\% ANI, identifying shared variants via minimap2 and MUMmer intersection, and applying variants to the sample reference. Indels $>$50~bp were excluded.
+
+\subsection{Variant calling and evaluation}
+Seven ONT callers (BCFtools v1.19, Clair3 v1.0.5, DeepVariant v1.6.0, FreeBayes, Longshot, Medaka, NanoCaller) and Illumina/Snippy were benchmarked. Variant calls were evaluated using vcfdist v2.3.3, computing precision, recall, and F1 at each quality score threshold.
+
+\subsection{Depth analysis}
+Reads were subsampled to 5$\times$, 10$\times$, 25$\times$, 50$\times$, and 100$\times$ mean depth. Confidence intervals (95\%) were computed at each depth. Samples lacking native depth at a given level were excluded.
+
+\bibliography{references}
+
+\end{document}

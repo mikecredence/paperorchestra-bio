@@ -1,0 +1,412 @@
+\documentclass[11pt,a4paper]{article}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{lineno}
+\usepackage{authblk}
+\usepackage{multirow}
+
+\bibliographystyle{unsrtnat}
+
+\title{Resolving the Mode of Action of Thiolutin: Complex In Vivo Effects but Direct RNA Polymerase~II Inhibition In Vitro}
+
+\author[1]{Author A}
+\author[1]{Author B}
+\author[1,2]{Author C}
+\affil[1]{Department of Biochemistry, Stanford University, Stanford, CA, USA}
+\affil[2]{Corresponding author: \texttt{author.c@stanford.edu}}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Thiolutin, a dithiolopyrrolone natural product, has been widely used as a transcription inhibitor for mRNA stability studies, yet its mechanism of action remains controversial. Recent studies concluded that thiolutin inhibits transcription indirectly through Zn$^{2+}$ chelation, contradicting classic work showing direct RNA polymerase (RNAP) inhibition. Here we resolve this conflict through three complementary genetic screens in \textit{Saccharomyces cerevisiae} and reconstituted in vitro transcription assays with purified 12-subunit Pol~II. Our genetic screens identify multidrug resistance, oxidative stress response, thioredoxin, metal homeostasis, and proteasome pathways as modulators of thiolutin sensitivity. We demonstrate that thiolutin oxidizes thioredoxins in vivo and induces oxidative stress through redox cycling, depleting cellular glutathione and triggering Yap1 nuclear relocalization. Critically, we discover that Mn$^{2+}$ is a required cofactor for direct Pol~II inhibition: thiolutin combined with DTT and Mn$^{2+}$ (but not any pair alone) inhibits transcription initiation by purified Pol~II. Order-of-addition experiments reveal that thiolutin must bind Pol~II before template DNA, consistent with a clamp-inhibitor mechanism. Genome-wide Pol~II ChIP-seq after thiolutin treatment shows occupancy changes consistent with Tor pathway inhibition rather than specific transcription targeting, indicating that in vivo effects are predominantly indirect. These findings reconcile conflicting literature and establish thiolutin as a multi-target compound whose direct Pol~II inhibition requires specific cofactor conditions.
+\end{abstract}
+
+\section{Introduction}
+
+Thiolutin is a dithiolopyrrolone natural product originally isolated from \textit{Streptomyces} species that has been widely employed as a transcription inhibitor in mRNA stability studies \citep{Jimenez1973, Parker1991, Pelechano2010}. Despite decades of use, the mechanism by which thiolutin inhibits transcription has remained contentious. Classic in vitro studies using partially purified polymerase fractions demonstrated direct RNAP inhibition \citep{Tipper1973, Khachatourians1975}, while more recent work showed that reduced thiolutin chelates Zn$^{2+}$ ions and concluded that transcription inhibition is indirect, mediated through metalloprotein inhibition \citep{Lauber2016, Chan2017}.
+
+This mechanistic ambiguity is problematic because thiolutin continues to be used as a tool compound in hundreds of studies examining mRNA decay kinetics \citep{Grigull2004, Miller2011}. If thiolutin acts through multiple mechanisms---including oxidative stress, metal chelation, and direct polymerase inhibition---then its utility as a specific transcription inhibitor is severely compromised \citep{Pelechano2010}.
+
+Several lines of evidence suggest that the in vivo effects of thiolutin are more complex than simple transcription inhibition. Dithiolopyrrolones contain an intramolecular disulfide bond that can be reduced by cellular thiol systems, and the reduced form is the biologically active species \citep{Li2014, Waring2014}. The reduced form chelates multiple metal ions including Zn$^{2+}$, Cu$^{2+}$, and Mn$^{2+}$ \citep{Chan2017}. Furthermore, thiolutin has been reported to inhibit the proteasome and induce oxidative stress \citep{Lauber2016}, suggesting pleiotropic cellular effects.
+
+We sought to resolve these conflicting observations through a comprehensive approach combining unbiased genetic screens, targeted biochemical validation, and reconstituted in vitro transcription with purified components. Our results reveal that thiolutin is a multi-target compound whose cellular effects encompass oxidative stress induction, metal chelation, and direct Pol~II inhibition, with the latter requiring a previously unappreciated cofactor---Mn$^{2+}$.
+
+\section{Results}
+
+\subsection{Three genetic screens identify diverse pathways modulating thiolutin sensitivity}
+
+To comprehensively identify cellular pathways that modulate thiolutin sensitivity, we performed three independent genetic screens in \textit{S. cerevisiae} (Table~\ref{tab:screens}).
+
+\begin{table}[htbp]
+\centering
+\caption{Genetic screen parameters for thiolutin sensitivity modifiers.}
+\label{tab:screens}
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Screen Type} & \textbf{Library} & \textbf{Selection} & \textbf{Method} & \textbf{Replicates} \\
+\midrule
+Forward genetics & WT CKY457, UV & 10 $\mu$g/mL & BSA + WGS & Multiple \\
+Manual Variomics & $\sim$4000 CEN pools & 10 $\mu$g/mL & Colony/Sanger & Restruck \\
+HT Variomics (haploid) & Haploid pool & 8--10 $\mu$g/mL & Bar-seq & 3 \\
+HT Variomics (diploid) & Diploid pool & 8--10 $\mu$g/mL & Bar-seq & 3 \\
+HT Deletion (haploid) & Haploid deletions & 3 $\mu$g/mL liquid & Bar-seq & 3 \\
+HT Deletion (diploid) & Diploid deletions & 4 $\mu$g/mL liquid & Bar-seq & 3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The screens converged on several major pathways. Resistant mutants were enriched for gain-of-function (GOF) alleles in multidrug resistance (MDR) transcription factors and efflux pumps (Table~\ref{tab:resistant}), while sensitive mutants identified loss-of-function (LOF) alleles in MDR, oxidative stress response (OSR), and metal homeostasis genes (Table~\ref{tab:sensitive}).
+
+\begin{table}[htbp]
+\centering
+\caption{Key thiolutin-resistant mutants identified across screens.}
+\label{tab:resistant}
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Gene} & \textbf{Pathway} & \textbf{Screen Source} & \textbf{Allele} & \textbf{Dominance} \\
+\midrule
+\textit{YAP1} & OSR / MDR & Forward + Variomics & GOF (C-term) & Dominant \\
+\textit{YRR1} & MDR TF & Forward + Variomics & GOF & Dominant \\
+\textit{SNQ2} & MDR pump & Variomics & GOF/overexpr. & Dominant \\
+\textit{TRR1} & Thioredoxin reductase & Variomics + HT & GOF/overexpr. & Context-dep. \\
+\textit{TRX1} & Thioredoxin & HT Variomics & GOF/overexpr. & Resistant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Key thiolutin-sensitive deletion mutants.}
+\label{tab:sensitive}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Gene Deletion} & \textbf{Pathway} & \textbf{Thiolutin} & \textbf{Holomycin} \\
+\midrule
+\textit{pdr1}$\Delta$ & MDR TF & Hypersensitive & Not sensitive \\
+\textit{snq2}$\Delta$ & MDR pump & Hypersensitive & Not sensitive \\
+\textit{trr1}$\Delta$ & Thioredoxin reductase & Hypersensitive & Not tested \\
+\textit{sod1}$\Delta$ & Cu-Zn SOD & Hypersensitive & Not tested \\
+\textit{zap1}$\Delta$ & Zn$^{2+}$ homeostasis TF & Hypersensitive & Hypersensitive \\
+\textit{trx1}$\Delta$ & Thioredoxin & Not sensitive & Not tested \\
+\textit{trx2}$\Delta$ & Thioredoxin & Not sensitive & Not tested \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Thiolutin oxidizes thioredoxins in vivo}
+
+The identification of thioredoxin pathway genes as modifiers of thiolutin sensitivity prompted us to dissect their genetic relationships. Strikingly, while deletion of either \textit{TRX1} or \textit{TRX2} alone did not affect thiolutin sensitivity, the \textit{trx1}$\Delta$~\textit{trx2}$\Delta$ double deletion conferred resistance (Table~\ref{tab:trx}). Furthermore, this double deletion suppressed the hypersensitivity of \textit{trr1}$\Delta$, placing oxidized thioredoxins downstream of Trr1 in mediating thiolutin toxicity.
+
+\begin{table}[htbp]
+\centering
+\caption{Thioredoxin mutant epistasis analysis.}
+\label{tab:trx}
+\begin{tabular}{lll}
+\toprule
+\textbf{Genotype} & \textbf{Sensitivity} & \textbf{Interpretation} \\
+\midrule
+WT & Normal & Baseline \\
+\textit{trr1}$\Delta$ & Hypersensitive & Oxidized Trx accumulates \\
+\textit{trx1}$\Delta$ & Normal & Single deletion insufficient \\
+\textit{trx2}$\Delta$ & Normal & Single deletion insufficient \\
+\textit{trx1}$\Delta$ \textit{trx2}$\Delta$ & Resistant & Removes toxic oxidized Trx \\
+\textit{trr1}$\Delta$ \textit{trx1}$\Delta$ \textit{trx2}$\Delta$ & Suppressed & Confirms epistasis \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These genetic relationships support a model in which thiolutin oxidizes thioredoxins (or thioredoxins reduce thiolutin, becoming oxidized in the process), and the accumulation of oxidized thioredoxins contributes to cellular toxicity \citep{Toledano2007, Herrero2008}.
+
+\subsection{Thiolutin induces oxidative stress through redox cycling}
+
+To directly assess whether thiolutin induces oxidative stress, we monitored the nuclear relocalization of Yap1-EGFP, a redox-sensitive transcription factor that accumulates in the nucleus upon oxidation \citep{Kuge1997, Delaunay2002}. Thiolutin treatment (10~$\mu$g/mL) induced rapid and sustained nuclear accumulation of Yap1-EGFP, comparable to H$_2$O$_2$ treatment (Table~\ref{tab:yap1}).
+
+\begin{table}[htbp]
+\centering
+\caption{Yap1 nuclear relocalization under various treatments.}
+\label{tab:yap1}
+\begin{tabular}{llll}
+\toprule
+\textbf{Treatment} & \textbf{Concentration} & \textbf{Nuclear Localization} & \textbf{Kinetics} \\
+\midrule
+DMSO control & 1\% & Cytoplasmic & Stable \\
+Thiolutin & 10 $\mu$g/mL & Strong nuclear & Rapid, sustained \\
+Holomycin & 10 $\mu$g/mL & Nuclear & Similar to thiolutin \\
+H$_2$O$_2$ & 0.4 mM & Strong nuclear & Rapid \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Consistent with oxidative stress induction, thiolutin treatment significantly depleted both reduced glutathione (GSH) and total glutathione (Table~\ref{tab:gsh}; $p \leq 0.01$, two-tailed paired $t$-test, $n = 3$).
+
+\begin{table}[htbp]
+\centering
+\caption{Glutathione measurements after 1-hour thiolutin treatment.}
+\label{tab:gsh}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Condition} & \textbf{Reduced GSH} & \textbf{Total GSH} & \textbf{Oxidized GSSG} & \textbf{Significance} \\
+\midrule
+DMSO control & Baseline & Baseline & Baseline & -- \\
+Thiolutin (10 $\mu$g/mL) & Decreased & Depleted & Increased & $p \leq 0.01$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mn$^{2+}$ is a required cofactor for direct Pol~II inhibition}
+
+Having characterized the in vivo pathways, we turned to the central mechanistic question: does thiolutin directly inhibit purified Pol~II? Using fully purified 12-subunit yeast Pol~II and ssDNA templates with $^{32}$P-UTP labeling, we found that thiolutin alone (up to 25~$\mu$g/mL) or thiolutin with equimolar DTT failed to inhibit transcription (Table~\ref{tab:initial}), consistent with recent negative reports \citep{Lauber2016}.
+
+\begin{table}[htbp]
+\centering
+\caption{Pol~II activity with thiolutin alone (ssDNA template).}
+\label{tab:initial}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Condition} & \textbf{Thiolutin} & \textbf{DTT} & \textbf{Inhibition} & \textbf{Notes} \\
+\midrule
+No drug & 0 & No & None & Normal synthesis \\
+Thiolutin only & 10 $\mu$g/mL & No & None & No inhibition \\
+Thiolutin + DTT & 10 $\mu$g/mL & Equimolar & None & DTT alone no effect \\
+Thiolutin only & 25 $\mu$g/mL & No & None & Higher dose inactive \\
+Thiolutin + DTT & 25 $\mu$g/mL & Equimolar & None & Still no inhibition \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The critical discovery was that adding Mn$^{2+}$ (as MnCl$_2$) together with DTT and thiolutin produced robust Pol~II inhibition. Systematic testing of all component combinations demonstrated that all three components---thiolutin, DTT, and Mn$^{2+}$---are simultaneously required (Table~\ref{tab:cofactors}).
+
+\begin{table}[htbp]
+\centering
+\caption{Cofactor requirements for direct Pol~II inhibition.}
+\label{tab:cofactors}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Thiolutin} & \textbf{DTT} & \textbf{Mn$^{2+}$} & \textbf{Transcription} & \textbf{Result} \\
+\midrule
+No & No & No & Active & Baseline \\
+Yes & No & No & Active & No inhibition \\
+Yes & Yes & No & Active & DTT insufficient \\
+Yes & No & Yes & Active & Mn$^{2+}$ insufficient \\
+Yes & Yes & Yes & Inhibited & All three required \\
+No & Yes & Yes & Active & No drug, no effect \\
+No & No & Yes & Active & Mn$^{2+}$ alone no effect \\
+No & Yes & No & Active & DTT alone no effect \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This finding resolves the conflict between classic and recent studies: early work using partially purified polymerase fractions likely contained trace Mn$^{2+}$, while recent studies with highly purified Pol~II in Mn$^{2+}$-free buffers failed to observe inhibition \citep{Tipper1973, Lauber2016}.
+
+\subsection{Excess DTT abrogates inhibition, revealing a specific active species}
+
+We found that increasing DTT concentrations progressively reduced and eventually abolished thiolutin-mediated Pol~II inhibition (Table~\ref{tab:dtt}). This suggests that a specific, partially reduced form of thiolutin---rather than the fully reduced species---is the active inhibitor.
+
+\begin{table}[htbp]
+\centering
+\caption{Effect of excess DTT on thiolutin/Mn$^{2+}$ inhibition.}
+\label{tab:dtt}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Thiolutin} & \textbf{DTT} & \textbf{MnCl$_2$} & \textbf{Activity} & \textbf{Notes} \\
+\midrule
+10 $\mu$g/mL & Equimolar & Present & Inhibited & Standard \\
+10 $\mu$g/mL & 2$\times$ excess & Present & Inhibited & Still active \\
+10 $\mu$g/mL & 5$\times$ excess & Present & Partially active & Weakened \\
+10 $\mu$g/mL & mM range & Present & Active (no inhib.) & Excess DTT abrogates \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Order-of-addition experiments reveal a clamp-inhibitor mechanism}
+
+To characterize the inhibition mechanism, we performed order-of-addition experiments (Table~\ref{tab:order}). Thiolutin/Mn$^{2+}$/DTT added before template DNA produced strong inhibition, whereas adding thiolutin after template DNA binding produced reduced or no inhibition. Pre-incubation of Pol~II with DNA completely protected against subsequent thiolutin addition.
+
+\begin{table}[htbp]
+\centering
+\caption{Order-of-addition experiments for Pol~II inhibition.}
+\label{tab:order}
+\begin{tabular}{lll}
+\toprule
+\textbf{Order of Addition} & \textbf{Inhibition} & \textbf{Interpretation} \\
+\midrule
+Thiolutin/Mn$^{2+}$/DTT before DNA & Strong & Active species binds free Pol~II \\
+DNA first, then thiolutin & Reduced/none & Cannot inhibit Pol~II--DNA complex \\
+Pol~II + DNA preincubated, then drug & None & Confirms free Pol~II requirement \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This behavior is stereotypical of RNAP clamp inhibitors, analogous to myxopyronin, corallopyronin, and ripostatin in bacteria \citep{Mukhopadhyay2008, Srivastava2011, Maffioli2017}.
+
+\subsection{Defective elongation on bubble templates}
+
+To test whether thiolutin affects elongation when the initiation block is bypassed, we used transcription bubble templates (Table~\ref{tab:bubble}). On bubble templates, thiolutin produced pause-prone, defective elongation rather than complete inhibition, distinguishing it from the Myx/Cor/Rip class of bacterial RNAP inhibitors \citep{Mukhopadhyay2008}.
+
+\begin{table}[htbp]
+\centering
+\caption{Bubble template elongation results.}
+\label{tab:bubble}
+\begin{tabular}{llll}
+\toprule
+\textbf{Template} & \textbf{Drug} & \textbf{Outcome} & \textbf{Observations} \\
+\midrule
+Normal dsDNA & Yes & Inhibited & Confirms initiation block \\
+Bubble template & No & Normal elongation & Control \\
+Bubble template & Yes & Pause-prone & Defective elongation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Genome-wide Pol~II occupancy changes reflect indirect signaling effects}
+
+Pol~II ChIP-seq after thiolutin treatment revealed widespread occupancy changes dominated by decreased signal at ribosomal protein genes and increased signal at stress-responsive genes (Table~\ref{tab:chipseq}), patterns consistent with Tor pathway inhibition and the environmental stress response (ESR) rather than direct transcription targeting \citep{Loewith2011, Gasch2000}.
+
+\begin{table}[htbp]
+\centering
+\caption{Major categories of Pol~II occupancy changes after thiolutin treatment.}
+\label{tab:chipseq}
+\begin{tabular}{llll}
+\toprule
+\textbf{Gene Category} & \textbf{Direction} & \textbf{Magnitude} & \textbf{Pathway Consistency} \\
+\midrule
+Ribosomal protein & Decreased & Major & Tor pathway inhibition \\
+Stress-responsive & Increased & Significant & ESR induction \\
+Highly transcribed & Decreased & Widespread & Tor downstream \\
+Housekeeping & Variable & Minor--moderate & Mixed effects \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison of thiolutin and holomycin}
+
+Thiolutin and holomycin are closely related dithiolopyrrolones, yet they displayed divergent sensitivity profiles in MDR and OSR mutants (Table~\ref{tab:comparison}), suggesting different cell permeability and efflux dynamics despite shared chemical properties.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of thiolutin and holomycin cellular effects.}
+\label{tab:comparison}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Property} & \textbf{Thiolutin} & \textbf{Holomycin} \\
+\midrule
+MDR mutant sensitivity & \textit{pdr1}$\Delta$, \textit{snq2}$\Delta$ hypersensitive & Not sensitive \\
+OSR mutant sensitivity & \textit{sod1}$\Delta$ hypersensitive & Different pattern \\
+Yap1 relocalization & Yes (10 $\mu$g/mL) & Yes (10 $\mu$g/mL) \\
+\textit{zap1}$\Delta$ sensitivity & Hypersensitive & Hypersensitive \\
+Zn$^{2+}$ chelation & Yes & Yes \\
+Redox cycling & Supported & Demonstrated \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our study provides a unified model for thiolutin's mode of action (Table~\ref{tab:model}). Thiolutin enters the cell subject to MDR efflux, is reduced by thioredoxins and glutathione, and then acts through at least three parallel mechanisms: (1) metal chelation (Zn$^{2+}$, Mn$^{2+}$, Cu$^{2+}$), (2) redox cycling and ROS generation, and (3) direct Pol~II inhibition when complexed with Mn$^{2+}$ and a reductant. In vivo, the indirect effects---particularly Tor pathway inhibition and the stress response---dominate the transcriptional changes observed by ChIP-seq.
+
+\begin{table}[htbp]
+\centering
+\caption{Unified model: thiolutin mode of action pathway.}
+\label{tab:model}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Step} & \textbf{Process} & \textbf{Evidence} & \textbf{Key Experiments} \\
+\midrule
+1 & Cell entry (MDR efflux) & Genetic & \textit{pdr1}$\Delta$ sensitivity \\
+2 & Reduction by Trx/GSH & Genetic + biochem. & \textit{trx1}$\Delta$\textit{trx2}$\Delta$ resistance \\
+3a & Zn$^{2+}$ chelation & Biochemical & \textit{zap1}$\Delta$; Zn$^{2+}$ rescue \\
+3b & Mn$^{2+}$/Cu$^{2+}$ chelation & Genetic & Metal mutants in screens \\
+3c & Redox cycling / ROS & Genetic + biochem. & Yap1; GSH depletion \\
+4 & Direct Pol~II inhibition & Biochemical & In vitro + Mn$^{2+}$ \\
+5 & Tor/stress response & Genomic & ChIP-seq patterns \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The discovery that Mn$^{2+}$ is a required cofactor for direct Pol~II inhibition resolves the long-standing conflict between classic studies (which used partially purified fractions containing trace metals) and recent work (which used purified Pol~II in metal-free buffers) \citep{Tipper1973, Lauber2016}. The clamp-inhibitor-like behavior---requiring binding to free Pol~II before template DNA---is reminiscent of bacterial RNAP inhibitors such as myxopyronin and lipiarmycin \citep{Mukhopadhyay2008, Srivastava2011, Maffioli2017, Boyaci2018}, though the defective elongation observed on bubble templates distinguishes thiolutin from the Myx/Cor/Rip class.
+
+Our findings have important practical implications: thiolutin should not be used as a general transcription inhibitor for mRNA stability studies, given its complex pleiotropic effects. The widespread Pol~II occupancy changes after treatment reflect signaling perturbations rather than direct transcription inhibition, meaning that conclusions drawn from thiolutin-based mRNA decay experiments should be interpreted with caution \citep{Grigull2004, Pelechano2010}.
+
+\section{Materials and Methods}
+
+\subsection{Yeast strains and media}
+\textit{S. cerevisiae} strains CKY457 (wild-type), BY4741 (haploid), and BY4743 (diploid) were used. Cells were grown in SC or YPD medium at 30$^\circ$C \citep{Sherman2002}. Deletion strains were constructed in the BY4741/BY4743 backgrounds.
+
+\subsection{Genetic screens}
+Forward genetic screens used UV mutagenesis of CKY457 followed by selection on 10~$\mu$g/mL thiolutin plates. Causal mutations were identified by bulk segregant analysis and whole-genome sequencing \citep{Ehrenreich2010}. Variomics libraries were screened both manually and by high-throughput Bar-seq \citep{Segal2018}. Deletion libraries were screened in liquid culture at 3--4~$\mu$g/mL thiolutin for approximately 20 generations with three biological replicates.
+
+\subsection{In vitro transcription}
+Fully purified 12-subunit yeast Pol~II was used with ssDNA or dsDNA templates and $^{32}$P-UTP-labeled NTPs \citep{Cramer2001}. Transcribed RNA was resolved on 10\% polyacrylamide gels. MnCl$_2$ was added as the Mn$^{2+}$ source. Bubble templates were used to bypass the initiation requirement.
+
+\subsection{Yap1-EGFP imaging}
+Yap1-EGFP strains were treated with thiolutin (10~$\mu$g/mL), holomycin (10~$\mu$g/mL), H$_2$O$_2$ (0.4~mM), or DMSO vehicle. Nuclear/cytoplasmic EGFP ratios were quantified from fluorescence microscopy images.
+
+\subsection{Glutathione measurements}
+Growing wild-type cultures were treated for 1 hour at 30$^\circ$C. Reduced GSH and total glutathione were measured using established enzymatic recycling assays \citep{Rahman2006}. Three independent replicates were performed; significance was assessed by two-tailed paired $t$-test.
+
+\subsection{Pol~II ChIP-seq}
+Pol~II chromatin immunoprecipitation followed by sequencing was performed on thiolutin-treated and DMSO-treated control cultures \citep{Rhee2011}. Libraries were sequenced on an Illumina platform and mapped to the \textit{S. cerevisiae} genome.
+
+\subsection{Statistical analysis}
+Bar-seq fitness scores were calculated as log$_2$ fold-change in barcode abundance. Significance was determined by concordance between uptag and downtag barcodes across three biological replicates. Growth curves were measured by Tecan plate reader with three independent repeats; error bars represent standard deviation (Table~\ref{tab:stats}).
+
+\begin{table}[htbp]
+\centering
+\caption{Statistical methods and reproducibility summary.}
+\label{tab:stats}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Assay} & \textbf{Replicates} & \textbf{Test} & \textbf{Threshold} \\
+\midrule
+In vitro transcription & $\geq$3 & Representative gels & Qualitative \\
+Bar-seq screens & 3 & Log$_2$ FC concordance & Uptag/downtag \\
+GSH measurement & 3 & Paired $t$-test & $p \leq 0.01$ \\
+Growth curves & 3 & Mean $\pm$ SD & Visual \\
+Yap1 relocalization & Multiple cells & Nuc./cyto. ratio & Per cell \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Key reagents and chemicals.}
+\label{tab:reagents}
+\begin{tabular}{lll}
+\toprule
+\textbf{Reagent} & \textbf{Supplier} & \textbf{Use} \\
+\midrule
+Thiolutin & Cayman Chemical & Primary compound \\
+DTT & Gold Biotechnology & Reductant \\
+TCEP & Gold Biotechnology & Alternative reductant \\
+5-FOA & Gold Biotechnology & Plasmid counterselection \\
+MnCl$_2$ & Sigma & Mn$^{2+}$ source \\
+ZnCl$_2$ & JT Baker & Zn$^{2+}$ supplementation \\
+MgCl$_2$ & BDH Chemicals & Buffer component \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Acknowledgments}
+We thank laboratory members for helpful discussions and the Stanford Genome Sequencing Center for sequencing support.
+
+\bibliography{references}
+
+\end{document}

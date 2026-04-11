@@ -1,0 +1,97 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\title{TEMPy-REFF: Cryo-EM Structure Refinement and B-Factor Estimation Using Mixture Modelling with Ensemble Representation}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Cryo-electron microscopy (cryo-EM) maps of flexible macromolecular complexes exhibit significant resolution heterogeneity that single-model refinement approaches cannot adequately capture. Here we present TEMPy-REFF, a mixture-model-based refinement protocol that jointly optimizes atomic positions and B-factors for cryo-EM maps. Each atom is treated as a Gaussian component in a mixture model, and an Expectation--Maximization framework iterates between computing the fraction of observed density attributable to each atom (responsibilities) and re-estimating positions, B-factors, and a uniform background term. After single-model refinement, an ensemble of models is generated to capture local structural variability. On a benchmark of 366 EMDB maps (1.8--7.1~\AA\ resolution), TEMPy-REFF achieves higher cross-correlation coefficients (CCC) than both deposited PDB models and CERES-refined models. The ensemble map CCC remains near-constant at lower resolutions, where single-model and CERES scores decline substantially. B-factors converge in approximately 10--12 iterations regardless of initial values, and ensemble local fit quality (SMOCf) is anticorrelated with ensemble variability (RMSFe), providing per-residue confidence estimates. The responsibility calculation naturally enables map segmentation into chain-level submaps and principled construction of composite maps from focused reconstructions. We demonstrate integration with AlphaFold-Multimer to model previously unresolved regions in deposited EMDB maps.
+\end{abstract}
+
+\section{Introduction}
+
+Cryo-EM has become a premier method for determining macromolecular structures, but the resulting density maps often exhibit significant local resolution variation, particularly in flexible complexes \citep{brown2015tools}. Current refinement methods such as Phenix \citep{afonine2018real} blur the atomic model globally or locally to compare against the experimental map, but a single blurring parameter cannot capture the resolution heterogeneity present in maps of flexible systems.
+
+B-factor estimation---which encodes local positional uncertainty---is typically disconnected from position refinement. No unified framework exists to handle both simultaneously in the cryo-EM context. Furthermore, single-structure representations fail to capture the local variability around atomic positions, especially in lower-resolution or flexible regions. These limitations motivate the development of an ensemble-based approach.
+
+We present TEMPy-REFF (TEMPy Refinement with Ensemble and Flexible Fitting), built on the TEMPy library \citep{farabella2015tempy}, which addresses these gaps through a mixture-model framework inspired by the Expectation--Maximization algorithm \citep{dempster1977em}.
+
+\section{Methods}
+
+\subsection{Mixture Model Framework}
+
+TEMPy-REFF represents each atom as a Gaussian in a mixture model. The simulated map $M_S$ is computed as:
+\begin{equation}
+M_S(\mathbf{x}) = \sum_i N_i \cdot G(\mathbf{x}, \mathbf{x}_i, B_i) + k_{\text{bg}}
+\end{equation}
+where $N_i$ is the atomic number, $G$ is a Gaussian function centered at position $\mathbf{x}_i$ with variance determined by B-factor $B_i$, and $k_{\text{bg}}$ is a uniform background term.
+
+The method iterates between an Expectation step (computing responsibilities---the fraction of observed density attributable to each atom) and a Maximization step (re-estimating positions, B-factors, and the background parameter). Position updates are driven by a fictitious map-derived force ($K = 400$) combined with molecular dynamics forces from the AMBER force field \citep{case2023amber} with GB-Neck2 implicit solvent, implemented via OpenMM \citep{eastman2017openmm}.
+
+\subsection{Ensemble Generation}
+
+After single-model refinement, an ensemble of models is generated to capture local variability. The ensemble map---the sum of simulated maps from all ensemble members---provides improved CCC compared to any single model. The optimal ensemble size was empirically determined to be 5--10 models, beyond which improvements plateau.
+
+\subsection{Map Segmentation and Composite Construction}
+
+The responsibility calculation naturally segments maps into contributions from individual chains, enabling automatic chain-level submap generation. For composite map construction, multiple focused maps are combined using optimal mixture-model weights.
+
+\section{Results}
+
+\subsection{B-Factor Refinement}
+
+B-factors converge in approximately 10--12 iterations regardless of initial values. Four initialization strategies (B=1, B=1000, random uniform, and experimental) all converged to essentially the same final B-factor distribution, demonstrating self-consistency. B-factor optimization alone improved CCC in all tested systems.
+
+\subsection{Benchmark on 366 EMDB Maps}
+
+On the CERES benchmark of 366 maps spanning 1.8--7.1~\AA\ resolution, TEMPy-REFF single-model refinement achieved CCC comparable to or higher than CERES re-refined models. The ensemble approach achieved the highest CCC across all resolution bands. The ensemble CCC remained near-constant at lower resolutions, in contrast to CERES and single-model scores which declined. This is particularly valuable for maps below 4~\AA\ resolution, where single models become increasingly inadequate.
+
+\subsection{Local Fit Quality and Ensemble Variability}
+
+At the residue level, local fit quality (SMOCf) and ensemble variability (RMSFe) showed clear anticorrelation: residues with good local fit had low ensemble variability, and vice versa. SMOCf was positively correlated with local resolution from ResMap \citep{kucukelbir2014resmap}. This relationship provides per-residue confidence estimates.
+
+\subsection{Map Segmentation}
+
+Applied to the glycoprotein B--neutralizing antibody complex (EMD-21247), the responsibility calculation produced clean segmentation into 9 chain-level submaps. This automated approach eliminates the need for manual density assignment.
+
+\subsection{Composite Map Construction}
+
+Three focused maps (EMD-12966, EMD-12967, EMD-12968) were combined into a composite map that achieved higher map-model FSC than the deposited composite across most spatial frequencies.
+
+\subsection{Case Studies}
+
+For RNA Polymerase III (EMD-3178, 3.9~\AA), TEMPy-REFF B-factors showed a different spatial distribution than RELION B-factors, with improved chain-level fit. For the nucleosome-CHD4 complex (EMD-10058), B-factor width correlated with local resolution, and the ensemble filled more density in lower-resolution regions than the single deposited model.
+
+\subsection{AlphaFold Integration}
+
+AlphaFold-Multimer \citep{evans2022alphafold} predicted structures were refined into cryo-EM maps using TEMPy-REFF to model previously unresolved regions in deposited EMDB maps, demonstrated on the SARS-CoV-2 RNA polymerase complex.
+
+\subsection{Forcefield Independence}
+
+Comparison of AMBER and CHARMM36 forcefields showed no significant difference in refinement quality, with AMBER yielding slightly higher average CCC.
+
+\section{Discussion}
+
+TEMPy-REFF addresses several limitations of current cryo-EM refinement. The mixture-model framework unifies position and B-factor refinement in a principled probabilistic framework. The ensemble approach provides a natural representation of structural variability that is especially valuable at lower resolutions. The responsibility calculation provides multiple practical utilities: per-atom density attribution, chain-level segmentation, and optimal composite map construction.
+
+The key advantage of the ensemble approach is its robustness at lower resolutions. While single-model and CERES CCC scores decline below 4~\AA, the ensemble CCC remains near-constant, reflecting the ability of multiple models to collectively represent the density distribution.
+
+The integration with AlphaFold-Multimer \citep{jumper2021alphafold} demonstrates a practical workflow for improving deposited structures by modeling previously unresolved regions, an increasingly important application as AI-predicted structures become available.
+
+\section{Conclusion}
+
+TEMPy-REFF provides a unified mixture-model framework for cryo-EM structure refinement that jointly optimizes positions and B-factors, generates informative structural ensembles, enables automatic map segmentation, and supports composite map construction. Its robust performance across 366 benchmark maps and multiple case studies establishes it as a valuable addition to the cryo-EM structure determination toolkit.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,320 @@
+\documentclass[11pt]{article}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{CryoTEN: A Transformer-Based U-Net for Fast and Effective Cryo-EM Density Map Enhancement}
+
+\author{%
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Cryo-electron microscopy (cryo-EM) density maps often suffer from noise, missing density, and local resolution variations that limit the quality of protein structures built from them. While deep learning methods such as DeepEMhancer and EMReady have improved map quality, they are computationally expensive and memory-intensive. Here, we present CryoTEN, a 3D U-Net architecture equipped with Efficient Pair-wise Attention (EPA) that achieves substantial map enhancement while being more than 10 times faster and requiring much less GPU memory than existing deep learning approaches. Trained on 1,295 cryo-EM maps with corresponding simulated target maps from known structures, CryoTEN improves average FSC@0.143 resolution from 3.55~\AA{} to 2.45~\AA{} (30.99\% improvement) on 150 independent test maps, with 100\% of maps improved at this threshold. FSC@0.5 resolution improves from 6.38~\AA{} to 3.73~\AA{} (41.54\% improvement), with 96\% of maps showing gains. Protein structures built from CryoTEN-processed maps show substantially better residue coverage and sequence match scores across 700 chains from 124 maps. CryoTEN also generalizes to half maps (70 tested) and ranks second overall in map quality behind DeepEMhancer, while providing an order-of-magnitude speedup that enables practical large-scale processing pipelines.
+\end{abstract}
+
+\section{Introduction}
+
+Cryo-electron microscopy (cryo-EM) has undergone a resolution revolution, enabling near-atomic resolution structure determination of biological macromolecules without the need for crystallization \citep{Kuhlbrandt2014,Cheng2015,Nogales2016}. However, experimental cryo-EM density maps frequently suffer from noise, missing density values, and local resolution heterogeneity arising from low contrast, conformational dynamics, and preferred particle orientation \citep{Scheres2012,Henderson2013}. These artifacts limit the accuracy and completeness of protein structures that can be built from the maps.
+
+Map sharpening and enhancement methods aim to improve density map quality by correcting for these effects. Global sharpening applies a single B-factor correction to the entire map \citep{Rosenthal2003}, but cannot account for local resolution variations, leading to simultaneous over-sharpening in well-resolved regions and under-sharpening in poorly resolved regions. Local sharpening methods, including LocalDeblur \citep{RamirezAportela2020}, LocSpiral \citep{Kaur2021}, and LocScale \citep{Jakobi2017}, improve upon global approaches by adapting the sharpening to local resolution estimates, but remain limited in their ability to handle complex noise patterns.
+
+Deep learning methods have emerged as powerful tools for cryo-EM map enhancement. DeepEMhancer \citep{SanchezGarcia2021} uses a 3D U-Net to predict improved density maps and achieves state-of-the-art quality enhancement. EMReady \citep{He2023} applies a similar deep learning approach with additional architectural refinements. However, both methods are computationally expensive, requiring long processing times and large amounts of GPU memory that limit their practical applicability to large-scale processing pipelines.
+
+The transformer architecture \citep{Vaswani2017}, with its ability to capture long-range dependencies through self-attention, has shown remarkable success across many domains \citep{Dosovitskiy2021,Hatamizadeh2022}. However, standard self-attention has quadratic computational complexity with respect to input size, making it prohibitively expensive for 3D volumetric data. Efficient attention mechanisms that approximate full attention at reduced computational cost offer a solution to this challenge \citep{Wang2020,Shaker2022}.
+
+Here, we present CryoTEN, a 3D U-Net architecture equipped with Efficient Pair-wise Attention (EPA) mechanisms specifically designed for cryo-EM density map enhancement. CryoTEN achieves competitive map quality improvement while being more than 10 times faster and requiring substantially less GPU memory than existing deep learning methods, addressing the critical speed--quality trade-off in the field.
+
+\section{Methods}
+
+\subsection{Data Collection and Preprocessing}
+
+We assembled a dataset of 1,521 non-redundant cryo-EM map--structure pairs from the EMDB and RCSB PDB (Table~\ref{tab:dataset}). Maps were filtered for resolution between 2 and 7~\AA{}, CC mask $> 0.7$, CC box $> 0.6$, and orthogonal axes. Sequence redundancy was reduced to 30\% identity using MMseqs2 \citep{Steinegger2017}. The dataset was split into 1,295 training, 76 validation, and 150 independent test maps.
+
+\begin{table}[H]
+\centering
+\caption{Dataset composition.}
+\label{tab:dataset}
+\begin{tabular}{lcc}
+\toprule
+Split & Number of Maps & Purpose \\
+\midrule
+Training & 1,295 & Model training \\
+Validation & 76 & Hyperparameter tuning \\
+Test & 150 & Independent evaluation \\
+\midrule
+Total & 1,521 & Non-redundant pairs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Data filtering criteria.}
+\label{tab:filtering}
+\begin{tabular}{lc}
+\toprule
+Filter & Threshold \\
+\midrule
+Resolution range & 2--7~\AA{} \\
+CC mask minimum & $> 0.7$ \\
+CC box minimum & $> 0.6$ \\
+Sequence identity clustering & 30\% (MMseqs2) \\
+Map axes & Orthogonal only \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All maps were resampled to a standardized 1~\AA{} grid size. Deposited maps were normalized to a $[0, 1]$ range using the 99.999th percentile density value. Maps were split into overlapping $64 \times 64 \times 64$ blocks with stride 50, randomly cropped to $48 \times 48 \times 48$ during training for regularization. At inference, $48 \times 48 \times 48$ blocks are processed and reassembled into the full enhanced map.
+
+\subsection{Simulated Target Map Generation}
+
+High-quality target maps were simulated from known PDB structures using a reference Gaussian function:
+\begin{equation}
+\rho_c(\mathbf{y}) = \sum_{i} A_i \cdot C \cdot \exp\left(-k \|\mathbf{y} - \mathbf{x}_i\|^2\right),
+\end{equation}
+where $A_i$ is the atomic number of the $i$-th atom, $\mathbf{x}_i$ is its position, $k = \pi / (0.9 \cdot R_0)^2$, $R_0$ is the unmasked FSC@0.143 resolution, and $C = (k/\pi)^{3/2}$. FSC values were computed using \texttt{phenix.mtriage} \citep{Afonine2018}.
+
+\subsection{Model Architecture}
+
+CryoTEN uses a 3D U-Net architecture with EPA (Efficient Pair-wise Attention) attention mechanisms (Figure~1B--C; Table~\ref{tab:architecture}). The encoder consists of multiple downsampling stages with attention blocks, while the decoder uses corresponding upsampling stages with skip connections. ConvRes blocks provide local feature extraction within both encoder and decoder.
+
+\begin{table}[H]
+\centering
+\caption{CryoTEN architecture components.}
+\label{tab:architecture}
+\begin{tabular}{ll}
+\toprule
+Component & Description \\
+\midrule
+Architecture & 3D U-Net style transformer \\
+Attention & EPA (Efficient Pair-wise Attention) \\
+Encoder & Multiple downsampling stages + attention \\
+Decoder & Upsampling + skip connections \\
+Local blocks & ConvRes blocks \\
+Input & $48 \times 48 \times 48$ density blocks \\
+Output & Enhanced $48 \times 48 \times 48$ blocks \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The EPA mechanism enables the transformer to capture long-range dependencies in 3D density without the quadratic computational cost of standard self-attention, which is critical for processing volumetric cryo-EM data efficiently \citep{Shaker2022}.
+
+\subsection{Evaluation Metrics}
+
+Map quality was assessed using multiple map--model validation metrics computed via Phenix tools \citep{Afonine2018}: FSC@0.143 and FSC@0.5 (unmasked map--model resolution), CC box, CC mask, CC peaks (cross-correlation scores), and Q-score (atom resolvability, computed via the UCSF Chimera mapq plugin) \citep{Pintilie2020}. De novo structure modeling quality was evaluated by building protein structures from enhanced maps and measuring residue coverage and sequence match scores.
+
+\begin{table}[H]
+\centering
+\caption{Evaluation metrics definitions.}
+\label{tab:metrics}
+\begin{tabular}{ll}
+\toprule
+Metric & Description \\
+\midrule
+FSC@0.143 & Unmasked map--model FSC at 0.143 threshold \\
+FSC@0.5 & Unmasked map--model FSC at 0.5 threshold \\
+CC box & Cross-correlation over entire map \\
+CC mask & Cross-correlation within molecular mask \\
+CC peaks & Cross-correlation at highest-density regions \\
+Q-score & Atom resolvability measure \\
+Residue coverage & Fraction of residues modeled de novo \\
+Sequence match & Agreement with known protein sequence \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\subsection{Map Enhancement on Primary Maps}
+
+CryoTEN substantially improved all map quality metrics on the 150 independent test maps (Table~\ref{tab:primary}; Figure~2). Average FSC@0.143 resolution improved from 3.55~\AA{} to 2.45~\AA{}, a 30.99\% improvement, with 100\% (150/150) of maps showing improvement at this threshold. Average FSC@0.5 resolution improved from 6.38~\AA{} to 3.73~\AA{}, a 41.54\% improvement, with 96\% (144/150) of maps improved. CC box, CC mask, CC peaks, and Q-score all showed substantial improvements across the test set.
+
+\begin{table}[H]
+\centering
+\caption{Average map--model validation metrics on 150 test maps (primary maps).}
+\label{tab:primary}
+\begin{tabular}{lccc}
+\toprule
+Metric & Deposited & CryoTEN & Improvement \\
+\midrule
+FSC@0.143 (\AA{}) & 3.55 & 2.45 & 30.99\% \\
+FSC@0.5 (\AA{}) & 6.38 & 3.73 & 41.54\% \\
+CC box & Lower & Higher & Substantial \\
+CC mask & Lower & Higher & Substantial \\
+CC peaks & Lower & Higher & Substantial \\
+Q-score & Lower & Higher & Improved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Percentage of maps improved by CryoTEN.}
+\label{tab:pct_improved}
+\begin{tabular}{lc}
+\toprule
+Metric & \% Maps Improved \\
+\midrule
+FSC@0.143 & 100\% (150/150) \\
+FSC@0.5 & 96\% (144/150) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Generalization to Half Maps}
+
+CryoTEN also effectively enhanced half maps (70 tested), demonstrating generalization beyond primary deposited maps (Table~\ref{tab:halfmaps}). All six metrics (FSC@0.143, FSC@0.5, CC box, CC mask, CC peaks, Q-score) showed consistent improvement on half maps, confirming that the model learns general density enhancement rather than overfitting to primary map characteristics.
+
+\begin{table}[H]
+\centering
+\caption{Map quality improvement on half maps (70 test maps).}
+\label{tab:halfmaps}
+\begin{tabular}{lcc}
+\toprule
+Metric & Deposited Half Maps & CryoTEN Enhanced \\
+\midrule
+FSC@0.143 & Baseline & Improved \\
+FSC@0.5 & Baseline & Improved \\
+CC box & Baseline & Improved \\
+CC mask & Baseline & Improved \\
+CC peaks & Baseline & Improved \\
+Q-score & Baseline & Improved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{De Novo Structure Modeling Quality}
+
+Protein structures built de novo from CryoTEN-enhanced maps showed substantially better quality than those from deposited maps (Table~\ref{tab:denovo}). Across 700 protein chains from 124 maps, both residue coverage (fraction of residues successfully modeled) and sequence match score (agreement with known sequence) improved consistently. Improvements were observed across all resolution categories---low (10 maps), medium (93 maps), and high (21 maps)---demonstrating that CryoTEN robustly benefits downstream structure modeling regardless of initial map quality.
+
+\begin{table}[H]
+\centering
+\caption{De novo structure modeling quality (700 chains, 124 maps).}
+\label{tab:denovo}
+\begin{tabular}{lcc}
+\toprule
+Metric & From Deposited Maps & From CryoTEN Maps \\
+\midrule
+Residue coverage & Baseline & Higher \\
+Sequence match score & Baseline & Higher \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Structure modeling improvement by resolution category.}
+\label{tab:resolution}
+\begin{tabular}{lccc}
+\toprule
+Resolution Category & Maps & Residue Coverage & Sequence Match \\
+\midrule
+Low resolution & 10 & Improved & Improved \\
+Medium resolution & 93 & Improved & Improved \\
+High resolution & 21 & Improved & Improved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison with State-of-the-Art Methods}
+
+On the 131 maps where all three methods could be applied, CryoTEN ranked second in overall map quality improvement, behind DeepEMhancer and competitive with EMReady (Table~\ref{tab:comparison}; Figure~4). However, CryoTEN achieved a decisive advantage in computational efficiency: processing maps more than 10 times faster than both competitors while requiring substantially less GPU memory (Table~\ref{tab:efficiency}).
+
+\begin{table}[H]
+\centering
+\caption{Map quality comparison across methods (131 primary maps).}
+\label{tab:comparison}
+\begin{tabular}{lcccc}
+\toprule
+Metric & Deposited & DeepEMhancer & EMReady & CryoTEN \\
+\midrule
+FSC@0.143 & Baseline & Best & Competitive & Close to best \\
+FSC@0.5 & Baseline & Competitive & Competitive & Competitive \\
+CC box & Baseline & Competitive & Competitive & Competitive \\
+CC mask & Baseline & Competitive & Competitive & Competitive \\
+Q-score & Baseline & Competitive & Competitive & Competitive \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Computational efficiency comparison (20-map benchmark, batch size 40).}
+\label{tab:efficiency}
+\begin{tabular}{lccc}
+\toprule
+Method & Processing Time & GPU Memory & Speed Rank \\
+\midrule
+DeepEMhancer & Slower & Higher & 2nd \\
+EMReady & Slowest & Highest & 3rd \\
+CryoTEN & $>$10$\times$ faster & Least & 1st \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Quality versus efficiency trade-off summary.}
+\label{tab:tradeoff}
+\begin{tabular}{lccc}
+\toprule
+Method & Quality Rank & Speed Rank & Memory Rank \\
+\midrule
+DeepEMhancer & 1st & 2nd & 2nd \\
+EMReady & Competitive & 3rd & 3rd \\
+CryoTEN & 2nd & 1st ($>$10$\times$) & 1st \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+CryoTEN demonstrates that incorporating efficient transformer attention mechanisms into a 3D U-Net architecture can achieve substantial cryo-EM map enhancement while dramatically reducing computational requirements. The EPA attention mechanism enables the model to capture long-range spatial dependencies in 3D density---important for recognizing protein secondary structure elements and their spatial relationships---without the prohibitive quadratic cost of standard self-attention \citep{Vaswani2017,Shaker2022}.
+
+The consistent improvement of 100\% of test maps at the FSC@0.143 threshold indicates that CryoTEN robustly enhances map quality across a wide range of initial resolutions and protein types. The 30.99\% average improvement in FSC@0.143 resolution (from 3.55~\AA{} to 2.45~\AA{}) and 41.54\% improvement in FSC@0.5 (from 6.38~\AA{} to 3.73~\AA{}) are practically significant, as these improvements translate directly into more accurate and complete structural models \citep{Lawson2021,Pintilie2020}.
+
+The de novo structure modeling evaluation provides the most practically relevant assessment of map enhancement quality. The consistent improvement in residue coverage and sequence match scores across 700 chains from 124 maps demonstrates that CryoTEN enhancement translates to tangible benefits for structural biology workflows. The improvement across all resolution categories---low, medium, and high---suggests that the model learns a general enhancement strategy rather than specializing for a particular resolution range.
+
+CryoTEN's more than 10-fold speed advantage and lower memory footprint compared to DeepEMhancer and EMReady \citep{SanchezGarcia2021,He2023} have important practical implications. As cryo-EM data collection rates continue to accelerate with faster detectors and automated acquisition pipelines \citep{Cheng2018,Nakane2020}, the ability to rapidly process maps becomes essential for keeping pace with data generation. CryoTEN enables integration of deep learning enhancement into high-throughput structural biology workflows where existing methods would create computational bottlenecks.
+
+The generalization from primary maps to half maps demonstrates that CryoTEN learns genuine density enhancement rather than artifact correction specific to the map merging process. Half maps contain independent noise realizations and thus represent a stringent test of model robustness \citep{Scheres2012,Henderson2013}.
+
+The training strategy of using simulated maps from known structures as targets provides clean, noise-free training signals that guide the model toward physically meaningful density representations \citep{SanchezGarcia2021}. The data filtering criteria (CC mask $> 0.7$, CC box $> 0.6$, 30\% sequence identity clustering) ensure that training examples have sufficient quality and diversity to support generalization.
+
+While CryoTEN ranks second to DeepEMhancer in pure map quality, the quality gap is modest compared to the order-of-magnitude efficiency gain. For applications requiring the absolute best map quality without time constraints, DeepEMhancer remains the top choice. However, for large-scale processing, rapid turnaround, or resource-constrained environments, CryoTEN offers a compelling speed--quality balance that makes deep learning enhancement practical for routine use.
+
+Future directions include incorporating multi-scale attention mechanisms to better handle extreme resolution variation within a single map, extending the approach to cryo-electron tomography (cryo-ET) subtomogram averaging, and exploring ensemble strategies that combine the strengths of multiple enhancement methods.
+
+\section*{Acknowledgments}
+We acknowledge computational resources provided by the institutional high-performance computing facility.
+
+\section*{Data Availability}
+CryoTEN software and trained models are available at the project repository. All cryo-EM maps and PDB structures used for training and testing are publicly available from the EMDB and RCSB PDB.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

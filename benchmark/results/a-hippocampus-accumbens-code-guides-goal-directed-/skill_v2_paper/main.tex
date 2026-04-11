@@ -1,0 +1,259 @@
+\documentclass[11pt]{article}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{A Hippocampus--Accumbens Code Guides Goal-Directed Appetitive Behavior}
+
+\author{%
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The hippocampus encodes rich spatial and contextual information, but which features are selectively routed to specific downstream targets during goal-directed behavior remains poorly understood. Here, we used dual-color two-photon calcium imaging to simultaneously record from dorsal hippocampal neurons projecting to the nucleus accumbens (dHPC$\to$NAc) and non-projecting neurons (dHPC$^-$) while head-fixed mice performed a spatial reward learning task on a 360~cm treadmill belt. We found that dHPC$\to$NAc neurons contained a larger proportion of place cells with enhanced spatial information content, greater trial-to-trial reliability, and stronger in-field activity compared to the general population. Place fields of projection neurons over-represented the reward zone and were more strongly modulated by local belt cues. Speed-inhibited (deceleration) and lick-excited neurons were enriched among dHPC$\to$NAc cells. Optogenetic activation of dHPC terminals in NAc induced mouth movements and deceleration, confirming functional relevance. A generalized linear model revealed enhanced conjunctive coding of position, velocity, and appetitive licking in the projection population, providing an integrated goal-directed state representation. These findings demonstrate that the hippocampus--accumbens projection carries a selectively enriched, multi-dimensional code that supports goal-directed navigation toward hidden rewards.
+\end{abstract}
+
+\section{Introduction}
+
+The hippocampal formation is well established as a critical substrate for spatial navigation and episodic memory \citep{OKeefe1971,Moser2008,Eichenbaum2014}. Place cells in the dorsal hippocampus (dHPC) fire at specific locations as animals traverse an environment \citep{OKeefe1971,Wilson1993}, and their population activity supports a cognitive map that can flexibly represent spatial relationships \citep{OKeefe1978,Moser2015}. Beyond pure spatial coding, hippocampal neurons also encode non-spatial task-relevant features including reward locations \citep{Gauthier2018,Dupret2010}, running speed \citep{McNaughton1983,Kropff2015}, and behavioral events such as licking and consummatory actions \citep{Aronov2017}.
+
+A central question in systems neuroscience is how the rich information encoded by hippocampal neurons is selectively routed to downstream targets to guide adaptive behavior \citep{Ciocchi2015,Xu2016}. The nucleus accumbens (NAc) receives dense glutamatergic projections from the hippocampus and is proposed to serve as a limbic--motor interface, transforming spatial and contextual signals into motivation-driven motor commands \citep{Mogenson1980,Floresco2015,Britt2012}. Lesion and inactivation studies have shown that disrupting hippocampal--accumbal connectivity impairs conditioned place preference and spatial reward learning \citep{Ito2008,LeGates2018}, yet the actual coding content of this projection during ongoing behavior has remained largely uncharacterized at scale.
+
+Previous electrophysiological studies provided initial evidence that hippocampal neurons projecting to the NAc may carry distinct spatial signals \citep{Ciocchi2015,Trouche2019}, but technical limitations in simultaneously identifying and recording large populations of projection-defined neurons have constrained our understanding. In particular, it is unknown whether NAc-projecting hippocampal neurons carry enriched representations of reward locations, speed-related signals, or consummatory (licking) information compared to the general hippocampal population, and how these features are integrated at the single-neuron level.
+
+Here, we addressed these questions using a dual-color two-photon imaging strategy in Thy1-GCaMP6s mice combined with retrograde viral labeling of NAc-projecting neurons. This approach enabled us to simultaneously record from hundreds of hippocampal neurons while unambiguously distinguishing dHPC$\to$NAc projection neurons from non-projecting cells during a head-fixed spatial reward learning task. We complemented these imaging experiments with optogenetic stimulation of dHPC terminals in NAc and computational analyses using generalized linear models (GLMs) to quantify conjunctive coding properties.
+
+Our results reveal that the hippocampus--accumbens projection carries a selectively enriched, multi-dimensional representation that integrates spatial position, locomotor velocity, and appetitive licking information, providing the NAc with a comprehensive goal-directed state signal for guiding navigation toward hidden rewards.
+
+\section{Results}
+
+\subsection{Mice Learn to Locate Hidden Rewards on a Spatial Treadmill Task}
+
+We trained food-restricted mice ($n = 18$) on a head-fixed spatial reward learning task using a 360~cm self-propelled treadmill belt divided into six textured zones with a single hidden 30~cm reward zone (Figure~1A). Mice received liquid reward upon licking a spout within the reward zone, with reward available once per lap. Over five training days, mice significantly increased their number of rewarded laps per session (repeated-measures ANOVA with Greenhouse--Geisser correction, $F_{4} = 6.344$, $p < 0.01$), anticipatory licking in the 30~cm zone preceding the reward ($F_{4} = 3.803$, $p < 0.05$), and licking within the reward zone itself ($F_{4} = 4.276$, $p < 0.05$; Figure~1B--D). These behavioral metrics confirmed that mice learned the spatial location of the hidden reward.
+
+\begin{table}[H]
+\centering
+\caption{Training progression across five days (repeated-measures ANOVA, $n = 18$ mice).}
+\label{tab:training}
+\begin{tabular}{lccc}
+\toprule
+Behavioral Measure & $F$-statistic & df & Significance \\
+\midrule
+Rewarded laps per session & 6.344 & 4 & $p < 0.01$ \\
+Anticipatory licking & 3.803 & 4 & $p < 0.05$ \\
+Reward zone licking & 4.276 & 4 & $p < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dual-Color Imaging Identifies dHPC$\to$NAc Projection Neurons}
+
+To distinguish NAc-projecting from non-projecting hippocampal neurons, we injected retrograde AAVrg-pgk-Cre into the medial NAc and Cre-dependent AAV5-hSyn-DIO-mCherry into the dHPC of Thy1-GCaMP6s mice ($n = 6$; Table~\ref{tab:viral}). This enabled simultaneous dual-color two-photon imaging of dynamic GCaMP6s calcium signals from all neurons alongside static mCherry fluorescence identifying NAc-projecting cells at the CA1/prosubiculum border (Figure~S2A). The two fluorescent channels were spectrally separable, allowing unambiguous classification of neurons as dHPC$\to$NAc (mCherry-positive) or dHPC$^-$ (mCherry-negative).
+
+\begin{table}[H]
+\centering
+\caption{Viral vectors and injection parameters.}
+\label{tab:viral}
+\begin{tabular}{llll}
+\toprule
+Vector & Target & Coordinates & Volume \\
+\midrule
+AAVrg-pgk-Cre & NAc & AP $-1.3$, ML $-1.0$, DV $-5.0$/$-4.3$~mm & $2 \times 500$~nl \\
+AAV5-hSyn-DIO-mCherry & dHPC (CA1) & CA1/subiculum border & 200~nl \\
+AAV2-CaMKII-ChR2-EYFP & dHPC (opto) & dHPC coordinates & $4 \times 10^{12}$ TU \\
+rAAV2-CaMKII-EYFP & dHPC (ctrl) & dHPC coordinates & $4.3 \times 10^{12}$ TU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{dHPC$\to$NAc Neurons Have Enhanced Spatial Coding Properties}
+
+We next compared the spatial coding properties of dHPC$\to$NAc and dHPC$^-$ neurons. Place cells were identified using established spatial information criteria \citep{Skaggs1993,Markus1994}. A significantly larger proportion of dHPC$\to$NAc neurons were classified as place cells compared to dHPC$^-$ neurons (Figure~2). Moreover, dHPC$\to$NAc place cells exhibited higher spatial information content (bits per event), greater trial-to-trial reliability of spatial firing, and stronger calcium activity within their place fields compared to dHPC$^-$ place cells (Figure~2A--B). These findings indicate that the hippocampus--accumbens projection carries an enriched spatial representation.
+
+\begin{table}[H]
+\centering
+\caption{Spatial coding properties of dHPC$\to$NAc versus dHPC$^-$ neurons.}
+\label{tab:spatial}
+\begin{tabular}{lcc}
+\toprule
+Metric & dHPC$\to$NAc & dHPC$^-$ \\
+\midrule
+Place cell proportion & Enriched & Baseline \\
+Spatial information (bits/event) & Higher & Lower \\
+Trial-to-trial reliability & Higher & Lower \\
+In-place-field activity & Stronger & Weaker \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reward Zone Overrepresentation and Cue Modulation in Projection Neurons}
+
+Analysis of place field distributions revealed that dHPC$\to$NAc neurons over-represented the reward zone to a significantly greater extent than dHPC$^-$ neurons (Figure~3A). This enriched reward zone representation was accompanied by stronger modulation by local belt cues: place field edges of dHPC$\to$NAc neurons clustered more tightly near texture transition boundaries compared to dHPC$^-$ neurons (Figure~3B). Together, these results suggest that NAc-projecting hippocampal neurons preferentially encode task-relevant spatial landmarks and the reward location \citep{Dupret2010,Zaremba2017}.
+
+\subsection{Speed-Inhibited Cells Are Enriched in the dHPC$\to$NAc Projection}
+
+We assessed speed modulation by regressing calcium event rates against velocity bins \citep{Kropff2015,Hinman2016}. While speed-excited neurons showed similar proportions across populations, speed-inhibited (deceleration-related) neurons were significantly overrepresented among dHPC$\to$NAc cells compared to dHPC$^-$ neurons (Figure~4). A representative speed-excited neuron showed a strong positive relationship between velocity and calcium activity (slope = $7.43 \times 10^{-4}$, $r = 0.937$, $p < 10^{-10}$; Figure~4A--B). The enrichment of speed-inhibited neurons in the projection population is functionally significant because mice must decelerate as they approach the hidden reward zone to lick accurately \citep{Sargolini2006,Kropff2015}.
+
+\begin{table}[H]
+\centering
+\caption{Speed-modulated cell proportions by projection type.}
+\label{tab:speed}
+\begin{tabular}{lccc}
+\toprule
+Cell Type & dHPC$\to$NAc & dHPC$^-$ & Enrichment \\
+\midrule
+Speed-excited & Similar & Baseline & No significant difference \\
+Speed-inhibited & Overrepresented & Lower & Significant in dHPC$\to$NAc \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Appetitive Licking Responses Are Enriched in dHPC$\to$NAc Neurons}
+
+To examine whether the projection population encodes consummatory behavior, we analyzed neural activity aligned to appetitive lick onsets. Lick-excited neurons were significantly overrepresented among dHPC$\to$NAc cells (Figure~5A--C). Peri-lick time histograms showed robust activity increases around lick onsets in the projection population, while dHPC$^-$ neurons exhibited weaker modulation (Figure~5B). This enrichment of lick-related coding in NAc-projecting neurons suggests that consummatory information is preferentially transmitted to the NAc \citep{Roitman2005,Saddoris2015}.
+
+\subsection{Optogenetic Stimulation of dHPC Terminals in NAc Induces Mouth Movement and Deceleration}
+
+To establish a causal link between projection activity and behavior, we optogenetically stimulated dHPC axon terminals in the NAc of separate C57Bl/6 mice ($n = 16$) injected with CaMKII-ChR2-EYFP or control EYFP in dHPC (Table~\ref{tab:viral}). Orofacial movements were tracked using a near-infrared camera at 75~Hz, with automated mouth segmentation and motion energy quantification (Figure~6A--C).
+
+Stimulation of ChR2-expressing terminals significantly increased mouth movement motion energy compared to EYFP controls, generating oral movements resembling appetitive licking (Figure~6D). Simultaneously, stimulation produced significant deceleration of running velocity in ChR2 but not EYFP mice (Figure~6E). These two behavioral effects---mouth movement induction and deceleration---directly mirror the coding enrichments observed in dHPC$\to$NAc neurons (lick-excited and speed-inhibited cells, respectively), confirming the functional relevance of the projection-specific code \citep{Britt2012,Stuber2011}.
+
+\begin{table}[H]
+\centering
+\caption{Optogenetic stimulation effects.}
+\label{tab:opto}
+\begin{tabular}{lccc}
+\toprule
+Measure & ChR2 Group & EYFP Control & Effect \\
+\midrule
+Mouth movement & Increased & No change & Oral movements induced \\
+Running velocity & Decreased & No change & Deceleration \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Enhanced Conjunctive Coding in dHPC$\to$NAc Neurons}
+
+Analysis of coding overlap revealed that dHPC$\to$NAc neurons exhibited greater conjunctive representation than dHPC$^-$ neurons. Venn diagram analysis showed higher overlap between place cells and speed-modulated or lick-related categories in the projection population (Figure~7A--B). A greater fraction of dHPC$\to$NAc place cells were simultaneously modulated by velocity and/or licking compared to dHPC$^-$ place cells, and triple-conjunctive neurons (encoding position, velocity, and licking) were enriched among projection neurons.
+
+\begin{table}[H]
+\centering
+\caption{Conjunctive coding enrichment in dHPC$\to$NAc neurons.}
+\label{tab:conjunctive}
+\begin{tabular}{lcc}
+\toprule
+Coding Type & dHPC$\to$NAc & Functional Implication \\
+\midrule
+Position only & Enhanced & Spatial mapping for navigation \\
+Position + velocity & Enhanced & Spatial-locomotor reward approach \\
+Position + licking & Enhanced & Reward approach coding \\
+Position + velocity + licking & Enhanced & Full goal-directed state \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Generalized Linear Model Confirms Projection-Specific Coding}
+
+To formally quantify the contribution of each behavioral variable to neural activity, we fit a GLM to each neuron's calcium activity using position, velocity, and appetitive licking as predictors (Figure~8A). Model comparison via likelihood ratio tests between full and reduced models (each predictor removed in turn) revealed that dHPC$\to$NAc neurons had significantly better full-model fits and larger contributions from all three predictors compared to dHPC$^-$ neurons (Figure~8B). Conjunctive coding, quantified by interaction terms and comparison of full versus reduced models, was significantly stronger in the projection population \citep{Hardcastle2017,Leutgeb2005}. This computational analysis confirms that dHPC$\to$NAc neurons integrate spatial, locomotor, and appetitive information more strongly than the general hippocampal population, providing the NAc with an enriched goal-directed state representation.
+
+\begin{table}[H]
+\centering
+\caption{GLM results: predictor contributions by population.}
+\label{tab:glm}
+\begin{tabular}{lcc}
+\toprule
+Metric & dHPC$\to$NAc & dHPC$^-$ \\
+\midrule
+Full model fit & Better & Lower \\
+Position contribution & Larger & Smaller \\
+Velocity contribution & Larger & Smaller \\
+Licking contribution & Larger & Smaller \\
+Conjunctive coding strength & Stronger & Weaker \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our findings reveal that the dorsal hippocampus--nucleus accumbens projection carries a selectively enriched, multi-dimensional neural code that integrates spatial position, locomotor velocity, and appetitive licking to support goal-directed navigation toward hidden rewards. Using dual-color two-photon imaging to simultaneously distinguish projection-identified neurons from the general population during behavior, we demonstrate that dHPC$\to$NAc neurons have enhanced spatial coding (more place cells, higher spatial information, greater reliability), over-represent reward locations, are enriched for speed-inhibited and lick-excited cells, and exhibit stronger conjunctive coding as confirmed by GLM analysis.
+
+The enrichment of place cells with high spatial information in the dHPC$\to$NAc projection extends previous findings on projection-specific coding in hippocampal circuits \citep{Ciocchi2015,Xu2016,Trouche2019}. Our observation that reward zone representations are overrepresented among projection neurons is consistent with the hypothesis that the hippocampus--NAc pathway selectively transmits reward-relevant spatial information to drive motivational behavior \citep{Mogenson1980,Floresco2015}. The over-representation of local cue modulation further suggests that dHPC$\to$NAc neurons anchor their spatial representations to salient environmental landmarks \citep{Knierim2002,Hargreaves2007}.
+
+The enrichment of speed-inhibited neurons in the projection population is a novel finding with clear functional significance. Because mice must decelerate to accurately lick within the narrow reward zone, speed-inhibited (deceleration-coding) neurons in the projection may signal the behavioral transition from approach to consummatory behavior \citep{Kropff2015,Hinman2016}. The complementary enrichment of lick-excited neurons further supports this interpretation and aligns with evidence that NAc neurons encode reward consumption events \citep{Roitman2005,Saddoris2015}.
+
+Our optogenetic experiments provide causal evidence linking dHPC$\to$NAc activation to the two key behavioral components identified in the coding analysis: mouth movements and deceleration. These effects are consistent with the proposed role of the NAc as a limbic--motor interface that translates hippocampal spatial and contextual signals into motor outputs \citep{Mogenson1980,Britt2012,Stuber2011}. The GLM analysis further demonstrates that conjunctive coding of multiple behavioral variables is a defining feature of the projection population, enabling a compact representation that can uniquely identify the animal's goal-directed state near the reward zone \citep{Hardcastle2017,Rigotti2013}.
+
+Several limitations should be noted. Our imaging approach focused on the CA1/prosubiculum border and may not capture the full diversity of hippocampal projections to NAc subregions \citep{Groenewegen1987,French2003}. Additionally, the head-fixed treadmill paradigm constrains the range of navigational strategies that can be studied. Future work should extend these findings to freely moving conditions and examine how dHPC$\to$NAc coding adapts to changing reward contingencies \citep{Gauthier2018}.
+
+In summary, we provide the first large-scale characterization of projection-specific coding in the hippocampus--accumbens pathway during goal-directed behavior. The enriched, conjunctive representation carried by this projection offers a neural mechanism by which the hippocampus can direct motivation-driven navigation through the NAc, bridging spatial cognition with reward-seeking action.
+
+\section{Methods}
+
+\subsection{Animals}
+
+All procedures were approved by the institutional animal care and use committee. Thy1-GCaMP6s transgenic mice (GP4.3 line; Jackson Laboratory) were used for imaging experiments ($n = 6$; male and female). C57Bl/6 mice were used for optogenetic experiments ($n = 16$). An additional cohort ($n = 18$) was used for behavioral training only. Mice were housed on a 12~h reversed dark--light cycle at 21$^\circ$C and tested during the dark phase. Mice were food restricted to 85--90\% of free-feeding body weight during training.
+
+\subsection{Behavioral Task}
+
+Mice were head-fixed on a self-propelled treadmill belt (360~cm circumference) divided into six textured zones with a single hidden reward zone (30~cm). An anticipation zone (30~cm) preceded the reward zone. Liquid reward was dispensed once per lap upon licking a spout within the reward zone. Mice were trained for five consecutive days. Orofacial movements were monitored using an infrared camera at 75~Hz and body movements at 25~Hz.
+
+\subsection{Surgical Procedures}
+
+Mice were anesthetized with ketamine (0.13~mg/g) and xylazine (0.01~mg/g, i.p.). For retrograde labeling, AAVrg-pgk-Cre ($1 \times 10^{13}$~vg/ml; Addgene \#24593) was injected bilaterally into the NAc (AP $-1.3$~mm, ML $-1.0$~mm, DV $-5.0$ and $-4.3$~mm; $2 \times 500$~nl at 100~nl/min). AAV5-hSyn-DIO-mCherry ($1.1 \times 10^{13}$~vg/ml; Addgene \#50459) was injected into dHPC (200~nl). A 3~mm cranial window was implanted over dHPC for chronic imaging. For optogenetic experiments, AAV2-CaMKII-ChR2-EYFP (UNC; $4 \times 10^{12}$~TU) or control rAAV2-CaMKII-EYFP ($4.3 \times 10^{12}$~TU) was injected into dHPC, with fiber optic cannulae targeting the NAc.
+
+\subsection{Two-Photon Calcium Imaging}
+
+Dual-color two-photon imaging was performed through the cranial window to simultaneously capture GCaMP6s (green, dynamic calcium signals) and mCherry (red, static projection label) fluorescence at the CA1/prosubiculum border. Signals were denoised, deconvolved, and calcium event traces were extracted for downstream analysis.
+
+\subsection{Place Cell Analysis}
+
+Place cells were identified based on spatial information content (bits per event) exceeding a shuffled distribution threshold \citep{Skaggs1993}. In-field activity, trial-to-trial reliability, and place field distributions were computed for dHPC$\to$NAc and dHPC$^-$ populations separately.
+
+\subsection{Speed and Lick Modulation Analysis}
+
+Speed tuning was assessed by linear regression of average calcium events per velocity bin. Neurons were classified as speed-excited (significant positive slope) or speed-inhibited (significant negative slope). Lick-related activity was quantified by computing peri-event time histograms aligned to appetitive lick onsets.
+
+\subsection{Optogenetic Stimulation}
+
+Blue light stimulation was delivered via fiber optic cannulae targeting the NAc during treadmill running. Motion energy in the mouth region was quantified from infrared video (pixel-by-pixel intensity differences). Running velocity changes were computed during stimulation versus baseline periods.
+
+\subsection{Generalized Linear Model}
+
+A GLM was fit to each neuron's calcium activity with three predictors: linearized belt position, running velocity, and binary appetitive licking events. Model comparison used likelihood ratio tests between the full model and reduced models with each predictor removed. Conjunctive coding was quantified by the improvement in fit of the full model relative to single-predictor models \citep{Hardcastle2017}.
+
+\subsection{Statistical Analysis}
+
+Training progression was assessed using repeated-measures ANOVA with Greenhouse--Geisser correction when sphericity was violated. Proportions of place cells, speed cells, and lick cells were compared between populations using chi-squared tests. Speed tuning significance was determined by linear regression with Pearson correlation. GLM model comparisons used likelihood ratio tests. All statistical tests were two-tailed.
+
+\section*{Acknowledgments}
+We thank all members of the laboratory for helpful discussions and technical assistance.
+
+\section*{Data Availability}
+Data and code will be made available upon reasonable request.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

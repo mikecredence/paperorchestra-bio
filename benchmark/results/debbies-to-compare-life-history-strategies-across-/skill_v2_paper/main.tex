@@ -1,0 +1,362 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{lineno}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{DEBBIES: A Dataset of Life History Traits for Parameterizing DEB Integral Projection Models Across 185 Ectotherms}
+
+\author{
+Author One$^{1,*}$, Author Two$^{1}$, Author Three$^{2}$, Author Four$^{3}$ \\[6pt]
+\small $^{1}$Department of Ecology and Evolutionary Biology, University of Example, City, Country \\
+\small $^{2}$Department of Marine Biology, University of Example, City, Country \\
+\small $^{3}$Department of Mathematics, University of Example, City, Country \\
+\small $^{*}$Corresponding author: \texttt{author.one@example.edu}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Cross-taxonomic comparisons of life history strategies require standardized demographic models parameterized from comparable data, yet existing demographic databases (COMPADRE, COMADRE, PADRINO) demand long-term individual tracking data that exclude the majority of ectotherm species. Here we present DEBBIES (Version 5), a curated dataset providing eight key life history traits for 185 ectotherm species across 18 orders, designed to parameterize dynamic energy budget integral projection models (DEB-IPMs). Unlike traditional demographic databases, DEB-IPMs require only species-level trait estimates---length at birth, length at puberty, maximum length, maximum reproduction rate, energy allocation fraction ($\kappa$), von Bertalanffy growth rate, juvenile mortality rate, and adult mortality rate---enabling inclusion of data-deficient species that cannot be individually tracked over lifetimes. Technical validation demonstrates that predicted population growth rates ($\lambda$) match ecological expectations: $\lambda$ is slightly above 1 at high feeding levels ($E(Y) = 0.9$), centered around 1 at intermediate feeding ($E(Y) = 0.7$), and mostly below 1 at low feeding ($E(Y) = 0.5$). Predicted generation times at the highest feeding level are not significantly different from observed values (regression coefficient 95\% CI overlapping 1). We provide MATLAB code for computing nine derived life history traits, population growth rates, demographic resilience (damping ratio), and elasticity analyses. DEBBIES fills a critical gap in biodiversity monitoring by enabling mechanistic population forecasting under novel environmental conditions for taxonomically underrepresented species. The dataset and code are available on FigShare.
+\end{abstract}
+
+\noindent\textbf{Keywords:} dynamic energy budget, integral projection model, life history, ectotherms, demography, population growth rate, biodiversity
+
+\section{Introduction}
+
+Understanding the diversity of life history strategies across the tree of life is a central goal of ecology and evolutionary biology \citep{Stearns1992,Roff2002}. Life history traits---including age at maturity, longevity, reproductive rate, and body size---determine how organisms allocate limited resources to competing demands of growth, reproduction, and survival \citep{Charnov1993}. Cross-taxonomic comparisons of these traits have revealed fundamental axes of life history variation, such as the fast-slow continuum linking pace of life to body size and mortality rates \citep{Promislow1990,Jones2008,Salguero-Gomez2016}.
+
+Demographic models provide a rigorous framework for connecting life history traits to population-level outcomes, including population growth rate ($\lambda$), generation time, and demographic resilience \citep{Caswell2001}. Several major databases have been assembled to facilitate cross-taxonomic demographic analyses: COMPADRE for plant matrix population models \citep{Salguero-Gomez2015}, COMADRE for animal matrix population models \citep{Salguero-Gomez2016b}, and PADRINO for integral projection models \citep{Levin2022}. These databases have enabled important advances in comparative demography, including the identification of universal patterns in population dynamics and responses to environmental change \citep{Salguero-Gomez2017}.
+
+However, all existing demographic databases share a critical limitation: they require long-term individual-level data in which organisms are tracked from birth to death across multiple years \citep{Clutton-Brock2002}. This requirement creates severe taxonomic bias, excluding the vast majority of ectotherm species---particularly small-bodied organisms such as micro-organisms, soil-dwelling invertebrates, and many fish species---that cannot be individually tracked over their lifetimes \citep{Conde2019}. As a result, biodiversity monitoring initiatives relying on these databases suffer from systematic underrepresentation of ectotherms, precisely the group most vulnerable to environmental change due to their dependence on external temperature regulation \citep{Deutsch2008}.
+
+Dynamic energy budget (DEB) theory provides an alternative approach by mechanistically modeling energy allocation throughout an organism's life cycle using a small number of species-level parameters \citep{Kooijman2010,Nisbet2000}. When DEB theory is embedded within an integral projection model (IPM) framework, the resulting DEB-IPM requires only eight life history traits to fully parameterize the population dynamics model \citep{Smallegange2017,Smallegange2021}. These traits---length at birth ($L_b$), length at puberty ($L_p$), maximum length ($L_m$), maximum reproduction rate ($R_m$), energy allocation fraction ($\kappa$), von Bertalanffy growth rate, juvenile mortality rate ($\mu_j$), and adult mortality rate ($\mu_a$)---can be estimated from the scientific literature without requiring long-term individual tracking.
+
+Here we present DEBBIES (Dynamic Energy Budget Based Information on Ectotherm Species), a curated dataset providing these eight traits for 185 ectotherm species across 18 orders, together with MATLAB code for computing derived demographic quantities. We validate the dataset by comparing DEB-IPM predictions against observed life history values from independent databases.
+
+\section{Methods}
+
+\subsection{Dataset compilation}
+
+The DEBBIES dataset (Version 5) was compiled from the scientific literature, collecting eight life history traits per species (Table~\ref{tab:traits}).
+
+\begin{table}[ht]
+\centering
+\caption{Eight input life history traits in the DEBBIES dataset.}
+\label{tab:traits}
+\begin{tabular}{lll}
+\toprule
+Trait Symbol & Description & Type \\
+\midrule
+$L_b$ & Length at birth & Length measure \\
+$L_p$ & Length at puberty & Length measure \\
+$L_m$ & Maximum length & Length measure \\
+$R_m$ & Maximum reproduction rate & Rate \\
+$\kappa$ & Fraction of energy to soma vs.\ reproduction & Fraction \\
+$v_B$ & von Bertalanffy growth rate & Rate \\
+$\mu_j$ & Juvenile mortality rate & Rate \\
+$\mu_a$ & Adult mortality rate & Rate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The dataset spans 185 species across 18 orders, encompassing ray-finned fish, cartilaginous fish, and other ectotherms (Table~\ref{tab:versions}). Data are stored as CSV with an accompanying metadata text file on FigShare.
+
+\begin{table}[ht]
+\centering
+\caption{DEBBIES dataset version history.}
+\label{tab:versions}
+\begin{tabular}{lll}
+\toprule
+Version & Number of Species & Key Changes \\
+\midrule
+1 & 47 & Initial release \\
+2 & $<$47 & Removed incorrect entries \\
+3 & $\sim$204 & Added 157 elasmobranch species \\
+4 & $\sim$207 & Added 3 more elasmobranchs \\
+5 (current) & 185 & Updated $\kappa$ notation to match descriptor \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DEB-IPM model structure}
+
+The DEB-IPM models population dynamics through four fundamental functions operating on a continuous body length domain $\omega$ (Table~\ref{tab:functions}).
+
+\begin{table}[ht]
+\centering
+\caption{Four fundamental functions of the DEB-IPM.}
+\label{tab:functions}
+\begin{tabular}{llll}
+\toprule
+Function & Symbol & Description & Key Dependencies \\
+\midrule
+Survival & $S(L(t))$ & Probability of surviving $t$ to $t+1$ & $L$, $L_m$, $E(Y)$, $\kappa$, $\mu_j$, $\mu_a$ \\
+Growth & $G(L', L(t))$ & Probability of growing $L$ to $L'$ & $L$, growth parameters \\
+Reproduction & $R(L(t))$ & Offspring produced $t$ to $t+1$ & $L$, $L_p$, $R_m$, $\kappa$ \\
+Parent-offspring & $D(L', L(t))$ & Parent--offspring size association & $L$, $L_b$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The population state at time $t+1$ is given by the integral equation:
+\begin{equation}
+n(L', t+1) = \int_{\omega} \left[ S(L) \cdot G(L', L) + R(L) \cdot D(L', L) \right] n(L, t) \, dL
+\end{equation}
+
+\paragraph{Survival function.} The survival function incorporates background mortality (juvenile rate $\mu_j$ for $L_b \leq L < L_p$; adult rate $\mu_a$ for $L_p \leq L \leq L_m$) and starvation mortality when maintenance costs exceed assimilated energy. Starvation occurs when $L > L_m \cdot E(Y) / \kappa$, at which point $S(L(t)) = 0$ (Table~\ref{tab:survival}).
+
+\begin{table}[ht]
+\centering
+\caption{Survival function conditions in the DEB-IPM.}
+\label{tab:survival}
+\begin{tabular}{ll}
+\toprule
+Condition & Mortality Rule \\
+\midrule
+Starvation ($L > L_m \cdot E(Y) / \kappa$) & $S(L(t)) = 0$ \\
+Juvenile ($L_b \leq L < L_p$), not starving & Mortality rate $= \mu_j$ \\
+Adult ($L_p \leq L \leq L_m$), not starving & Mortality rate $= \mu_a$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Energy budget.} Growth and reproduction are derived from the Kooijman-Metz model \citep{Kooijman2010}, a simplified DEB formulation assuming isomorphic organisms where ingestion rate scales with squared body length ($I = I_{\max} \cdot Y \cdot L^2$). A constant fraction $\kappa$ of assimilated energy is allocated to somatic maintenance and growth, with the remainder ($1 - \kappa$) directed to reproduction and maturation (Table~\ref{tab:energy}).
+
+\begin{table}[ht]
+\centering
+\caption{Kooijman-Metz energy budget assumptions.}
+\label{tab:energy}
+\begin{tabular}{ll}
+\toprule
+Assumption & Description \\
+\midrule
+Organism shape & Isomorphic (surface area $\propto L^2$, volume $\propto L^3$) \\
+Ingestion rate & $I = I_{\max} \cdot Y \cdot L^2$ \\
+Assimilation efficiency & Constant $\epsilon$ \\
+$\kappa$ rule & Fraction $\kappa$ to somatic maintenance + growth \\
+Remainder ($1 - \kappa$) & To reproduction and maturation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The feeding level $E(Y)$ ranges from 0 (empty gut) to 1 (full gut) and controls the fraction of maximum ingestion rate realized. Population growth rate ($\lambda$) is computed as the dominant eigenvalue of the discretized IPM matrix ($200 \times 200$ bins).
+
+\subsection{Technical validation}
+
+DEB-IPM predictions were compared against observed values from multiple external databases (Table~\ref{tab:sources}).
+
+\begin{table}[ht]
+\centering
+\caption{External data sources used for technical validation.}
+\label{tab:sources}
+\begin{tabular}{lll}
+\toprule
+Source & Taxa Covered & Variables Obtained \\
+\midrule
+Fishbase & Ray-finned fish, some cartilaginous fish & Generation time, age at maturity, longevity \\
+IUCN Red List & Cartilaginous fish, general species & Generation time, longevity \\
+Animal Diversity Web & General species & Generation time, age at maturity, longevity \\
+AnAge database & General species & Age at maturity, longevity \\
+Sharks of the World & Cartilaginous fish & Longevity, age at maturity \\
+Rays of the World & Cartilaginous fish & Longevity, age at maturity \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+When value ranges were given, the median was used; when a series of observations was available, the mean was taken. Source priority was: Animal Diversity Web first, then IUCN, then AnAge. Linear regression without intercept ($y \sim x$) compared predicted versus observed values at three feeding levels ($E(Y) = 0.5, 0.7, 0.9$). The 95\% confidence intervals of regression coefficients were checked for overlap with 1, and root mean square error (RMSE) quantified overall prediction deviation.
+
+\subsection{Derived demographic quantities}
+
+Nine derived life history traits and three additional demographic quantities are computable from the DEB-IPM using the provided MATLAB code (Table~\ref{tab:derived}).
+
+\begin{table}[ht]
+\centering
+\caption{Derived life history traits computable from the DEB-IPM.}
+\label{tab:derived}
+\begin{tabular}{lll}
+\toprule
+Trait & Category & Description \\
+\midrule
+Generation time & Turnover & Mean age of parents of newborns \\
+Survivorship curve & Longevity & Probability of surviving to age $x$ \\
+Age at sexual maturity & Longevity & Age at which reproduction begins \\
+Progressive growth & Growth & Size increase over lifetime \\
+Retrogressive growth & Growth & Size decrease (if applicable) \\
+Mean sexual reproduction & Reproduction & Average reproductive output \\
+Degree of iteroparity & Reproduction & Spread of reproduction over lifetime \\
+Net reproductive rate & Reproduction & Expected offspring per lifetime \\
+Mature life expectancy & Longevity & Expected remaining lifespan after maturity \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Additionally, the code computes population growth rate ($\lambda$, dominant eigenvalue), demographic resilience (damping ratio: ratio of dominant to subdominant eigenvalue), and elasticity analyses (proportional change in $\lambda$ per proportional change in each input trait).
+
+\section{Results}
+
+\subsection{Population growth rate validation}
+
+The distribution of predicted population growth rates ($\lambda$) across 185 species matched general ecological expectations at all three feeding levels (Table~\ref{tab:lambda}).
+
+\begin{table}[ht]
+\centering
+\caption{Population growth rate ($\lambda$) distribution by feeding level.}
+\label{tab:lambda}
+\begin{tabular}{lll}
+\toprule
+Feeding Level $E(Y)$ & $\lambda$ Distribution & Ecological Interpretation \\
+\midrule
+0.9 (high) & Most species slightly $> 1$ & Population increase \\
+0.7 (intermediate) & Centered around 1 & Population stability \\
+0.5 (low) & Mostly $< 1$ & Population decline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Most species required a minimum feeding level of approximately $E(Y) = 0.7$ for population viability, with fewer than half of all species maintaining viable populations at $E(Y) < 0.5$.
+
+\subsection{Generation time validation}
+
+Predicted generation times were compared against observed values from external databases at three feeding levels (Table~\ref{tab:gentime}).
+
+\begin{table}[ht]
+\centering
+\caption{Predicted versus observed generation time regression results.}
+\label{tab:gentime}
+\begin{tabular}{lcccc}
+\toprule
+$E(Y)$ & Regression Coefficient & 95\% CI Overlaps 1? & RMSE (years) & Interpretation \\
+\midrule
+0.9 & Close to 1 & Yes & Lower & Not significantly different \\
+0.7 & $>$ 1 & Varies & Moderate & Predicted higher \\
+0.5 & $>$ 1 & No & Higher & Predicted significantly higher \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At the highest feeding level ($E(Y) = 0.9$), predicted generation times were not significantly different from observed values, with the 95\% confidence interval of the regression coefficient overlapping 1. At lower feeding levels, predictions were biased upward relative to observations, consistent with the expectation that observed generation times reflect favorable (high-feeding) conditions in natural populations.
+
+\subsection{Longevity and age at maturity validation}
+
+Predicted longevity (age at maturity plus mature life expectancy) and age at maturity were similarly validated against observed values at three feeding levels. Regression coefficients and RMSE values were computed for each comparison, with predictions at $E(Y) = 0.9$ providing the closest match to observed data.
+
+\subsection{Comparison with existing demographic databases}
+
+DEBBIES occupies a distinct niche relative to existing demographic databases (Table~\ref{tab:comparison}).
+
+\begin{table}[ht]
+\centering
+\caption{Comparison of DEBBIES with existing demographic databases.}
+\label{tab:comparison}
+\begin{tabular}{llll}
+\toprule
+Feature & COMPADRE/COMADRE & PADRINO & DEBBIES \\
+\midrule
+Model type & Matrix population models & IPMs & DEB-IPMs \\
+Data requirement & Long-term individual tracking & Long-term tracking & 8 traits only \\
+Data-deficient species & Not accommodated & Not accommodated & Accommodated \\
+Model structure & Variable & Variable & Uniform \\
+Mechanistic trade-offs & No & No & Yes ($\kappa$) \\
+Novel condition forecasts & Limited & Limited & Yes \\
+Taxonomic scope & Plants and animals & Plants and animals & Ectotherms (185 spp.) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key advantages of DEBBIES are: (1) accommodation of data-deficient species through reliance on species-level trait estimates rather than individual tracking data; (2) a uniform model structure enabling direct cross-taxonomic comparison; and (3) mechanistic representation of the growth-reproduction trade-off via the $\kappa$ parameter, enabling population forecasting under novel environmental conditions.
+
+\section{Usage Notes}
+
+\subsection{Code availability}
+
+Two MATLAB code packages are provided on FigShare (Table~\ref{tab:code}).
+
+\begin{table}[ht]
+\centering
+\caption{Provided MATLAB code packages.}
+\label{tab:code}
+\begin{tabular}{lll}
+\toprule
+Package & Purpose & Repository \\
+\midrule
+Cross-taxonomical analysis & 9 derived traits, $\lambda$, damping ratio, elasticity (all spp.) & FigShare \\
+Single-species analysis & Same quantities for one species across feeding levels & FigShare \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Potential applications}
+
+The DEBBIES dataset enables multiple applications in ecology, conservation, and evolutionary biology (Table~\ref{tab:applications}).
+
+\begin{table}[ht]
+\centering
+\caption{Potential applications of the DEBBIES dataset.}
+\label{tab:applications}
+\begin{tabular}{ll}
+\toprule
+Application Area & How DEBBIES Contributes \\
+\midrule
+Essential Biodiversity Variables & Feed into EBV pipelines \\
+Conservation management & Identify sensitive traits via elasticity \\
+Biogeography & Link life history strategies to geography \\
+Evolutionary biology & Cross-taxonomic pace-of-life analyses \\
+Climate change forecasting & Mechanistic predictions under novel conditions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Known Limitations}
+
+Several limitations should be considered when using DEBBIES (Table~\ref{tab:limitations}).
+
+\begin{table}[ht]
+\centering
+\caption{Known limitations of the DEBBIES dataset.}
+\label{tab:limitations}
+\begin{tabular}{ll}
+\toprule
+Limitation & Description \\
+\midrule
+Multi-study trait sourcing & Traits per species often from different studies \\
+Parameter non-identifiability & Similar patterns can arise from different parameter sets \\
+Population specificity & Species-level averages, not population-specific \\
+Feeding level sensitivity & Predictions depend on assumed $E(Y)$ \\
+Minimum feeding level & Many species require $E(Y) > 0.7$ for viable runs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The multi-study sourcing of traits means that the eight parameters for a given species may derive from different populations, studies, and methodologies, potentially introducing systematic bias. Furthermore, the DEB-IPM assumes isomorphic organisms and constant $\kappa$, simplifications that may not hold for all species. Users should be aware that population-specific trait values may differ substantially from species-level averages, and sensitivity analyses varying the feeding level $E(Y)$ are recommended.
+
+\section{Data Records}
+
+The DEBBIES dataset (Version 5) is deposited on FigShare as a CSV file with an accompanying metadata text file containing column descriptions, units, and data sources. The MATLAB code for cross-taxonomical and single-species analyses is provided in separate directories within the same FigShare repository.
+
+\section{Acknowledgments}
+
+We thank the many researchers whose published data made this compilation possible. We acknowledge the Fishbase, IUCN Red List, Animal Diversity Web, and AnAge databases for providing validation data. This work was supported by [funding agencies].
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

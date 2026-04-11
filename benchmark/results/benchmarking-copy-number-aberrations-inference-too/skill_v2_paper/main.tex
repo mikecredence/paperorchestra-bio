@@ -1,0 +1,308 @@
+\documentclass[11pt]{article}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{longtable}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{Comprehensive Benchmarking of scRNA-seq-Based Copy Number Aberration Inference Tools Using Paired Multi-Omics Ground Truth}
+
+\author{%
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Copy number aberrations (CNAs) are key drivers of cancer initiation and progression, and their characterization at single-cell resolution is essential for understanding intratumor heterogeneity. While single-cell DNA sequencing (scDNA-seq) provides direct CNA measurement, its cost and limited coverage have motivated the development of computational tools that infer CNAs from single-cell RNA sequencing (scRNA-seq) data. However, no independent comprehensive benchmark has compared the five leading tools---inferCNV, CopyKAT, SCEVAN, Numbat, and CaSpER---using paired multi-omics ground truth. Here, we systematically evaluate these tools across four tasks: tumor versus normal cell classification, CNA profile accuracy, tumor subclone inference, and aneuploidy detection in non-malignant cells. Using paired scRNA-seq and scDNA-seq datasets from 8 colorectal cancer samples, 2 acute lymphoblastic leukemia samples, 1 glioma, 1 neuroendocrine tumor, and cell lines, we find that Numbat outperforms other tools across most criteria when allele frequency data is available, while CopyKAT achieves the best performance among expression-only methods. SCEVAN excels at clonal breakpoint detection. We further demonstrate that expression-based methods are sensitive to tumor purity and reference cell selection, and that including tumor microenvironment cells can substantially improve performance. These results provide practical guidance for tool selection and parameter optimization in single-cell CNA analysis.
+\end{abstract}
+
+\section{Introduction}
+
+Copy number aberrations (CNAs)---gains, losses, and structural rearrangements of chromosomal segments---play crucial roles in cancer initiation, progression, and therapeutic resistance \citep{Beroukhim2010,Zack2013}. Characterizing CNAs at single-cell resolution is important for understanding intratumor heterogeneity, identifying cancer subclones, and tracking tumor evolution \citep{Navin2011,Gao2016}. Single-cell DNA sequencing (scDNA-seq) provides the most direct measurement of CNAs but remains costly, technically demanding, and limited in throughput \citep{Zahn2017,Laks2019}.
+
+As single-cell RNA sequencing (scRNA-seq) has become the dominant platform for single-cell profiling in cancer research \citep{Patel2014,Tirosh2016}, several computational tools have been developed to infer CNAs from gene expression data. These tools exploit the expected correlation between DNA copy number and transcript abundance across chromosomal segments \citep{Patel2014,Fan2018}. Five widely used tools have emerged: three expression-only methods---inferCNV \citep{Patel2014,Tirosh2016}, CopyKAT \citep{Gao2021}, and SCEVAN \citep{DeFalco2023}---and two methods that additionally incorporate B-allele frequency information---Numbat \citep{Gao2023} and CaSpER \citep{Serin2019}.
+
+Despite the popularity of these tools, no independent comprehensive benchmark had been conducted using paired multi-omics ground truth data where both DNA and RNA are profiled from the same cells \citep{Zhou2020,Yu2021}. Users lack guidance on which tool to select for specific analytical tasks, and the impact of critical parameters such as reference cell selection, tumor purity, and inclusion of tumor microenvironment (TME) cells on tool performance has been poorly characterized.
+
+Here, we present a systematic benchmark of all five tools across four evaluation criteria using paired scRNA-seq/scDNA-seq multi-omics datasets from multiple tumor types. Our evaluation encompasses tumor versus normal cell classification, CNA profile accuracy, tumor subclone inference, and aneuploidy detection in non-malignant cells. We additionally examine the effects of reference settings, tumor purity, TME cell inclusion, and sequencing depth on performance, providing practical recommendations for the community.
+
+\section{Materials and Methods}
+
+\subsection{Benchmark Datasets}
+
+We assembled paired multi-omics datasets where both scDNA-seq and scRNA-seq were profiled from the same samples, enabling scDNA-seq-derived CNA profiles to serve as ground truth (Table~\ref{tab:datasets}).
+
+\begin{table}[H]
+\centering
+\caption{Overview of benchmark datasets.}
+\label{tab:datasets}
+\begin{tabular}{lllll}
+\toprule
+Dataset & Tumor Type & Source & Ground Truth & Accession \\
+\midrule
+CRC01--CRC08 & Colorectal cancer & Zhou et al. & Paired scDNA-seq & HRA000201 \\
+ALL (2 samples) & Acute lymphoblastic leukemia & Zachariadis et al. & Paired scDNA-seq & GSE144296 \\
+Glioma & Glioma & Yu et al. & Paired scDNA-seq & GSE185269 \\
+Neuro & Neuroendocrine tumor & Cui et al. & Paired scDNA-seq & PRJCA002946 \\
+NPC43 & NPC43 cell line & Yu et al. & Paired scDNA-seq & GSE185269 \\
+HUVEC & Endothelial cell line & Yu et al. & Paired scDNA-seq & GSE185269 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tools Benchmarked}
+
+Five CNA inference tools were evaluated, representing two categories based on input requirements (Table~\ref{tab:tools}).
+
+\begin{table}[H]
+\centering
+\caption{Characteristics of benchmarked CNA inference tools.}
+\label{tab:tools}
+\begin{tabular}{llllll}
+\toprule
+Tool & Version & Category & BAF & Language & Algorithm \\
+\midrule
+inferCNV & 1.18.1 & Expression-only & No & R & Corrected moving average \\
+CopyKAT & Default & Expression-only & No & R & Bayesian segmentation + GMM \\
+SCEVAN & Default & Expression-only & No & R & Multi-channel segmentation \\
+Numbat & Default & Expression + allele & Yes & R & Haplotype-aware HMM \\
+CaSpER & Default & Expression + allele & Yes & R & Multiscale signal processing \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Evaluation Framework}
+
+Performance was assessed across four tasks: (1) tumor versus normal cell classification, evaluated by F1 score; (2) CNA profile accuracy, measured by Pearson correlation between inferred and ground-truth profiles; (3) tumor subclone inference, comparing clonal structures from scDNA-seq and scRNA-seq; and (4) aneuploidy detection in non-malignant cells from the tumor microenvironment. Additional analyses examined the impact of reference cell settings, tumor purity, TME cell inclusion, and sequencing depth.
+
+\begin{table}[H]
+\centering
+\caption{Input requirements comparison across tools.}
+\label{tab:inputs}
+\begin{tabular}{lccccc}
+\toprule
+Feature & inferCNV & CopyKAT & SCEVAN & Numbat & CaSpER \\
+\midrule
+Expression matrix & Required & Required & Required & Required & Required \\
+B-allele frequency & No & No & No & Required & Required \\
+Population haplotype & No & No & No & Required & No \\
+Optional reference cells & Yes & Yes & Yes & N/A & N/A \\
+Auto-reference detection & Yes & Yes (GMM) & Yes & N/A & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\subsection{Tumor Versus Normal Cell Classification}
+
+We first evaluated each tool's ability to distinguish tumor from normal cells using F1 scores computed against scDNA-seq-defined ground truth labels (Figure~2). Across all tested samples (glioma, CRC, and neuroendocrine datasets), Numbat achieved the highest median F1 score, demonstrating robust tumor/normal classification when allele frequency data was available. Among expression-only methods, CopyKAT was the most competitive, followed by SCEVAN and inferCNV with variable performance.
+
+\begin{table}[H]
+\centering
+\caption{Tumor/normal classification performance ranking.}
+\label{tab:classification}
+\begin{tabular}{lcc}
+\toprule
+Tool & Overall F1 Ranking & Category \\
+\midrule
+Numbat & 1st (highest median) & Expression + allele \\
+CopyKAT & Best expression-only & Expression-only \\
+SCEVAN & Variable & Expression-only \\
+inferCNV & Variable & Expression-only \\
+CaSpER & Variable & Expression + allele \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Impact of Reference Cell Settings}
+
+Reference cell selection critically affected expression-based tool performance (Figure~2D--E). When inferCNV was run with unspecified reference cells (one-pass mode), it used the input population average as background, which can incorrectly remove genuine CNA signals when tumor purity is high. The two-pass approach---using normal cells identified in a first run as reference for a second run---substantially improved CNA centering and classification accuracy. Including TME cells in the input improved performance for both inferCNV and SCEVAN, as these non-malignant cells provide a better baseline for CNA signal calibration.
+
+\begin{table}[H]
+\centering
+\caption{Impact of reference settings on inferCNV classification.}
+\label{tab:reference}
+\begin{tabular}{lll}
+\toprule
+Setting & Behavior & Effect \\
+\midrule
+One-pass (unspecified) & Population average as background & May remove real CNA signals \\
+Two-pass (specified) & Normal cells from first run as reference & Improved centering \\
+With TME cells & Additional cell types in input & Generally improves performance \\
+Without TME cells & Only tumor/epithelial cells & Performance may decrease \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{CNA Profile Accuracy}
+
+CNA profile accuracy was quantified by Pearson correlation between tool-inferred and scDNA-seq-derived CNA profiles at pseudobulk and single-cell levels (Figure~3). Numbat achieved the highest overall correlation, confirming its superior ability to reconstruct CNA landscapes. Among expression-only tools, CopyKAT ranked highest, followed by two-pass inferCNV. SCEVAN showed moderate performance, while CaSpER exhibited variable accuracy across samples.
+
+\begin{table}[H]
+\centering
+\caption{CNA profile accuracy ranking by Pearson correlation.}
+\label{tab:accuracy}
+\begin{tabular}{lcc}
+\toprule
+Method & Overall Ranking & Notes \\
+\midrule
+Numbat & 1st (highest) & Expression + allele \\
+CopyKAT & Best expression-only & Integrative Bayesian segmentation \\
+inferCNV (two-pass) & Improved over one-pass & Requires two sequential runs \\
+SCEVAN & Moderate & Multi-channel segmentation \\
+CaSpER & Variable & Multiscale signal processing \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Copy Number Neutral LOH Detection}
+
+Loss of heterozygosity (LOH) detection was evaluated for the two allele-aware tools (Figure~3K--M). Numbat demonstrated high sensitivity for detecting copy number neutral LOH (cnLOH) events, where one allele is lost and the other duplicated to maintain diploid copy number. However, Numbat showed relatively low precision: most false positive cnLOH calls corresponded to copy number deletions (genotype 1,0) misclassified as cnLOH (genotype 2,0). Additionally, extreme amplification events (e.g., on chromosome 8) were occasionally misclassified as LOH. CaSpER showed lower sensitivity but different error patterns.
+
+\begin{table}[H]
+\centering
+\caption{LOH detection performance (allele-aware tools only).}
+\label{tab:loh}
+\begin{tabular}{lccc}
+\toprule
+Tool & Sensitivity & Precision & Primary FP Source \\
+\midrule
+Numbat & High & Low & Deletion$\to$cnLOH confusion \\
+CaSpER & Lower & Variable & Different error patterns \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tumor Subclone Inference}
+
+Subclone detection was evaluated by comparing clonal structures inferred from scRNA-seq tools against those from scDNA-seq (Figure~4). In glioma samples containing two subclones (C1, C2), Numbat achieved the best recovery of clonal structure, as visualized by Sankey diagrams. Across CRC samples with multiple subclones (CRC03, CRC11), performance varied across tools. Notably, SCEVAN achieved the best performance in clonal breakpoint detection, identifying the precise genomic locations where CNA changes occur between subclones.
+
+\begin{table}[H]
+\centering
+\caption{Clonal breakpoint detection ranking.}
+\label{tab:breakpoint}
+\begin{tabular}{lcc}
+\toprule
+Tool & Breakpoint Detection & Overall Rank \\
+\midrule
+SCEVAN & Best performance & 1st \\
+Numbat & Good & 2nd \\
+CopyKAT & Moderate & 3rd \\
+inferCNV & Moderate & Variable \\
+CaSpER & Lower & 5th \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Aneuploidy Detection in Non-Malignant Cells}
+
+Accumulating evidence suggests that CNAs can occur in non-malignant cells and may be associated with non-cancer diseases \citep{Knouse2014,McConnell2013}. We evaluated all five tools for their ability to detect aneuploidy in non-malignant cell types within the CRC tumor microenvironment, including immune cells, endothelial cells, and fibroblasts. This represents a challenging use case where CNA signals are expected to be subtler than in tumor cells.
+
+\subsection{Impact of Tumor Purity and Sequencing Depth}
+
+Expression-based methods were more susceptible to tumor purity effects than allele-aware methods (Table~\ref{tab:purity}). At high tumor purity, inferCNV (one-pass) incorrectly removed CNA signals by treating them as background. SCEVAN tended to misassign non-malignant cells as malignant at low purity. Including TME cells in the input consistently improved performance across purity levels for both tools.
+
+\begin{table}[H]
+\centering
+\caption{Tumor purity effects on expression-based methods.}
+\label{tab:purity}
+\begin{tabular}{lll}
+\toprule
+Purity Level & inferCNV Behavior & SCEVAN Behavior \\
+\midrule
+High purity & CNA signals removed as background & Better performance \\
+Low purity & Better with appropriate reference & Non-malignant cell misassignment \\
+High + TME cells & Improved & Improved \\
+Low + TME cells & Improved & Improved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Sequencing depth analysis revealed that CopyKAT was the most robust tool to depth variation, maintaining performance even at reduced coverage. Numbat and inferCNV showed moderate sensitivity, while SCEVAN and CaSpER exhibited more variable performance at lower depths.
+
+\begin{table}[H]
+\centering
+\caption{Robustness to sequencing depth reduction.}
+\label{tab:depth}
+\begin{tabular}{lc}
+\toprule
+Tool & Robustness to Lower Depth \\
+\midrule
+CopyKAT & Most robust \\
+Numbat & Moderate \\
+inferCNV & Moderate \\
+SCEVAN & Variable \\
+CaSpER & Variable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our comprehensive benchmark reveals important differences among the five leading scRNA-seq-based CNA inference tools, with clear implications for tool selection in different analytical scenarios.
+
+Numbat emerged as the overall best-performing tool when allele frequency data and population-derived haplotypes are available \citep{Gao2023}. Its haplotype-aware hidden Markov model integrates both expression and allelic information, providing more robust CNA inference than expression-only approaches. However, Numbat's additional data requirements may limit its applicability in some experimental contexts \citep{Fan2018,Serin2019}.
+
+Among expression-only methods, CopyKAT demonstrated the most consistent performance \citep{Gao2021}. Its integrative Bayesian segmentation with Gaussian mixture model clustering provides robust tumor/normal classification and CNA profiling even without allele frequency data. CopyKAT's robustness to sequencing depth variation further supports its use as a practical default when only expression data is available.
+
+SCEVAN's superior clonal breakpoint detection \citep{DeFalco2023} makes it the preferred choice when precise identification of CNA boundaries is the primary goal, as in clonal evolution studies \citep{McGranahan2017}. This advantage likely stems from its multi-channel segmentation approach, which can resolve subtle transitions more effectively than simpler averaging methods.
+
+Our finding that reference cell selection critically impacts expression-based tools has important practical implications. The two-pass inferCNV approach provides a straightforward improvement over the default one-pass mode, and should be used when computational resources permit \citep{Patel2014,Tirosh2016}. The consistent benefit of including TME cells as internal references suggests that users should avoid over-filtering their input data, as the additional non-malignant cell types provide valuable baseline information \citep{Lambrechts2018}.
+
+The sensitivity of expression-based methods to tumor purity highlights a fundamental limitation: when most cells carry CNAs, the population average used as reference inherently contains CNA signals, leading to incorrect centering \citep{Fan2018}. Allele-aware methods like Numbat are less susceptible to this issue because allele frequency provides an independent source of CNA evidence. This advantage becomes particularly important in clinical samples where tumor purity varies widely \citep{Aran2015}.
+
+Numbat's high sensitivity but low precision in cnLOH detection warrants caution in interpreting LOH calls \citep{Gao2023}. The confusion between copy number deletions and cnLOH events likely arises from the inherent difficulty of distinguishing these genotypes from expression data alone, even with allele frequency information. Users should validate LOH calls with orthogonal evidence when possible.
+
+Several limitations should be noted. Our benchmark focused on specific tumor types and may not fully capture tool performance across all malignancies. The datasets used represent relatively common tumor types; rare tumor types with unusual CNA patterns may yield different rankings. Additionally, we benchmarked default parameters for most tools, and optimized settings may further improve individual tool performance.
+
+\section{Conclusion}
+
+We provide the first comprehensive, independent benchmark of scRNA-seq-based CNA inference tools using paired multi-omics ground truth. Our results offer clear practical guidance: Numbat is recommended as the overall best tool when allele data is available; CopyKAT is the preferred expression-only method; SCEVAN excels at breakpoint detection; and including TME cells consistently improves expression-based tool performance. These recommendations, summarized in Table~\ref{tab:recommendations}, should help users select the most appropriate tool for their specific analytical needs.
+
+\begin{table}[H]
+\centering
+\caption{Summary recommendations by analytical task.}
+\label{tab:recommendations}
+\begin{tabular}{lll}
+\toprule
+Task & Recommended Tool & Condition \\
+\midrule
+Overall best & Numbat & Allele data available \\
+Expression-only input & CopyKAT & Only expression matrix \\
+Breakpoint detection & SCEVAN & Clonal boundary analysis \\
+cnLOH detection & Numbat & High sensitivity (mind low precision) \\
+Low sequencing depth & CopyKAT & Most robust to depth \\
+High tumor purity & Include TME cells & Improves centering \\
+Computational speed & SCEVAN & Fastest runtime \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Data Availability}
+All datasets used are publicly available from the accession numbers listed in Table~\ref{tab:datasets}. Analysis code is available upon request.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

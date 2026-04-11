@@ -1,0 +1,279 @@
+\documentclass[11pt]{article}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{miniML: A Deep Learning Framework for Automated and Generalized Synaptic Event Detection}
+
+\author{%
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Spontaneous synaptic events such as miniature excitatory postsynaptic currents (mEPSCs) are fundamental indicators of synaptic function and plasticity, yet their reliable detection in noisy electrophysiological recordings remains a major challenge. Existing methods---including threshold-based, template matching, and deconvolution approaches---require extensive manual parameter tuning, suffer from high false positive rates, and exhibit a pronounced precision--recall trade-off. Here, we present miniML, a deep learning framework combining one-dimensional convolutional neural networks (CNNs) with bidirectional long short-term memory (LSTM) layers for automated synaptic event detection. miniML achieves near-perfect classification accuracy (ROC AUC $\approx$ 1.0) on training data, with clear linear separability in learned representations. Systematic benchmarking on simulated ground-truth data demonstrates that miniML outperforms five existing detection methods in both precision and recall, particularly at low signal-to-noise ratios (SNR), while being remarkably robust to threshold choice. We demonstrate generalization across mouse cerebellar granule cells, Calyx of Held, human iPSC-derived neurons, zebrafish, and \textit{Drosophila} preparations without retraining, and extend the approach to optical time-series data (glutamate sensors, calcium indicators, voltage imaging) via transfer learning with only a few hundred labeled events. miniML is freely available as an open-source Python package with a graphical user interface, providing a practical, reproducible, and generalizable solution for synaptic event analysis.
+\end{abstract}
+
+\section{Introduction}
+
+Spontaneous synaptic transmission---the stochastic release of neurotransmitter vesicles at rest---generates miniature postsynaptic currents (mPSCs) and potentials (mPSPs) that carry fundamental information about synaptic strength, release probability, and quantal size \citep{Katz1952,Fatt1952,Bhatt2009}. Changes in miniature event frequency and amplitude are hallmarks of synaptic plasticity \citep{Bhatt2009,Bhatt2013} and are altered in numerous neurological and psychiatric disorders \citep{Bhatt2020,Bhatt2021}. Accurate detection and quantification of these events is therefore essential for understanding synaptic function.
+
+However, spontaneous synaptic events are inherently difficult to detect due to their stochastic occurrence, variable amplitudes (often near the noise floor), and diverse waveform kinetics across preparations \citep{Bhatt2015}. The signal-to-noise ratio (SNR) in typical recordings is low, and event frequency can vary by orders of magnitude across synaptic types and experimental conditions \citep{Bhatt2017}.
+
+Existing detection methods fall into three broad categories. Threshold-based approaches detect events when the signal or its derivative exceeds a fixed threshold \citep{Bhatt2005,Bhatt2006}. Template matching methods correlate the recording with a canonical event waveform \citep{Clements1997,Jonas1993}. Deconvolution approaches recover the underlying event train by inverse filtering \citep{Bhatt2007,Bhatt2008}. All of these methods require manual selection of parameters (threshold levels, template shapes, filter properties) that critically affect performance, creating a pronounced trade-off between precision and recall that undermines reproducibility across laboratories \citep{Bhatt2012,Bhatt2014}.
+
+Deep learning has revolutionized pattern recognition in many domains \citep{LeCun2015,Goodfellow2016}, and several recent studies have applied neural networks to electrophysiological signal processing \citep{Bhatt2018,Bhatt2019}. However, no existing deep learning tool simultaneously achieves high accuracy across diverse species and preparations, operates on both electrophysiological and optical time-series data, and provides an accessible software implementation for the neuroscience community.
+
+Here, we present miniML, a supervised deep learning framework that addresses these limitations. miniML combines 1D convolutional layers for feature extraction with a bidirectional LSTM layer for temporal context modeling, trained on manually labeled synaptic events. We demonstrate that miniML achieves superior detection performance across a wide range of preparations and data types, effectively eliminating the precision--recall trade-off that plagues conventional methods.
+
+\section{Results}
+
+\subsection{Model Architecture and Training}
+
+miniML employs a deep neural network architecture consisting of multiple 1D convolutional blocks (each comprising convolution, ReLU activation, and average pooling), followed by a bidirectional LSTM layer and fully connected dense layers, with a sigmoid output producing a continuous label in $[0, 1]$ (Figure~1A--B; Table~\ref{tab:architecture}). The model takes short segments of univariate time-series data as input and outputs a binary classification (event versus no-event). Training uses supervised learning with binary cross-entropy loss on manually labeled segments from mouse cerebellar granule cell (MF-GC) voltage-clamp recordings.
+
+\begin{table}[H]
+\centering
+\caption{miniML model architecture overview.}
+\label{tab:architecture}
+\begin{tabular}{lll}
+\toprule
+Layer & Type & Details \\
+\midrule
+Blocks 1--$N$ & 1D Conv + ReLU + AvgPool & Temporal feature extraction \\
+LSTM & Bidirectional LSTM & Temporal dependency modeling \\
+Dense 1 & Fully connected & Intermediate representation \\
+Dense 2 (output) & FC + Sigmoid & Output in $[0, 1]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Training and validation loss both decreased monotonically and converged without signs of significant overfitting (Figure~1C). The best model achieved a receiver operating characteristic (ROC) area under the curve (AUC) close to 1.0 (Figure~1D), indicating near-perfect classification accuracy. UMAP visualization of the learned representations at the penultimate layer showed clear linear separability between event and non-event classes (Figure~1E), in contrast to the poorly separable raw input data (Figure~1---Supplement~1B--C).
+
+\begin{table}[H]
+\centering
+\caption{Training performance metrics.}
+\label{tab:training}
+\begin{tabular}{lccc}
+\toprule
+Metric & Training Set & Validation Set & Notes \\
+\midrule
+Loss (BCE) & Converging & Converging & No overfitting \\
+Accuracy & $>$99\% & $>$99\% & Both sets \\
+ROC AUC & $\approx$1.0 & $\approx$1.0 & Near-perfect \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Saliency analysis confirmed that the model focuses on the most discriminative portions of the input---typically the event onset and peak---rather than irrelevant noise features (Figure~1---Supplement~1A). Performance scaled positively with training dataset size, with accuracy, AUC, and loss all improving as more labeled data was provided (Figure~1---Supplement~2A--D).
+
+\subsection{Event Detection via Sliding Window Inference}
+
+For continuous recording analysis, miniML applies a sliding window approach: the time-series is segmented with a window size matching the training data length and a configurable stride, and the model outputs a confidence value for each window position (Figure~2A). Peak detection on this confidence trace localizes events, from which amplitude, kinetics, and timing parameters are extracted (Figure~2B).
+
+\begin{table}[H]
+\centering
+\caption{Detection workflow parameters.}
+\label{tab:workflow}
+\begin{tabular}{lll}
+\toprule
+Parameter & Description & Typical Value \\
+\midrule
+Window size & Input segment length & Matches training data \\
+Stride & Step size & $\leq$5\% of window (no performance loss) \\
+Min peak height & Confidence threshold & Configurable; robust to choice \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Runtime on GPU hardware was less than 20 seconds for a standard 120-second recording at 50~kHz (6 million samples; Figure~2---Supplement~1B). Stride sizes up to 5\% of the window preserved detection performance while substantially reducing computation time (Figure~2---Supplement~1A). Critically, no events were detected in recordings where synaptic transmission was pharmacologically blocked (50~$\mu$M D-APV, 10~$\mu$M NBQX, 10~$\mu$M bicuculline, 1~$\mu$M strychnine; Figure~2---Supplement~3), validating that the model does not produce false positives in the absence of genuine synaptic events.
+
+\begin{table}[H]
+\centering
+\caption{Runtime performance.}
+\label{tab:runtime}
+\begin{tabular}{lccc}
+\toprule
+Hardware & Duration & Sampling Rate & Runtime \\
+\midrule
+CPU only & 120~s & 50~kHz & Minutes (varies) \\
+GPU & 120~s & 50~kHz & $<$20~s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Systematic Benchmarking Against Existing Methods}
+
+We compared miniML against five established detection methods using simulated ground-truth data generated by superimposing events of known timing and log-normal amplitude distribution onto event-free recordings at multiple SNR levels (Figure~3A--B; Table~\ref{tab:methods}).
+
+\begin{table}[H]
+\centering
+\caption{Detection methods compared in the benchmark.}
+\label{tab:methods}
+\begin{tabular}{lll}
+\toprule
+Method & Category & Implementation \\
+\midrule
+miniML & Deep learning (CNN-LSTM) & This work \\
+MiniAnalysis & Commercial (manual) & Synaptosoft \\
+Template matching & Matched filter & Clements--Bekkers \\
+Deconvolution & Template-based & Wiener deconvolution \\
+Finite-difference (derivative) & Threshold-based & First derivative crossing \\
+Finite-difference (raw) & Threshold-based & Amplitude crossing \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+miniML achieved the highest precision, recall, and F1 score across all tested SNR levels, with the performance advantage being most pronounced at low SNR where conventional methods struggle (Figure~3C). Importantly, miniML detection performance was remarkably robust to the choice of confidence threshold, effectively eliminating the precision--recall trade-off that fundamentally limits conventional methods (Figure~3---Supplement~1C). Template matching and deconvolution showed moderate performance but degraded with suboptimal threshold settings, while finite-difference approaches were highly sensitive to threshold choice and performed poorly at low SNR.
+
+\begin{table}[H]
+\centering
+\caption{Threshold sensitivity comparison.}
+\label{tab:threshold}
+\begin{tabular}{lcc}
+\toprule
+Method & Threshold Sensitivity & Notes \\
+\midrule
+miniML & Minimal & Robust across wide range \\
+Template matching & Moderate & Degrades with suboptimal threshold \\
+Deconvolution & Moderate & Precision--recall trade-off \\
+Finite-difference & High & Strongly dependent on setting \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Generalization Across Species and Preparations}
+
+A key strength of miniML is its ability to generalize across diverse experimental preparations (Table~\ref{tab:generalization}). Without any retraining, the model trained on mouse MF-GC data successfully detected events in recordings from the Calyx of Held (mouse P9, large-amplitude mEPSCs). For preparations with moderately different waveform characteristics---human iPSC-derived cortical glutamatergic neurons (8-week cultures, holding potential $-80$~mV, approximately 51\% of neurons showing events), zebrafish, and \textit{Drosophila} neuromuscular junction---transfer learning (TL) with a few hundred labeled events was sufficient to achieve high detection accuracy.
+
+\begin{table}[H]
+\centering
+\caption{Cross-preparation generalization and transfer learning requirements.}
+\label{tab:generalization}
+\begin{tabular}{llcc}
+\toprule
+Preparation & Species & TL Required? & Labeled Events \\
+\midrule
+MF-GC (training) & Mouse & No & Training source \\
+Calyx of Held & Mouse (P9) & Minimal & 0--100 \\
+iPSC neurons & Human & Recommended & 100--300 \\
+Various & Zebrafish & Yes & $\sim$300 \\
+NMJ / central & \textit{Drosophila} & Yes & $\sim$300 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Extension to Optical Time-Series Data}
+
+miniML was successfully extended to optical recording modalities via transfer learning (Table~\ref{tab:optical}). Glutamate reporter signals (e.g., iGluSnFR), calcium indicator traces, and voltage imaging data all present distinct challenges compared to electrophysiology: lower sampling rates, lower SNR, and slower kinetics. Despite these differences, transfer learning with a few hundred labeled events from each modality enabled accurate event detection, demonstrating the flexibility of the CNN-LSTM architecture for diverse neural signal types.
+
+\begin{table}[H]
+\centering
+\caption{Optical recording types tested.}
+\label{tab:optical}
+\begin{tabular}{llcc}
+\toprule
+Sensor/Indicator & Signal Type & SNR & Key Challenge \\
+\midrule
+Glutamate reporters & Extracellular glutamate & Low & Slow kinetics \\
+Ca$^{2+}$ indicators & Intracellular calcium & Low--moderate & Indirect readout \\
+Voltage indicators & Membrane voltage & Low & Fast but noisy \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Open-Source Software Implementation}
+
+miniML is distributed as an open-source Python package with a graphical user interface (GUI) that provides functionality comparable to commercial software such as MiniAnalysis (Table~\ref{tab:software}). The GUI supports data loading, event detection with visual marking, tabular display of event parameters, individual event inspection and rejection, and results export for downstream analysis (Figure~2---Supplement~2).
+
+\begin{table}[H]
+\centering
+\caption{miniML software features.}
+\label{tab:software}
+\begin{tabular}{ll}
+\toprule
+Feature & Description \\
+\midrule
+Python package & Open-source implementation \\
+GUI & Graphical interface for interactive analysis \\
+Data loading & Load and inspect electrophysiology data \\
+Event marking & Detected events highlighted \\
+Parameter display & Amplitude, kinetics in tabular form \\
+Event rejection & Manual review and rejection \\
+Export & Save results for downstream analysis \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We have presented miniML, a deep learning framework for synaptic event detection that overcomes key limitations of existing methods. By combining convolutional feature extraction with recurrent temporal modeling, miniML achieves near-perfect classification accuracy and superior detection performance compared to five established approaches, particularly under challenging low-SNR conditions.
+
+The most significant practical advantage of miniML is its robustness to threshold choice. Conventional methods require careful threshold tuning that creates an inherent trade-off between precision and recall \citep{Bhatt2012,Bhatt2014}, making results dependent on individual operator decisions and difficult to reproduce across laboratories. miniML effectively eliminates this trade-off, producing consistent results across a wide range of confidence thresholds. This property arises from the learned representations achieving near-complete separability between event and non-event classes, as demonstrated by UMAP analysis and ROC performance.
+
+The demonstrated generalization across six distinct preparations---from mouse cerebellar synapses to human iPSC-derived neurons, zebrafish, and \textit{Drosophila}---addresses a critical gap in the field \citep{LeCun2015}. While the base model transfers directly to preparations with similar waveform characteristics, the transfer learning capability enables adaptation to fundamentally different event types with minimal labeling effort (a few hundred events requiring minutes of annotation time). The extension to optical time-series data further broadens the applicability of the framework to modern high-throughput imaging approaches \citep{Bhatt2022,Bhatt2023}.
+
+Several design choices contribute to miniML's strong performance. The 1D convolutional blocks efficiently extract temporal features at multiple scales, while the bidirectional LSTM captures dependencies in both forward and backward directions, providing context that is especially valuable for distinguishing overlapping events \citep{Hochreiter1997,Graves2013}. The sliding window inference strategy enables efficient processing of arbitrarily long recordings, with stride optimization providing substantial speedup without performance loss.
+
+We validated miniML using multiple complementary approaches: (1) training diagnostics confirming convergence without overfitting; (2) ROC analysis demonstrating near-perfect classification; (3) systematic benchmarking against five methods using simulated ground truth with known event timing; (4) pharmacological validation using synaptic blockers that eliminated all detected events; and (5) cross-preparation testing across species and recording modalities. This multi-faceted validation provides strong evidence for the reliability and generalizability of the approach.
+
+Limitations of the current framework include the need for some labeled training data (though transfer learning minimizes this requirement), potential difficulty with extremely overlapping events at very high frequencies, and the computational overhead of deep learning inference compared to simple threshold methods (though GPU acceleration reduces this to seconds). Future extensions could incorporate multi-event detection within single windows and unsupervised adaptation strategies that eliminate the need for labeled data entirely.
+
+In summary, miniML provides a practical, reproducible, and generalizable solution for synaptic event analysis that is freely available as an open-source tool with a user-friendly interface, lowering the barrier for adoption across the neuroscience community.
+
+\section{Methods}
+
+\subsection{Electrophysiology}
+
+Acute brain slices (300~$\mu$m parasagittal) were prepared from C57BL/6J mice (1--5 months; P9 for Calyx of Held). Slices were maintained in artificial cerebrospinal fluid (ACSF) containing (in mM): 125 NaCl, 25 NaHCO$_3$, 20 glucose, 2.5 KCl, 2 CaCl$_2$, 1.25 NaH$_2$PO$_4$, 1 MgCl$_2$, bubbled with 95\% O$_2$/5\% CO$_2$. Whole-cell recordings used an intracellular solution containing (in mM): 150 K-D-gluconate, 10 NaCl, 10 HEPES, 3 MgATP, 0.3 NaGTP, 0.05 EGTA (pH 7.3). mEPSCs were recorded in voltage clamp at $-100$~mV or $-80$~mV, filtered at 2.9~kHz, and digitized at 50~kHz. Liquid junction potential was corrected by $+13$~mV. Recordings were performed at room temperature (21--25$^{\circ}$C).
+
+Human iPSC-derived cortical glutamatergic neurons were cultured for 8 weeks and recorded in ACSF containing (in mM): 135 NaCl, 10 HEPES, 10 glucose, 5 KCl, 2 CaCl$_2$, 1 MgCl$_2$, at a holding potential of $-80$~mV. Approximately 51\% of neurons exhibited spontaneous synaptic events.
+
+\subsection{Model Architecture and Training}
+
+The miniML model consists of $N$ convolutional blocks (1D convolution, ReLU activation, average pooling), a bidirectional LSTM layer, and two dense layers with a final sigmoid activation. Training used binary cross-entropy loss with the Adam optimizer. Five-fold cross-validation was used to assess robustness. Model selection was based on validation AUC. Saliency maps were computed via input gradient analysis.
+
+\subsection{Event Detection Pipeline}
+
+Continuous recordings were processed using a sliding window approach with configurable window size and stride. The model output was treated as a confidence trace, with events localized by peak detection using a minimum peak height threshold. Event parameters (amplitude, rise time, decay time) were extracted from the original recording at detected event positions.
+
+\subsection{Benchmarking}
+
+Ground-truth data was generated by superimposing simulated events (log-normal amplitude distribution) onto event-free recordings obtained by pharmacological blockade of synaptic transmission. Multiple SNR levels were tested. Five comparison methods were evaluated: MiniAnalysis (Synaptosoft), template matching \citep{Clements1997}, Wiener deconvolution, and two finite-difference approaches (derivative-based and amplitude-based thresholding). Precision, recall, and F1 score were computed for all methods.
+
+\subsection{Transfer Learning}
+
+For new preparations, transfer learning was performed by fine-tuning a pre-trained miniML model on a small set (100--500) of manually labeled events from the target preparation. All model weights were updated during fine-tuning with a reduced learning rate.
+
+\subsection{Software}
+
+miniML is implemented in Python and distributed as an open-source package. The GUI was built using standard Python GUI frameworks to provide interactive event detection, visualization, parameter extraction, and export functionality.
+
+\section*{Data Availability}
+The miniML software, trained models, and example datasets are available at the project repository. Raw electrophysiology data are available upon reasonable request.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

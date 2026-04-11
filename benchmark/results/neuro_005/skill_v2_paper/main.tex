@@ -1,0 +1,228 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{adjustbox}
+
+\title{Competitive Long-Range Interactions in the Mammalian Connectome Shape Brain Dynamics, Hierarchy, and Computational Capacity Across Species}
+\author{~}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+Connectome-based generative models of brain activity universally assume cooperative (excitatory) interactions between brain regions, yet competitive (inhibitory) interactions are fundamental to neural computation at the synaptic level.  Here we develop species-specific whole-brain models using Stuart--Landau oscillators near the Hopf bifurcation for human ($N=100$), macaque ($N=19$), and mouse ($N=10$), allowing both cooperative and competitive effective connectivity to emerge from fitting to empirical functional connectivity.  Models incorporating competitive interactions consistently outperformed cooperative-only models across all three species, achieving up to 0.95 correlation between simulated and empirical functional connectivity.  Critically, competitive interactions produced superior fit to emergent dynamical properties not used during optimization: metastability closer to empirical levels, greater synergistic information, and enhanced local--global hierarchy.  The architecture of competitive interactions was diffuse and long-range, contrasting with modular cooperative interactions, a pattern conserved across species.  Competitive effective connectivity also yielded greater subject-specific identifiability of functional connectomes and superior computational performance in neuromorphic reservoir computing memory tasks.  These results demonstrate that competitive interactions are an essential, previously overlooked component of macroscale brain organization, with implications for understanding brain dynamics, cognition, and bio-inspired computing.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+
+Understanding how the structural wiring of the brain gives rise to its rich functional dynamics is a fundamental challenge in neuroscience~\citep{sporns2005human,honey2009predicting,breakspear2017dynamic}.  Whole-brain computational models, which couple regional neural mass oscillators via anatomical connectivity, have proven remarkably successful at reproducing empirical functional connectivity (FC) patterns observed in resting-state fMRI~\citep{deco2011emerging,deco2014great,deco2018wholeBrain}.  However, a critical assumption pervades virtually all such models: anatomical connections are treated as cooperative (excitatory) interactions, since tract-tracing and diffusion tractography inherently produce only positive weights.
+
+This assumption is problematic for several reasons.  Competitive (inhibitory) interactions are a ubiquitous organizational principle at the microscale, where excitatory--inhibitory balance shapes neural dynamics~\citep{wilson1972excitatory}.  Spontaneous brain activity exhibits systematic anti-correlated patterns between networks~\citep{fox2005human}, but the mechanistic origin of these anti-correlations from structural connectivity remains unclear.  Furthermore, metastable brain dynamics---the hallmark of flexible cognition---arise from the interplay of integration and segregation~\citep{deco2015rethinking,shanahan2010metastable}, which competitive interactions could mediate at the macroscale.
+
+Here we test whether allowing competitive effective connectivity to emerge from model fitting improves the fidelity of whole-brain generative models.  We employ Stuart--Landau oscillators poised near the critical Hopf bifurcation~\citep{hopf1942abzweigung,deco2017dynamics}, a biophysically motivated framework that captures the essential dynamics of cortical populations near the onset of oscillatory activity.  We fit models at the individual-subject level across three species---human, macaque, and mouse---and evaluate both the explicitly optimized metric (FC correlation) and emergent dynamical properties including metastability, synergy, hierarchy, and computational capacity.
+
+% ============================================================
+\section{Methods}
+
+\subsection{Datasets}
+
+Table~\ref{tab:datasets} summarizes the three species-specific datasets.
+
+\begin{table}[ht]
+\centering
+\caption{Species-specific datasets.}
+\label{tab:datasets}
+\begin{tabular}{@{}llcll@{}}
+\toprule
+Species & $N$ Subjects & Parcellation & SC Source & FC Source \\
+\midrule
+Human & 100 & Schaefer-100 & Diffusion tractography & fMRI (HCP) \\
+Macaque & 19 & Species atlas & Tract-tracing + CoCoMac & fMRI \\
+Mouse & 10 & Species atlas & Allen tract-tracing & fMRI \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Human data were from the Human Connectome Project~\citep{vanessen2013wuminn}, parcellated using the Schaefer-100 atlas~\citep{schaefer2018local}.  fMRI data comprised 1,200 volumes (TR = 720 ms, 2 mm isotropic) preprocessed with the HCP minimal preprocessing pipeline and CONN toolbox denoising~\citep{whitfield2012conn}.  Macaque structural connectivity combined diffusion tractography with CoCoMac tract-tracing~\citep{stephan2000cocomac}.  Mouse connectivity derived from the Allen Institute mesoscale connectome~\citep{oh2014mesoscale}.  Macaque and mouse connectomes were symmetrized for cross-species comparison.
+
+\begin{table}[ht]
+\centering
+\caption{Human fMRI acquisition parameters.}
+\label{tab:fmri}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Parameter & Value \\
+\midrule
+Source & HCP Q3, 900 release \\
+fMRI resolution & 2 mm isotropic \\
+TR & 720 ms \\
+TE & 33.1 ms \\
+Volumes & 1,200 \\
+Band-pass filter & 0.008--0.09 Hz \\
+Denoising & aCompCor (5 WM + 5 CSF PCs) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Whole-Brain Generative Model}
+
+Each brain region was modeled as a nonlinear Stuart--Landau oscillator poised just below the critical Hopf bifurcation~\citep{hopf1942abzweigung,deco2017dynamics}.  The complex amplitude $z_j$ of region $j$ evolves as:
+\begin{equation}
+\frac{dz_j}{dt} = \left(a_j + i\omega_j - |z_j|^2\right) z_j + \sum_{k} C_{jk} \left(z_k - z_j\right) + \eta_j(t)
+\end{equation}
+where $a_j$ is the bifurcation parameter, $\omega_j$ is the intrinsic frequency, $C_{jk}$ is the effective connectivity from region $k$ to region $j$, and $\eta_j(t)$ is additive noise.
+
+\subsection{Model Fitting}
+
+Connection weights were iteratively updated at the single-subject level to minimize the difference between empirical and simulated FC (both zero-lag and lagged).  Two model variants were compared: a cooperative-only model constraining all weights to be positive, and a cooperative+competitive model allowing weight signs to vary freely.
+
+\subsection{Evaluation Metrics}
+
+Table~\ref{tab:metrics} defines the key metrics.
+
+\begin{table}[ht]
+\centering
+\caption{Key metrics and definitions.}
+\label{tab:metrics}
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+Metric & Definition \\
+\midrule
+FC correlation & Pearson $r$ between upper-triangular empirical and simulated FC \\
+Metastability & Temporal SD of Kuramoto order parameter~\citep{kuramoto1975self} \\
+Synergy & Synergistic component from partial information decomposition~\citep{williams2019partial} \\
+IDI & Intrinsic-driven ignition (co-occurring high-activity events) \\
+Differential identifiability & Diagonal minus off-diagonal in subject similarity matrix~\citep{amico2018fingerprint} \\
+Cognitive matching & Spatial correlation with 123 NeuroSynth maps~\citep{yarkoni2011neurosynth} \\
+Reservoir memory & Delayed signal reproduction accuracy~\citep{jaeger2001echo,maass2002real} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Results}
+
+\subsection{Competitive Models Achieve Superior Functional Connectivity Fit}
+
+Models incorporating competitive interactions consistently outperformed cooperative-only models across all three species, achieving correlations up to $r = 0.95$ between empirical and simulated FC (Table~\ref{tab:fcfit}).
+
+\begin{table}[ht]
+\centering
+\caption{Group-level FC correlation for cooperative-only and cooperative+competitive models.}
+\label{tab:fcfit}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Species & Cooperative-Only ($r$) & Cooperative+Competitive ($r$) \\
+\midrule
+Human & High & Up to 0.95 \\
+Macaque & High & Up to 0.95 \\
+Mouse & High & Up to 0.95 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Emergent Dynamical Properties}
+
+Critically, competitive interactions improved emergent properties that were not explicitly optimized during fitting (Table~\ref{tab:emergent}).
+
+\begin{table}[ht]
+\centering
+\caption{Cross-species consistency of emergent dynamical improvements with competitive interactions.}
+\label{tab:emergent}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Property & Human & Macaque & Mouse \\
+\midrule
+Better FC fit & Yes & Yes & Yes \\
+Closer metastability & Yes & Yes & Yes \\
+Greater synergy & Yes & Yes & Yes \\
+Greater hierarchy (IDI) & Yes & Yes & Yes \\
+Greater identifiability & Yes & Yes & Yes \\
+Modular coop.\ / diffuse comp. & Yes & Yes & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cooperative-only models produced metastability levels higher than empirical data, reflecting excessive synchrony.  Adding competitive interactions brought metastability closer to empirically observed levels.  Maximum synchrony was significantly higher for the cooperative-only model, often approaching total synchronization.  Competitive interactions play a stabilizing role, preventing runaway global activity.
+
+Synergy---quantified via partial information decomposition~\citep{williams2019partial,luppi2022synergy}---was greater in competitive models across all species.  Intrinsic-driven ignition (IDI), a measure of local--global hierarchical organization, was also enhanced by competitive interactions, indicating greater divergence between local and global activity patterns.
+
+\subsection{Subject-Specific Identifiability}
+
+Competitive models produced greater differential identifiability~\citep{amico2018fingerprint,finn2015connectomics} across all species, meaning that simulated FC patterns were more uniquely matched to the corresponding empirical subject.
+
+\subsection{Architecture of Competitive Interactions}
+
+The spatial organization of cooperative and competitive interactions displayed a striking and conserved dissociation (Table~\ref{tab:architecture}).
+
+\begin{table}[ht]
+\centering
+\caption{Spatial organization of cooperative vs.\ competitive interactions.}
+\label{tab:architecture}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Property & Cooperative & Competitive \\
+\midrule
+Spatial pattern & Modular (within-network) & Diffuse (between-network) \\
+Connection distance & Short-range dominant & Long-range dominant \\
+Network structure & Clustered & Spanning modules \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cooperative interactions were organized in modular fashion, predominantly connecting regions within the same functional network.  In contrast, competitive interactions were diffuse and long-range, spanning across functional network boundaries.  This pattern was remarkably consistent across human, macaque, and mouse.
+
+\subsection{Cognitive Matching (Human)}
+
+In human subjects, competitive models produced simulated brain states that more closely matched canonical cognitive patterns as assessed by spatial correlation with 123 NeuroSynth meta-analytic maps~\citep{yarkoni2011neurosynth}.
+
+\subsection{Neuromorphic Reservoir Computing}
+
+Using effective connectivity as the reservoir's recurrent weight matrix in a reservoir computing framework~\citep{jaeger2001echo,maass2002real}, competitive generative connectivity produced superior computational performance on memory tasks compared to both cooperative-only connectivity and random connectivity controls.
+
+\subsection{Replication}
+
+All main results were replicated using the finer Schaefer-232 parcellation (200 cortical + 32 subcortical ROIs), confirming robustness across parcellation granularity.
+
+\begin{table}[ht]
+\centering
+\caption{Maximum observed synchrony by model type.}
+\label{tab:sync}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Model & Max Synchrony & Interpretation \\
+\midrule
+Cooperative-only & High (near total) & Runaway excitation \\
+Cooperative+competitive & Lower, realistic & Competitive stabilization \\
+Empirical & Moderate & Natural balance \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Discussion}
+
+Our results demonstrate that competitive interactions are an essential component of macroscale brain organization, consistently improving model fidelity across three mammalian species.  The finding that competitive interactions are not merely an artifact of model flexibility but produce superior emergent dynamical properties---metastability, synergy, hierarchy, and computational capacity---that were never optimized during fitting provides strong evidence for their biological relevance.
+
+The architectural dissociation between modular cooperative and diffuse competitive interactions offers a mechanistic account of how brains balance integration and segregation~\citep{deco2015rethinking}.  Cooperative interactions maintain modular functional networks, while competitive interactions provide the long-range inhibitory scaffolding that prevents excessive synchrony and enables flexible switching between network configurations~\citep{shanahan2010metastable,deco2012ongoing}.  This interpretation aligns with the observation that anti-correlated networks in resting-state fMRI~\citep{fox2005human} may reflect genuine competitive dynamics rather than preprocessing artifacts.
+
+The enhanced subject specificity with competitive models~\citep{amico2018fingerprint,finn2015connectomics} suggests that individual differences in brain organization are partly encoded in the pattern of competitive interactions---an aspect entirely missed by cooperative-only models.  Similarly, the superior reservoir computing performance demonstrates that competitive interactions confer a genuine computational advantage, potentially informing neuromorphic hardware design~\citep{maass2002real}.
+
+The cross-species consistency of our findings---from mouse to macaque to human---suggests that competitive macroscale interactions may be a conserved principle of mammalian brain organization, not a species-specific idiosyncrasy.
+
+\section{Conclusion}
+
+We demonstrate that competitive long-range interactions, when allowed to emerge from data-driven model fitting, consistently improve whole-brain generative models across three mammalian species.  These interactions are architecturally distinct from cooperative interactions, functionally essential for realistic brain dynamics, and computationally advantageous.  Our findings call for a paradigm shift in computational connectomics, from exclusively cooperative to signed effective connectivity models that capture the full repertoire of macroscale brain interactions.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,75 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\title{sRNAfrag: A Standardized Pipeline for Analyzing Small RNA Fragmentation in Sequencing Data}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Fragments derived from non-coding RNAs---including snoRNAs, snRNAs, and rRNAs---associate with Argonaute proteins and may play functional roles in gene regulation and disease, yet they lack the curated annotations available for tRNA-derived fragments. Here we present sRNAfrag, a three-module computational pipeline that processes raw small RNA sequencing data to identify, quantify, and analyze fragmentation patterns of non-tRNA small RNAs. The pipeline integrates multi-mapping correction, license-plate-based fragment identification, and bipartite graph clustering into a standardized workflow. On a miRNA benchmarking task, sRNAfrag achieves 94.7\% and 86.5\% accuracy for start and end loci calling within 1~bp of true positions, comparable to the established FlaiMapper tool (92.4\% and 85.2\%). We validate that multi-mapping events recover the functionally important 5$'$ seed region of miRNAs, supporting the use of multi-mapping as a signal for conserved fragment loci in other small RNA types. Cross-species analysis across four eukaryotes (human, mouse, \textit{C.~elegans}, \textit{A.~thaliana}) identifies 1,411 snoRNA fragment conservation events, with mammalian pairs sharing the most fragments. sRNAfrag provides the standardized computational infrastructure needed to build curated databases of non-tRNA small RNA fragments analogous to MINTbase.
+\end{abstract}
+
+\section{Introduction}
+
+Small RNA fragments derived from non-coding RNA precursors have emerged as a biologically significant class of regulatory molecules \citep{taft2009snorna, maute2013tsrna}. While tRNA-derived fragments (tRFs) benefit from dedicated databases such as MINTbase \citep{kumar2015mintbase} and computational tools like MINTmap \citep{loher2017mintmap}, fragments from other small RNA classes---snoRNAs, snRNAs, and rRNAs---lack equivalent resources. These fragments have been shown to associate with Argonaute proteins and have been implicated in various diseases, yet the absence of standardized analysis tools has hindered systematic study \citep{falaleeva2017rrna}.
+
+Existing tools such as FlaiMapper \citep{hoogstrate2015flaimapper} can generate fragment annotations from aligned reads, but preprocessing decisions introduce variability, and no integrated pipeline handles multi-mapping correction, cross-species conservation analysis, and fragment clustering in a unified workflow. Furthermore, multi-mapping reads---typically discarded or arbitrarily assigned---may contain valuable signal about conserved fragment loci when properly analyzed.
+
+We present sRNAfrag, a standardized three-module pipeline designed to address these gaps. sRNAfrag processes raw FASTQ files through alignment, multi-mapping correction, fragment identification with license-plate IDs, clustering, and cross-species comparison, producing standardized outputs suitable for downstream analysis and database construction.
+
+\section{Methods}
+
+\subsection{Pipeline Architecture}
+
+sRNAfrag operates in three modules. Module P1 processes raw reads through UMI handling \citep{smith2014umi}, adapter removal \citep{schubert2016adapterremoval}, alignment to the transcriptome using bowtie \citep{langmead2009bowtie} (allowing up to 3 mismatches and reporting up to 10,000 alignments per read), extraction and sorting with SAMtools \citep{li2009samtools}, and generation of a lookup table with license-plate IDs based on fragment sequence.
+
+Module S1 corrects for multi-mapping by dividing counts by the number of potential source loci, applies filtering (minimum 5 adjusted counts), and generates sequence logos per fragment length. A smoothing function prevents spurious peaks near dominant ones, and a sandwich-zero correction assigns sandwiched zero-count positions the count of adjacent loci.
+
+Module P2 merges overlapping fragments into clusters using a bipartite star graph approach with a minimum cluster size of 10~nt, compiles summary reports, and enables cross-species comparison through Hamming distance metrics.
+
+\subsection{Normalization}
+
+Three normalization methods are implemented: ratio normalization to miRNA counts, transcripts per million (TPM), and counts per million reads (CPM).
+
+\section{Results}
+
+\subsection{Peak Calling Benchmark}
+
+Using mature miRNA positions from miRBase as ground truth, sRNAfrag achieved 94.7\% accuracy for start loci and 86.5\% for end loci within 1~bp of annotated positions, compared to FlaiMapper's 92.4\% and 85.2\%, respectively. sRNAfrag identified fragments in 597 pre-miRNAs compared to 642 for FlaiMapper; the lower count reflects the stricter filtering imposed by multi-mapping count division. Count validation against the AASRA quantification method showed strong agreement, with merged counts showing a slope of 0.983 relative to AASRA, with slight underestimation attributable to different handling of boundary reads.
+
+\subsection{Multi-Mapping Validates Conserved Fragments}
+
+Analysis of multi-mapping patterns in miRNAs revealed that the most highly expressed fragment and the most shared fragment across family members frequently overlap at the 5$'$ end, recovering the functionally important seed region. For example, miR-30b and miR-30c shared three fragment clusters, with the most shared fragment corresponding to the conserved 5$'$ seed. For snoRD115, one fragment was shared between 12 isoforms, with the 5$'$ end matching the most conserved fragment position. These results validate multi-mapping events as a meaningful signal for identifying functionally important conserved fragment loci.
+
+\subsection{Cross-Species snoRNA Fragment Conservation}
+
+Comparison across four eukaryotic species identified 1,411 snoRNA fragment conservation events (shared between at least 2 of 4 species). The human--mouse pair shared the most fragments, followed by human--\textit{C.~elegans} and mouse--\textit{C.~elegans} pairs, while \textit{A.~thaliana} showed the fewest shared fragments with any animal species. Example conserved fragments showed Hamming distances as low as 2 between human and mouse sequences, with preservation of fragmentation patterns in structural context.
+
+\subsection{Runtime and Scalability}
+
+Pipeline runtime scales with dataset size, ranging from approximately 5--10 minutes for small datasets to over 60 minutes for large ones. GNU Parallel enables efficient parallelization across samples.
+
+\section{Discussion}
+
+sRNAfrag fills a critical gap in the small RNA analysis toolkit by providing standardized, reproducible processing of non-tRNA small RNA fragments. The competitive peak-calling accuracy relative to FlaiMapper, combined with integrated multi-mapping correction and cross-species analysis, makes it suitable as infrastructure for building curated fragment databases.
+
+The validation that multi-mapping events recover functionally conserved regions in miRNAs supports extending this approach to less-characterized RNA types. The 1,411 cross-species snoRNA conservation events represent a starting point for systematic functional characterization of snoRNA-derived fragments.
+
+A key design decision is the deliberate avoidance of automatic annotation generation, motivated by the concern that fragment boundaries can shift based on preprocessing and library preparation, with estimated false positive rates of 65\% for automated annotations. Instead, sRNAfrag provides the quantitative data needed for expert curation.
+
+\section{Conclusion}
+
+sRNAfrag provides a standardized, three-module pipeline for detecting, quantifying, and comparing small RNA fragments from non-tRNA sources. By integrating multi-mapping correction, license-plate identification, and cross-species conservation analysis, it establishes the computational foundation for systematic study of snoRNA, snRNA, and rRNA fragmentation patterns.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

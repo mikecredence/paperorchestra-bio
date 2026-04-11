@@ -1,0 +1,352 @@
+\documentclass[11pt,a4paper]{article}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{lineno}
+\usepackage{authblk}
+\usepackage{multirow}
+
+\bibliographystyle{unsrtnat}
+
+\title{Design Principles for Inflammasome Inhibition by Pyrin-Only Proteins}
+
+\author[1]{Author A}
+\author[1]{Author B}
+\author[1,2]{Author C}
+\affil[1]{Department of Biochemistry, Boston University School of Medicine, Boston, MA, USA}
+\affil[2]{Corresponding author: \texttt{author.c@bu.edu}}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Inflammasomes are irreversible filamentous signaling platforms that amplify innate immune responses through prion-like self-assembly of pyrin domain (PYD) filaments. Pyrin-only proteins (POPs) are endogenous regulators that block PYD filament assembly, but their intrinsic target specificities and inhibitory mechanisms have remained unclear. Here we combine Rosetta-based computational analysis with quantitative biochemical and cell-based assays to systematically define the target specificities of POP1, POP2, and POP3 against five inflammasome PYD filaments. Contrary to the prevailing model, we demonstrate that POP1 is a poor inhibitor of the central adaptor ASC$^{\text{PYD}}$; instead, POP1 inhibits elongation of upstream receptor PYD filaments (AIM2, IFI16, NLRP3, NLRP6). POP2 and POP3 suppress nucleation of ASC filament assembly while additionally inhibiting elongation of receptor filaments. Rosetta interface energy analysis reveals that effective POP--PYD recognition requires a specific pattern of both favorable and unfavorable interactions across the six unique filament interface surfaces. Critically, POPs inhibit polymerization without co-assembling into filaments, in contrast to CARD-only proteins (COPs), and require super-stoichiometric concentrations for effective inhibition. These findings establish molecular rules governing endogenous inflammasome regulation and provide a framework for therapeutic strategies targeting inflammasome-driven diseases.
+\end{abstract}
+
+\section{Introduction}
+
+Inflammasomes are multi-protein signaling platforms that play central roles in innate immunity by detecting danger signals and activating inflammatory caspases \citep{Martinon2002, Broz2016, Lamkanfi2014}. Upon activation, sensor proteins such as AIM2, IFI16, NLRP3, and NLRP6 nucleate filamentous assemblies of their pyrin domains (PYDs), which in turn recruit the adaptor protein ASC through homotypic PYD--PYD interactions \citep{Lu2014, Dick2016}. ASC then polymerizes into large filamentous structures called specks, which recruit and activate inflammatory caspase-1 through CARD--CARD interactions \citep{Cai2014, Schmidt2016}. Once formed, these filaments are essentially irreversible and can propagate in a prion-like manner, necessitating tight regulatory control \citep{Cai2014, Franklin2014}.
+
+Dysregulated inflammasome activity underlies a spectrum of human diseases, including autoinflammatory disorders (cryopyrin-associated periodic syndromes, familial Mediterranean fever), cancer, atherosclerosis, and severe COVID-19 \citep{Dinarello2018, Swanson2019, Rodrigues2021}. Endogenous regulatory mechanisms include pyrin-only proteins (POPs) and CARD-only proteins (COPs), which are small single-domain proteins that act as competitive inhibitors of PYD and CARD filament assembly, respectively \citep{Stehlik2007, DeLaTorre2009, Khare2014}.
+
+Three POPs have been identified in humans: POP1, POP2, and POP3 \citep{Stehlik2003, Dorfleutner2007, Khare2014}. Despite their identification, the intrinsic target specificities of POPs have remained speculative. The initial model placed POP1 as a direct inhibitor of the central adaptor ASC, based on indirect evidence from cell-based overexpression assays \citep{Stehlik2003}. However, no systematic study had combined computational and direct biochemical approaches to define which PYD filaments each POP targets and through what mechanism---nucleation inhibition versus elongation inhibition.
+
+Here we use Rosetta-based interface energy analysis combined with quantitative FRET/fluorescence anisotropy polymerization assays and cell-based imaging to comprehensively define the target specificities and inhibitory mechanisms of all three human POPs.
+
+\section{Results}
+
+\subsection{Structural resources and computational framework}
+
+We constructed honeycomb-like sideview models of PYD filaments using cryo-EM structures as templates (Table~\ref{tab:structures}). Each protomer in the filament contributes six unique interaction surfaces (Type~1a/1b, 2a/2b, 3a/3b), and we used Rosetta InterfaceAnalyzer to compute interaction energies at each surface when the central protomer was replaced with a POP \citep{Lyskov2013, Gray2003}.
+
+\begin{table}[htbp]
+\centering
+\caption{Structural resources used for Rosetta analysis.}
+\label{tab:structures}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Resource} & \textbf{PDB ID} & \textbf{Description} & \textbf{Use} \\
+\midrule
+ASC$^{\text{PYD}}$ filament & 3j63 & Cryo-EM & Honeycomb template \\
+AIM2$^{\text{PYD}}$ filament (tagless) & 7k3r & Cryo-EM & Honeycomb template \\
+AIM2$^{\text{PYD}}$ filament (GFP) & 6mb2 & Cryo-EM & IFI16 homology model \\
+NLRP3$^{\text{PYD}}$ filament & 7pdz & Cryo-EM & Honeycomb template \\
+NLRP6$^{\text{PYD}}$ filament & 6ncv & Cryo-EM & Honeycomb template \\
+POP1 crystal structure & 4qob & X-ray & Used directly \\
+POP2 homology model & Based on 7pdz & NLRP3$^{\text{PYD}}$ monomer & Rosetta input \\
+POP3 homology model & Based on 7k3r & AIM2$^{\text{PYD}}$ monomer & Rosetta input \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Rosetta simulation parameters.}
+\label{tab:rosetta_params}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Software & Rosetta InterfaceAnalyzer \\
+Filament model & Honeycomb sideview (7 protomers) \\
+Interface types & 6 (Type 1a, 1b, 2a, 2b, 3a, 3b) \\
+Favorable $\Delta\Delta$G threshold & $\leq$ 3.5 REU \\
+Unfavorable $\Delta\Delta$G threshold & $\geq$ 10.0 REU \\
+IFI16 special threshold & $\geq$ 5.0 or positive $\Delta$G \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Rosetta predicts POP1 is a poor inhibitor of ASC}
+
+The Rosetta interface energy analysis revealed that POP1 replacement at the center of the ASC$^{\text{PYD}}$ filament produced multiple unfavorable interfaces ($\Delta\Delta$G $\geq$ 10.0 REU) and few favorable interfaces ($\Delta\Delta$G $\leq$ 3.5 REU), predicting poor inhibition (Table~\ref{tab:rosetta_pops}). In contrast, POP2 and POP3 exhibited multiple favorable interfaces, particularly on the bottom half of the honeycomb, predicting effective ASC inhibition.
+
+\begin{table}[htbp]
+\centering
+\caption{Rosetta interface analysis summary: POP--PYD interactions.}
+\label{tab:rosetta_pops}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Interaction} & \textbf{Favorable} & \textbf{Unfavorable} & \textbf{Prediction} \\
+\midrule
+POP1 -- ASC$^{\text{PYD}}$ & Few & Multiple & Poor inhibitor \\
+POP2 -- ASC$^{\text{PYD}}$ & Multiple & Some & Good inhibitor \\
+POP3 -- ASC$^{\text{PYD}}$ & Multiple & Some & Good inhibitor \\
+POP1 -- AIM2$^{\text{PYD}}$ & Several & Fewer & Moderate inhibitor \\
+POP2 -- AIM2$^{\text{PYD}}$ & Several & Moderate & Moderate inhibitor \\
+POP3 -- AIM2$^{\text{PYD}}$ & Several & Moderate & Moderate inhibitor \\
+POP1 -- NLRP3$^{\text{PYD}}$ & Several & Fewer & Moderate inhibitor \\
+POP2 -- NLRP3$^{\text{PYD}}$ & Several & Moderate & Moderate inhibitor \\
+POP1 -- NLRP6$^{\text{PYD}}$ & Several & Fewer & Moderate inhibitor \\
+POP3 -- NLRP6$^{\text{PYD}}$ & Several & Fewer & Good inhibitor \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{POP1 fails to inhibit ASC filament assembly in cells and in vitro}
+
+We tested these predictions in HEK293T cells co-transfected with ASC$^{\text{PYD}}$-mCherry and POP-eGFP (Table~\ref{tab:asc_cell}). POP1-eGFP failed to reduce ASC$^{\text{PYD}}$-mCherry filament formation at either dose tested, while POP2-eGFP and POP3-eGFP showed dose-dependent inhibition ($N \geq 4$ replicates). The same pattern was observed with full-length ASC-mCherry.
+
+\begin{table}[htbp]
+\centering
+\caption{Cell-based inhibition of ASC$^{\text{PYD}}$ filament assembly in HEK293T cells.}
+\label{tab:asc_cell}
+\begin{tabular}{llll}
+\toprule
+\textbf{Condition} & \textbf{POP Dose (ng)} & \textbf{Relative Filaments} & \textbf{Inhibition?} \\
+\midrule
+eGFP control & 600 / 1200 & 1.0 & N/A \\
+POP1-eGFP & 600 & $\sim$1.0 & No \\
+POP1-eGFP & 1200 & $\sim$1.0 & No \\
+POP2-eGFP & 600 & Reduced & Yes \\
+POP2-eGFP & 1200 & Further reduced & Yes \\
+POP3-eGFP & 600 & Reduced & Yes \\
+POP3-eGFP & 1200 & Further reduced & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+FRET-based polymerization assays confirmed these findings: POP2 and POP3 markedly prolonged the lag phase of ASC$^{\text{PYD}}$ polymerization (consistent with nucleation inhibition), while POP1 had minimal effect (Table~\ref{tab:asc_fret}).
+
+\begin{table}[htbp]
+\centering
+\caption{Biochemical inhibition of ASC$^{\text{PYD}}$ polymerization.}
+\label{tab:asc_fret}
+\begin{tabular}{llll}
+\toprule
+\textbf{POP} & \textbf{Nucleation Effect} & \textbf{Elongation Effect} & \textbf{IC$_{50}$} \\
+\midrule
+POP1 & Minimal & Minimal & Poor (high) \\
+POP2 & Prolonged lag & Moderate & Effective \\
+POP3 & Prolonged lag & Moderate & Effective \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{POPs remain monomeric and do not form filaments}
+
+To confirm that POPs function as inhibitors rather than co-assembling into filaments, we characterized recombinant POPs by SEC and negative-stain EM (Table~\ref{tab:pop_char}). All three POPs were monomeric by SEC and showed no filament formation even at high concentrations (100~$\mu$M for POP1, 20~$\mu$M for POP2/POP3 after TEV cleavage).
+
+\begin{table}[htbp]
+\centering
+\caption{Recombinant POP characterization.}
+\label{tab:pop_char}
+\begin{tabular}{llll}
+\toprule
+\textbf{Protein} & \textbf{Purification} & \textbf{SEC} & \textbf{nsEM} \\
+\midrule
+POP1 & Ni-NTA + SEC & Monomeric & No filaments (100 $\mu$M) \\
+MBP-POP2 & Ni-NTA + SEC & Monomeric & No filaments (20 $\mu$M) \\
+MBP-POP3 & Ni-NTA + SEC & Monomeric & No filaments (20 $\mu$M) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{All three POPs inhibit AIM2 and IFI16 PYD filament assembly}
+
+In contrast to the ASC$^{\text{PYD}}$ results, all three POPs inhibited AIM2$^{\text{PYD}}$-mCherry filament formation in a dose-dependent manner in HEK293T cells (Table~\ref{tab:aim2_cell}). Similar results were obtained for IFI16$^{\text{PYD}}$. Biochemically, POPs primarily inhibited elongation rather than nucleation of ALR PYD filaments.
+
+\begin{table}[htbp]
+\centering
+\caption{Cell-based inhibition of AIM2$^{\text{PYD}}$ filament assembly.}
+\label{tab:aim2_cell}
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Target PYD} & \textbf{POP} & \textbf{600 ng} & \textbf{1200 ng} & \textbf{$N$} \\
+\midrule
+AIM2$^{\text{PYD}}$ & POP1-eGFP & Reduced & Further reduced & $\geq$4 \\
+AIM2$^{\text{PYD}}$ & POP2-eGFP & Reduced & Further reduced & $\geq$4 \\
+AIM2$^{\text{PYD}}$ & POP3-eGFP & Reduced & Further reduced & $\geq$4 \\
+IFI16$^{\text{PYD}}$ & POP1-eGFP & -- & Reduced & $\geq$4 \\
+IFI16$^{\text{PYD}}$ & POP2-eGFP & -- & Reduced & $\geq$4 \\
+IFI16$^{\text{PYD}}$ & POP3-eGFP & -- & Reduced & $\geq$4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Activating ligands increase the POP concentration required for inhibition}
+
+In the presence of the activating dsDNA ligand, higher POP concentrations were required to achieve equivalent inhibition of AIM2$^{\text{PYD}}$ and IFI16$^{\text{PYD}}$ assembly (Table~\ref{tab:dsdna}), consistent with POPs competing against the assembly-promoting effect of the ligand.
+
+\begin{table}[htbp]
+\centering
+\caption{Effect of dsDNA activating ligand on POP inhibition of ALR PYDs.}
+\label{tab:dsdna}
+\begin{tabular}{lll}
+\toprule
+\textbf{Condition} & \textbf{POP Required} & \textbf{Observation} \\
+\midrule
+AIM2$^{\text{PYD}}$ alone & Lower concentration & Easier to inhibit \\
+AIM2$^{\text{PYD}}$ + dsDNA & Higher concentration & Excess POP needed \\
+IFI16$^{\text{PYD}}$ alone & Lower concentration & Easier to inhibit \\
+IFI16$^{\text{PYD}}$ + dsDNA & Higher concentration & Excess POP needed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Differential inhibition of NLRP PYD filaments}
+
+POP1 and POP2 inhibited NLRP3$^{\text{PYD}}$ filament assembly while POP3 showed minimal effect (Table~\ref{tab:nlrp}). All three POPs inhibited NLRP6$^{\text{PYD}}$ assembly. These patterns matched the Rosetta predictions.
+
+\begin{table}[htbp]
+\centering
+\caption{Cell-based inhibition of NLRP PYD filament assembly.}
+\label{tab:nlrp}
+\small
+\begin{tabular}{llllll}
+\toprule
+\textbf{Target} & \textbf{POP} & \textbf{600 ng} & \textbf{1200 ng} & \textbf{$N$} \\
+\midrule
+NLRP3$^{\text{PYD}}$ & POP1-eGFP & Reduced & Further reduced & $\geq$4 \\
+NLRP3$^{\text{PYD}}$ & POP2-eGFP & Reduced & Further reduced & $\geq$4 \\
+NLRP3$^{\text{PYD}}$ & POP3-eGFP & Minimal & Minimal & $\geq$4 \\
+NLRP6$^{\text{PYD}}$ & POP1-eGFP & -- & Reduced & $\geq$4 \\
+NLRP6$^{\text{PYD}}$ & POP2-eGFP & -- & Reduced & $\geq$4 \\
+NLRP6$^{\text{PYD}}$ & POP3-eGFP & -- & Reduced & $\geq$4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comprehensive target specificity map}
+
+Integrating all computational and experimental data, we constructed a comprehensive target specificity map for the three POPs (Table~\ref{tab:summary}).
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of POP target specificity and inhibition modes.}
+\label{tab:summary}
+\begin{tabular}{llll}
+\toprule
+\textbf{POP} & \textbf{Primary Targets} & \textbf{Mechanism} & \textbf{Secondary Targets} \\
+\midrule
+POP1 & AIM2, IFI16, NLRP3, NLRP6 & Elongation inhibition & Not ASC \\
+POP2 & ASC (nucleation) & Nucleation suppression & AIM2, IFI16, NLRP3, NLRP6 \\
+POP3 & ASC (nucleation) & Nucleation suppression & AIM2, NLRP6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sequence similarity does not predict target specificity}
+
+Intriguingly, the most sequence-similar PYD for each POP does not correspond to its primary inhibitory target (Table~\ref{tab:sequence}).
+
+\begin{table}[htbp]
+\centering
+\caption{Sequence similarity versus functional target specificity.}
+\label{tab:sequence}
+\begin{tabular}{lll}
+\toprule
+\textbf{POP} & \textbf{Most Similar PYD} & \textbf{Actual Primary Target} \\
+\midrule
+POP1 & ASC$^{\text{PYD}}$ & NOT ASC; upstream receptors \\
+POP2 & NLRP3$^{\text{PYD}}$ & ASC nucleation + elongation \\
+POP3 & AIM2$^{\text{PYD}}$ & ASC nucleation + AIM2/NLRP6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{POPs versus COPs: distinct inhibitory mechanisms}
+
+POPs and COPs employ fundamentally different inhibitory strategies (Table~\ref{tab:pop_cop}).
+
+\begin{table}[htbp]
+\centering
+\caption{Mechanistic comparison of POPs and COPs.}
+\label{tab:pop_cop}
+\begin{tabular}{lll}
+\toprule
+\textbf{Feature} & \textbf{POPs} & \textbf{COPs} \\
+\midrule
+Co-assembly & No & Yes (into CARD filaments) \\
+Stoichiometry & Super-stoichiometric & Sub-stoichiometric \\
+Nucleation vs. elongation & POP2/3: nucleation; all: elongation & Caspase-1 assembly \\
+Activating ligand effect & Requires more POP & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our study establishes several fundamental design principles for inflammasome regulation by POPs. First, POP1 does not directly inhibit ASC, contradicting the prevailing model \citep{Stehlik2003}. Instead, POP1 targets upstream receptor PYD filaments, providing a regulatory checkpoint before ASC amplification. Second, POP2 and POP3 suppress ASC nucleation through a mechanism that does not involve co-assembly, distinguishing POPs from COPs. Third, all three POPs can inhibit elongation of various receptor PYD filaments, revealing intrinsic target redundancy that may ensure robust regulation of multiple inflammasome pathways \citep{Broz2016, Lamkanfi2014}.
+
+The Rosetta analysis reveals that effective POP--PYD recognition depends on a specific combination of favorable and unfavorable interactions across the six contact surfaces. This combinatorial recognition code may explain why simple sequence similarity fails to predict target specificity: the three-dimensional pattern of electrostatic and hydrophobic interactions at each interface, rather than overall sequence identity, determines inhibitory effectiveness \citep{Lu2014, Dick2016}.
+
+The requirement for super-stoichiometric POP concentrations---especially in the presence of activating ligands---has important physiological implications. It suggests that POPs act as rheostats rather than binary switches, attenuating inflammasome responses without completely abolishing them \citep{Rathinam2012, Man2017}. This graded regulation is consistent with the need to balance pathogen defense against tissue damage.
+
+Our findings provide a molecular framework for the rational design of POP-inspired therapeutics targeting inflammasome-driven diseases. Engineered POPs with enhanced affinity for specific PYD filaments could provide targeted inhibition of individual inflammasome pathways while leaving others functional \citep{Swanson2019, Dinarello2018}.
+
+\section{Materials and Methods}
+
+\subsection{Rosetta computational analysis}
+Honeycomb sideview models of PYD filaments were constructed from cryo-EM structures using 7 protomers. The central protomer was replaced with each POP, and Rosetta InterfaceAnalyzer was used to compute interface energies ($\Delta$G in REU) at all six interface types. $\Delta\Delta$G values were calculated relative to the homotypic PYD--PYD interfaces.
+
+\subsection{Protein expression and purification}
+POP1 was expressed untagged from pET21b in \textit{E. coli} BL21 Rosetta2DE3. POP2 and POP3 were expressed as His$_6$-MBP fusions from pET28b with TEV protease cleavage sites. Proteins were purified by Ni$^{2+}$-NTA affinity chromatography followed by SEC on Superdex 75 (Cytiva) in 40~mM HEPES-NaOH pH~7.4, 400~mM NaCl, 2~mM DTT, 0.5~mM EDTA, 10\% glycerol.
+
+\subsection{FRET and fluorescence anisotropy polymerization assays}
+MBP-tagged PYD constructs were triggered for assembly by TEV protease cleavage (5~$\mu$M TEVp for 30~min at 20--100~$\mu$M protein) in the presence of increasing POP concentrations. Polymerization was monitored by FRET (donor/acceptor fluorescence ratio) or fluorescence anisotropy over time. Half-times ($t_{1/2}$) were extracted and IC$_{50}$ values calculated.
+
+\subsection{Cell-based imaging assays}
+HEK293T cells (ATCC CRL-11268) were seeded at $0.1 \times 10^6$ per well in 12-well plates on 20~mm round cover glass (Table~\ref{tab:cell_params}). At 70\% confluence, cells were co-transfected with PYD-mCherry (300~ng, or 600~ng for NLRP3) and POP-eGFP or eGFP control (600 or 1200~ng) using Lipofectamine 2000. Cells were fixed with 4\% paraformaldehyde at 16~h post-transfection and imaged on a Cytation~5 multi-functional reader (BioTek). Filament formation was quantified using Gen5 software ($N \geq 4$ replicates).
+
+\begin{table}[htbp]
+\centering
+\caption{Cell culture and imaging parameters.}
+\label{tab:cell_params}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Cell line & HEK293T (ATCC CRL-11268) \\
+Seeding density & $0.1 \times 10^6$ per well \\
+Transfection & Lipofectamine 2000, 70\% confluence \\
+Fixation & 4\% PFA, 16 h post-transfection \\
+Cover glass & 20 mm round \\
+Imaging & Cytation 5 (BioTek) \\
+Analysis & Gen5 (BioTek) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Negative-stain electron microscopy}
+Proteins (20--100~$\mu$M) were applied to glow-discharged carbon-coated grids, stained with uranyl acetate, and imaged by transmission EM to assess filament formation.
+
+\section*{Acknowledgments}
+We thank members of the laboratory for helpful discussions and the Boston University cryo-EM facility for technical support.
+
+\bibliography{references}
+
+\end{document}

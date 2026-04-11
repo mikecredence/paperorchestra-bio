@@ -1,0 +1,299 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{lineno}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{Spatio-Temporal Heterogeneity of Tumour-Residing Mature Regulatory Dendritic Cells and Their Role in Anti-PD-L1 Immunotherapy}
+
+\author{
+Author One$^{1,*}$, Author Two$^{1}$, Author Three$^{2}$, Author Four$^{1}$, Author Five$^{3}$ \\[6pt]
+\small $^{1}$Department of Immunology, University of Example, City, Country \\
+\small $^{2}$Department of Oncology, University of Example, City, Country \\
+\small $^{3}$Cancer Research Institute, City, Country \\
+\small $^{*}$Corresponding author: \texttt{author.one@example.edu}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Mature regulatory dendritic cells (mRegDCs), characterized by LAMP3, CCR7, and PD-L1 expression, are found across human cancers, but whether they promote or suppress anti-tumour immunity remains debated. Using photoconvertible Kaede mice bearing syngeneic tumours, we show that while mRegDCs are the dominant DC population arriving in tumour-draining lymph nodes, a subset remains tumour-resident despite CCR7 expression. Tumour-retained mRegDCs undergo progressive functional decline with increasing dwell-time, showing reduced MHC-II expression, Cd74, and antigen presentation transcripts. Single-cell RNA sequencing reveals three transcriptionally distinct mRegDC states in tumours corresponding to early, intermediate, and prolonged residence. Anti-PD-L1 treatment skews tumour mRegDCs toward a state enriched in lymphocyte stimulatory molecules, notably OX40L (Tnfsf4), and upregulates IFN-$\gamma$ response and antigen presentation pathways. OX40L-expressing mRegDCs augment cytolytic CD8$^{+}$ T cell activity, and mRegDCs spatially co-localize with PD-1$^{+}$CD8$^{+}$ T cells in both human and murine solid tumours. Analysis of TCGA data across 4,045 tumours reveals that an mRegDC gene signature is associated with improved survival in melanoma, breast, colorectal, and lung cancers, and correlates positively with CD8$^{+}$ effector T cell signatures. These findings establish that tumour mRegDC heterogeneity is shaped by tissue residency time and treatment context, and identify OX40L-mediated mRegDC--CD8$^{+}$ T cell crosstalk as a mechanism contributing to anti-PD-L1 therapeutic efficacy.
+\end{abstract}
+
+\noindent\textbf{Keywords:} dendritic cells, mRegDC, tumour immunology, anti-PD-L1, OX40L, CD8 T cells, checkpoint immunotherapy
+
+\section{Introduction}
+
+Dendritic cells (DCs) are essential orchestrators of adaptive anti-tumour immunity, bridging innate immune recognition of tumour antigens with the activation of cytotoxic T lymphocytes \citep{Wculek2020,Bottcher2020}. Within the tumour microenvironment, a specialized DC population termed mature regulatory DCs (mRegDCs) has been identified across multiple human cancer types, characterized by co-expression of the maturation marker LAMP3, the chemokine receptor CCR7, and the immune checkpoint ligand PD-L1 \citep{Maier2020,Cheng2021}. The dual expression of activating (CCR7, CD80) and inhibitory (PD-L1, PD-L2) molecules has made the functional role of mRegDCs in anti-tumour immunity a subject of considerable debate \citep{Gerhard2021}.
+
+The prevailing model assumes that CCR7$^{+}$ DCs uniformly migrate from tumours to draining lymph nodes (dLN), where they prime T cell responses \citep{Roberts2016,Salmon2016}. However, whether all CCR7$^{+}$ mRegDCs migrate---or whether some remain within the tumour---has not been directly tested. If a subset of mRegDCs is retained in the tumour, the duration of tumour residence could profoundly affect their phenotype and function, given the immunosuppressive nature of the tumour microenvironment \citep{Veglia2021,DeVito2019}.
+
+Furthermore, immune checkpoint blockade with anti-PD-L1 antibodies has revolutionized cancer treatment, but the mechanisms of response extend beyond direct PD-L1/PD-1 blockade on T cells \citep{Herbst2014,Zou2016}. DCs themselves express PD-L1 at high levels, and checkpoint blockade may reprogram DC function in addition to relieving T cell exhaustion \citep{Oh2020,Garris2018}. How anti-PD-L1 treatment specifically affects the heterogeneous mRegDC population within tumours is unknown.
+
+Here we use photoconvertible Kaede transgenic mice to directly track DC migration from tumours to dLNs, combined with single-cell RNA sequencing, multiplex immunofluorescence, and analysis of large human cancer cohorts to characterize the temporal dynamics, functional heterogeneity, and treatment responsiveness of tumour-resident mRegDCs.
+
+\section{Results}
+
+\subsection{mRegDC gene signature associates with improved survival across human cancers}
+
+We first assessed the clinical relevance of mRegDCs by analyzing bulk transcriptomic data from TCGA across four major cancer types (Table~\ref{tab:tcga}).
+
+\begin{table}[ht]
+\centering
+\caption{Association between mRegDC gene signature and overall survival in TCGA cohorts.}
+\label{tab:tcga}
+\begin{tabular}{lll}
+\toprule
+Cancer Type & $n$ & mRegDC Signature vs.\ Survival \\
+\midrule
+Skin cutaneous melanoma (SKCM) & 473 & Improved (log-rank $p < 0.05$) \\
+Colorectal adenocarcinoma (COAD) & 521 & Improved (log-rank $p < 0.05$) \\
+Breast invasive carcinoma (BRCA) & 1,226 & Improved (log-rank $p < 0.05$) \\
+Lung adenocarcinoma (LUAD) & 598 & Improved (log-rank $p < 0.05$) \\
+\midrule
+Total analyzed & 4,045 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Kaplan-Meier analysis with log-rank tests demonstrated that high mRegDC signature expression was associated with improved overall survival across all four cancer types. Subtype-specific analysis of the METABRIC breast cancer cohort ($n = 1{,}853$; Table~\ref{tab:metabric}) confirmed subtype-dependent associations.
+
+\begin{table}[ht]
+\centering
+\caption{mRegDC signature associations in METABRIC breast cancer subtypes.}
+\label{tab:metabric}
+\begin{tabular}{llc}
+\toprule
+Subtype & $n$ & mRegDC Association \\
+\midrule
+HR$^{+}$ (ER or PR) & 1,369 & Subtype-specific \\
+HER2$^{+}$ & 185 & Subtype-specific \\
+Triple-negative (TNBC) & 299 & Subtype-specific \\
+\midrule
+Total & 1,853 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+mRegDC clusters were independently confirmed in published single-cell RNA sequencing datasets from colorectal cancer (62 patients, GSE178341), breast cancer (29 patients, EGAS00001004809), and melanoma (25 patients, GSE123139), with CCR7$^{+}$ mRegDCs consistently co-expressing PD-L1 and PD-L2.
+
+\subsection{A subset of CCR7$^{+}$ mRegDCs remains tumour-resident}
+
+To directly test whether all CCR7$^{+}$ mRegDCs migrate from tumours, we established subcutaneous syngeneic tumours (MC38, MC38-Ova, CT26) in photoconvertible Kaede transgenic mice (Table~\ref{tab:models}).
+
+\begin{table}[ht]
+\centering
+\caption{Mouse tumour model parameters.}
+\label{tab:models}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Cell lines & MC38, MC38-Ova, CT26 \\
+Mouse strains & C57BL/6 Kaede, BALB/c Kaede \\
+Injection & $2.5 \times 10^{5}$ cells, subcutaneous, left flank \\
+Anti-PD-L1 & Clone 80, 200 $\mu$g IP, days 7, 10, 13 \\
+Isotype control & NIP228 mouse IgG1, same schedule \\
+Harvest & Days 13--16 (5h, 24h, 48h, 72h post-photoconversion) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tumour photoconversion at day 13 labeled all resident cells with Kaede-red fluorescence, enabling tracking of DC emigration to dLNs over the subsequent 72 hours. Kaede-red$^{+}$ mRegDCs were detectable in dLNs as early as 5 hours post-conversion, with numbers increasing through 24--48 hours, confirming that mRegDCs are the dominant DC population migrating from tumours to dLNs.
+
+However, CCR7$^{+}$ mRegDCs were also present in tumours at all time points examined. The mRegDC-to-cDC ratio increased with time in both MC38 and CT26 models (one-way ANOVA with Sidak's post-hoc test, $p < 0.05$), indicating progressive accumulation of mRegDCs within tumours. This demonstrates that CCR7 expression alone does not define migratory behavior---a substantial subset of CCR7$^{+}$ mRegDCs remains tumour-resident.
+
+\subsection{Tumour-retained mRegDCs show progressive functional decline}
+
+Single-cell RNA sequencing of FACS-sorted CD45$^{+}$ cells from MC38-Ova tumours at 48 hours post-photoconversion revealed three transcriptionally distinct mRegDC clusters within tumours and a separate dLN mRegDC cluster (Table~\ref{tab:clusters}).
+
+\begin{table}[ht]
+\centering
+\caption{Transcriptional heterogeneity of mRegDC clusters.}
+\label{tab:clusters}
+\begin{tabular}{lll}
+\toprule
+Cluster & Location & Characteristics \\
+\midrule
+mRegDC\_1 & Tumour (recent) & High antigen presentation, pro-inflammatory \\
+mRegDC\_2 & Tumour (intermediate) & Intermediate phenotype \\
+mRegDC\_3 & Tumour (prolonged) & Reduced MHC-II, Cd74, cytokines \\
+mRegDC (dLN) & Draining lymph node & Distinct from all tumour clusters \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Gene signature analysis revealed progressive functional decline with tumour dwell-time (Table~\ref{tab:temporal}).
+
+\begin{table}[ht]
+\centering
+\caption{Temporal trajectory of gene expression in tumour-resident mRegDCs.}
+\label{tab:temporal}
+\begin{tabular}{ll}
+\toprule
+Gene Category & Trend with Tumour Dwell-Time \\
+\midrule
+MHC-II transcripts & Progressive reduction \\
+Cd74 & Progressive reduction \\
+Antigen processing/presentation (GO:0002468) & Reduced in mRegDC\_3 vs.\ mRegDC\_1 \\
+Pro-inflammatory cytokines & Progressive reduction \\
+Co-inhibitory molecules (PD-L1) & Maintained/increased \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Comparison between tumour-resident and dLN mRegDCs revealed that lymphocyte co-stimulation pathways (GO:0031294) were enriched in dLN mRegDCs by GSEA, while tumour mRegDCs showed lower and more variable expression of these pathways. Wilcoxon rank-sum tests confirmed significant differences in gene signature scores between mRegDC clusters.
+
+\subsection{Anti-PD-L1 treatment reprograms tumour mRegDCs toward a stimulatory state}
+
+Mice bearing MC38-Ova tumours were treated with anti-PD-L1 (clone 80, 200 $\mu$g IP on days 7, 10, and 13) or isotype control ($n = 5$ per group). Anti-PD-L1 treatment reduced tumour growth compared to isotype control.
+
+GSEA of mRegDC transcriptomes following anti-PD-L1 treatment revealed significant upregulation of key immune activation pathways (Table~\ref{tab:gsea}).
+
+\begin{table}[ht]
+\centering
+\caption{GSEA results for mRegDC transcriptional changes following anti-PD-L1 treatment.}
+\label{tab:gsea}
+\begin{tabular}{lll}
+\toprule
+Pathway & Direction & Significance \\
+\midrule
+Hallmark IFN-$\gamma$ response & Upregulated & $P_{\text{adj}} < 0.05$ \\
+Hallmark inflammatory response & Upregulated & $P_{\text{adj}} < 0.05$ \\
+KEGG antigen processing/presentation & Upregulated & $P_{\text{adj}} < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Among the most prominently upregulated molecules was OX40L (Tnfsf4), a TNF superfamily member that provides co-stimulatory signals to T cells expressing OX40 (Table~\ref{tab:molecules}).
+
+\begin{table}[ht]
+\centering
+\caption{Key molecules upregulated in tumour mRegDCs by anti-PD-L1 treatment.}
+\label{tab:molecules}
+\begin{tabular}{lll}
+\toprule
+Molecule & Function & Change \\
+\midrule
+OX40L (Tnfsf4) & T cell co-stimulation & Increased \\
+CD80 & Co-stimulation & Maintained high \\
+PVR & TIGIT ligand & Increased \\
+Lymphocyte stimulatory molecules & Multiple & Enriched \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+RNA velocity analysis revealed that in isotype-treated tumours, mRegDCs progressed toward a functionally exhausted state, whereas anti-PD-L1 treatment skewed the trajectory toward a stimulatory state enriched in co-stimulatory molecules.
+
+\subsection{mRegDCs co-localize with CD8$^{+}$ T cells and drive anti-tumour immunity via OX40L}
+
+Cell proportion deconvolution from TCGA bulk transcriptomes revealed strong positive correlations between mRegDC and CD8$^{+}$ T cell proportions across colorectal, breast, and melanoma cancers (Pearson correlation, $p < 0.05$ for all; Table~\ref{tab:correlations}).
+
+\begin{table}[ht]
+\centering
+\caption{Correlation between mRegDC and CD8$^{+}$ T cell signatures across TCGA cancers.}
+\label{tab:correlations}
+\begin{tabular}{lll}
+\toprule
+Cancer Type & Correlation & Significance \\
+\midrule
+Colorectal (COAD, $n=521$) & Positive (Pearson) & $p < 0.05$ \\
+Breast (BRCA) & Positive & $p < 0.05$ \\
+Melanoma (SKCM) & Positive & $p < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Multiplex immunofluorescence confirmed spatial co-localization of mRegDCs with PD-1$^{+}$CD8$^{+}$ T cells in both human solid tumours and murine MC38-Ova tumours.
+
+Functional studies using OX40L reporter mice confirmed that mRegDCs express OX40L within tumours. To test the functional requirement for DC-derived OX40L, we generated CD11c-Cre $\times$ OX40L$^{fl/fl}$ mice for DC-specific OX40L deletion (Table~\ref{tab:ox40l}). Co-culture experiments demonstrated that OX40L$^{+}$ mRegDCs augmented cytolytic CD8$^{+}$ T cell activity.
+
+\begin{table}[ht]
+\centering
+\caption{Mouse strains used for OX40L functional studies.}
+\label{tab:ox40l}
+\begin{tabular}{ll}
+\toprule
+Strain & Purpose \\
+\midrule
+C57BL/6 Kaede & Photoconversion tracking \\
+BALB/c Kaede & CT26 tumour model \\
+OX40L$^{+}$/Human-CD4 reporter & OX40L expression tracking \\
+OX40L$^{fl/fl}$ & Conditional deletion \\
+CD11c-Cre $\times$ OX40L$^{fl/fl}$ & DC-specific OX40L knockout \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our study establishes three key principles regarding mRegDCs in the tumour microenvironment. First, CCR7 expression does not equate to migration: a functionally important subset of mRegDCs remains within tumours despite expressing the canonical migration receptor. Second, tumour residency time shapes mRegDC function, with progressive loss of antigen presentation capacity and pro-inflammatory signaling. Third, anti-PD-L1 treatment counteracts this functional decline by reprogramming tumour mRegDCs toward a stimulatory state characterized by OX40L expression.
+
+\subsection{Tumour mRegDC heterogeneity reflects a temporal continuum}
+
+The three transcriptionally distinct mRegDC states we identify in tumours---recent arrivals with high antigen presentation capacity, intermediates, and prolonged residents with reduced function---suggest that mRegDC heterogeneity is not intrinsic but rather reflects a temporal continuum shaped by cumulative exposure to the immunosuppressive tumour microenvironment \citep{Veglia2021}. This model reconciles prior conflicting observations about mRegDC function: studies finding pro-tumour roles may have predominantly sampled long-resident mRegDCs with reduced stimulatory capacity, while studies finding anti-tumour roles may have captured recently arrived, functionally competent mRegDCs \citep{Maier2020,Cheng2021}.
+
+\subsection{OX40L as a mechanism for anti-PD-L1 efficacy}
+
+The identification of OX40L upregulation on mRegDCs following anti-PD-L1 treatment provides a mechanistic link between checkpoint blockade and enhanced DC-mediated T cell stimulation. OX40--OX40L signaling promotes T cell survival, cytokine production, and memory formation \citep{Croft2010,Webb2016}. Our finding that DC-specific OX40L is functionally required for optimal CD8$^{+}$ T cell responses suggests that anti-PD-L1 efficacy depends, at least in part, on the indirect effect of releasing mRegDCs from their immunosuppressed state, enabling them to provide co-stimulatory support to tumour-infiltrating CD8$^{+}$ T cells \citep{Garris2018}.
+
+\subsection{Clinical implications}
+
+The consistent association between mRegDC signatures and improved survival across 4,045 TCGA tumours, combined with the positive correlation between mRegDC and CD8$^{+}$ T cell signatures, suggests that mRegDC infiltration may serve as a biomarker for immunologically active tumours \citep{Galon2019}. Furthermore, therapeutic strategies combining anti-PD-L1 with OX40 agonists may synergistically enhance anti-tumour immunity by simultaneously derepressing mRegDC function and directly stimulating T cell responses \citep{Curti2013}.
+
+\section{Methods}
+
+\subsection{Mouse models and tumour establishment}
+
+Subcutaneous syngeneic tumours were established by injection of $2.5 \times 10^{5}$ tumour cells (MC38, MC38-Ova, or CT26) into the left flank of Kaede transgenic mice. Anti-PD-L1 (clone 80, 200 $\mu$g) or isotype control (NIP228 mouse IgG1) was administered intraperitoneally on days 7, 10, and 13. Tumour volumes were calculated as $V = 0.5 \times a \times b^{2}$. Mice were housed at 21$^{\circ}$C, 55\% humidity, with 12-hour light-dark cycles.
+
+\subsection{Photoconversion and tissue harvesting}
+
+Tumour photoconversion was performed on day 13 by exposing the tumour to 405 nm light. Tumours and draining lymph nodes were harvested at 5, 24, 48, and 72 hours post-conversion and processed for flow cytometry or single-cell RNA sequencing.
+
+\subsection{Single-cell RNA sequencing}
+
+CD45$^{+}$ cells were FACS-sorted from tumours and processed for scRNA-seq. Data analysis included Seurat-based clustering, UMAP visualization, PAGA trajectory analysis, RNA velocity estimation, and gene set enrichment analysis (GSEA). Wilcoxon rank-sum tests were used for comparing gene signature scores between clusters.
+
+\subsection{Human cancer data analysis}
+
+TCGA bulk transcriptomic data from 4,045 tumours and METABRIC data from 1,853 breast tumours were analyzed for mRegDC signature associations with overall survival using Kaplan-Meier analysis and log-rank tests. Cell type proportions were estimated by computational deconvolution. Published scRNA-seq datasets from colorectal cancer (GSE178341), breast cancer (EGAS00001004809), and melanoma (GSE123139) were analyzed for mRegDC identification.
+
+\subsection{Multiplex immunofluorescence}
+
+Spatial co-localization of mRegDCs and CD8$^{+}$ T cells was assessed by multiplex immunofluorescence on FFPE sections from human solid tumours and mouse MC38-Ova tumours.
+
+\subsection{Functional assays}
+
+OX40L expression was assessed using OX40L reporter mice. DC-specific OX40L deletion was achieved in CD11c-Cre $\times$ OX40L$^{fl/fl}$ mice. T cell stimulation assays measured cytolytic CD8$^{+}$ T cell activity in co-culture with OX40L$^{+}$ or OX40L$^{-}$ mRegDCs.
+
+\subsection{Statistical analysis}
+
+Statistical tests included Wilcoxon rank-sum tests for gene signature comparisons, one-way ANOVA with Sidak's post-hoc correction for time course data, log-rank tests for survival analysis, and Pearson correlation for cell proportion comparisons. All analyses were performed using R and Python.
+
+\section{Acknowledgments}
+
+We thank the patients who consented to tissue collection. Animal experiments were conducted under appropriate ethical approval. This work was supported by [funding agencies].
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

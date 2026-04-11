@@ -1,0 +1,94 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{DEBBIES: A Dataset of Life History Traits for Parameterizing DEB Integral Projection Models Across 185 Ectotherms}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Comparative demographic analyses of ectotherms are severely limited by the requirement for long-term individual tracking data, creating strong taxonomic bias toward well-studied species and excluding data-deficient taxa. Here we present DEBBIES (Version~5), a curated dataset providing eight life history traits for 185 ectotherm species across 18 orders that enables parameterization of dynamic energy budget integral projection models (DEB-IPMs) without individual-level longitudinal data. Technical validation demonstrates that DEB-IPM predictions match ecological expectations: predicted population growth rates ($\lambda$) are slightly above~1 at high feeding levels ($E(Y) = 0.9$), centred around~1 at intermediate feeding ($E(Y) = 0.7$), and mostly below~1 at low feeding ($E(Y) = 0.5$). Predicted generation times are not significantly different from observed values at the highest feeding level (regression coefficient 95\% CI overlaps~1). We provide MatLab code for computing nine derived life history traits, population growth rates, demographic resilience (damping ratio), and elasticity analyses. Compared to existing demographic databases (COMPADRE, COMADRE, PADRINO), DEBBIES uniquely accommodates data-deficient species and enables mechanistic population forecasting under novel environmental conditions through the DEB energy budget framework.
+\end{abstract}
+
+\section{Background and Summary}
+
+Understanding how organisms allocate energy among growth, reproduction, and survival is fundamental to ecology, evolutionary biology, and conservation \citep{stearns1992evolution,kooijman2010dynamic}. Demographic models that capture these trade-offs are essential for predicting population responses to environmental change, yet existing model databases impose data requirements that exclude the majority of ectotherm diversity.
+
+The COMPADRE and COMADRE databases provide matrix population models (MPMs) for plants and animals, while PADRINO provides integral projection models (IPMs) \citep{salguero2015compadre,jones2022rpadrino}. Both require long-term individual-level data---tracking organisms from birth through death---that can only be obtained through intensive field studies spanning multiple years. This requirement creates severe taxonomic bias: well-studied vertebrates and plants are overrepresented, while small-bodied ectotherms, soil organisms, and marine invertebrates that cannot be individually tracked remain largely absent from comparative demographic analyses.
+
+Dynamic energy budget (DEB) theory offers an alternative framework \citep{kooijman2010dynamic}. The Kooijman-Metz model, a simplified formulation assuming isomorphic organisms where ingestion rate scales with squared body length, can be integrated with IPM methodology to create DEB-IPMs that require only eight life history traits for parameterization \citep{nisbet2000organism}. These traits---length at birth ($L_b$), length at puberty ($L_p$), maximum length ($L_m$), maximum reproduction rate ($R_m$), energy allocation fraction ($\kappa$), von Bertalanffy growth rate, juvenile mortality rate ($\mu_j$), and adult mortality rate ($\mu_a$)---can be obtained from the scientific literature without individual tracking, making the approach applicable to data-deficient species.
+
+Here we describe DEBBIES Version~5, a curated dataset of these eight traits for 185 ectotherm species across 18 orders, along with MatLab code for demographic analysis and technical validation against independent data sources.
+
+\section{Methods}
+
+\subsection{Dataset construction}
+
+The DEBBIES dataset was compiled from the scientific literature, with trait values for each species drawn from one or more published studies. When value ranges were reported, the median was used; when multiple observations were available, the mean was taken. The dataset evolved through five versions, with Version~5 containing 185 species after curation that included removal of incorrect entries and standardization of parameter notation.
+
+\subsection{DEB-IPM model structure}
+
+The DEB-IPM describes population dynamics through four fundamental functions operating over the length domain $\omega$:
+
+\begin{enumerate}
+    \item \textbf{Survival function} $S(L(t))$: the probability of surviving from time $t$ to $t+1$, incorporating starvation mortality when maintenance costs exceed assimilated energy (occurring when $L > L_m \cdot E(Y) / \kappa$), with separate rates $\mu_j$ for juveniles ($L_b \leq L < L_p$) and $\mu_a$ for adults ($L_p \leq L \leq L_m$)
+    \item \textbf{Growth function} $G(L', L(t))$: the probability of growing from length $L$ to $L'$, derived from the Kooijman-Metz energy budget model
+    \item \textbf{Reproduction function} $R(L(t))$: the number of offspring produced between $t$ and $t+1$, determined by surplus energy after somatic allocation (the $1-\kappa$ fraction) for adults above $L_p$
+    \item \textbf{Parent-offspring size function} $D(L', L(t))$: the association between parent and offspring size at birth
+\end{enumerate}
+
+The model assumes isomorphic organisms with ingestion rate $I = I_{\max} \cdot Y \cdot L^2$ proportional to squared body length, constant assimilation efficiency, and the $\kappa$-rule for energy allocation: a fraction $\kappa$ of assimilated energy goes to somatic maintenance and growth, with the remainder $(1-\kappa)$ allocated to reproduction and maturation.
+
+The feeding level $E(Y)$ ranges from 0 (empty gut) to 1 (full gut) and serves as an environmental parameter controlling resource availability. The IPM is discretized into a 200 $\times$ 200 matrix $\mathbf{A}$, from which the population growth rate $\lambda$ (dominant eigenvalue), demographic resilience (damping ratio), and elasticity to each parameter are computed.
+
+\subsection{Technical validation}
+
+Predicted generation time, longevity (age at maturity plus mature life expectancy), and age at maturity were compared against observed values from FishBase, IUCN Red List, Animal Diversity Web, AnAge database, and taxon-specific references. Linear regression without intercept ($y \sim x$) was performed at three feeding levels ($E(Y) = 0.5, 0.7, 0.9$), with the 95\% confidence interval of the regression coefficient checked for overlap with~1 to assess whether predictions were significantly different from observations. Root mean square error (RMSE) was used to quantify overall deviation.
+
+\section{Data Records}
+
+DEBBIES Version~5 is stored as a CSV file with an accompanying metadata text file on FigShare. The dataset contains eight trait columns per species (Table~1), with 185 species across 18 orders. Major taxonomic groups represented include ray-finned fish, cartilaginous fish, and other ectotherms.
+
+MatLab code is provided in two packages: a cross-taxonomical analysis package that computes nine derived traits, $\lambda$, damping ratio, and elasticity for all 185 species simultaneously, and a single-species analysis package for detailed examination across user-defined feeding levels.
+
+\section{Technical Validation}
+
+\subsection{Population growth rate}
+
+Predicted $\lambda$ values across 185 species showed ecologically expected patterns (Figure~2a). At high feeding ($E(Y) = 0.9$), most species had $\lambda$ slightly above~1, indicating population growth under favourable conditions. At intermediate feeding ($E(Y) = 0.7$), $\lambda$ was centred around~1, consistent with population stability. At low feeding ($E(Y) = 0.5$), most species had $\lambda$ below~1, indicating population decline. The minimum feeding level for viable populations was approximately 0.7 for most species, with fewer than half maintaining $\lambda > 1$ at $E(Y) = 0.5$.
+
+\subsection{Generation time}
+
+At the highest feeding level ($E(Y) = 0.9$), predicted generation times were not significantly different from observed values: the 95\% confidence interval of the regression coefficient overlapped~1 (Figure~2b). At lower feeding levels, predictions were biased upward (longer generation times than observed), with the bias increasing at $E(Y) = 0.5$. This is expected, as lower feeding levels slow growth and delay maturity in the model, whereas observed generation times typically reflect near-optimal conditions.
+
+\subsection{Longevity and age at maturity}
+
+Predicted longevity and age at maturity showed similar patterns (Figure~2c--d), with best agreement at high feeding levels and increasing deviation at lower feeding. RMSE values at each feeding level provide 95\% prediction intervals around the observed values.
+
+\section{Usage Notes}
+
+DEBBIES enables several applications that existing demographic databases cannot address:
+
+\begin{itemize}
+    \item \textbf{Essential Biodiversity Variables}: DEBBIES can feed into EBV pipelines for species where longitudinal demographic data are unavailable
+    \item \textbf{Conservation management}: elasticity analysis identifies which life history traits have the greatest influence on $\lambda$, guiding conservation interventions
+    \item \textbf{Cross-taxonomical comparisons}: the uniform model structure allows phylogenetically corrected analyses of the fast-slow life history continuum across 185 species
+    \item \textbf{Environmental forecasting}: the mechanistic energy budget framework enables predictions under novel feeding conditions not represented in historical data
+\end{itemize}
+
+\subsection{Known limitations}
+
+Several caveats should be considered. Traits per species are often sourced from different studies, potentially introducing systematic bias. Parameter non-identifiability means that similar growth and reproduction patterns can arise from different parameter sets. The dataset represents species-level averages rather than population-specific values. DEB-IPM predictions are sensitive to the assumed feeding level, and many species require $E(Y) > 0.7$ for viable model runs.
+
+\bibliography{references}
+
+\end{document}
