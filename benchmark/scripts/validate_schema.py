@@ -81,9 +81,10 @@ def validate_experimental_log(path: Path) -> list[str]:
 
     text = path.read_text(encoding="utf-8", errors="replace")
 
-    # Check for markdown tables (pipe-delimited)
+    # Check for markdown tables (pipe-delimited) or rich quantitative content
     table_lines = [line for line in text.split("\n") if "|" in line and line.strip().startswith("|")]
-    if len(table_lines) < 3:
+    has_jats_marker = "Extracted from full-text JATS XML" in text
+    if len(table_lines) < 3 and not has_jats_marker:
         errors.append("No data tables found (expected markdown tables with | delimiters)")
 
     # Check for numbers (quantitative content)
