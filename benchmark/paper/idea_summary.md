@@ -19,7 +19,7 @@ Can a multi-agent pipeline with domain-specific tool integrations (bioRxiv, PubM
 - **Controlled evaluation**: Paired comparison of multi-agent pipeline vs single-agent baseline on 20 papers across 10 biomedical subfields, with structural metrics, LLM-as-judge scoring on 7 axes, and ground truth comparison
 - **Key finding**: Multi-agent pipeline produces 86% more citations (p<0.001), significantly higher citation quality (p<0.001) and completeness (p<0.05) scores, while maintaining comparable prose quality — reaching 40% of published paper citation counts vs 20% for baseline
 - **Anti-leakage protocol**: Demonstrated prevention of content leakage from pre-training data (abstract similarity to ground truth: 0.10 for both conditions)
-- **Open-source release**: Full pipeline, benchmark dataset, evaluation scripts, and all generated papers available at github.com/mikecredence/bio-paper-orchestra
+- **Open-source release**: Full pipeline, benchmark dataset, evaluation scripts, and all generated papers available at github.com/mikecredence/paperorchestra-bio
 
 ## Method in brief
 - 5-stage pipeline: (1) Outline Agent generates structured JSON plan, (2) Plot Agent creates figures, (3) Literature Agent discovers and verifies citations via multi-channel search (web + bioRxiv API + Semantic Scholar), (4) Writing Agent produces LaTeX with anti-leakage safeguards, (5) Refinement Agent iterates with 0-100 scoring and rollback

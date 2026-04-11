@@ -152,7 +152,7 @@
 | Statistical testing | Not reported | Wilcoxon signed-rank (p<0.001) |
 
 ## Software and Reproducibility
-- All code: github.com/mikecredence/bio-paper-orchestra
+- All code: github.com/mikecredence/paperorchestra-bio
 - LLM: Claude (Anthropic)
 - LaTeX: TinyTeX (TeX Live 2024)
 - Python: 3.12 with uv package manager

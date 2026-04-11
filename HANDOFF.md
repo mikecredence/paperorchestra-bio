@@ -1,6 +1,6 @@
 # Session Handoff: BiomedWritingBench
 
-## Repo: https://github.com/mikecredence/bio-paper-orchestra
+## Repo: https://github.com/mikecredence/paperorchestra-bio
 
 ## What Was Built This Session
 
@@ -116,6 +116,6 @@ To: benchmark/results/{paper_id}/{condition}/llm_judge.json
 - Python 3.12 via `uv`
 - TinyTeX at `$APPDATA/TinyTeX/bin/windows/`
 - GitHub CLI at `/tmp/gh/bin/gh.exe`
-- GitHub: mikecredence/bio-paper-orchestra
+- GitHub: mikecredence/paperorchestra-bio
 - No Anthropic API key (use subagents for LLM tasks)
 - No Semantic Scholar API key (use web search fallback)

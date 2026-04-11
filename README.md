@@ -68,8 +68,8 @@ User Inputs (idea + results + venue)
 
 ```bash
 # Clone the repo
-git clone https://github.com/mikecredence/bio-paper-orchestra.git
-cd bio-paper-orchestra
+git clone https://github.com/mikecredence/paperorchestra-bio.git
+cd paperorchestra-bio
 
 # The skill is already in .claude/skills/paper-builder/
 # Start Claude Code in this directory and ask it to write a paper
