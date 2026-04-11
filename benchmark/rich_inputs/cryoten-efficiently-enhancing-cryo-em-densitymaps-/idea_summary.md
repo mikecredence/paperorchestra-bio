@@ -1,0 +1,24 @@
+# Idea Summary: CryoTEN: Efficiently Enhancing Cryo-EM Density Maps Using Transformers
+
+## Working title
+CryoTEN: Efficiently Enhancing Cryo-EM Density Maps Using Transformers
+
+## Core question
+AbstractMotivationCryogenic Electron Microscopy (cryo-EM) is a core experimental technique used to determine the structure of macromolecules such as proteins. However, the effectiveness of cryo-EM is often hindered by the noise and missing density values in cryo-EM density maps caused by experimental conditions such as low contrast and conformational heterogeneity. Although various global and local map sharpening techniques are widely employed to improve cryo-EM density maps, it is still challen
+
+## Motivation / gap
+- IntroductionIn a cryogenic Electron Microscopy (cryo-EM) experiment, purified proteins in solutions are fast frozen at cryogenic temperature and then imaged by an electron microscope to obtain their s
+- Compared to traditional techniques (i.e., X-ray Crystallography and Nuclear Magnetic Resonance (NMR)), cryo-EM has the unique capability of determining the atomic structures of large protein complexes
+- The reconstruction of protein structures from cryo-EM maps involves three main steps: picking protein particles in 2D cryo-EM micrographs [Dhakal et al., 2024b, Bepler et al., 2020, Gyawali et al., 20
+- However, one of the main factors affecting the effectiveness of this process is the low contrast and noise present in the 3D electron density map.
+- This problem is partially addressed by various post-processing techniques such as global and local map sharpening that modify the density values of the cryo-EM maps [Terwilliger et al., 2018b, Scheres
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractMotivationCryogenic Electron Microscopy (cryo-EM) is a core experimental technique used to determine the structure of macromolecules such as proteins. However, the effectiveness of cryo-EM is often hindered by the noise and missing density values in cryo-EM density maps caused by experimental conditions such as low contrast and conformational heterogeneity. Although various global and local map sharpening techniques are widely employed to improve cryo-EM density maps, it is still challenging to efficiently improve their quality for building better protein structures from them.ResultsIn this study, we introduce CryoTEN - a three-dimensional U-Net style transformer to improve cryo-EM maps effectively. CryoTEN is trained using a diverse set of 1,295 cryo-EM maps as inputs and their corresponding simulated maps generated from known protein structures as targets. An independent test set containing 150 maps is used to evaluate CryoTEN, and the results demonstrate that it can robustly enhance the quality of cryo-EM density maps. In addition, the automatic de novo protein structure modeling shows that the protein structures built from the density maps processed by CryoTEN have substantially better quality than those built from the original maps. Compared to the existing state- of-the-art deep learning methods for enhancing cryo-EM density maps, CryoTEN ranks second in improving the quality of density maps, while running > 10 times faster and requiring much less GPU memory than them.Availability and implementationThe source code and data is freely available at https://github.com/jianlin-cheng/cryoten
+
+## Method in brief
+Materials and MethodsData CollectionThe advanced search tool of the RCSB Protein Data Bank (PDB) was used to filter PDB structures built from deposited single-particle cryo-EM maps that have a resolution between 2Å and 7Å. For PDB structures with multiple associated cryo-EM maps, only one cryo-EM map was chosen. Similarly, for cryo-EM maps with multiple associated PDB structures, only one structure was chosen. PDB structures with non-orthogonal map axes were removed. Protein sequences in the FASTA format and deposited cryo-EM primary maps were fetched for the filtered PDB structures from the PDB and Electron Microscopy Data Bank (EMDB) respectively. We used phenix.map model cc [Afonine et al., 2018] to compute Cross Correlation (CC) scores between PDB structures and associated deposited cryo-EM maps. To ensure the quality of the data, only maps that have CC mask value > 0.7 and CC box value > 0.6 were selected. Finally, to remove redundant cryo-EM maps that have similar sequences/structures, we used MMseqs2 to cluster their respective PDB structures that have a sequence identity > 30%, and only one structure was selected per cluster. The final non-redundant data collection consists of 1,521 PDB structure and map pairs, of which we randomly selected 1,295 maps as the training set, 76 maps as the validation set, and 150 maps as the test set.Data ProcessingTo train CryoTEN, the deposited experimental cryo-EM primary maps were used as input, and high-quality simulated maps genera
+
+## Target venue
+Bioinformatics

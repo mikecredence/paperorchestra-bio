@@ -1,0 +1,24 @@
+# Idea Summary: Implications of variable synaptic weights for rate and temporal coding of cerebellar outputs
+
+## Working title
+Implications of variable synaptic weights for rate and temporal coding of cerebellar outputs
+
+## Core question
+AbstractPurkinje cell (PC) synapses onto cerebellar nuclei (CbN) neurons convey signals from the cerebellar cortex to the rest of the brain. PCs are inhibitory neurons that spontaneously fire at high rates, and many uniform sized PC inputs are thought to converge onto each CbN neuron to suppress or eliminate firing. Leading theories maintain that PCs encode information using either a rate code, or by synchrony and precise timing. Individual PCs are thought to have limited influence on CbN neuron
+
+## Motivation / gap
+- IntroductionThe cerebellum is involved in behaviors ranging from balance, motor control and motor learning, to social and emotional behaviors (Hull and Regehr, 2022).
+- Cerebellar disfunction has been linked to severe motor impairment and psychiatric disorders, including autism spectrum disorder, schizophrenia, bipolar disorder and depression (Argyropoulos et al., 20
+- Within the cerebellar cortex, mossy fiber inputs from many brain regions excite granule cells that in turn activate Purkinje cells (PCs), which are the sole outputs.
+- PCs project primarily to the cerebellar nuclei (CbN, also known as deep cerebellar nuclei or DCN), which then project to other brain regions.
+- Clarifying how PCs control the firing of CbN neurons is a vital step in understanding cerebellar processing.PCs are GABAergic and fire spontaneously at frequencies ranging from 10 spikes/s to over 100
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractPurkinje cell (PC) synapses onto cerebellar nuclei (CbN) neurons convey signals from the cerebellar cortex to the rest of the brain. PCs are inhibitory neurons that spontaneously fire at high rates, and many uniform sized PC inputs are thought to converge onto each CbN neuron to suppress or eliminate firing. Leading theories maintain that PCs encode information using either a rate code, or by synchrony and precise timing. Individual PCs are thought to have limited influence on CbN neuron firing. Here, we find that single PC to CbN synapses are highly variable in size, and using dynamic clamp and modelling we reveal that this has important implications for PC-CbN transmission. Individual PC inputs regulate both the rate and timing of CbN firing. Large PC inputs strongly influence CbN firing rates and transiently eliminate CbN firing for several milliseconds. Remarkably, the refractory period of PCs leads to a brief elevation of CbN firing prior to suppression. Thus, PC-CbN synapses are suited to concurrently convey rate codes, and generate precisely-timed responses in CbN neurons. Variable input sizes also elevate the baseline firing rates of CbN neurons by increasing the variability of the inhibitory conductance. Although this reduces the relative influence of PC synchrony on the firing rate of CbN neurons, synchrony can still have important consequences, because synchronizing even two large inputs can significantly increase CbN neuron firing. These findings may be generalized to other brain regions with highly variable sized synapses.
+
+## Method in brief
+Methodsbiorxiv;2023.05.25.542308v1/table1T1EthicsAll animal procedures were carried out in accordance with the NIH and Animal Care and Use Committee (IACUC) guidelines and protocols approved by the Harvard Medical Area Standing Committee on Animals.AnimalsC57/BL6 wild-type mice (Charles River Laboratories) of both sexes aged P10 to P32 were used for acute slice experiments (for dynamic clamp experiments, P26 to P32). All animal procedures were conducted in accordance with the National Institutes of Health and Animal Care and Use Committee guidelines and protocols approved by the Harvard Medical Area Standing Committee on Animals (animal protocol #1493).Slice preparationMice were anesthetized with ketamine / xylazine / acepromazine and transcardially perfused with warm choline ACSF solution (34°C) containing in mM: 110 Choline Cl, 2.5 KCl, 1.25 NaH2PO4, 25 NaHCO3, 25 glucose, 0.5 CaCl2, 7 MgCl2, 3.1 Na Pyruvate, 11.6 Na Ascorbate, 0.002 (R,S)-CPP, 0.005 NBQX, oxygenated with 95% O2 / 5% CO2. To prepare sagittal cerebellar nuclei slices, the hindbrain was removed, a cut was made down the midline of the cerebellum and brainstem, and the halves of the cerebellum were glued down to the slicing chamber. Sagittal slices (170 μm) were cut using a Leica 1200S vibratome in warm choline ACSF (34°C). Slices were transferred to a holding chamber with warm ACSF solution (34°C) containing in mM: 127 NaCl, 2.5 KCl, 1.25 NaH2PO4, 25 NaHCO3, 25 glucose, 1.5 CaCl2, 1 MgCl2 and were recovered at
+
+## Target venue
+eLife

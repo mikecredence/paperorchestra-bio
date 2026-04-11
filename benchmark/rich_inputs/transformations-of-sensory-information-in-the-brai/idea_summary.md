@@ -1,0 +1,24 @@
+# Idea Summary: Transformations of sensory information in the brain reflect a changing definition of optimality
+
+## Working title
+Transformations of sensory information in the brain reflect a changing definition of optimality
+
+## Core question
+Neurons throughout the brain modulate their firing rate lawfully in response to changes in sensory input. Theories of neural computation posit that these modulations reflect the outcome of a constrained optimization: neurons aim to efficiently and robustly represent sensory information under resource limitations. Our understanding of how this optimization varies across the brain, however, is still in its infancy. Here, we show that neural responses transform along the dorsal stream of the visual
+
+## Motivation / gap
+
+
+## Core contribution (bullet form)
+Extracted from abstract:
+Neurons throughout the brain modulate their firing rate lawfully in response to changes in sensory input. Theories of neural computation posit that these modulations reflect the outcome of a constrained optimization: neurons aim to efficiently and robustly represent sensory information under resource limitations. Our understanding of how this optimization varies across the brain, however, is still in its infancy. Here, we show that neural responses transform along the dorsal stream of the visual system in a manner consistent with a transition from optimizing for information preservation to optimizing for perceptual discrimination. Focusing on binocular disparity – the slight differences in how objects project to the two eyes – we re-analyze measurements from neurons characterizing tuning curves in macaque monkey brain regions V1, V2, and MT, and compare these to measurements of the natural visual statistics of binocular disparity. The changes in tuning curve characteristics are computationally consistent with a shift in optimization goals from maximizing the information encoded about naturally occurring binocular disparities to maximizing the ability to support fine disparity discrimination. We find that a change towards tuning curves preferring larger disparities is a key driver of this shift. These results provide new insight into previously-identified differences between disparity-selective regions of cortex and suggest these differences play an important role in supporting visually-guided behavior. Our findings support a key re-framing of optimal coding in regions of the brain that contain sensory information, emphasizing the need to consider not just information preservation and neural resources, but also relevance to behavior.SignificanceA major role of the brain is to transform information from the sensory organs into signals that can be used to guide behavior. Neural activity is noisy and can consume large amount of energy, so sensory neurons must optimize their information processing so as to limit energy consumption while maintaining key behaviorally-relevant information. In this report, we re-examine classically-defined brain areas in the visual processing hierarchy, and ask whether neurons in these areas vary lawfully in how they represent sensory information. Our results suggest that neurons in these brain areas shift from being an optimal conduit of sensory information to optimally supporting perceptual discrimination during natural tasks.
+
+## Method in brief
+MethodsDefinition of Horizontal Binocular DisparityWe define horizontal binocular disparity (d) as follows:
+
+
+
+where βL and βR denote the horizontal angular eccentricity of an image projected to the left and right retinas, relative to the fovea. We represent eccentricity and binocular disparity in units of visual degrees, with negative disparity values indicating points that are closer in depth than the fixation point and positive values indicating points that are farther in depth than the fixation point.Natural Scene Statistics of Binocular DisparityNatural statistics of binocular disparity were re-analyzed from a previously collected data set (12). In brief, three adult human subjects performed either indoor navigation or food preparation tasks while wearing a custom-designed headset consisting of a pair of stereocameras and eye trackers. Still images were sampled from the stereocamera video footage, transformed into head-centered 3D scene geometry, and finally converted into binocular disparity maps in retina-centered coordinates using the eye-tracking data. Analyses were limited to data within a 10° radius of the point of fixation.While the original natural binocular disparity statistics measurements were evenly sampled from a 10° radius of fixation, the neural data sets contained neurons with receptive fields that were restricted largely to one hemifield. Given the differences in binocular disparity statistics between the upper and lower hemifields and the expected incre
+
+## Target venue
+PLOS Computational Biology

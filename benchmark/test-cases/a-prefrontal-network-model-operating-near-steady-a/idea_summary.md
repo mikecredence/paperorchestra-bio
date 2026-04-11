@@ -1,0 +1,24 @@
+# Idea Summary: A prefrontal network model operating near steady and oscillatory states links spike desynchronization and synaptic deficits in schizophrenia
+
+## Working title
+A prefrontal network model operating near steady and oscillatory states links spike desynchronization and synaptic deficits in schizophrenia
+
+## Core question
+AbstractSchizophrenia results in part from a failure of prefrontal networks but we lack full understanding of how disruptions at a synaptic level cause failures at the network level. This is a crucial gap in our understanding because it prevents us from discovering how genetic mutations and environmental risks that alter synaptic function cause prefrontal network to fail in schizophrenia. To address that question, we developed a recurrent spiking network model of prefrontal local circuits that c
+
+## Motivation / gap
+- IntroductionSchizophrenia, a devasting and still poorly understood disease (Insel, 2010; Jauhar et al., 2022), appears to result in part from the functional disruption of prefrontal cortical networks.
+- We do not yet have a clear understanding of how or why this occurs, particularly at the cellular and synaptic level, where critical changes in cell and synaptic function lead to wide-scale failure of 
+- To help fill this gap in knowledge, we have developed parallel nonhuman primate (Kummerfeld et al., 2020; Zick et al., 2018) and mouse genetic models (Zick et al., 2021) of prefrontal network failure 
+- We found that diverse insults operating through different molecular mechanisms (blocking NMDAR in primates or deleting a schizophrenia risk gene in mice related to miRNA processing) led to the same en
+- This work suggests that multiple risk factors produce convergent effects on prefrontal networks during schizophrenia pathogenesis, but they do not address how or why molecular disruptions of cell func
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractSchizophrenia results in part from a failure of prefrontal networks but we lack full understanding of how disruptions at a synaptic level cause failures at the network level. This is a crucial gap in our understanding because it prevents us from discovering how genetic mutations and environmental risks that alter synaptic function cause prefrontal network to fail in schizophrenia. To address that question, we developed a recurrent spiking network model of prefrontal local circuits that can explain the link between NMDAR synaptic and spike timing deficits we recently observed in a pharmacological monkey model of prefrontal network failure in schizophrenia. We analyze how the balance between AMPA and NMDA components of recurrent excitation and GABA inhibition in the network influence spike timing to inform the biological data. We show that reducing recurrent NMDAR synaptic currents prevents the network from shifting from a steady to oscillatory state in response to extrinsic inputs such as might occur during behavior. This explains how NMDAR synaptic deficits, implicated by genetic evidence as causal in schizophrenia, could prevent the emergence of 0-lag synchronous spiking in prefrontal local circuits during behavior, potentially disconnecting those circuits via spike-timing dependent mechanisms in the human disease.
+
+## Method in brief
+MethodsExperimental dataFor the present theoretical study, we used experimental data obtained in our previous work (Zick et al., 2018). Here, we provide brief descriptions of the experimental task, NMDAR antagonist regimen, and neurophysiological recording methodology employed in that work; details have been reported in (Blackman et al., 2016; Zick et al., 2018).Experimental taskMale rhesus macaque monkeys (8-10 kg) were trained to perform the dot-pattern expectancy (DPX) task. This task is closely related to the AX-CPT (continuous performance task) except that dot patterns replace letters as stimuli. During each trial of the DPX tasks, monkeys maintained gaze fixated on a central target as a cue stimulus (1,000 ms), followed by a delay period (1,000 ms), and a probe stimulus (500 ms) were presented. Monkeys were rewarded for moving a joystick to the left if the cue-probe sequence had been AX (69% of trials), or to the right if any other cue-probe sequence had been presented (AY, BX, BY, collectively 31% of trials). Since the correct response to the X-probe depended on the preceding cue (A or B), the task required both working memory and cognitive control. Both The DPX and AX-CPT measure specific cognitive control impairments in schizophrenia (Barch et al., 2003; Jones et al., 2010).Neurophysiological recordingIn our previous study (Zick et al., 2018), we recorded neural activity from the region of the principal sulcus (centered on Brodmann’s areas 46) in the dorsolateral pre
+
+## Target venue
+eLife
