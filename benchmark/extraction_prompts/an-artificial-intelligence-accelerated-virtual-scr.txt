@@ -1,0 +1,73 @@
+You are reverse-engineering a published research paper into pre-writing materials for a benchmark. Given the paper's content below, produce TWO documents that simulate what a researcher would have BEFORE writing the paper.
+
+PAPER TITLE: An artificial intelligence accelerated virtual screening platform for drug discovery
+TARGET VENUE: Nature Communications
+
+ABSTRACT:
+AbstractStructure-based virtual screening is a key tool in early drug discovery, with growing interest in the screening of multi-billion chemical compound libraries. However, the success of virtual screening crucially depends on the accuracy of the binding pose and binding affinity predicted by computational docking. Here we developed a highly accurate structure-based virtual screen method, RosettaVS, for predicting docking poses and binding affinities. Our approach outperforms other state-of-the-art methods on a wide range of benchmarks, partially due to our ability to model receptor flexibility. We incorporate this into a new open-source artificial intelligence accelerated virtual screening platform for drug discovery. Using this platform, we screened multi-billion compound libraries against two unrelated targets, a novel ubiquitin ligase target KLHDC2 and the human voltage-gated sodium channel NaV1.7. On both targets, we discover hits, including seven novel hits (14% hit rate) to KLHDC2 and four novel hits (44% hit rate) to NaV1.7 with single digit micromolar binding affinities. Screening in both cases was completed in less than seven days. Finally, a high resolution X-ray crystallographic structure validates the predicted docking pose for the KLHDC2 ligand complex, demonstrating the effectiveness of our method in lead discovery.
+
+PAPER SECTIONS:
+
+### Main
+MainStructure-based virtual screening plays a key role in drug discovery by identifying promising compounds for further development and refinement. With the advent of readily accessible chemical libraries with billions of compounds1, there has been an increasing interest in screening the expansive chemical space for lead discovery. Despite the benefits of screening these ultra-large libraries2, only a few successful virtual screening campaigns using ultra-large libraries have been reported3. Moreover, virtual screening of an entire ultra-large library becomes increasingly time and cost prohibitive for physics-based docking methods. In recent years, a number of techniques have been introduced to accomplish the ultra-large library virtual screening, including the development of scalable virtual screening platforms to parallelize docking runs on high performance computing clusters (HPC)4, deep learning guided chemical space exploration or active learning techniques to only screening a small portion of the library for similar performance5–8, hierarchical structure-based virtual screening9, and GPU accelerated ligand docking10.However, the success of the virtual screening campaigns using the aforementioned techniques depends crucially on the accuracy of the ligand docking programs used to predict the protein-ligand complex structure as well as to distinguish and prioritize the true binders from non-binders. Leading physics-based ligand docking programs, such as Schrödinger Glide11–13, CCDC GOLD14, along with their virtual screening platforms for ultra-large library screens, are not freely available to researchers. Autodock Vina15, as one of widely used free programs, has slightly lower virtual screening accuracy compared to Glide. Moreover, there is a lack of an open-source scalable virtual screening platform that employs active learning for ultra-large chemical library virtual screens. The emergence of deep learning technology has led to a number of models16–20 aimed at predicting protein-ligand complex structure in a significantly reduced time. However, these methods are better suited for blind docking problems, where the binding site of the small molecule is unknown. In scenarios where the binding site is known, which is often the case in virtual screening, physics-based ligand docking methods continue to outperform deep learning models21. Additionally, the deep learning methods are less generalizable to novel complexes22.In this work, we sought to develop a “state-of-the-art” (SOTA), physics-based virtual screening method and an open-source virtual screening platform capable of robustly and efficiently screening multi-billion chemical compound libraries. This was achieved by improving our prior physics-based Rosetta general force field (RosettaGenFF)23 for virtual screening, yielding an improved forcefield which we call RosettaGenFF-VS. Based on this new force field, we developed a state-of-the-art, physics-based virtual screening protocol in Rose
+
+### Results
+ResultsDevelopment of an AI accelerated virtual screening platformOur previously developed Rosetta GALigandDock is a ligand docking method that uses a physics-based force field, RosettaGenFF, that previously has shown superior performance in ligand docking accuracy23. This method allows for the accurate modeling of protein-ligand complexes, accommodating full flexibility of receptor side chains and partial flexibility of the backbone. However, it is not directly applicable for large-scale virtual screening due to: a) its inability to accurately model certain functional groups (as the original method was tested on hundreds of thousands of compounds rather than the billions in this study); and b) its lack of an entropy model for accurate ranking of different compounds binding to the same target. Moreover, it is prohibitively expensive to dock each individual compound in a multi-billion chemical compound library using physics-based virtual screening methods.To address these issues, we incorporated several enhancements and rectified several critical issues to facilitate the modeling of billions of small molecules. Firstly, we have improved RosettaGenFF by incorporating new atom types and new torsional potentials, and improved the preprocessing script (see Methods). Second, we have developed RosettaGenFF-VS for virtual screening to rank different ligands binding to the same target, that combines our previous model’s enthalpy calculations (ΔH) with a new model estimating entropy changes (ΔS) upon ligand binding (see Methods for details).To enable screening against ultra-large compound libraries, we employed two strategies. First, we developed a modified docking protocol, RosettaVS, that implements two high-speed ligand docking modes: virtual screening express (VSX) is designed for rapid initial screening, while the virtual screening high-precision (VSH) is a more accurate method used for final ranking of the top hits from the initial screen. The key difference between the two modes is the inclusion of full receptor flexibility in VSH (see Methods for further details).Even with these speedups, docking more than one billion compounds is prohibitively expensive. Building upon recent works4–8, we developed an open-source virtual screening (OpenVS) platform that uses active learning techniques to simultaneously train a target-specific neural network during the docking computations to efficiently triage and select the most promising compounds for expensive docking calculations. This platform was also designed to be highly scalable and parallelizable for large-scale virtual screens.RosettaVS shows state-of-the-art performance on virtual screening benchmarksWe first used the Comparative Assessment of Scoring Functions 2016 (CASF2016) dataset27,28 to benchmark the performance of RosettaGenFF-VS. The CASF2016, consisting of 285 diverse protein ligand complexes, is a standard benchmark specifically designed for scoring function evaluation. It provides all small m
+
+### Discussion
+DiscussionIn this work, we presented a state-of-the-art physics-based virtual screening method integrated into a comprehensive scalable platform that uses active learning for large-scale virtual screens and lead discovery. Our approach led to the discovery of seven novel binders to a new E3 ligase, KLHDC2, and four novel binders to the human voltage-gated sodium channel NaV1.7 VSD4.The superior performance of RosettaGenFF-VS and RosettaVS on the CASF2016 and DUD benchmarks respectively, establishes it as a leading physics-based method for ligand docking and virtual screening. The outstanding performance of RosettaVS comes from two major advances. Firstly, the combination of high docking accuracy and sampling efficiency allows the virtual screening protocol equipped with RosettaGenFF-VS to find the correct binding minimum of the protein-ligand complex more effectively than other methods. Secondly, unlike most other virtual screening methods that tend to work well only on more hydrophobic, deeper and larger protein pockets, our method also demonstrates high performance with more polar, shallower and smaller pockets, likely due to the better balance of protein-ligand versus intra-ligand molecular energies achieved by RosettaGenFF-VS.Although our methodology outperforms existing approaches in all aspects, we believe there is room for further improvement. The surge in the application of artificial intelligence across various scientific domains, including protein structure prediction46,47, drug discovery48,49, and materials design50, has been a notable trend in recent years. Future enhancements to our protocol will likely involve the integration of GPU acceleration and deep learning models, e.g., using GPU to accelerate ligand docking10 or using generative AI for efficient pose generation51,52. Other potential improvements include refining the surrogate active learning models for better guidance of chemical-space exploration and incorporating a generalizable deep learning-based score function for improved discrimination of true binders. Another improvement to our approach is to enable the use of known non-small molecule binders, such as macrocycles or antibody loops, as template structures to guide small molecule virtual screening. We anticipate that further developments of structure-based virtual screening combined with deep learning techniques will significantly improve the accuracy and efficiency of virtual screening campaigns.
+
+
+FIGURE DESCRIPTIONS:
+Fig. 1: Deep learning guided virtual screening approach and the state-of-the-art ligand docking method.a, Overview of the deep learning guided virtual screening protocol; b, Results of the area-under-curve (AUC) of the receiver operator characteristics (ROC) curve, averaged over targets and averaged from three independent runs. Results of other methods are obtained from Ref 28; c, Mean ROC enrichments at 0.5% (empty bar), 1% (patterned bar), 2% (solid bar) false positive rates, results are averaged over
+Fig. 2: Deep learning accelerated virtual screening finds novel KLHDC2 binders.a, 7 out of 29 initial synthesized and assayed compounds from the initial virtual screening. b, 6 out of 21 synthesized and assayed compounds from the focused screening. Seven compounds in total show low micromolar binding affinity (indicated by the boxes). Substructure highlighted in the boxed molecules is used for focused library generation. c, AlphaLISA assay and the IC50 values of the seven compounds from the initial scre
+Fig. 3: Crystal structure of KLHDC2-C29 complex.a, Specific residues interacting with C29 are labeled and shown as sticks and balls. Hydrogen bonds are shown as yellow dash lines. b, 2D representation of interactions between C29 and KLHDC2. Hydrogen bonds are shown as blue dash lines. Residues in the pocket that form hydrogen bonds with C29 are shown as sticks and balls.
+Fig. 4: Deep learning accelerated virtual screening finds novel Nav1.7 binders.a, 2D structures of the best two compounds discovered from the initial virtual screening. b, Concentration-response curves and inactivated-state IC50 values (in µM, mean, 95% CI) for Z8739902234 (1.32, 1.14 - 1.55) and Z8739905023 (2.23, 2.14 - 2.46). c, Exemplary current traces showing that Z8739902234 and Z8739905023 inhibit the inactivated state of NaV1.7. d, Docked structure of Z8739902234 and Z8739905023. Ligands are sho
+Fig. S1: Flowchart of the deep learning guided virtual screening protocol.
+Fig. S2: CASF2016 scoring power results of all the methods.
+Fig. S3: CASF2016 docking power results of all the methods. Success rate of the top 1/2/3 decoys with less than 2Å rmsd to the native structure. Docking power of RosettaGenFF-VS does not depend on the entropy model so it is reported without the specification of the entropy model. Performance of other methods are from Ref28.
+Fig. S4: CASF2016 screening power top 1% enrichment factor results of all the methods.
+Fig. S5: CASF2016 screening power results of all the methods. The success rate of including the best binder in the top 1/5/10% ranked molecules.
+Fig S6: CASF2016 reverse screening power results of all the methods. The success rate of ranking the best protein target among the top 1/5/10% of all the targets given the ligand.
+
+TABLE DESCRIPTIONS:
+Table 1: Data collection and refinement statistics (molecular replacement)
+
+RAW TABLE DATA (if available):
+
+
+REFERENCE COUNT: 73
+
+---
+
+Produce exactly TWO documents separated by the marker "---EXPERIMENTAL_LOG---":
+
+DOCUMENT 1: IDEA SUMMARY
+Write as informal research notes BEFORE the paper was written. Include:
+## Working title
+## Core question
+(What specific question does this paper answer?)
+## Motivation / gap
+(Bullet points: what's missing in prior work, why this matters)
+## Core contribution (bullet form)
+(4-6 specific, verifiable contributions with key numbers from the results)
+## Method in brief
+(2-3 paragraphs describing the approach, including any key equations or algorithms mentioned)
+## Target venue
+Nature Communications
+
+DOCUMENT 2: EXPERIMENTAL LOG (after the ---EXPERIMENTAL_LOG--- marker)
+Write as a raw lab notebook / data log. Include:
+- Every comparison table as a MARKDOWN TABLE with | delimiters
+- Extract ALL numeric results from the sections above into tables
+- Group results by experiment type
+- Include figure observations as factual statements (e.g., "Fig 2 shows X increases with Y")
+- List all datasets, baselines, and metrics used
+- Include statistical test results where mentioned
+
+CRITICAL RULES:
+- Do NOT include author names, affiliations, or acknowledgments
+- Do NOT copy sentences verbatim — paraphrase as research notes
+- ALL tables must use markdown format with | delimiters and header separators
+- Include at least 3 data tables with numeric values
+- The experimental log should be the LONGER document (aim for 3000+ words)

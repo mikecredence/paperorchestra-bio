@@ -1,0 +1,104 @@
+You are reverse-engineering a published research paper into pre-writing materials for a benchmark. Given the paper's content below, produce TWO documents that simulate what a researcher would have BEFORE writing the paper.
+
+PAPER TITLE: Cryo-EM structure and B-factor refinement with ensemble representation
+TARGET VENUE: Nature Communications
+
+ABSTRACT:
+AbstractCryo-EM experiments produce images of macromolecular assemblies that are combined to produce three-dimensional density maps. It is common to fit atomic models of the contained molecules to interpret those maps, followed by a density-guided refinement. Here, we propose TEMPy-REFF, a novel method for atomic structure refinement in cryo-EM density maps. By representing the atomic positions as components of a mixture model, their variances as B-factors, and a model ensemble description, we significantly improve the fit to the map compared to what is currently achievable with state-of-the-art methods. We validate our method on a large benchmark of 366 cryo-EM maps from EMDB at 1.8-7.1Å resolution and their corresponding PDB assembly models. We also show that our approach can provide newly-modelled regions in EMDB deposited maps by combining it with AlphaFold-Multimer. Finally, our method provides a natural interpretation of maps into components, allowing us to accurately create composite maps.
+
+PAPER SECTIONS:
+
+### Introduction
+IntroductionCryo-electron microscopy (cryo-EM) can resolve the structure of biomolecules at an ever-improving resolution. Larger complexes can now be visualised as 3-dimensional density maps at near-atomic resolutions, and in various conformations. The interpretation of those maps often hinges on fitting atomic models of the different macromolecules present in the complex1–3. This procedure is often difficult and requires the user to provide accurate models, and a well-estimated resolution (which can vary at different parts of the map). Pre-existing experimental or predicted atomic models may be in a different conformation and converging to a well-fitted one may require significant sampling.Several methods are in common use for this procedure. To improve the map fit, the map can be treated as a scalar field, for which a gradient can be used as a force4,5. Optimisation of the position against the correlation coefficient (CCC) has also been proposed6, or by Bayesian expectationmaximisation against the density observed in the map7,8. The sampling itself is usually based on either molecular dynamics (MD)4,9, minimisation10, normal mode analysis and/or gradient following techniques11,12, or Fourier-space based methods2. Manual inspection and modification of the structure, or targeted sampling for specific parts of the structure, are also common, especially at high resolutions13–15.Molecular dynamics-based refinement methods have the advantage of wider sampling but may result in locally distorted structures. This can usually be fixed by either clustering the resulting data9 or by minimising the structures at the end of the run6. The use of a forcefield (such as CHARMM16 or AMBER17) have the added benefit of ensuring that clashes are generally absent from the structure since they include parameterised van der Waals repulsion terms.Virtually all methods rely on blurring the model (globally or locally)18 to compare against the experimental map, which poses an additional challenge for maps of flexible systems that will often exhibit significant resolution heterogeneity between flexible and rigid regions. This heterogeneity in the map can also result from adding up density maps from different reconstructions (e.g result of multibody or focused refinement) into a so-called “composite” map19,20. However, a systematic way to combine multiple maps into a composite map has not been proposed yet.Flexibility is intrinsic to biomolecular systems, which presents a challenge for methods that tend to rely on a single structure representation. Methods using a population of models21–25 can provide an improved understanding of the fit between map and models26. Mixture modelling is a powerful framework to represent arbitrary density probabilities comprising several parts: by iteratively estimating the model parameters, and then re-computing the expected distribution, a (locally) optimal model can be generated8. We use this approach to estimate both the local spread of den
+
+### Results
+ResultsMixture modelling applied to refinementWe have developed a method based on Mixture Modelling (MM, using one Gaussian per atom and a uniform background term) to represent the estimated contribution of various parts of a model to the experimentally observed intensity. The Gaussians are fitted to the model in a self-consistent way, such that their summed contributions represent a (locally) optimal fit to the density. The intensity attributed to a Gaussian, or a sum of Gaussians, can be used to estimate their importance in representing a specific part of the map density. For example, by summing the Gaussians for atoms from a given protein chain, it is possible to determine which part of the map is best represented by this chain, or other chains, or are part of the general background noise in this map. Those weighted contributions (termed “responsibilities”) allow us to perform a variety of tasks that are commonly performed on cryo-EM maps (described in Fig. 1): fitting an atomic model to the map, segmenting the map into several parts, each representing a distinct entity (for example, a distinct subunit in a protein complex), or combining focused maps into a single overall composite map, with optimal weights of the focused maps.Although Gaussian Mixture Model (GMM) approaches have been successfully employed before, this model was usually a simplified representation of the overall model and map7,8,28. By describing each atom as a Gaussian point spread function, a link between map and model is directly established: the intensity of each voxel is a direct sum of the contribution of each atom, as a function of its position, b-factor, and occupancy. It is important to note that the formalism used here does not require the use of Gaussian distributions, and alternative descriptions for the individual atomic contributions could be considered.The responsibility calculation has several benefits: for regions of the map that are close to multiple parts of the structures, the mixture model allows for uncertainty in the assignment of the density. This “soft-mixing” improves the convergence of the refinement, by making it easier for structural elements to slide towards regions of density that are a better fit, even if they are currently fit to a high-density region of the map.The calculation is also self-consistent, as is empirically demonstrated below: changes in the initial position and B-factor assignment for the structure result in identical or similar fit for a wide range of initial values.Benchmark B-factor refinement and assessmentThe MM interpretation of the fitting problem allows us to obtain more accurate estimates of the B-factor that provide a locally optimal fit to the map (see Methods). While the B-factor optimisation is intended to be used together with position refinement, it is useful to test it independently, to assess the magnitude of the gain one can expect from it. This can be done by optimising the B-factors while keeping the atomic pos
+
+### Discussion
+DiscussionWe have presented TEMPy-REFF, a novel structure refinement protocol that takes into account the local features of a cryo-EM map using a mixture model with an error term. Our approach naturally incorporates both position and B-factor estimations in the same framework. This information is essential to represent the local variability around atomic positions.Currently one of the greatest challenges in model building into cryo-EM maps is, how we can evaluate the quality-of-fit in a system not described by a single resolution value, but rather varying “local” resolution. We address this challenge using B-factor estimation. We find, as previously shown by us and others21–23,25, that an ensemble of equally-well fitted models represents this local variability better than a single model. However, we go one step further, by showing that an “ensemble map” calculated from these models, provides a better representation of the experimental map, in comparison to a “traditional” simulated map (which is typically generated from a single Gaussian function per atom) (Fig. 2a). This is best showcased in Fig 3c, where a double occupancy site for a histidine necessarily requires more than one model to be correctly represented. The improvement is also evident in regions of lower local resolution (Fig. 6a,c), which may indicate an inherent local flexibility of the structure, although this cannot be easily deconvolved from the blurring due to optical factors47, or the 3D reconstruction procedures.Ensemble methods have been common practice in the NMR community and have been suggested as a way of dealing with the uncertainty in the data22,23,32. This has also been demonstrated previously for X-ray crystallographic data48, and we similarly observe a plateau as more models are added to the ensemble (Extended Data Fig. S7). Furthermore, when analysing the differences on a local level (for example at the residue level) using a distance measure (such as the RMSFe), we observe that the local-fit-quality (using SMOCf) correlates well with those differences (Fig. 2c). As demonstrated on our new local scoring method and unsurprisingly, the local-fit-quality also correlates with the local resolution estimation (such as ResMap49).Overall, our automated refinement procedure is computationally quick (Extended Data Table 3), resulting in high-quality models that are well-fitted to the cryo-EM map and with good model quality as assessed by MolProbity. Without the ensemble representation of the fitted models, the local and global model-map fit score is comparable or higher than Phenix on average (as represented by the 366 CERES results). It is worth noting that the quality-of-fit of our ensemble procedure remains near-constant at lower resolutions, while the quality-of-fit decreases for CERES, as well as for our single refinements. This shows again that the ensemble approach captures an important aspect of the model-map fit, which is missing from single model refinement approache
+
+### Methods
+MethodsDefinitionsGiven a reference experimental 3D map ME, with an estimated resolution R, we will attempt to improve the fit of a model comprised of N atoms, that has estimated coordinates , B-factors , and occupancies  (which we will set to 1 and ignore thereafter).AlgorithmThe full algorithm can be summarised below with detailed explanation following:
+Initialise coordinates , B-factors , and resolution r.Loop over:
+Compute conformational energy and forces  and , for a given forcefield.Compute a simulated density map  Compute map-derived forces .Change coordinates X using .Change B-factors and occupancies based on the experimental cryo-EM map, ME.Simulated cryo-EM mapFrom the position X and the B-factors B, we can compute a simulated map, MS, by adding up the expected intensity due to each atom in a given group of atoms, modelled with a Gaussian distribution:
+
+
+
+with each Gaussian taking the form:
+
+
+
+with Nithe atomic number of the corresponding atom with index i, xithe cartesian coordinates, and Bithe B-factor. Although it is possible to define a 3-dimensional B-factor, we restrict ourselves to a scalar for our refinement.Finally, we consider the error (which comprises background noise, reconstruction errors, and additional components) as a uniform distribution across the whole map, determined by a single scalar parameter:
+
+
+
+with kbg the uniform distribution parameter, corresponding to the average background noise level. We thus obtain the final expression for the simulated map as follows:
+
+
+And re-estimation of kbg is done using
+
+
+
+where ME and MS are the reference map and experimental map, respectively.Conformation-based force calculation and molecular dynamics (MD)OpenMM is used for the conformation-based force calculation and molecular dynamics31. We tested CHARMM36 and AMBER in OpenMM (Extended Data Table S4), and they show slight differences in the preferred backbone dihedrals (Extended Data Fig. S9). Although other forcefields are available, we use AMBER for our runs. We use the GB-Neck2 implicit solvent model52, with κ=3.Map derived force calculation and B-factor calculationWe consider two methods to improve the fit quality: MD, where the system’s coordinates are integrated over time, taking into account the forces atoms exert on each other; and energy minimisation, where the coordinates of the system are changed to minimise a function.To combine our description of the map with the energy terms that are usually present in forcefields, we compute a fictitious force representing the direction of the change in position induced by the Gaussian fitting (for MD), that can be expressed as Fmap = K δ(xi), with K = 400 a constant, and δ(xi) the estimated change in position shown below.The quantities associated with each atom i (xi, bi, oi) are dependent on an estimated experimental density attached to a given atom, which can be expressed as follow:
+
+
+
+with the reference map ME and simulated map MS (as described above), and Gi, the Gaussian ge
+
+
+FIGURE DESCRIPTIONS:
+Fig. 1: Flow chart summarising the steps in the TEMPy-REFF algorithm.a, The EM (Expectation-Maximisation) algorithm. Responsibility is an estimation of the part of the data that is represented by a given component in the mixture. New parameters (the mean and variance of each component corresponding to the position and B-factor value) for each component (e.g. for each atom) are then re-estimated using this responsibility and the experimental data. b, After refinement, an ensemble can be generated based o
+Fig. 2: Ensemble representation illustrated on rotavirus VP6 (EMD-6272).a, Depiction of structure ensemble (orange), along with the map (transparent grey); a plot of the CCC of each individual model in the ensemble is shown (blue), as well as the ensemble map (orange); b, depiction of a single model map (green), experimental map, and our computed ensemble map at contour level 0.02; c, SMOCf plot and RMSFe for each structure in the ensemble; the RMSF and SMOCf score are clearly anticorrelated. d, Differe
+Fig. 3: Refinement of the CERES benchmark and the example of the glutamate dehydrogenase refinement.a, Benchmark comparison using CCC, between the initial (PDB-deposited) models (blue), the CERES re-refined models (green), and TEMPy-REFF refinementbased model ensemble (orange), separated by resolution bands of 1Å. b, SMOCf plot calculated along the chain for the glutamate dehydrogenase deposited map and model (EMD-8194, 1.8Å, PDB ID: 5K12, blue), CERES-refined model (green) and the TEMPy-REFF model ense
+Fig. 4: Using TEMPy-REFF for map segmentation and composition.a, Segmentation of maps (glycoprotein B-Neutralizing Antibody Complex from Herpes Simplex Virus 1, EMD-2124736) into 9 submaps corresponding to single chains. b, Composition of 3 focused maps into a composite map, using EMD-12966 (cyan), EMD-12967 (purple), and EMD-12968 (pink). c. Top: Map-model FSC between the deposited model and the deposited composite map, EMD-1296937 (blue) and between the deposited model and TEMPy-REFF composite map (or
+Fig. 5: Case study of RNA polymerase III elongation complex.a, The deposited model of the RNA polymerase III elongation complex (PDB ID 5FJ8, left) and the TEMPY-REFF refined model (right) coloured according to the B-factors (calculated with RELION (left) and TEMPy-REFF (right), and the 3.9 Å resolution cryo-EM map (EMD-3178) (transparent grey). For comparison purposes, the B-factors are normalised between 0-1. b, Chain A in complex with RNA (chains R, S and T), from the deposited structure (blue, top),
+Fig. 6: Case studies of Nucleosome-CHD4 complex and SARS-CoV-2 RNA polymerase (AlphaFold model refinement).a, A nucleosome structure in complex with chromatin remodelling enzyme CHD4 (EMD-10058, PDB ID: 6RYR) is shown (worm representation), with the width proportional to the B-factor, and color based on local resolution (computed with ResMap). b, Deposited model (left, blue) and the ensemble of models and ensemble map calculated with TEMPy-REFF (right, orange), shown inside the cryo-EM map (transparent 
+Extended Data Fig. S1: Change in CCC and B-factor during the TEMPy-REFF refinement procedurea, CCC and B-factor changes illustrated on EMD-10097; b, and EMD-30127. The B-factor converges in around 10-12 iterations, thereby improving the CCC, i.e. the quality of fit to the data (left column). Significant changes in B-factor distribution can be seen before (middle column) and after refinement (right column).
+Extended Data Fig. S2: The change in B-factors during the TEMPy-REFF refinement process.Starting from an initial assignment, the B-factor converges to their final value, with an accompanying improvement in CCC.
+Extended Data Fig. S3: The convergence of B-factor values during the TEMPy-REFF refinement process, using multiple initial B-factor assignments:Unit B-factors to all atoms (all B = 1); All B = 1000; Random uniform B-factors between 1 and 1000 (B = U(1, 1000)); Random normal B-factors, with mean and variance according to the experimental distribution (if either of those value was unavailable, it was initialised to 1) (B = exp)
+Extended Data Fig. S4: The values of the final B-factor after TEMPY-REFF refinement, for an initial uniform B-factor of 1 vs uniformly distributed between 1 and 1000.The B-factors are largely independent from the initial value.
+
+TABLE DESCRIPTIONS:
+Extended Data Table S1: Change in CCC upon B-factor refinement in TEMPy-REFF.Initial values are listed for a uniform B-factor of 10, final are listed after 5 B-factor refinement steps. Atomic coordinates are not changed during this refinement, as this is to test the effect of B-factor refinement specifically.
+Extended Data Table S2: Change in scores upon refinement, comparison against CERES
+Extended Data Table S3: Speed benchmark.time for a run, for a given system
+Extended Data Table S4: Forcefield comparison: change in CCC after refinement using either AMBER orCHARMM.To confirm that no significant bias is introduced by the choice of forcefield, we tested both AMBER and CHARMM36 forcefields on our dataset. No significant differences are observed using either AMBER or CHARMM forcefields, although the CCC at the end of the refinement were slightly higher for the AMBER runs, on average (Runs with the highest CCC for a given system are highlighted in green).
+
+RAW TABLE DATA (if available):
+
+
+REFERENCE COUNT: 56
+
+---
+
+Produce exactly TWO documents separated by the marker "---EXPERIMENTAL_LOG---":
+
+DOCUMENT 1: IDEA SUMMARY
+Write as informal research notes BEFORE the paper was written. Include:
+## Working title
+## Core question
+(What specific question does this paper answer?)
+## Motivation / gap
+(Bullet points: what's missing in prior work, why this matters)
+## Core contribution (bullet form)
+(4-6 specific, verifiable contributions with key numbers from the results)
+## Method in brief
+(2-3 paragraphs describing the approach, including any key equations or algorithms mentioned)
+## Target venue
+Nature Communications
+
+DOCUMENT 2: EXPERIMENTAL LOG (after the ---EXPERIMENTAL_LOG--- marker)
+Write as a raw lab notebook / data log. Include:
+- Every comparison table as a MARKDOWN TABLE with | delimiters
+- Extract ALL numeric results from the sections above into tables
+- Group results by experiment type
+- Include figure observations as factual statements (e.g., "Fig 2 shows X increases with Y")
+- List all datasets, baselines, and metrics used
+- Include statistical test results where mentioned
+
+CRITICAL RULES:
+- Do NOT include author names, affiliations, or acknowledgments
+- Do NOT copy sentences verbatim — paraphrase as research notes
+- ALL tables must use markdown format with | delimiters and header separators
+- Include at least 3 data tables with numeric values
+- The experimental log should be the LONGER document (aim for 3000+ words)

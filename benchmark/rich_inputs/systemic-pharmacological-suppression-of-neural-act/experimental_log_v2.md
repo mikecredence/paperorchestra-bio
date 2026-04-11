@@ -1,0 +1,212 @@
+# Experimental Log: Diazepam Rescue of Learning in Fragile X Model
+
+## Mouse Model
+
+| Parameter | Value |
+|-----------|-------|
+| Knockout | Fmr1, Purkinje cell-specific (L7-Fmr1 KO) |
+| Cre driver | L7/Pcp2-Cre (Jdhu, JAX #010536) |
+| Floxed gene | Fmr1 (X-linked) conditional KO |
+| Controls | Cre-negative littermates (WT) |
+| Age at experiment | 8-22 weeks |
+| Sex | Male and female (pooled; similar deficits in both) |
+| Housing | Reversed 12h light/dark; tested during dark cycle |
+| Surgery age | 8-12 weeks |
+| Recovery period | >= 5 days post-surgery |
+
+## Surgical Implant
+
+| Component | Detail |
+|-----------|--------|
+| Head post | Custom (Shapeways), dental acrylic attachment |
+| Eye tracking | Neodymium magnets (0.75 x 2 mm, N50) under conjunctiva |
+| Sensor | Angular magnetic field sensor (HMC1512, Honeywell) |
+| Anesthesia | 1.5-2.5% isoflurane |
+
+## Oculomotor Learning Paradigms
+
+| Task | Vestibular Stimulus | Visual Stimulus | Plasticity Mechanism |
+|------|-------------------|-----------------|---------------------|
+| VOR-increase (1 Hz) | 1 Hz sinusoidal, +/-10 deg/s | Oppositely directed | PF-Purkinje cell LTD dependent |
+| VOR-decrease (1 Hz) | 1 Hz sinusoidal, +/-10 deg/s | Same direction | LTD-independent |
+| VOR-increase (0.5 Hz) | 0.5 Hz sinusoidal | Oppositely directed | Different mechanism (not rescued) |
+| VOR-decrease (0.5 Hz) | 0.5 Hz sinusoidal | Same direction | LTD-independent |
+| OKR adaptation | None (visual only) | Optokinetic drum | LTD-dependent |
+
+## Experiment 1: Baseline Oculomotor Performance (Fig 1 - supplement 2)
+
+| Measure | L7-Fmr1 KO | WT | p-value | Test |
+|---------|-------------|----|---------|----|
+| Baseline VOR gain (dark) | Normal | Normal | 0.95 | Two-sample t-test |
+| Initial visual-vestibular response | Normal | Normal | NS | -- |
+
+No baseline oculomotor differences between genotypes.
+
+## Experiment 2: VOR-Increase Learning (Fig 1A)
+
+| Group | Learning at 30 min | p-value (0 vs 30 min) | Test |
+|-------|-------------------|----------------------|------|
+| WT | Significant increase | 7.37e-4 | Tukey |
+| L7-Fmr1 KO | Impaired (reduced learning) | NS or weak | Tukey |
+| KO vs WT at 30 min | Significantly different | < 0.05 | -- |
+
+## Experiment 3: VOR-Decrease Learning (Fig 1B)
+
+| Group | Learning at 30 min | p-value (0 vs 30 min) | Test |
+|-------|-------------------|----------------------|------|
+| WT | Significant decrease | 0.001 | Tukey |
+| L7-Fmr1 KO | Normal decrease | NS (KO vs WT) | Tukey |
+
+VOR-decrease learning is NOT impaired in L7-Fmr1 KO mice, confirming selectivity to LTD-dependent tasks.
+
+## Experiment 4: Sex Differences (Fig 1 - supplement 1)
+
+| Sex | VOR-Increase Impairment | p-value (KO vs WT, 30 min) |
+|-----|------------------------|---------------------------|
+| Male | Yes (impaired) | 0.01 |
+| Female | Yes (impaired) | 0.05 |
+| Combined | Both impaired | Pooled for main analyses |
+
+## Experiment 5: Behavioral Pre-Training Rescue (Fig 2)
+
+### VOR-Decrease Pre-Training (Fig 2B)
+
+| Group | VOR-Increase Learning After Pre-Training | Rescued? |
+|-------|----------------------------------------|----------|
+| WT | Normal | N/A |
+| L7-Fmr1 KO | Restored to WT levels | Yes |
+
+### Vestibular-Only Pre-Training (Fig 2C)
+
+| Group | VOR-Increase Learning After Pre-Training | Rescued? |
+|-------|----------------------------------------|----------|
+| WT | Normal | N/A |
+| L7-Fmr1 KO | Restored to WT levels | Yes |
+
+### Matched Sub-Sampling (Fig 2 - supplement 1)
+
+| Analysis | Result |
+|----------|--------|
+| Subsampled for matched pre-training decrease | VOR-increase rescue persists |
+| Mean decrease matched within 2% | Confirms rescue is not due to different pre-training magnitudes |
+
+## Experiment 6: Diazepam Pre-Treatment (Fig 3)
+
+### Diazepam on VOR Baseline (Fig 3 - supplement 1)
+
+| Time Point | L7-Fmr1 KO VOR Gain | WT VOR Gain | p-value |
+|-----------|---------------------|-------------|---------|
+| Pre-injection | Baseline | Baseline | -- |
+| 2h post-diazepam (0.5 mg/kg) | No change | No change | 0.72 (KO Pre vs 2h) |
+| 18-24h post-diazepam | No change | No change | 0.77 (KO Pre vs 18-24h) |
+
+Diazepam (0.5 mg/kg) does not affect baseline VOR gain at any time point.
+
+### Acute Diazepam Effect (Fig 3 - supplement 2)
+
+| Dose | Time Before Training | VOR-Increase Learning |
+|------|---------------------|----------------------|
+| 2.5 mg/kg | 2 hours | Blocked in both KO and WT |
+| 0.4-0.5 mg/kg | 2 hours | Blocked in both KO and WT |
+
+Diazepam acutely suppresses VOR-increase learning, consistent with neural activity suppression.
+
+### Diazepam Rescue (18-24h After Injection, Fig 3B)
+
+| Group | Treatment | VOR-Increase Learning | Rescued? |
+|-------|-----------|----------------------|----------|
+| WT | Saline | Normal | N/A |
+| WT | Diazepam (0.5 mg/kg) | Normal | N/A |
+| L7-Fmr1 KO | Saline | Impaired | No |
+| L7-Fmr1 KO | Diazepam (0.5 mg/kg) | Restored to WT levels | Yes |
+
+### Diazepam Effect on VOR-Decrease (Fig 3B, bottom)
+
+| Group | Treatment | VOR-Decrease Learning | Effect |
+|-------|-----------|----------------------|--------|
+| WT | Saline | Normal | -- |
+| WT | Diazepam | Normal | No effect |
+| L7-Fmr1 KO | Saline | Normal | -- |
+| L7-Fmr1 KO | Diazepam | Normal | No effect |
+
+Diazepam pre-treatment selectively rescues LTD-dependent VOR-increase learning without affecting LTD-independent VOR-decrease.
+
+### Diazepam Rescue by Sex (Fig 1 - supplement 1, bottom)
+
+| Sex | Diazepam Rescue of VOR-Increase |
+|-----|-------------------------------|
+| Male L7-Fmr1 KO | Rescued |
+| Female L7-Fmr1 KO | Rescued |
+
+## Experiment 7: Low-Frequency VOR (0.5 Hz, Fig 4)
+
+### Without Pre-Training (Fig 4A, left)
+
+| Group | 0.5 Hz VOR-Increase Learning |
+|-------|------------------------------|
+| WT | Normal |
+| L7-Fmr1 KO | Impaired |
+
+### After Pre-Training (Fig 4A, middle/right)
+
+| Pre-Training Type | L7-Fmr1 KO Rescue? |
+|-------------------|---------------------|
+| 0.5 Hz VOR-decrease | Not rescued |
+| 0.5 Hz Vestibular-only | Not rescued |
+
+### After Diazepam (Fig 4B)
+
+| Treatment | L7-Fmr1 KO 0.5 Hz VOR-Increase |
+|-----------|---------------------------------|
+| Saline | Impaired |
+| Diazepam (0.5 mg/kg) | Still impaired (not rescued) |
+
+The 0.5 Hz VOR-increase deficit is not rescued by any intervention that works for 1 Hz, suggesting a different underlying mechanism.
+
+## Experiment 8: OKR Adaptation
+
+### Baseline OKR (Fig 5 - supplement 1)
+
+| Group | Baseline OKR Gain | p-value |
+|-------|-------------------|---------|
+| WT vs L7-Fmr1 KO | No difference | 0.690 |
+| After saline vs diazepam | No difference | NS |
+
+## Summary of Task-Specific Impairments and Rescues
+
+| Task | LTD-Dependent? | L7-Fmr1 KO Impaired? | Pre-Training Rescue? | Diazepam Rescue? |
+|------|---------------|----------------------|---------------------|-----------------|
+| 1 Hz VOR-increase | Yes | Yes | Yes | Yes |
+| 1 Hz VOR-decrease | No | No | N/A | N/A |
+| 0.5 Hz VOR-increase | Different mechanism | Yes | No | No |
+| 0.5 Hz VOR-decrease | No | No | N/A | N/A |
+| OKR adaptation | Yes (partially) | -- | -- | -- |
+
+## Threshold Metaplasticity Model (Fig 5)
+
+| Component | Description |
+|-----------|-------------|
+| Normal plasticity | LTD available at appropriate synapses during training |
+| Enhanced LTD (Fmr1 KO) | Spontaneous activity aberrantly recruits LTD before training |
+| Result | Increased threshold for further LTD induction; unavailable for learning |
+| Pre-training rescue | Behavioral patterns reverse aberrant LTD, resetting threshold |
+| Diazepam rescue | Suppressed activity prevents aberrant LTD recruitment, resetting threshold |
+| Alternative hypothesis (rejected) | Over-recruitment during training (does not explain pre-training effects) |
+
+## Statistical Methods
+
+| Analysis | Test Used |
+|----------|-----------|
+| Learning comparisons (time points) | Tukey post-hoc |
+| Genotype comparisons | Two-sample t-test |
+| Repeated measures | Mixed-model ANOVA |
+| Sex comparisons | Separate analyses then pooled |
+
+## Key Figure Observations
+
+- Fig 1A: VOR-increase learning curves show clear impairment in L7-Fmr1 KO (red) vs WT (black)
+- Fig 1B: VOR-decrease learning curves show no genotype difference
+- Fig 2: Pre-training with VOR-decrease or vestibular-only rescues subsequent VOR-increase learning
+- Fig 3: Diazepam 18-24h before training rescues VOR-increase (top) but not VOR-decrease (bottom)
+- Fig 4: 0.5 Hz VOR-increase impairment is resistant to all rescue manipulations
+- Fig 5: Schematic of threshold metaplasticity model explaining how enhanced LTD impairs learning
