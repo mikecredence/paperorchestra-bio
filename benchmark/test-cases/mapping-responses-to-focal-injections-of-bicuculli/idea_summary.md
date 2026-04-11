@@ -1,0 +1,24 @@
+# Idea Summary: Mapping responses to focal injections of bicuculline in the lateral parafacial region identifies core regions for maximal generation of active expiration
+
+## Working title
+Mapping responses to focal injections of bicuculline in the lateral parafacial region identifies core regions for maximal generation of active expiration
+
+## Core question
+AbstractThe lateral parafacial area (pFL) is a crucial region involved in respiratory control, particularly in generating active expiration through an expiratory oscillatory network. Active expiration involves rhythmic abdominal (ABD) muscle contractions during late- expiration, increasing ventilation during elevated respiratory demands. The precise anatomical location of the expiratory oscillator within the ventral medulla’s rostro-caudal axis is debated. While some studies point to the caudal 
+
+## Motivation / gap
+- IntroductionThe neural control of respiration is a complex physiological process that requires precise coordination among multiple brainstem nuclei.
+- One such nucleus, the preBötzinger Complex (preBötC), plays a crucial role in generating the inspiratory rhythm and pattern (Gray, Janczewski, Mellen, McCrimmon, & Feldman, 2001; Smith, Ellenberger, B
+- In contrast, the lateral parafacial region (pFL), also referred to as pFRG in the initial studies, has emerged as an important neuronal structure containing neurons that are responsible for the genera
+- Although the involvement of preBötC in respiration, as well as its origin, anatomical location, markers and anatomical projections has been extensively studied (Biancardi et al., 2023; Del Negro, Funk
+- Understanding the precise location and functional properties of the expiratory oscillator is crucial for unraveling the complete neural circuitry underlying respiratory control.Previous research has e
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractThe lateral parafacial area (pFL) is a crucial region involved in respiratory control, particularly in generating active expiration through an expiratory oscillatory network. Active expiration involves rhythmic abdominal (ABD) muscle contractions during late- expiration, increasing ventilation during elevated respiratory demands. The precise anatomical location of the expiratory oscillator within the ventral medulla’s rostro-caudal axis is debated. While some studies point to the caudal tip of the facial nucleus (VIIc) as the oscillator’s core, others suggest more rostral areas. Our study employed bicuculline (a GABA-A receptor antagonist) injections at various pFL sites (-0.2 to +0.8mm from VIIc) to investigate the impact of GABAergic disinhibition on respiration. These injections consistently elicited ABD recruitment, but the response strength varied along the rostro-caudal zone. Remarkably, the most robust and enduring changes in tidal volume, minute ventilation and combined respiratory responses occurred at more rostral pFL locations (+0.6/+0.8 mm from VIIc). Multivariate analysis of the respiratory cycle further differentiated between locations, revealing the core site for active expiration generation with this experimental approach. Our study advances our understanding of neural mechanisms governing active expiration and emphasizes the significance of investigating the rostral pFL region.
+
+## Method in brief
+MethodsExperimental SubjectsThirty-five adult male Sprague Dawley rats weighing 340.4 g ± 13.2 were used for the study. The rats were housed in a controlled environment with a 12-hour light-dark cycle and were allowed unrestricted access to food and water. All experimental procedures followed the guidelines set by the Canadian Council of Animal Care and received approval from the Animal Care and Use Committee (ACUC) of the University of Alberta (AUP#461).Surgical PreparationPrior to the experiment, the rats were initially anesthetized using 5% isoflurane in air for induction, followed by 1-3% isoflurane for maintaining a surgical plane of anesthesia. During this time, we cannulated the femoral vein to facilitate the gradual administration of urethane (1.5-1.7 g/kg body weight) for inducing permanent and irreversible anesthesia. We assessed the depth of anesthesia by monitoring the absence of the withdrawal reflex. We cannulated the trachea and used a flow head connected to a transducer (DP10310N154D, GM Instruments, UK) to detect respiratory flow using a carrier demodulator (CD15, Validyne Engineering, CA, US). We provided supplemental oxygen (30%) throughout the experiment and connected a gas analyzer (ML 206-1704, ADInstruments, CO, US) to the tracheal tube. The gas analyzer measured fractional concentration of O2. Based on this and the flow rate at the level of the trachea (minute ventilation), we calculated O2 consumption according to Depocas and Hart (1957). Paired elect
+
+## Target venue
+eLife

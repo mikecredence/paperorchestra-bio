@@ -1,0 +1,24 @@
+# Idea Summary: Modulation of alpha oscillations by attention is predicted by hemispheric asymmetry of subcortical regions
+
+## Working title
+Modulation of alpha oscillations by attention is predicted by hemispheric asymmetry of subcortical regions
+
+## Core question
+AbstractEvidence suggests that subcortical structures play a role in high-level cognitive functions such as the allocation of spatial attention. While there is abundant evidence in humans for posterior alpha band oscillations being modulated by spatial attention, little is known about how subcortical regions contribute to these oscillatory modulations, particularly under varying conditions of cognitive challenge. In this study, we combined MEG and structural MRI data to investigate the role of s
+
+## Motivation / gap
+- IntroductionThe visual world provides more sensory information than we can be aware of at any given moment.
+- Thus, our brains must prioritise goal-relevant over distracting information.
+- A rich body of research shows that the brain amplifies goal-relevant inputs, and suppresses non-relevant inputs by a process referred to as selective attention (1–3).
+- There is ample evidence for top-down control of neocortical regions associated with sensory processing when information is prioritized (1,4,5).
+- The dorsal attention network, which consists of the intraparietal sulcus/superior parietal lobule, and the frontal eye fields, is the most predominant network associated with the allocation of attenti
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractEvidence suggests that subcortical structures play a role in high-level cognitive functions such as the allocation of spatial attention. While there is abundant evidence in humans for posterior alpha band oscillations being modulated by spatial attention, little is known about how subcortical regions contribute to these oscillatory modulations, particularly under varying conditions of cognitive challenge. In this study, we combined MEG and structural MRI data to investigate the role of subcortical structures in controlling the allocation of attentional resources by employing a cued spatial attention paradigm with varying levels of perceptual load. We asked whether hemispheric lateralization of volumetric measures of the thalamus and basal ganglia predicted the hemispheric modulation of alpha-band power. Lateral asymmetry of the globus pallidus, caudate nucleus, and thalamus predicted attention-related modulations of posterior alpha oscillations. When the perceptual load was applied to the target and the distractor was salient caudate nucleus asymmetry predicted alpha-band modulations. Globus Pallidus was predictive of alpha-band modulations when either the target had a high load, or the distractor was salient, but not both. Finally, the asymmetry of the thalamus predicted alpha band modulation when neither component of the task was perceptually demanding. In addition to delivering new insight into the subcortical circuity controlling alpha oscillations with spatial attention, our finding might also have clinical applications. We provide a framework that could be followed for detecting how structural changes in subcortical regions that are associated with neurological disorders can be reflected in the modulation of oscillatory brain activity.
+
+## Method in brief
+Methods and MaterialsParticipantsWe analysed a previously collected dataset, described in (24). 35 right-handed healthy volunteers (25 female, mean age: 24 ± 5.7) participated. All reported normal or corrected-to-normal vision. One participant did not give consent for their data to be used outside of the original study and one was removed due to poor MRI [segmentation] quality, resulting in 33 participants in total. All subjects signed an informed consent form before participation and were paid £15 per hour. The study was conducted in compliance with the Declaration of Helsinki and was approved by the Science, Technology, Engineering, and Mathematics (STEM) ethical review committee of the University of Birmingham.Experimental designParticipants were instructed to perform a cued change detection task (2 blocks of 256 trials, 45 minutes; Fig 1A), designed to assess selective attention function under varying conditions of perceptual challenge. Each trial started with a fixation point (1000ms) followed by two faces presented on the left and right side of the screen (1000ms). The fixation cross then turned into an arrowhead for 350ms cueing the left or the right hemifield. After a variable 1000 to 2000ms delay, the eye-gaze of each face randomly shifted rightward or leftward in a 150 ms interval. Then followed a 1000 ms response interval where participants were asked to respond with their right or left index finger whether the gaze direction of the cued face shifted left or right 
+
+## Target venue
+eLife

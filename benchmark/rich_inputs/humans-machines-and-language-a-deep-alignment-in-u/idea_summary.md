@@ -1,0 +1,21 @@
+# Idea Summary: Finding structure during incremental speech comprehension
+
+## Working title
+Finding structure during incremental speech comprehension
+
+## Core question
+AbstractA core aspect of human speech comprehension is the ability to incrementally integrate consecutive words into a structured and coherent interpretation, aligning with the speaker’s intended meaning. This rapid process is subject to multi-dimensional probabilistic constraints, including both linguistic knowledge and non-linguistic information within specific contexts, and it is their interpretative coherence that drives successful comprehension. To study the neural substrates of this proces
+
+## Motivation / gap
+- IntroductionHuman speech comprehension involves a complex set of processes that transform an auditory input into the speaker’s intended meaning, wherein each word is sequentially recognized and integr
+- Crucially, rather than simple linear concatenation, individual words are combined according to the nonlinear and often discontinuous structure embedded in an utterance as it is delivered over time (Ev
+
+## Core contribution (bullet form)
+Extracted from abstract:
+AbstractA core aspect of human speech comprehension is the ability to incrementally integrate consecutive words into a structured and coherent interpretation, aligning with the speaker’s intended meaning. This rapid process is subject to multi-dimensional probabilistic constraints, including both linguistic knowledge and non-linguistic information within specific contexts, and it is their interpretative coherence that drives successful comprehension. To study the neural substrates of this process, we extract word-by-word measures of sentential structure from BERT, a deep language model, which effectively approximates the coherent outcomes of the dynamic interplay among various types of constraints. Using representational similarity analysis, we tested BERT parse depths and relevant corpus-based measures against the spatiotemporally resolved brain activity recorded by electro/magnetoencephalography when participants were listening to the same sentences. Our results provide a detailed picture of the neurobiological processes involved in the incremental construction of structured interpretations. These findings show when and where coherent interpretations emerge through the evaluation and integration of multifaceted constraints in the brain, which engages bilateral brain regions extending beyond the classical fronto-temporal language system. Furthermore, this study provides empirical evidence supporting the use artificial neural networks as computational models for revealing the neural dynamics underpinning complex cognitive processes in the brain.
+
+## Method in brief
+Materials and MethodsParticipantsSeventeen right-handed native British English speakers participated in this study and provided written consent. One participant was excluded from subsequent analysis due to sleepiness during EMEG scanning, the other sixteen participants were included in the following analyses (aged between 19 and 38 years, 26.5 years on average; 7 females). All participants had normal hearing, and none had any pre-existing neurological condition or mental health issues. This study was approved by the Cambridge Psychology Research Ethics Committee.StimuliWe constructed 60 sets of six spoken sentences (360 in total) with varying sentential structures. As shown in the example sentence set (Appendix 1-table 3), unambiguous (UNA), high transitivity (HiTrans) and low transitivity (LoTrans) sentences contain a long-distance dependency between the subject noun and the main verb introduced by a full or reduced relative clause inserted in between. Whereas there is no long-distance dependency in the sentences of passive (PAS) and two direct object (DO1 and DO2) conditions.Unlike the first verb (Verb1) in the UNA sentences which is unambiguously interpreted as the head of a relative clause, Verb1 in both HiTrans and LoTrans sentences can also be considered alternatively as the “main verb” before the actual main verb (e.g., was covered in the example set in Appendix 1-table 3) was heard. By varying the nature of Verb1 in the reduced relative clause (e.g., found/walked), we
+
+## Target venue
+eLife

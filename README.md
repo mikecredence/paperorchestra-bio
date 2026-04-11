@@ -10,23 +10,35 @@ A multi-agent pipeline for automated biomedical research paper writing, inspired
 - **Anti-leakage protocol**: Prevents content generation from pre-training memory
 - **Score-tracked refinement**: 0-100 scoring on 6 axes with filesystem rollback
 - **Citation audit**: Automated orphan detection and coverage enforcement (>=90% target)
-- **BiomedWritingBench**: Benchmark of 60 test cases across 10 biomedical subfields with full 2x2 factorial evaluation
+- **BiomedWritingBench**: 143 test cases across 10 biomedical subfields with full 3x2 factorial evaluation (110 generated papers, 6 conditions)
 
-## Key Finding
+## Key Findings
 
-A 2x2 factorial experiment (Pipeline x Input Richness, n=15 paired papers) reveals that **pipeline and input quality are synergistic**:
+A 3x2 factorial experiment (Pipeline x Input Type, 110 papers across 6 conditions) reveals:
 
-```
-                    Abstract Input    Full-Text Input
-Baseline:           80.2              80.9  (+0.7)
-Skill Pipeline:     80.7  (+0.5)     84.3  (+3.4)
-```
+### Overall Quality (LLM-as-Judge, 0-100)
 
-- The pipeline alone adds little with sparse inputs (+0.5)
-- Rich inputs alone add little without the pipeline (+0.7)
-- **Combined, they add +4.1 points** — the pipeline amplifies the value of rich inputs
-- Skill+FullText wins 9/15 papers (60%) on overall quality
-- Biggest gains in substance: rigor (+6.6), completeness (+4.2), citations (+4.4)
+| Condition | Baseline | Skill Pipeline | Delta | p-value |
+|-----------|----------|---------------|-------|---------|
+| Abstract inputs (n=20) | 80.2 | 81.5 | +1.2 | n.s. |
+| XML full-text (n=15) | 80.9 | 84.3 | +3.3 | p=0.002** |
+| v2 LLM-structured (n=20) | 70.5 | 81.0 | +10.5 | p<0.001*** |
+
+### Structural Metrics
+
+| Condition | Skill Citations | Skill Tables | Baseline Citations | Baseline Tables |
+|-----------|----------------|-------------|-------------------|----------------|
+| Abstract | 22.5 | 4.0 | 12.1 | 3.8 |
+| XML full-text | 29.0 | 1.6 | 19.7 | 0.0 |
+| v2 LLM-structured | 22.2 | 9.8 | 8.3 | 0.1 |
+
+### Key insights
+
+- **Pipeline + structured inputs are synergistic**: +10.3 interaction effect for v2 inputs
+- The skill pipeline wins **20/20 papers** with v2 structured inputs (p<0.001 on every axis)
+- The baseline collapses with v2 inputs (presentation: 55.0) while the skill thrives (76.8)
+- The skill pipeline normalizes quality: 81-84 overall regardless of input type
+- Compilation rate: 98.4% across all 6 conditions (123/125 papers)
 
 ## Pipeline
 
@@ -107,33 +119,36 @@ uv add requests matplotlib numpy seaborn
     academic_plots.py               # Publication-quality figure utilities
 
 benchmark/
-  README.md                         # BiomedWritingBench design
+  README.md                         # BiomedWritingBench design + results
   schema.json                       # Entry schema (JSON Schema)
-  corpus_candidates.json            # 25 candidates across 6 subfields
+  benchmark_run_20.json             # 20 papers for original evaluation
+  benchmark_run_v2.json             # 20 papers for v2 evaluation
   scripts/
+    final_analysis.py               # 3x2 factorial analysis + Wilcoxon tests
+    fix_and_compile.py              # LaTeX compilation across all conditions
+    quick_metrics.py                # Structural metrics summary
     citation_f1.py                  # Citation precision/recall/F1
     llm_judge.py                    # Claude API side-by-side evaluation
-  test-cases/
-    dna-foundation-models/          # Nature Comms benchmark paper
-    spatial-transcriptomics/        # Nature Comms platform comparison
-    nanopore-variant-calling/       # eLife variant calling benchmark
+  test-cases/                       # 143 test cases across 10 subfields
+  results/                          # 110+ generated papers across 6 conditions
+  ground_truth/                     # Published paper metadata for comparison
 ```
 
 ## BiomedWritingBench
 
-A benchmark corpus for evaluating automated biomedical paper writing, analogous to PaperOrchestra's PaperWritingBench but focused on life sciences. Each test case contains reverse-engineered inputs from published bioRxiv preprints.
+A benchmark for evaluating automated biomedical paper writing (143 test cases, 10 subfields, 110+ generated papers). See [`benchmark/README.md`](benchmark/README.md) for full details.
 
-| Test Case | Venue | Subfield | Status |
-|-----------|-------|----------|--------|
-| DNA Foundation Models | Nature Comms | Computational biology | Full pipeline tested |
-| Spatial Transcriptomics | Nature Comms | Spatial genomics | Inputs ready |
-| Nanopore Variant Calling | eLife | Bioinformatics | Inputs ready |
+### 3x2 Factorial Design
 
-### Evaluation metrics
+- **Pipeline** (2 levels): Single agent baseline vs multi-agent skill pipeline
+- **Input type** (3 levels): Abstract-only, XML full-text, v2 LLM-structured
 
-- **Citation F1**: Precision/recall of generated vs ground truth citations
-- **LLM-as-judge**: Side-by-side scoring via Claude API (6 axes, 0-100)
-- **Citation audit**: Orphaned citations, coverage ratio, citation count
+### Evaluation
+
+- **LLM-as-Judge**: 7 axes (clarity, rigor, completeness, writing, presentation, citations, overall), scored 0-100
+- **Structural metrics**: Citation count, table count, word count, paper size
+- **Wilcoxon signed-rank tests**: Paired comparisons within each input type
+- **LaTeX compilation**: 98.4% success rate across all conditions
 
 ## Comparison to PaperOrchestra
 
@@ -146,7 +161,7 @@ A benchmark corpus for evaluating automated biomedical paper writing, analogous 
 | Citation audit | Orphan + coverage scripts | Orphan + coverage + dedup |
 | Cutoff enforcement | Yes | Yes |
 | Biomedical MCP tools | No | bioRxiv, ClinicalTrials, PubMed |
-| Benchmark corpus | 200 AI papers (CVPR/ICLR) | 25 biomedical candidates (Nature, eLife, etc.) |
+| Benchmark corpus | 200 AI papers (CVPR/ICLR) | 143 biomedical test cases (Nature, eLife, etc.) |
 
 ## References
 

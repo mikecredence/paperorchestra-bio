@@ -128,8 +128,16 @@ def compile_paper(tex_content: str, bib_path: Path | None) -> dict:
 
 # Main
 all_results = {}
-for condition in ["generated_paper", "baseline_paper"]:
-    label = "SKILL" if condition == "generated_paper" else "BASELINE"
+CONDITIONS = [
+    ("baseline_paper", "BASELINE (abstract)"),
+    ("generated_paper", "SKILL (abstract)"),
+    ("baseline_rich_paper", "BASELINE (XML)"),
+    ("rich_paper", "SKILL (XML)"),
+    ("baseline_v2_paper", "BASELINE (v2-LLM)"),
+    ("skill_v2_paper", "SKILL (v2-LLM)"),
+]
+
+for condition, label in CONDITIONS:
     compiled = 0
     total = 0
 
@@ -169,14 +177,16 @@ for condition in ["generated_paper", "baseline_paper"]:
 print(f"\n{'='*60}")
 print("FINAL COMPILATION RATES")
 print(f"{'='*60}")
-for cond, label in [("generated_paper", "Skill"), ("baseline_paper", "Baseline")]:
+for cond, label in CONDITIONS:
     papers = {k: v for k, v in all_results.items() if cond in k}
     ok = sum(1 for v in papers.values() if v["success"])
     n = len(papers)
+    if n == 0:
+        continue
     avg_pages = sum(v["pages"] for v in papers.values() if v["success"]) / max(ok, 1)
     avg_undef = sum(v.get("warnings", {}).get("undefined_citations", 0)
                     for v in papers.values() if v["success"]) / max(ok, 1)
-    print(f"  {label:12s}: {ok}/{n} ({ok/n*100:.0f}%), avg {avg_pages:.1f} pages, avg {avg_undef:.1f} undef cites")
+    print(f"  {label:25s}: {ok}/{n} ({ok/n*100:.0f}%), avg {avg_pages:.1f} pages, avg {avg_undef:.1f} undef cites")
 
 with open(results_dir / "compilation_results.json", "w") as f:
     json.dump(all_results, f, indent=2)

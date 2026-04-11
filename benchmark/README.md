@@ -4,7 +4,7 @@ A benchmark corpus for evaluating automated biomedical research paper writing,
 analogous to PaperOrchestra's [PaperWritingBench](https://arxiv.org/abs/2604.05018)
 but focused on life sciences.
 
-**Current status:** 63 test cases, 63/63 passing validation, across 10+ biomedical subfields.
+**Current status:** 143 test cases across 10 biomedical subfields. 110+ generated papers across 6 conditions. Full 3x2 factorial evaluation complete.
 
 ## Corpus Overview
 
@@ -30,18 +30,17 @@ benchmark/
 
 | Subfield | Test Cases | Example Papers |
 |----------|-----------|---------------|
-| Genomics / Single-Cell | 10 | Spatial clustering benchmark, GPT-4 cell annotation |
-| Bioinformatics | 10 | DNA foundation models, metagenomic classifiers |
-| Drug Discovery | 4 | DeepTernary, ScopeDTI, proteomic disease prediction |
-| Neuroscience (general) | 4 | Cortical development, osl-dynamics toolbox, brain SC-FC coupling |
-| Neuroscience (biological neural nets) | 3 | Drosophila connectome (FlyWire), mouse MICrONS, C. elegans synapses |
-| Immunology | 4 | Immune aging atlas, CAR-T humoral immunity |
-| Cancer Biology | 2 | EMT stem cells, tumor-retained state |
-| Structural Biology | 5 | Cryo-EM refinement, inflammasome inhibition |
-| Cell Biology | 6 | RNA Pol II inhibitor, histone deubiquitinase |
-| Epidemiology | 2 | Avian influenza migration, ectotherm life history |
-| Clinical | 1 | Nanopore metagenomics mock communities |
-| **Total** | **63** | |
+| Bioinformatics | 15+ | DNA foundation models, metagenomic classifiers, sRNAfrag |
+| Neuroscience | 15+ | Hippocampus-accumbens coding, synaptic event detection, speech decoding |
+| Genomics / Single-Cell | 10+ | Spatial clustering benchmark, GPT-4 cell annotation |
+| Immunology | 6+ | Immune aging atlas, inflammasome assembly, CAR-T |
+| Structural Biology | 5+ | Cryo-EM refinement, CryoTEN density maps |
+| Cell Biology | 6+ | RNA Pol II inhibitor, SUMO E3 ligase, lncRNA |
+| Cancer Biology | 4+ | EMT stem cells, disseminating cells, tumor heterogeneity |
+| Drug Discovery | 4+ | DeepTernary, ScopeDTI |
+| Epidemiology | 4+ | Population structure, avian influenza, life history |
+| Clinical | 1+ | Nanopore metagenomics mock communities |
+| **Total** | **143** | |
 
 ### Venues Represented
 
@@ -50,19 +49,78 @@ Nature Immunology, Nature (main), eLife, Genome Biology, Nucleic Acids Research,
 PLOS Computational Biology, Bioinformatics, BMC Bioinformatics, Briefings in
 Bioinformatics, Scientific Data, Cell Reports, Lancet Digital Health
 
+## Evaluation Results (3x2 Factorial)
+
+### Design
+
+- **Pipeline** (2 levels): Single agent baseline vs multi-agent skill pipeline
+- **Input type** (3 levels): Abstract-only, XML full-text (JATS), v2 LLM-structured (markdown tables)
+
+### Conditions and Generated Papers
+
+| Condition | Pipeline | Input | N papers |
+|-----------|----------|-------|----------|
+| `baseline_paper` | Single agent | Abstract | 20 |
+| `generated_paper` | Skill pipeline | Abstract | 20 |
+| `baseline_rich_paper` | Single agent | XML full-text | 15 |
+| `rich_paper` | Skill pipeline | XML full-text | 15 |
+| `baseline_v2_paper` | Single agent | v2 LLM-structured | 20 |
+| `skill_v2_paper` | Skill pipeline | v2 LLM-structured | 20 |
+
+### LLM-as-Judge Overall Quality (0-100)
+
+| Input Type | Baseline | Skill | Delta | p-value | Skill Wins |
+|------------|----------|-------|-------|---------|------------|
+| Abstract (n=20) | 80.2 | 81.5 | +1.2 | n.s. | 11/20 |
+| XML full-text (n=15) | 80.9 | 84.3 | +3.3 | 0.002** | 12/15 |
+| v2 LLM-structured (n=20) | 70.5 | 81.0 | +10.5 | <0.001*** | 20/20 |
+
+### Interaction Analysis
+
+```
+2x2: Abstract vs v2 LLM-Structured x Baseline vs Skill (n=15)
+  Abstract+Baseline:    80.2
+  Abstract+Skill:       80.7
+  v2-LLM+Baseline:      70.7
+  v2-LLM+Skill:         81.5
+  Pipeline effect:      +5.7
+  Input effect:         -4.4
+  Interaction:         +10.3 (synergistic)
+```
+
+The pipeline's advantage is largest with structured inputs: the baseline cannot handle
+markdown tables (presentation: 55.0), while the skill pipeline converts them into
+LaTeX tables effectively (presentation: 76.8, tables/paper: 9.8 vs 0.1).
+
+### Compilation Rates
+
+| Condition | Rate | Avg Pages |
+|-----------|------|-----------|
+| Baseline (abstract) | 100% | 6.5 |
+| Skill (abstract) | 90% | 8.2 |
+| Baseline (XML) | 100% | 5.9 |
+| Skill (XML) | 100% | 6.6 |
+| Baseline (v2-LLM) | 100% | 4.5 |
+| Skill (v2-LLM) | 100% | 8.8 |
+
 ## Pipeline Scripts
 
 All scripts in `benchmark/scripts/`. Use `uv run python benchmark/scripts/<script>.py`.
 
 | Script | Purpose |
 |--------|---------|
+| `final_analysis.py` | **3x2 factorial analysis** with Wilcoxon tests across all conditions |
+| `fix_and_compile.py` | LaTeX compilation for all 6 conditions with TinyTeX |
+| `quick_metrics.py` | Structural metrics for all conditions |
+| `compute_comparison.py` | Paired citation comparison |
+| `ground_truth_comparison.py` | Generated vs published papers |
+| `llm_extract.py` | Generate v2 LLM extraction prompts |
+| `overnight_run.py` | Batch JATS XML extraction from bioRxiv |
 | `config.py` | Shared paths, bioRxiv API helpers, rate limiter, venue mappings |
 | `discover_candidates.py` | Find new candidates via bioRxiv `/pubs/` API |
-| `extract_ground_truth.py` | Extract structured GT from abstracts (heuristic or Claude API) |
+| `extract_ground_truth.py` | Extract structured GT from abstracts |
 | `generate_test_case.py` | Reverse-engineer idea_summary + experimental_log |
 | `validate_schema.py` | JSON Schema + structural validation for all test cases |
-| `batch_runner.py` | Prepare prompts, collect metrics, show status |
-| `aggregate_results.py` | Compute per-subfield stats, generate tables and figures |
 | `citation_f1.py` | Citation precision / recall / F1 metric |
 | `llm_judge.py` | LLM-as-judge evaluation (side-by-side or absolute mode) |
 
@@ -195,11 +253,12 @@ See `schema.json` for the formal JSON Schema for `metadata.json`. Key fields:
 | Feature | PaperWritingBench | BiomedWritingBench |
 |---------|------------------|-------------------|
 | Domain | AI (CVPR/ICLR) | Biomedical (10+ subfields) |
-| Corpus size | 200 | 63 (target 100) |
+| Corpus size | 200 | 143 |
 | Source | Reverse-engineered from published papers | bioRxiv preprints → published journals |
 | Ground truth | Full paper text | Abstract + estimated metrics |
 | Venues | CVPR, ICLR | Nature, eLife, Genome Biology, etc. |
-| Evaluation | Human SxS + LLM judge + ScholarPeer | Citation F1 + LLM judge + structural |
+| Generated papers | N/A | 110+ across 6 conditions |
+| Evaluation | Human SxS + LLM judge + ScholarPeer | Citation F1 + LLM judge + structural + Wilcoxon |
 | Automation | Manual reverse-engineering | Semi-automated pipeline |
 | MCP integration | None | bioRxiv, ClinicalTrials, PubMed |
 
