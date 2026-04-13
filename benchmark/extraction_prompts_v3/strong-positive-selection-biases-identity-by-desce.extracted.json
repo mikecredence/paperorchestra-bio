@@ -1,0 +1,18 @@
+{
+  "statistical_sentences": [
+    "Among these isolates, 79.3%, 68.0%, and 46.1% isolates had at least 5x, 10x, and 25x coverage in >80% of the Pf genome, respectively (Fig. 1b).",
+    "The Fws statistic was estimated for each isolate to identify monoclonal versus polyclonal isolates, with 80% being classified as monoclonal isolates (Fws > 0.95) (Fig. 1c).",
+    "Among the polyclonal isolates, 44.3% harbored a predominant clone (defined in Online Methods), and the predominant haploid genome (Fig. 1d, with ratio<1.0) was included in the analyzable dataset.",
+    "Among WAF isolates that passed quality control, 50.7% were monoclonal, consistent with the higher multiplicity of infection (MOI) expected in a high malaria transmission setting 28.biorxiv;2023.07.14.549114v1/FIG1F1fig1Figure 1.Summary of Pf parasite isolates and WGS data for Pf from SEA.a, Distribution of sampling location and collection year for the 2,055 analyzable samples. b, Distribution of genome fractions covered by at least 5, 10, and 25 sequence reads of all parasite genomes from SEA. c, Distribution of Fws in sequenced isolates that passed quality control (genotype missingness filtering). d, Distribution of ratios of predominant genomes in sequenced isolates that passed quality control (determined by dEploid 49,50).Effects of positive selection on IBD distribution and IBD-based Ne inferenceEmpirical datasets sampled from a real Pf population often deviate from an ideal population due to various evolutionary factors, such as declining malaria incidence 1, parasite population structuring 7,8,51, selective sweeps 3,27,34, and asymmetrical gene flow or migration 6.",
+    "For results for different selection coefficients, see Fig. S6.Under the neutral scenario with a moderate migration rate (such as 0.01, corresponding to 1% of individuals in a subpopulation being migrants from adjacent subpopulations in each generation), within-population IBD sharing dominates the pairwise sharing heatmap (Fig. 3c [left panel], and d [black line]), the total population is highly modular 56,57 with respect to the true subpopulation labels (Fig. 3e [left bar]), and community-detection using the InfoMap clustering algorithm 57,58 captures the true population structure with high consistency (Fig. 3f [left panel]).However, with strong selection, both within- and between-population IBD sharing increases (Fig. 3c [middle panel]).",
+    "Given the high relatedness of parasite isolates in the full dataset (Fig. 4a), we focused on the unrelated isolates (n = 701).",
+    "The trajectories of Ne estimates are tightly overlapping with point estimates of pre-(Fig. 5a, blue) and post-segment removal (Fig. 5a, red) located within each other\u2019s 95% confidence intervals.",
+    "Using the same criterion for unrelated isolates as in the SEA dataset, we found that removing IBD peaks in the WAF dataset, resulted in larger estimates of Ne for the most recent generations with non-overlapping confidence intervals around 20 generations ago (Fig. 6a)."
+  ],
+  "methods_sentences": [
+    "The included isolates are distributed across 14 years and 18 provinces in four countries (Cambodia, Thailand, Laos, and Vietnam) (Fig. 1a).",
+    "Shorter IBD segments (0.2-2 cM) were included to cover the more distant past (>25 generations ago).",
+    "The representative results were generated using a selection coefficient, s, of 0.3, a selection starting time 80 generations ago, and a single origin of the favored allele introduced at the position of 33.3 cM of each chromosome."
+  ],
+  "table_count": 0
+}

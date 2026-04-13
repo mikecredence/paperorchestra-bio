@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{adjustbox}
+
+\title{Benchmarking DNA Foundation Models for Genomic and Genetic Tasks}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The rapid evolution of DNA foundation models promises to revolutionize genomics, yet comprehensive and unbiased evaluations remain scarce. Here, we present a systematic benchmark of five state-of-the-art DNA foundation language models---DNABERT-2, Nucleotide Transformer V2 (NT-v2), HyenaDNA, Caduceus-Ph, and GROVER---across 57 diverse datasets spanning sequence classification, gene expression prediction, variant effect quantification, and topologically associating domain (TAD) recognition. Using zero-shot embeddings with random forest classifiers, we demonstrate that mean token embedding consistently and significantly outperforms alternative pooling strategies, with average AUROC improvements of 1.4\% to 8.7\% depending on the model. Model performance varies substantially across tasks: Caduceus-Ph excels in human genome classification and transcription factor binding site prediction, DNABERT-2 in splice site identification, and NT-v2 in pathogenic variant detection (AUC 0.73, Cohen's $d$ 0.88), surprisingly outperforming specialized models like Enformer. For QTL prediction, specialized models such as AlphaGenome maintain clear advantages. A controlled pre-training experiment demonstrates that multi-species training data enhances cross-species generalizability. Our framework provides actionable guidance for model selection across genomic applications.
+\end{abstract}
+
+\section{Introduction}
+
+Foundation language models based on self-supervised pre-training have transformed natural language processing and are increasingly applied to biological sequences~\citep{achiam2023gpt4,touvron2023llama}. DNA foundation models extend this paradigm to genomic sequences, learning representations from large-scale genome datasets that can be applied to diverse downstream tasks. Several DNA foundation models have emerged recently, including DNABERT-2~\citep{zhou2024dnabert2}, Nucleotide Transformer V2~\citep{dallatorre2023nucleotide}, HyenaDNA~\citep{nguyen2024hyenadna}, Caduceus-Ph~\citep{schiff2024caduceus}, and GROVER~\citep{sanabria2024grover}, each with distinct architectures, tokenization strategies, and pre-training data.
+
+A critical challenge in evaluating these models is that most current benchmarks rely on fine-tuning, which introduces biases from hyperparameter choices, layer selection, and parameter-efficient methods. While a recent approach using frozen embeddings with appended convolutional networks partially mitigates this issue, it was limited in scope to a few human genome tasks. Furthermore, the comparative efficacy of different embedding pooling methods---summary token, mean token, and maximum pooling---remains understudied despite their potential impact on downstream performance.
+
+In this study, we provide a comprehensive and unbiased evaluation framework using zero-shot embeddings across 57 datasets organized into four categories: human genome region classification, multi-species genome region classification, human epigenetic trait classification, and multi-species epigenetic trait classification. Beyond classification, we assess gene expression prediction using GTEx v8 data, variant effect quantification for pathogenic variants and QTLs, and TAD region recognition through attention pattern analysis. We additionally conduct a controlled pre-training experiment comparing multi-species versus human-only training data.
+
+\section{Methods}
+
+\subsection{DNA Foundation Models}
+
+We evaluated five DNA foundation models with diverse architectures (Table~\ref{tab:models}). DNABERT-2 uses a BERT architecture with Attention with Linear Biases (ALiBi), pre-trained on 135 species using masked language modeling with Byte Pair Encoding tokenization (117M parameters, embedding dimension 768). NT-v2 is also BERT-based with rotary embeddings, pre-trained on 850 species using 6-mer tokenization (500M parameters, embedding dimension 1,024, max 12,000 nucleotides). HyenaDNA employs a decoder architecture with Hyena operators, pre-trained exclusively on the human reference genome with single-nucleotide tokenization (30M parameters, embedding dimension 256, max 1M nucleotides). Caduceus-Ph leverages MambaDNA with bi-directional modeling and reverse complement equivariance (35M parameters, embedding dimension 256, max 131K nucleotides). GROVER uses a 12-layer BERT encoder with BPE tokenization optimized over 600 cycles (117M parameters, embedding dimension 768, max $\sim$2,000 nucleotides).
+
+\begin{table}[htbp]
+\centering
+\caption{DNA foundation model architectures and specifications.}
+\label{tab:models}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccccc}
+\toprule
+Property & DNABERT-2 & NT-v2 & HyenaDNA & Caduceus-Ph & GROVER \\
+\midrule
+Architecture & BERT+ALiBi & BERT+Rotary & Hyena decoder & MambaDNA & BERT \\
+Parameters & 117M & 500M & 30M & 35M & 117M \\
+Embedding dim & 768 & 1,024 & 256 & 256 & 768 \\
+Pre-training species & 135 & 850 & Human only & N/A & Human only \\
+Max input (nt) & No hard limit & 12,000 & 1,000,000 & 131,000 & $\sim$2,000 \\
+Tokenization & BPE & 6-mers & Single nt & Single nt & BPE \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Benchmarking Datasets and Methods}
+
+We assembled 57 classification datasets (52 binary, 5 multi-class) spanning sequence lengths from 41 to approximately 2,000 bp, covering DNase-I hypersensitive site detection, methylation modification detection (5mC, 6mA, 4mC), promoter identification across multiple species, and genomic benchmark collections. For gene expression prediction, we used GTEx v8 whole blood data (610 subjects, 21,004 genes for short sequences; 768 genes for long sequences). Variant effect quantification used pathogenic versus common SNPs (22,239 pathogenic, 17,398 common for short sequences) and putative causal QTLs (1,896 eQTLs, 540 sQTLs, 116 ipaQTLs, 142 paQTLs).
+
+For classification, zero-shot embeddings from frozen models were used to train random forest classifiers, evaluated using AUROC. Statistical comparisons between models and pooling methods used one-sided DeLong's test with significance at $p < 0.01$. Gene expression prediction used random forest regression on covariate-corrected expression residuals, evaluated by Pearson correlation. Variant effect quantification employed nested cross-validation with 3 chromosome-based test sets.
+
+\section{Results}
+
+\subsection{Mean Token Embedding is the Optimal Pooling Strategy}
+
+We systematically evaluated three pooling methods across all 52 binary classification datasets. Mean token embedding consistently delivered superior performance, achieving statistically significant improvements over both summary-token and maximum pooling (DeLong's test, $p < 0.01$) in the majority of datasets for every model (Table~\ref{tab:pooling}).
+
+\begin{table}[htbp]
+\centering
+\caption{Average AUC improvement from summary-token to mean token embedding across 52 binary classification datasets, with interquartile ranges. Statistical superiority assessed by DeLong's test ($p < 0.01$).}
+\label{tab:pooling}
+\begin{tabular}{lccc}
+\toprule
+Model & Avg AUC increase (\%) & IQR & Datasets superior (of 52) \\
+\midrule
+DNABERT-2 & 4.0 & 2.0--5.5\% & 41 \\
+NT-v2 & 6.8 & 3.7--9.6\% & 42 \\
+HyenaDNA & 8.7 & 4.6--12.9\% & 35 \\
+Caduceus-Ph & 5.9 & 2.8--9.1\% & 37 \\
+GROVER & 1.4 & 0.7--1.9\% & 41 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Notably, the range of average AUC scores across models decreased from 0.708--0.799 with summary-token pooling to 0.795--0.822 with mean pooling, indicating that mean pooling also reduces inter-model performance differences. Individual task improvements were substantial: for example, DNABERT-2 improved from AUC 0.964 to 0.986 (2.3\% increase, $p < 0.01$) on GM12878 promoter identification, and HyenaDNA improved from 0.689 to 0.864 (25.4\% increase, $p < 0.01$) on \textit{B.~amyloliquefaciens} promoter identification.
+
+\subsection{Sequence Classification Performance}
+
+Using mean token pooling, all five models achieved AUC scores above 0.8 on the majority of human genome classification tasks. Selected results across key tasks are shown in Table~\ref{tab:human_class}.
+
+\begin{table}[htbp]
+\centering
+\caption{Selected AUC results for human genome classification tasks using mean token pooling. Bold indicates statistically significant superiority over at least two other models ($p < 0.01$, one-sided DeLong's test).}
+\label{tab:human_class}
+\begin{tabular}{lccccc}
+\toprule
+Task & DNABERT-2 & NT-v2 & HyenaDNA & Caduceus-Ph & GROVER \\
+\midrule
+Splice site donor & \textbf{0.906} & N/A & N/A & N/A & N/A \\
+Splice site acceptor & \textbf{0.897} & N/A & N/A & N/A & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For multi-species tasks (Table~\ref{tab:multi_class}), HyenaDNA demonstrated unexpected strength in Arabidopsis promoter identification despite being trained exclusively on human genomes. Caduceus-Ph and GROVER showed the strongest performance for human versus worm classification.
+
+\begin{table}[htbp]
+\centering
+\caption{Selected AUC results for multi-species genome classification tasks using mean token pooling. Bold indicates statistically significant superiority ($p < 0.01$, one-sided DeLong's test).}
+\label{tab:multi_class}
+\begin{tabular}{lccccc}
+\toprule
+Task & DNABERT-2 & NT-v2 & HyenaDNA & Caduceus-Ph & GROVER \\
+\midrule
+Arabidopsis TATA promoter & N/A & N/A & \textbf{0.961} & N/A & N/A \\
+Arabidopsis nonTATA promoter & N/A & N/A & \textbf{0.955} & N/A & N/A \\
+Human vs. Worm & N/A & N/A & N/A & \textbf{0.992} & 0.984 \\
+R. capsulatus promoter & N/A & N/A & N/A & N/A & \textbf{0.715} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For epigenetic modification tasks, AUC scores were typically 10--15\% lower than for functional genomic region tasks. Key results for human methylation detection are shown in Table~\ref{tab:epigenetic}.
+
+\begin{table}[htbp]
+\centering
+\caption{Selected AUC results for epigenetic modification detection using mean token pooling.}
+\label{tab:epigenetic}
+\begin{tabular}{lccccc}
+\toprule
+Task & DNABERT-2 & NT-v2 & HyenaDNA & Caduceus-Ph & GROVER \\
+\midrule
+Human 5mC & N/A & 0.738 & N/A & \textbf{0.783} & 0.744 \\
+A. thaliana 4mC & N/A & \textbf{0.633} & N/A & N/A & N/A \\
+C. elegans 4mC & N/A & \textbf{0.649} & N/A & N/A & N/A \\
+D. melanogaster 4mC & N/A & \textbf{0.652} & N/A & N/A & N/A \\
+E. coli 4mC & N/A & N/A & N/A & \textbf{0.628} & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Gene Expression Prediction}
+
+Gene expression prediction from zero-shot embeddings yielded modest average Pearson correlations of 0.114 to 0.123 across models using 6k bp input sequences (Table~\ref{tab:gene_expr}). Random forest regression significantly outperformed XGBoost (all $p < 0.001$). Among short-sequence models, Caduceus-Ph and HyenaDNA exhibited the highest average correlations. HyenaDNA-450K significantly outperformed Enformer ($p < 0.01$), and extending sequence length significantly improved HyenaDNA performance ($p < 0.001$) but not Caduceus-Ph.
+
+\begin{table}[htbp]
+\centering
+\caption{Gene expression prediction performance (GTEx v8 whole blood, 610 subjects). Short sequences: 6k bp, 21,004 genes. Long sequences: $\sim$196K bp, 768 genes.}
+\label{tab:gene_expr}
+\begin{tabular}{lcc}
+\toprule
+Model & Avg Pearson $r$ (6k bp) & Notes \\
+\midrule
+All short-sequence models & 0.114--0.123 & Range across 5 models \\
+CUTALP (top gene) & $>$0.89 & Consistent across all 5 models \\
+HyenaDNA-450K vs Enformer & N/A & $p < 0.01$ favoring HyenaDNA-450K \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The gene CUTALP was consistently the top-predicted gene across all five short-sequence models with correlations exceeding 0.89. Other consistently well-predicted genes included CPNE1, NT5C3B, DDX11, and PEX6.
+
+\subsection{Variant Effect Quantification}
+
+For pathogenic versus common SNP classification, NT-v2 emerged as the top performer with an average test AUC of 0.73 and Cohen's $d$ of 0.88, substantially outperforming Enformer (AUC 0.69, Cohen's $d$ 0.73) and other models (Table~\ref{tab:variant}).
+
+\begin{table}[htbp]
+\centering
+\caption{Pathogenic vs. common variant classification performance. Average test AUC and Cohen's $d$ across 3 independent chromosome-based test sets. Asterisk (*) denotes non-DNA foundation models. Dataset: 22,239 pathogenic, 17,398 common SNPs (short sequences).}
+\label{tab:variant}
+\begin{tabular}{lcc}
+\toprule
+Model & Avg Test AUC & Cohen's $d$ \\
+\midrule
+NT-v2 & \textbf{0.73} & \textbf{0.88} \\
+Caduceus-Ph & 0.70 & N/A \\
+Enformer* & 0.69 & 0.73 \\
+Caduceus-Ph (long) & 0.62 & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In contrast, for QTL prediction, specialized models dominated. AlphaGenome achieved the highest AUC across all four QTL types (AUC 0.80 for sQTLs, 0.86 for ipaQTLs). Enformer achieved AUC 0.77 for eQTLs compared to 0.65 for the best general foundation model (Caduceus-Ph).
+
+\subsection{Pre-Training Data Experiment}
+
+Re-pretraining HyenaDNA on multi-species data (135 species) yielded significant improvements in 14 of 49 datasets, while the original human-only model was superior in only 3. Specific gains included 5mC detection AUC increasing from 0.707 to 0.749 and human vs. worm classification from 0.968 to 0.984.
+
+\subsection{TAD Region Recognition}
+
+Analysis of NT-v2 attention patterns for 1,500 TAD-centered versus 1,500 background sequences revealed no evidence of inherent TAD boundary recognition in zero-shot attention patterns.
+
+\section{Discussion}
+
+Our comprehensive benchmark reveals several key insights for the DNA foundation model community. First, mean token embedding is clearly the optimal pooling strategy, consistently outperforming alternatives with improvements of 1.4--8.7\% and reducing inter-model performance variation. This finding has immediate practical implications for any downstream application of these models.
+
+Second, no single model dominates across all tasks. Caduceus-Ph excels in human genome classification and TFBS prediction, DNABERT-2 in splice site identification (AUC 0.906 and 0.897), and HyenaDNA in multi-class discrimination (accuracy 0.83 for regulatory region type). This task-dependent performance landscape suggests that model selection should be guided by the specific genomic question being addressed.
+
+Third, we observe a striking dichotomy in variant effect quantification. General-purpose foundation models, particularly NT-v2, excel at identifying pathogenic variants (AUC 0.73), outperforming even specialized models like Enformer. However, for QTL prediction, specialized models such as AlphaGenome~\citep{cheng2024alphagenome} and Enformer~\citep{avsec2021effective} maintain clear advantages. This suggests that foundation models learn a general ``grammar'' of DNA fitness but lack the context-dependent regulatory understanding that specialized training provides.
+
+Fourth, multi-species pre-training enhances generalizability. Our controlled experiment re-pretraining HyenaDNA on 135 species demonstrated improvements in 14 of 49 datasets, particularly for cross-species tasks, while human-only training retained advantages in only 3 datasets.
+
+Key limitations include reliance on curated, small-window datasets rather than genome-wide assays; the use of zero-shot embeddings only, which may underestimate fine-tuning potential especially for larger models like NT-v2 (500M parameters); and the inability to perform attention-based interpretability analyses on most model architectures.
+
+\section{Conclusion}
+
+We present a comprehensive benchmarking framework for DNA foundation models that evaluates five models across 57 classification datasets, gene expression prediction, variant effect quantification, and chromatin structure recognition. Our findings establish mean token embedding as the optimal pooling strategy, reveal task-specific model strengths, demonstrate the value of multi-species pre-training, and highlight a fundamental distinction between general sequence understanding and context-dependent regulatory prediction. These results provide practical guidance for researchers selecting models for specific genomic applications and identify key directions for future model development.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
