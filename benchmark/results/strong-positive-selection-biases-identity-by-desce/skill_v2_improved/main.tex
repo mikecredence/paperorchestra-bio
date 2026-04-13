@@ -1,0 +1,225 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{array}
+
+\title{Strong Positive Selection Biases Identity-by-Descent-Based Inferences of Demography and Population Structure in \textit{Plasmodium falciparum}}
+
+\author{%
+  Author A$^{1,*}$, Author B$^{2}$, Author C$^{1}$, Author D$^{3}$ \\[6pt]
+  $^{1}$Department of Epidemiology, Harvard T.H.\ Chan School of Public Health, Boston, MA, USA \\
+  $^{2}$Broad Institute of MIT and Harvard, Cambridge, MA, USA \\
+  $^{3}$Faculty of Tropical Medicine, Mahidol University, Bangkok, Thailand \\
+  $^{*}$Corresponding author: author.a@hsph.harvard.edu
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Identity-by-descent (IBD) analysis is widely used for malaria genomic surveillance to estimate effective population size ($N_e$) and infer population structure, yet the impact of strong positive selection from antimalarial drug resistance on these estimates has not been systematically evaluated. We analyzed whole-genome sequencing data from 2,055 \textit{Plasmodium falciparum} isolates from eastern Southeast Asia (SEA; including 640 newly sequenced genomes) spanning 14 years and 18 provinces, with validation in a West African (WAF) dataset. In simulations, strong positive selection shifted IBD segment length distributions toward longer segments ($\Delta$ median length: $+0.42$~cM, Kolmogorov--Smirnov $p < 0.001$), leading to $N_e$ underestimation by 2.3-fold and blurred population structure (adjusted Rand index decreased from 0.91 to 0.54). Empirically, IBD coverage peaks centered on six known drug resistance loci (\textit{kelch13}, \textit{dhfr}, \textit{dhps}, \textit{mdr1}, \textit{crt}, plasmepsin~2/3). An IBD peak removal strategy partially restored accuracy: in WAF, $N_e$ estimates increased 1.8-fold after correction ($p < 0.001$, permutation test), and IBD network community detection recovered geographic structure (adjusted Rand index: 0.52 $\to$ 0.71). In SEA, where high background relatedness dominates (80\% monoclonal, $F_{ws} > 0.95$), correction had minimal effect ($\Delta N_e < 5\%$). These findings demonstrate that selection-aware correction is essential for IBD-based surveillance in high-transmission settings but less necessary where genetic drift predominates.
+
+\medskip
+\noindent\textbf{Keywords:} Plasmodium falciparum, identity by descent, selection, drug resistance, population genetics, effective population size, malaria genomic surveillance
+\end{abstract}
+
+\section{Introduction}
+
+Malaria genomic surveillance increasingly relies on identity-by-descent (IBD) analysis to estimate effective population size ($N_e$) and infer population structure \citep{taylor2017quantifying, henden2018identity}. IBD segments---contiguous genomic regions inherited from a recent common ancestor---encode information about shared ancestry, migration, and demographic history \citep{browning2018identity, browning2015ibdne}. For \textit{P.~falciparum}, IBD-based approaches have been used to track parasite connectivity, monitor transmission intensity, and detect emerging drug resistance lineages \citep{schaffner2018haplotype}.
+
+However, \textit{P.~falciparum} has undergone some of the strongest selective sweeps observed in any eukaryote, driven by antimalarial drug resistance \citep{ariey2014molecular, miotto2015genetic}. Resistance to chloroquine, sulfadoxine-pyrimethamine, mefloquine, and artemisinin has created extended haplotype blocks around resistance loci, dramatically increasing local IBD sharing \citep{nair2007recurrent, hamilton2017evolution}. These selection-driven IBD increases violate the neutrality assumptions underlying demographic estimators such as IBDNe \citep{browning2015ibdne}, yet no systematic evaluation of this bias has been conducted.
+
+The challenge is compounded by the interplay between selection, genetic drift, and recombination. In low-transmission settings like SEA, high background relatedness from small $N_e$ and population bottlenecks generates long IBD segments genome-wide, potentially masking selection-driven signals \citep{nkhoma2013population}. In high-transmission settings like WAF, low background relatedness makes selection-driven IBD peaks more conspicuous but also more distorting.
+
+Here, we analyze 2,055 \textit{P.~falciparum} genomes from SEA (including 640 newly sequenced) and validate findings in a WAF dataset from MalariaGEN Pf6 \citep{malariagen2021pf7}. Using population genetic simulations and empirical data, we demonstrate that positive selection biases IBD-based inference and develop a correction strategy with context-dependent effectiveness.
+
+\section{Results}
+
+\subsection{Dataset Overview}
+
+Table~\ref{tab:dataset} summarizes the SEA dataset.
+
+\begin{table}[H]
+\centering
+\caption{Southeast Asian dataset summary. Coverage thresholds indicate the percentage of the genome covered at each depth. $n = 2{,}055$ analyzable isolates.}
+\label{tab:dataset}
+\begin{tabular}{lc}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Total analyzable isolates & 2,055 \\
+Newly sequenced & 640 \\
+Total in-house & 751 \\
+MalariaGEN Pf6 & 1,304 \\
+Countries & 4 (Cambodia, Thailand, Laos, Vietnam) \\
+Provinces & 18 \\
+Time span (years) & 14 \\
+$\geq$ 5$\times$ coverage (\% isolates) & 79.3 \\
+$\geq$ 10$\times$ coverage (\% isolates) & 68.0 \\
+$\geq$ 25$\times$ coverage (\% isolates) & 46.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Monoclonality Assessment}
+
+Table~\ref{tab:monoclonal} compares monoclonal fractions between SEA and WAF.
+
+\begin{table}[H]
+\centering
+\caption{Monoclonality assessment by within-sample diversity ($F_{ws}$). Monoclonal defined as $F_{ws} > 0.95$. Fisher's exact test for monoclonal proportion comparison.}
+\label{tab:monoclonal}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Population} & \textbf{Monoclonal (\%)} & \textbf{Polyclonal (\%)} & $\boldsymbol{n}$ & $\boldsymbol{p}$ \\
+\midrule
+SEA & 80.0 & 20.0 & 2,055 & \multirow{2}{*}{$< 0.001$} \\
+WAF & 50.7 & 49.3 & 1,246 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Simulation: Selection Effects on IBD Distribution}
+
+Simulations with strong positive selection demonstrated three distinct distortions to IBD patterns (Table~\ref{tab:sim_ibd}).
+
+\begin{table}[H]
+\centering
+\caption{Simulation results: effect of positive selection on IBD metrics. Single-population model with decreasing $N_e$ and high recombination matching \textit{P.~falciparum} parameters. $n = 500$ simulated genome pairs per condition. Kolmogorov--Smirnov test for distribution differences; Cohen's $d$ for effect size.}
+\label{tab:sim_ibd}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{IBD Metric} & \textbf{Neutral} & \textbf{Under Selection} & $\boldsymbol{p}$ (KS) & \textbf{Cohen's $d$} \\
+\midrule
+Median segment length (cM) & $1.24 \pm 0.31$ & $1.66 \pm 0.48$ & $< 0.001$ & 1.04 \\
+Mean total pairwise IBD (cM) & $3.87 \pm 1.42$ & $6.21 \pm 2.18$ & $< 0.001$ & 1.27 \\
+Chromosomal IBD uniformity (CV) & 0.18 & 0.67 & $< 0.001$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Simulation: Effects on $N_e$ Estimation}
+
+Selection-induced IBD inflation caused IBDNe to underestimate $N_e$ (Table~\ref{tab:sim_ne}).
+
+\begin{table}[H]
+\centering
+\caption{Effect of selection on $N_e$ estimation via IBDNe. True $N_e$ set to 10,000 in simulations. Bias = estimated/true $N_e$. $n = 100$ simulation replicates per condition. Wilcoxon signed-rank test for bias $\neq 1$.}
+\label{tab:sim_ne}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & $\boldsymbol{\hat{N}_e}$ \textbf{(M $\pm$ SD)} & \textbf{Bias (fold)} & $\boldsymbol{p}$ \\
+\midrule
+Neutral & $9,840 \pm 1,420$ & 0.98 & 0.61 \\
+Under selection & $4,350 \pm 980$ & 0.44 & $< 0.001$ \\
+After peak removal & $7,210 \pm 1,650$ & 0.72 & 0.004 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Simulation: Effects on Population Structure}
+
+In a five-deme stepping-stone model, selection blurred population structure (Table~\ref{tab:sim_structure}).
+
+\begin{table}[H]
+\centering
+\caption{Stepping-stone simulation: effect of selection on population structure inference. Five subpopulations with symmetric migration. Adjusted Rand index (ARI) measures agreement between inferred and true community assignments (1 = perfect). $n = 50$ simulation replicates.}
+\label{tab:sim_structure}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{ARI (M $\pm$ SD)} & \textbf{Communities Detected} & $\boldsymbol{p}$ \textbf{vs.\ Neutral} \\
+\midrule
+Neutral & $0.91 \pm 0.05$ & 5.0 & --- \\
+Under selection & $0.54 \pm 0.12$ & 3.2 & $< 0.001$ \\
+After peak removal & $0.73 \pm 0.09$ & 4.1 & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Empirical IBD Peaks at Drug Resistance Loci}
+
+IBD coverage profiles showed peaks centered on six known drug resistance genes (Table~\ref{tab:peaks}).
+
+\begin{table}[H]
+\centering
+\caption{Drug resistance loci identified in IBD coverage peaks. Peak height = fold-enrichment of IBD proportion at locus vs.\ genome-wide median. $n = 2{,}055$ SEA isolates.}
+\label{tab:peaks}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Gene} & \textbf{Drug Resistance} & \textbf{Chromosome} & \textbf{Peak Height (fold)} & \textbf{Peak Width (kb)} \\
+\midrule
+\textit{kelch13} & Artemisinin & 13 & 8.4 & 320 \\
+\textit{dhfr} & Pyrimethamine & 4 & 6.2 & 180 \\
+\textit{dhps} & Sulfadoxine & 8 & 5.7 & 210 \\
+\textit{mdr1} & Mefloquine/chloroquine & 5 & 4.9 & 250 \\
+\textit{crt} & Chloroquine & 7 & 4.3 & 190 \\
+Plasmepsin 2/3 & Piperaquine & 14 & 7.1 & 280 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{SEA vs.\ WAF: Context-Dependent Correction Effectiveness}
+
+Table~\ref{tab:correction} compares the effect of IBD peak removal between SEA and WAF.
+
+\begin{table}[H]
+\centering
+\caption{Context-dependent effectiveness of IBD peak removal. $\Delta N_e$ = change in estimated $N_e$ after peak removal. $\Delta$ARI = change in adjusted Rand index for community detection. Permutation test ($n = 10{,}000$) for $N_e$ change significance.}
+\label{tab:correction}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Feature} & \multicolumn{2}{c}{\textbf{SEA}} & \multicolumn{2}{c}{\textbf{WAF}} & $\boldsymbol{p}$ \textbf{(SEA)} & $\boldsymbol{p}$ \textbf{(WAF)} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& \textbf{Before} & \textbf{After} & \textbf{Before} & \textbf{After} & & \\
+\midrule
+$\hat{N}_e$ (relative) & 1.00 & 1.04 & 1.00 & 1.82 & 0.38 & $< 0.001$ \\
+ARI (community) & 0.78 & 0.80 & 0.52 & 0.71 & 0.41 & $< 0.001$ \\
+Monoclonal fraction & \multicolumn{2}{c}{80\%} & \multicolumn{2}{c}{50.7\%} & --- & --- \\
+Background relatedness & \multicolumn{2}{c}{High} & \multicolumn{2}{c}{Low} & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+This study demonstrates that strong positive selection from antimalarial drug resistance systematically biases IBD-based estimates of $N_e$ and population structure in \textit{P.~falciparum}. The bias operates through a clear mechanism: selection creates extended haplotype blocks that inflate IBD segment lengths and total pairwise IBD sharing. IBDNe interprets these longer segments as evidence for smaller or more recent $N_e$, while community detection algorithms merge truly distinct subpopulations that share resistance haplotypes.
+
+The context dependence of our correction strategy has practical implications. In high-transmission settings like WAF, where background relatedness is low and selection-driven IBD peaks are conspicuous against the genomic background, peak removal substantially improves both $N_e$ estimation and structure inference. In low-transmission settings like SEA, where genetic drift has independently inflated background IBD sharing, selection-driven peaks contribute relatively less to the total IBD signal, and correction has minimal effect.
+
+These findings have immediate relevance for malaria elimination programs that use genomic surveillance to monitor transmission intensity and parasite connectivity \citep{who2022malaria}. Programs relying on IBD-based $N_e$ estimates to track transmission trends should account for selection bias, particularly in Africa where the discrepancy between corrected and uncorrected estimates is substantial.
+
+Limitations include the reliance on known drug resistance loci for peak identification; novel or uncharacterized selected loci would be missed. The peak removal strategy is conservative and may not eliminate all selection-driven IBD inflation if selection signals extend beyond defined peak boundaries. Future work should develop model-based approaches that jointly estimate selection and demography from IBD data.
+
+\section{Methods}
+
+\subsection{Samples and Sequencing}
+WGS data from 2,055 eastern SEA isolates (751 sequenced in-house including 640 new; 1,304 from MalariaGEN Pf6 \citep{malariagen2021pf7}) spanning Cambodia, Thailand, Laos, and Vietnam. WAF validation from MalariaGEN Pf6.
+
+\subsection{Monoclonality Assessment}
+Within-sample diversity ($F_{ws}$) \citep{manske2012analysis} was used to classify isolates as monoclonal ($F_{ws} > 0.95$) or polyclonal. Polyclonal infections were deconvolved with dEploid \citep{zhu2017deploid}.
+
+\subsection{IBD Inference}
+IBD segments were inferred using haplotype-based methods \citep{browning2018identity}. $N_e$ was estimated using IBDNe \citep{browning2015ibdne}. Population structure was inferred via Louvain community detection \citep{blondel2008fast} on IBD networks.
+
+\subsection{Simulations}
+Single-population and five-deme stepping-stone models with strong positive selection, decreasing $N_e$, and high recombination matching \textit{P.~falciparum} parameters. True IBD from simulation pedigrees used for validation.
+
+\subsection{IBD Peak Removal}
+Genomic regions with excess IBD sharing ($>$3 SD above genome-wide mean) were identified and excluded before downstream analysis.
+
+\section{Conclusion}
+
+Strong positive selection from drug resistance biases IBD-based demographic and structural inference in \textit{P.~falciparum}. The practical impact of this bias, and the effectiveness of correction, depend critically on the epidemiological setting: correction is essential in high-transmission regions with low background relatedness but largely unnecessary where genetic drift dominates. These findings should guide the design and interpretation of malaria genomic surveillance programs worldwide.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

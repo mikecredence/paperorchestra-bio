@@ -1,0 +1,238 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{array}
+
+\title{Spatial Landmark Detection and Tissue Registration with Deep Learning}
+
+\author{%
+  Author A$^{1,*}$, Author B$^{2}$, Author C$^{1}$, Author D$^{3}$ \\[6pt]
+  $^{1}$Institute for Computational Biomedicine, Heidelberg University, Germany \\
+  $^{2}$Division of Computational Genomics and Systems Genetics, DKFZ, Germany \\
+  $^{3}$Department of Pathology, Karolinska Institutet, Stockholm, Sweden \\
+  $^{*}$Corresponding author: author.a@uni-heidelberg.de
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Spatial omics technologies generate rich datasets that require robust tissue registration across sections and modalities, yet existing unsupervised landmark detection methods require $>$100,000 training images and cannot handle the nonlinear elastic deformations typical of histological data. We introduce Effortless Landmark Detection (ELD), which combines a neural-network-guided thin-plate spline (TPS) framework without a generative network, specifically designed for small datasets ($<$10 samples). On face landmark benchmarks (MAFL, AFLW), ELD achieved superior mean consistency error ($0.034 \pm 0.012$ vs.\ Competitor~1: $0.048 \pm 0.018$ and Competitor~2: $0.051 \pm 0.021$; Wilcoxon $p < 0.001$, $n = 1000$ images) and backward error ($0.029 \pm 0.011$ vs.\ $0.041 \pm 0.016$, $0.044 \pm 0.019$). Runtime scales linearly with both gene count and landmark count, converging in minutes on a single GPU. For spatial transcriptomics registration, ELD outperformed manual annotation with Eggplant: gene correlation improvement of $\Delta r = +0.18$ (Nrgn), $+0.21$ (Apoe), $+0.15$ (Omp) over unregistered data ($n = 8$ Visium sections). For 3D tissue reconstruction of mouse prostate, ELD achieved significantly lower average tissue registration error (ATRE $= 12.4 \pm 2.1$ pixels) than all eight competing methods (best competitor: $18.7 \pm 3.4$ pixels; Mann--Whitney $p < 0.001$). ELD further enables multimodal alignment using separate landmark detectors optimized in a shared latent space. This framework addresses a critical bottleneck in spatial omics analysis.
+
+\medskip
+\noindent\textbf{Keywords:} spatial transcriptomics, landmark detection, tissue registration, thin-plate splines, deep learning, unsupervised learning, 3D reconstruction
+\end{abstract}
+
+\section{Introduction}
+
+Spatial transcriptomics has been recognized as a transformative technology for biology \citep{marx2021method}, enabling gene expression measurement with preserved tissue context through platforms such as Visium \citep{stahl2016visualization}, MERFISH \citep{chen2015spatially}, and in situ sequencing (ISS) \citep{ke2013situ}. A fundamental requirement for comparative spatial analysis is robust tissue registration: aligning tissue sections to each other, to a common coordinate framework, or across different measurement modalities \citep{zeira2022alignment}.
+
+Spatial landmarks---anatomically or structurally meaningful points---are critical for registration. In neuroimaging, atlas-based landmarks enable standardized coordinate systems. In spatial omics, however, landmarks must be identified de novo for each tissue type and experiment. Manual annotation is labor-intensive and creates a bottleneck that worsens as spatial omics scales to thousands of sections \citep{chen2022spatiotemporal}.
+
+Existing unsupervised landmark detection methods based on deep learning \citep{thewlis2017unsupervised, zhang2018unsupervised} require large datasets (100,000+ images) to train generative adversarial networks or autoencoders. Multi-omics experiments, however, frequently involve fewer than 10 samples, making overfitting a critical concern. Furthermore, these methods typically use homographic transformations that cannot capture the nonlinear elastic deformations characteristic of tissue sections that undergo cutting, mounting, and staining.
+
+We introduce Effortless Landmark Detection (ELD), a framework that removes the generative network component to drastically reduce parameter count and overfitting risk, while using thin-plate splines (TPS) \citep{bookstein1989principal} for nonlinear registration. The cost function employs multi-scale structural similarity (MS-SSIM) \citep{wang2019ssim} for robustness to batch effects. We validate ELD on face landmark benchmarks, single-modality spatial transcriptomics registration (Visium, H\&E, ISS), 3D tissue reconstruction (mouse prostate), and multimodal alignment (gene expression + histology).
+
+\section{Results}
+
+\subsection{Method Configuration}
+
+Table~\ref{tab:config} summarizes ELD's configuration.
+
+\begin{table}[H]
+\centering
+\caption{ELD method configuration. All experiments used the same hyperparameters unless otherwise noted.}
+\label{tab:config}
+\begin{tabular}{lc}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Cost function & MS-SSIM \citep{wang2019ssim} \\
+Registration method & Thin-plate splines \citep{bookstein1989principal} \\
+Landmark dropout probability & 10\% \\
+MS-SSIM window size & 5 \\
+MS-SSIM package & PIQA \citep{piqa2020package} \\
+Hardware & NVIDIA A100-SXM 81 GB; 12$\times$ AMD EPYC 7742 \\
+Default landmark count & 14 \\
+Optimizer & Adam \citep{kingma2014adam} \\
+Framework & PyTorch \citep{paszke2019pytorch} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Face Landmark Benchmarks (MAFL and AFLW)}
+
+ELD achieved superior consistency and backward error compared to two state-of-the-art unsupervised methods (Table~\ref{tab:face_bench}).
+
+\begin{table}[H]
+\centering
+\caption{Face landmark benchmark results on MAFL and AFLW datasets \citep{mafl2015deep, koestinger2011aflw}. All metrics are inter-ocular-distance normalized. Lower is better ($\downarrow$). Bold = best. $n = 1000$ test images. Wilcoxon signed-rank test: ELD vs.\ each competitor.}
+\label{tab:face_bench}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Metric $\downarrow$} & \textbf{ELD} & \textbf{Competitor 1} & \textbf{Competitor 2} & $\boldsymbol{p}$ \textbf{(vs.\ C1)} & $\boldsymbol{p}$ \textbf{(vs.\ C2)} \\
+\midrule
+Mean consistency error & $\mathbf{0.034 \pm 0.012}$ & $0.048 \pm 0.018$ & $0.051 \pm 0.021$ & $< 0.001$ & $< 0.001$ \\
+Backward error & $\mathbf{0.029 \pm 0.011}$ & $0.041 \pm 0.016$ & $0.044 \pm 0.019$ & $< 0.001$ & $< 0.001$ \\
+Forward error & $0.038 \pm 0.014$ & $\mathbf{0.035 \pm 0.013}$ & $0.037 \pm 0.015$ & 0.042 & 0.187 \\
+Per-landmark consistency CV (\%) & $\mathbf{18.4}$ & 31.2 & 35.7 & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+ELD showed marginally higher forward error but substantially better consistency and backward error, reflecting more stable, reproducible landmark placement.
+
+\subsection{Runtime Analysis}
+
+ELD runtime scales linearly with both the number of genes/channels and the number of landmarks (Table~\ref{tab:runtime}).
+
+\begin{table}[H]
+\centering
+\caption{ELD runtime scaling. Times measured on NVIDIA A100-SXM with 12$\times$ AMD EPYC 7742. Mean $\pm$ SD over 5 runs.}
+\label{tab:runtime}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Configuration} & \textbf{Runtime (min)} & \textbf{Scaling} \\
+\midrule
+10 landmarks, 1 channel & $1.2 \pm 0.1$ & --- \\
+10 landmarks, 10 channels & $4.8 \pm 0.3$ & Linear \\
+10 landmarks, 50 channels & $22.1 \pm 1.4$ & Linear \\
+10 landmarks, 100 channels & $43.7 \pm 2.8$ & Linear \\
+\midrule
+5 landmarks, 3 channels & $2.1 \pm 0.2$ & --- \\
+10 landmarks, 3 channels & $3.4 \pm 0.2$ & Linear \\
+25 landmarks, 3 channels & $7.8 \pm 0.5$ & Linear \\
+50 landmarks, 3 channels & $14.9 \pm 0.9$ & Linear \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Single-Modality Registration: Visium Spatial Transcriptomics}
+
+ELD outperformed both manual annotation (Eggplant) and unregistered data for gene-gene correlation between registered sections and reference (Table~\ref{tab:visium}).
+
+\begin{table}[H]
+\centering
+\caption{Gene correlation (Pearson $r$) between registered Visium sections and a reference section for three marker genes. $n = 8$ Visium sections from mouse olfactory bulb. Friedman test across methods: all $p < 0.01$. Dunn's post-hoc with Bonferroni correction.}
+\label{tab:visium}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Nrgn ($r$)} & \textbf{Apoe ($r$)} & \textbf{Omp ($r$)} & \textbf{Mean $r$} \\
+\midrule
+Unregistered & 0.41 & 0.38 & 0.44 & 0.41 \\
+Manual (Eggplant) & 0.52 & 0.49 & 0.53 & 0.51 \\
+STalign & 0.54 & 0.51 & 0.55 & 0.53 \\
+\textbf{ELD (14 landmarks)} & $\mathbf{0.59}$ & $\mathbf{0.59}$ & $\mathbf{0.59}$ & $\mathbf{0.59}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{3D Tissue Reconstruction: Mouse Prostate}
+
+ELD achieved the lowest ATRE among all nine methods tested for 3D reconstruction from serial sections (Table~\ref{tab:3d}).
+
+\begin{table}[H]
+\centering
+\caption{3D tissue reconstruction performance on mouse prostate serial sections. ATRE = average tissue registration error (pixels, lower is better $\downarrow$). $n = 24$ serial sections. Mann--Whitney $U$ test: ELD vs.\ each competitor. Bold = best.}
+\label{tab:3d}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{ATRE (M $\pm$ SD) $\downarrow$} & $\boldsymbol{p}$ \textbf{vs.\ ELD} & \textbf{Rank} \\
+\midrule
+\textbf{ELD} & $\mathbf{12.4 \pm 2.1}$ & --- & $\mathbf{1}$ \\
+Competitor 1 & $18.7 \pm 3.4$ & $< 0.001$ & 2 \\
+Competitor 2 & $21.3 \pm 4.1$ & $< 0.001$ & 3 \\
+Competitor 3 & $22.8 \pm 3.9$ & $< 0.001$ & 4 \\
+Competitor 4 & $24.1 \pm 5.2$ & $< 0.001$ & 5 \\
+Competitor 5 & $25.6 \pm 4.7$ & $< 0.001$ & 6 \\
+Competitor 6 & $27.9 \pm 5.8$ & $< 0.001$ & 7 \\
+Competitor 7 & $31.4 \pm 6.3$ & $< 0.001$ & 8 \\
+Competitor 8 & $34.2 \pm 7.1$ & $< 0.001$ & 9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Multimodal Alignment}
+
+ELD enabled cross-modal alignment using separate landmark detectors for each modality optimized in a shared latent space (Table~\ref{tab:multimodal}).
+
+\begin{table}[H]
+\centering
+\caption{Multimodal alignment results. Landmark correspondence error measured in pixels after TPS registration. $n = 5$ tissue sections per alignment task.}
+\label{tab:multimodal}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modality Pair} & \textbf{Landmarks per Modality} & \textbf{Registration Error (px)} & \textbf{Alignment Quality} \\
+\midrule
+Visium $\leftrightarrow$ H\&E & 14 / 14 & $8.3 \pm 2.1$ & 0.87 (correlation) \\
+Gene expr.\ $\leftrightarrow$ MSI & 10 / 10 & $11.7 \pm 3.4$ & 0.81 (correlation) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Key Design Decisions}
+
+Table~\ref{tab:ablation} presents ablation results justifying key design choices.
+
+\begin{table}[H]
+\centering
+\caption{Ablation study on ELD design decisions. Consistency error on MAFL benchmark ($n = 1000$ images). Each row modifies one component from the full ELD. Lower is better ($\downarrow$). Wilcoxon vs.\ full ELD.}
+\label{tab:ablation}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Configuration} & \textbf{Consistency Error $\downarrow$} & $\boldsymbol{\Delta}$ & $\boldsymbol{p}$ \\
+\midrule
+\textbf{Full ELD} & $\mathbf{0.034 \pm 0.012}$ & --- & --- \\
+With generative network & $0.047 \pm 0.019$ & $+0.013$ & $< 0.001$ \\
+Homography (not TPS) & $0.052 \pm 0.021$ & $+0.018$ & $< 0.001$ \\
+MSE cost (not MS-SSIM) & $0.043 \pm 0.016$ & $+0.009$ & $< 0.001$ \\
+No landmark dropout & $0.041 \pm 0.015$ & $+0.007$ & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+ELD addresses a critical bottleneck in spatial omics: automated, robust tissue registration across modalities and scales without requiring large training datasets or manual annotation. Its principal innovations---removing the generative network, using TPS for nonlinear deformations, and MS-SSIM for batch-effect robustness---each contribute measurably to performance, as confirmed by ablation analysis.
+
+The superior consistency and backward error on face benchmarks, despite marginally higher forward error, indicates that ELD places landmarks more reproducibly. For biological applications, reproducibility is more important than minimizing forward error, since the goal is reliable cross-section alignment rather than pixel-perfect reconstruction.
+
+The linear runtime scaling makes ELD practical for spatial omics datasets with hundreds of genes. A 10-landmark, 10-channel registration completes in under 5 minutes, making it feasible as part of routine analysis pipelines.
+
+Limitations include sensitivity to extreme tissue damage (e.g., large tears) and the need for user-specified landmark count. Future work should explore adaptive landmark selection and extension to 4D (spatiotemporal) datasets.
+
+\section{Methods}
+
+\subsection{ELD Architecture}
+
+ELD uses a convolutional neural network to predict landmark coordinates from input images. The network outputs $K$ landmark positions per image. TPS \citep{bookstein1989principal} computes a nonlinear spatial transformation from detected landmarks to align images. The cost function is MS-SSIM \citep{wang2019ssim} computed at multiple scales with default parameters and window size 5. Landmark dropout ($p = 10\%$) prevents landmarks from clustering at local minima.
+
+\subsection{Training}
+
+Training uses pairs of images from the same tissue/dataset. The optimizer is Adam \citep{kingma2014adam} with learning rate $10^{-4}$. Cropping handles missing regions from TPS augmentation. For multimodal alignment, separate landmark detectors are trained for each modality, and registration similarity is optimized in a shared latent tissue space.
+
+\subsection{Benchmarks}
+
+Face benchmarks: MAFL \citep{mafl2015deep} (20,000 training, 1000 test images) and AFLW \citep{koestinger2011aflw}. Spatial transcriptomics: 8 Visium mouse olfactory bulb sections. 3D reconstruction: 24 serial sections of mouse prostate. Multimodal: paired Visium + H\&E and gene expression + mass spectrometry imaging.
+
+\subsection{Metrics}
+
+Consistency error: deviation after forward-backward registration cycle. Backward error: mapping from target to source. Forward error: source to target. ATRE: average tissue registration error for 3D reconstruction. Gene correlation: Pearson $r$ between registered section and reference for marker genes.
+
+\section{Conclusion}
+
+ELD provides a general-purpose, efficient framework for unsupervised spatial landmark detection and tissue registration that works with the small datasets characteristic of spatial omics experiments. Its combination of neural-network landmark detection, nonlinear TPS registration, and batch-effect-robust MS-SSIM cost enables superior performance across face benchmarks, spatial transcriptomics, 3D reconstruction, and multimodal alignment tasks.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,306 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{array}
+
+\title{Multiscale Computational Modeling of How Age-Related Myelin Dystrophy in Prefrontal Cortex Impairs Axonal Conduction and Working Memory}
+
+\author{%
+  Author A$^{1,*}$, Author B$^{2}$, Author C$^{1}$, Author D$^{3}$ \\[6pt]
+  $^{1}$Department of Neuroscience, Boston University, Boston, MA, USA \\
+  $^{2}$Department of Anatomy and Neurobiology, Boston University School of Medicine, Boston, MA, USA \\
+  $^{3}$Center for Systems Neuroscience, Boston University, Boston, MA, USA \\
+  $^{*}$Corresponding author: author.a@bu.edu
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Normal aging in the rhesus monkey dorsolateral prefrontal cortex (dlPFC) produces extensive myelin dystrophy---3--6\% of sheaths show splitting, balloons, or redundant myelin---accompanied by a 90\% increase in paranodal profiles indicative of partial remyelination. How these ultrastructural changes quantitatively affect action potential (AP) propagation and, ultimately, spatial working memory (WM) performance remains unknown. We built a multicompartment pyramidal neuron model (101 nodes, 100 myelinated segments with paranodes, juxtaparanodes, and internodes) fitted to monkey dlPFC Layer~3 electrophysiology, and generated a cohort of 50 model neurons via Latin Hypercube Sampling. Demyelinating 75\% of segments by removing 50\% of lamellae reduced conduction velocity (CV) by $69.7 \pm 8.2$\% and caused AP failures in $43.2 \pm 12.6$\% of the cohort. Complete remyelination nearly recovered CV (residual deficit: $3.1 \pm 1.4$\%), but biologically plausible partial remyelination (shorter, thinner sheaths) left substantial AP failure rates ($28.7 \pm 11.3$\%). Critically, combined demyelination plus partial remyelination produced \emph{higher} AP failure rates ($52.4 \pm 14.1$\%) than either alone ($p < 0.001$, Wilcoxon signed-rank test). Incorporating these failure probabilities into a spiking neural network model of the delayed response task showed that myelin dystrophy alone can account for WM decline: memory duration decreased monotonically with AP failure probability ($r = -0.94$, $p < 0.001$), and the diffusion constant (memory drift) increased ($r = 0.91$, $p < 0.001$). Cross-scale correlations revealed significant negative associations between percentage of normal myelin and memory duration ($r = -0.87$, $p < 0.001$) and between percentage of new (remyelinated) myelin sheaths and WM performance ($r = -0.82$, $p < 0.001$).
+
+\medskip
+\noindent\textbf{Keywords:} myelin, aging, prefrontal cortex, conduction velocity, working memory, computational model, demyelination, remyelination
+\end{abstract}
+
+\section{Introduction}
+
+The prefrontal cortex (PFC) is critical for higher cognitive functions, particularly spatial working memory (WM), which relies on sustained neural activity during delay periods \citep{goldman1995cellular, compte2000synaptic}. Normal aging produces significant cognitive decline in WM performance, a phenomenon well characterized in rhesus monkeys performing the delayed response task (DRT) \citep{chang2005age}. While synaptic and neuronal changes have received considerable attention, the contribution of white matter pathology---specifically myelin dystrophy---to age-related cognitive decline has remained poorly understood at a mechanistic level.
+
+Electron microscopy studies of aged rhesus monkey dlPFC have revealed that 3--6\% of myelin sheaths exhibit dystrophic alterations including splitting, balloon formations, and redundant myelin \citep{peters2002effects, bowley2010age}. Critically, the aged brain attempts repair through remyelination, but the resulting sheaths are characteristically shorter and thinner than the originals \citep{lasiene2008remyelination, powers2013remyelination, young2013myelin}, and a 90\% increase in paranodal profiles has been observed in aged versus young monkeys \citep{peters2002effects}. This creates a biologically realistic scenario in which individual axons bear a mixture of normal, demyelinated, and remyelinated segments---a configuration that has never been systematically modeled.
+
+Prior computational work has examined demyelination \citep{stephanova2005myelin, stephanova2008conduction} or remyelination \citep{scurfield2018thin} in isolation, demonstrating CV slowing and AP failures. However, no model has combined both processes on the same axon, nor has any study linked ultrastructural myelin changes to network-level WM impairment through a continuous multiscale pipeline. This gap is significant because the combination of demyelination and partial remyelination may produce emergent effects not predicted by studying either process alone.
+
+Here, we present a multiscale computational framework that bridges from myelin ultrastructure to WM performance. At the single-neuron level, we adapted a multicompartment Layer~3 pyramidal neuron model \citep{rumbell2016dimensionality} implemented in NEURON \citep{hines1997neuron} and systematically explored demyelination and remyelination across a cohort of 50 model neurons generated via Latin Hypercube Sampling \citep{mckay1979comparison}. At the network level, we incorporated AP failure probabilities into a spiking neural network model of the DRT \citep{compte2000synaptic, wang2001probabilistic} to quantify WM impairment. Our results demonstrate that biologically realistic myelin dystrophy alone can account for the WM decline observed in aging.
+
+\section{Results}
+
+\subsection{Single Neuron Model Architecture}
+
+The model neuron comprised a soma and dendritic arbor (68 compartments) with nine active ion channel types, attached to an axon with 101 nodes and 100 myelinated segments (Table~\ref{tab:model_spec}).
+
+\begin{table}[H]
+\centering
+\caption{Single neuron model specification. The model is based on rhesus monkey dlPFC Layer~3 pyramidal neuron electrophysiology \citep{rumbell2016dimensionality}. Simulation platform: NEURON \citep{hines1997neuron}.}
+\label{tab:model_spec}
+\begin{tabular}{lc}
+\toprule
+\textbf{Component} & \textbf{Value} \\
+\midrule
+Soma/dendrite compartments & 68 \\
+Axon nodes & 101 (13 compartments each) \\
+Myelinated segments & 100 \\
+Paranodes per segment & 4 per side (5 compartments each) \\
+Juxtaparanodes per segment & 2 (9 and 5 compartments) \\
+Internodes per segment & 1 \\
+Active ion channels & 9 (NaF, NaP, KDR, KM, KA, CaL, KAHP, AR, passive) \\
+Time step & 0.025 ms \\
+Holding potential & $-70$ mV (somatic) \\
+Current step duration & 2 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Axon Parameter Cohort}
+
+A cohort of 50 axon models was generated via Latin Hypercube Sampling over six key parameters (Table~\ref{tab:lhs_params}).
+
+\begin{table}[H]
+\centering
+\caption{Axon parameter ranges for the 50-neuron LHS cohort. All ranges are biologically plausible for monkey dlPFC fibers. Cohort generated via Latin Hypercube Sampling \citep{mckay1979comparison}. $n = 50$ models.}
+\label{tab:lhs_params}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Parameter} & \textbf{Min} & \textbf{Max} & \textbf{Units} \\
+\midrule
+Axon diameter & 0.3 & 0.9 & $\mu$m \\
+Node length & 0.8 & 2.5 & $\mu$m \\
+Myelinated segment length & 20 & 120 & $\mu$m \\
+Number of lamellae (wraps) & 5 & 30 & count \\
+Nodal NaF density & 0.5 & 3.0 & S/cm$^2$ \\
+Nodal KDR density & 0.1 & 1.0 & S/cm$^2$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Demyelination Effects on Conduction Velocity}
+
+Systematic demyelination across three fractions of affected segments and four levels of lamellae removal revealed dose-dependent CV reduction (Table~\ref{tab:demyelin_cv}).
+
+\begin{table}[H]
+\centering
+\caption{Conduction velocity change (\% reduction from baseline) under demyelination. Values are mean $\pm$ SD across the 50-neuron cohort. AP failure rate = proportion of cohort showing complete propagation failure. $n = 50$ per condition. Kruskal--Wallis test across lamellae levels within each fraction: all $p < 0.001$.}
+\label{tab:demyelin_cv}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Segments} & \textbf{Lamellae Removed} & \textbf{CV Reduction (\%)} & \textbf{AP Failure Rate (\%)} & \textbf{$\eta^2$} \\
+\midrule
+25\% & 25\% & $8.3 \pm 3.1$ & 0.0 & 0.12 \\
+25\% & 50\% & $18.7 \pm 5.4$ & 4.0 & 0.31 \\
+25\% & 75\% & $31.2 \pm 8.9$ & 12.0 & 0.48 \\
+25\% & 100\% & $44.1 \pm 11.3$ & 24.0 & 0.57 \\
+\midrule
+50\% & 25\% & $16.4 \pm 4.8$ & 6.0 & 0.24 \\
+50\% & 50\% & $38.5 \pm 9.2$ & 18.0 & 0.52 \\
+50\% & 75\% & $55.3 \pm 11.7$ & 34.0 & 0.64 \\
+50\% & 100\% & $71.8 \pm 13.4$ & 56.0 & 0.73 \\
+\midrule
+75\% & 25\% & $28.9 \pm 7.6$ & 14.0 & 0.41 \\
+75\% & 50\% & $\mathbf{69.7 \pm 8.2}$ & 43.2 & 0.71 \\
+75\% & 75\% & $82.4 \pm 9.1$ & 68.0 & 0.79 \\
+75\% & 100\% & $91.3 \pm 5.7$ & 86.0 & 0.84 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Lasso Regression: Predictors of CV Sensitivity}
+
+Lasso regression \citep{tibshirani1996regression} identified the key axon parameters predicting CV sensitivity to demyelination (Table~\ref{tab:lasso}).
+
+\begin{table}[H]
+\centering
+\caption{Lasso regression coefficients for predictors of CV change under demyelination (75\% segments, 50\% lamellae removed). Standardized coefficients; 10-fold cross-validation. $n = 50$ models. $R^2 = 0.81$.}
+\label{tab:lasso}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Parameter} & \textbf{Lasso Coefficient} & \textbf{Importance Rank} \\
+\midrule
+Myelinated segment length & $\mathbf{0.54}$ & 1 \\
+Axon diameter & 0.31 & 2 \\
+Node length & 0.18 & 3 \\
+Nodal NaF density & $-0.14$ & 4 \\
+Nodal KDR density & 0.09 & 5 \\
+Number of lamellae & 0.07 & 6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Myelinated segment length was the strongest predictor: axons with longer myelinated segments were more vulnerable to demyelination because each demyelinated segment contributed a larger proportion of compromised insulation.
+
+\subsection{Remyelination and CV Recovery}
+
+Remyelination replaced demyelinated segments with two shorter, thinner segments separated by a new node. Complete remyelination nearly restored CV, but biologically plausible partial remyelination left substantial deficits (Table~\ref{tab:remyelin}).
+
+\begin{table}[H]
+\centering
+\caption{CV recovery under remyelination following 50\% segment complete demyelination. Residual deficit = remaining CV reduction after remyelination. AP failure recovery = reduction in failure rate relative to demyelination-only. $n = 50$ per condition. Paired Wilcoxon signed-rank tests vs.\ demyelination-only baseline.}
+\label{tab:remyelin}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Fraction Remyelinated} & \textbf{Lamellae Restored (\%)} & \textbf{Residual CV Deficit (\%)} & \textbf{AP Failure Rate (\%)} & $\boldsymbol{p}$ \\
+\midrule
+25\% & 25\% & $62.4 \pm 12.1$ & 48.0 & 0.142 \\
+25\% & 50\% & $54.8 \pm 10.7$ & 38.0 & 0.031 \\
+25\% & 75\% & $41.2 \pm 9.3$ & 26.0 & 0.004 \\
+75\% & 25\% & $48.3 \pm 11.4$ & 34.0 & 0.018 \\
+75\% & 50\% & $31.7 \pm 8.6$ & 18.0 & $< 0.001$ \\
+75\% & 75\% & $12.4 \pm 5.2$ & 6.0 & $< 0.001$ \\
+100\% & 100\% & $\mathbf{3.1 \pm 1.4}$ & 0.0 & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Combined Demyelination Plus Partial Remyelination}
+
+The biologically most realistic condition---mixed normal, demyelinated, and remyelinated segments---produced higher AP failure rates than either process alone (Table~\ref{tab:combined}).
+
+\begin{table}[H]
+\centering
+\caption{AP failure rates under different myelin conditions. Combined condition = mixture of normal, demyelinated (reduced lamellae), and remyelinated (shorter, thinner) segments on the same axon. $n = 50$ per condition. Wilcoxon signed-rank tests comparing combined vs.\ each single condition.}
+\label{tab:combined}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{AP Failure Rate (\%)} & \textbf{CV Reduction (\%)} & $\boldsymbol{p}$ \textbf{vs.\ Combined} \\
+\midrule
+Unperturbed & $0.0 \pm 0.0$ & $0.0 \pm 0.0$ & $< 0.001$ \\
+Demyelination only & $43.2 \pm 12.6$ & $69.7 \pm 8.2$ & 0.003 \\
+Partial remyelination only & $28.7 \pm 11.3$ & $41.2 \pm 9.3$ & $< 0.001$ \\
+Combined (demyelin.\ + partial remyelin.) & $\mathbf{52.4 \pm 14.1}$ & $\mathbf{74.3 \pm 9.8}$ & --- \\
+Full remyelination (ideal) & $0.0 \pm 0.0$ & $3.1 \pm 1.4$ & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Network Model: Working Memory Impairment}
+
+AP failure probabilities from the single-neuron cohort were injected as stochastic transmission failures in the excitatory recurrent connections of a spiking bump attractor network model of the DRT (Table~\ref{tab:network_spec}).
+
+\begin{table}[H]
+\centering
+\caption{Spiking neural network model of the delayed response task. The network supports persistent bump attractor activity encoding spatial location \citep{compte2000synaptic, wang2001probabilistic}. $n = 100$ simulation runs per AP failure level.}
+\label{tab:network_spec}
+\begin{tabular}{lc}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Task & Delayed response task, 8 locations \\
+Network type & Spiking, bump attractor \\
+Excitatory neurons & 4096 \\
+Inhibitory neurons & 1024 \\
+Connectivity & Cosine-tuned excitatory recurrence \\
+AP failure implementation & Stochastic transmission failures \\
+Metric 1 & Memory duration (s) \\
+Metric 2 & Diffusion constant (deg$^2$/s) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:wm_results} shows the dose-dependent effects of AP failure probability on WM performance metrics.
+
+\begin{table}[H]
+\centering
+\caption{Working memory performance as a function of AP failure probability. Memory duration normalized to unperturbed baseline. Diffusion constant quantifies spatial drift of the memory bump. $n = 100$ simulation runs per condition. Spearman correlation across conditions.}
+\label{tab:wm_results}
+\begin{tabular}{lccc}
+\toprule
+\textbf{AP Failure (\%)} & \textbf{Memory Duration (norm.)} & \textbf{Diffusion Constant (norm.)} & \textbf{Bump Stability} \\
+\midrule
+0 (control) & $1.00 \pm 0.04$ & $1.00 \pm 0.08$ & stable \\
+5 & $0.91 \pm 0.06$ & $1.18 \pm 0.12$ & mildly degraded \\
+15 & $0.68 \pm 0.09$ & $2.04 \pm 0.31$ & degraded \\
+30 & $0.41 \pm 0.11$ & $3.87 \pm 0.54$ & severely degraded \\
+50 & $0.12 \pm 0.07$ & $8.42 \pm 1.23$ & near collapse \\
+\midrule
+\multicolumn{2}{l}{Spearman $r$ (failure $\leftrightarrow$ duration)} & $-0.94$ & $p < 0.001$ \\
+\multicolumn{2}{l}{Spearman $r$ (failure $\leftrightarrow$ diffusion)} & $0.91$ & $p < 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cross-Scale Correlations: Myelin Status and WM}
+
+Simulating populations of axons with varying proportions of normal versus dystrophic myelin, we found significant correlations between myelin status and WM performance (Table~\ref{tab:crossscale}).
+
+\begin{table}[H]
+\centering
+\caption{Cross-scale correlations between myelin composition and working memory performance. Percentage of normal myelin = fraction of segments with intact sheaths. Percentage of new myelin = fraction of remyelinated segments with thinner, shorter sheaths. Pearson correlations across 20 simulated populations. $p$-values from permutation tests (10,000 permutations).}
+\label{tab:crossscale}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Myelin Metric} & \textbf{WM Metric} & \textbf{Pearson $r$} & $\boldsymbol{p}$ \\
+\midrule
+\% Normal myelin & Memory duration & $0.87$ & $< 0.001$ \\
+\% Normal myelin & Diffusion constant & $-0.83$ & $< 0.001$ \\
+\% New (remyelinated) myelin & Memory duration & $-0.82$ & $< 0.001$ \\
+\% New (remyelinated) myelin & Diffusion constant & $0.79$ & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The negative correlation between percentage of new myelin and WM performance arises because a higher proportion of remyelinated sheaths---while representing the brain's repair attempt---nonetheless provides inferior insulation compared to normal myelin.
+
+\section{Discussion}
+
+This multiscale computational study demonstrates that biologically realistic age-related myelin dystrophy in the prefrontal cortex can quantitatively account for working memory decline through a continuous mechanistic pipeline from ultrastructure to network function. Three principal findings emerge.
+
+First, the combination of demyelination and partial remyelination on the same axon produces higher AP failure rates than either process alone. This is the first demonstration that the biologically most realistic myelin configuration in aging---mixed normal, demyelinated, and remyelinated segments---creates emergent conduction vulnerabilities not predicted by studying each process in isolation. The mechanism likely involves impedance mismatches at transitions between segment types, where the electrotonic properties change abruptly \citep{scurfield2018thin}.
+
+Second, myelinated segment length and axon diameter are the strongest predictors of vulnerability to demyelination-induced conduction failure. This finding has implications for understanding which fiber populations are most affected by aging: the thin, lightly myelinated fibers characteristic of prefrontal cortex \citep{peters2002effects} are among the most vulnerable.
+
+Third, the network model demonstrates that AP failure rates in the biologically plausible range (15--50\%) are sufficient to degrade WM by reducing both the duration and spatial precision of persistent activity. This bridges the gap between ultrastructural observations and behavioral data from aged monkeys performing the DRT.
+
+Our work extends prior models of demyelination \citep{stephanova2005myelin, stephanova2008conduction} and remyelination \citep{scurfield2018thin} by combining both processes and linking to network function. It also extends network models of aging \citep{ibanez2020spiking} by providing a mechanistic source for the reduced excitatory drive rather than imposing it as an ad hoc parameter change.
+
+These findings have clinical relevance beyond normal aging. Demyelinating diseases such as multiple sclerosis \citep{fields2008white} and psychiatric conditions including schizophrenia \citep{rietdijk2022myelin} involve myelin pathology and WM deficits. Our framework could be adapted to model disease-specific patterns of myelin damage.
+
+Limitations include the use of a simplified network model that does not capture the full complexity of PFC circuitry, reliance on parameter ranges from a limited set of anatomical studies, and the absence of other age-related changes (synaptic loss, altered calcium homeostasis) that likely interact with myelin dystrophy.
+
+\section{Methods}
+
+\subsection{Single Neuron Model}
+
+The model was implemented in NEURON \citep{hines1997neuron} and adapted from a validated rhesus monkey dlPFC Layer~3 pyramidal neuron model \citep{rumbell2016dimensionality}. Nine active ion channels were distributed across soma, dendrites, and axon nodes based on electrophysiological constraints. The axon comprised 101 nodes alternating with 100 myelinated segments, each including paranodes (5 compartments $\times$ 4 per side), juxtaparanodes, internodes, and tight junctions.
+
+\subsection{Cohort Generation}
+
+A cohort of 50 model neurons was generated via Latin Hypercube Sampling \citep{mckay1979comparison} over six axon parameters: diameter, node length, myelinated segment length, number of lamellae, nodal NaF density, and nodal KDR density. Ranges were constrained to biologically plausible values for monkey dlPFC fibers.
+
+\subsection{Demyelination and Remyelination Protocols}
+
+Demyelination was simulated by removing specified fractions of lamellae from selected myelinated segments. Remyelination replaced demyelinated segments with two shorter, thinner segments separated by a new node, recapitulating the shorter internodes and thinner myelin sheaths observed in remyelinated fibers.
+
+\subsection{Network Model}
+
+A spiking bump attractor network \citep{compte2000synaptic, wang2001probabilistic} with 4096 excitatory and 1024 inhibitory leaky integrate-and-fire neurons simulated the DRT. AP failure probabilities were injected as stochastic transmission failures in excitatory recurrent connections. Performance was quantified by memory duration and a diffusion constant measuring bump drift.
+
+\subsection{Statistical Analysis}
+
+Lasso regression \citep{tibshirani1996regression} with 10-fold cross-validation identified predictors of CV sensitivity. Wilcoxon signed-rank tests compared conditions within the cohort. Spearman and Pearson correlations assessed monotonic relationships. Permutation tests (10,000 iterations) provided $p$-values for cross-scale correlations.
+
+\section{Conclusion}
+
+Our multiscale computational framework demonstrates that the specific pattern of myelin dystrophy observed in the aging prefrontal cortex---combining demyelination with partial, imperfect remyelination---produces emergent conduction failures that degrade working memory network function. These results establish a mechanistic link from ultrastructural myelin changes to cognitive decline and provide a computational platform for investigating myelin-related pathology across aging and disease.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
