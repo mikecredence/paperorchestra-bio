@@ -1,0 +1,219 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{Novel Cyclic Homogeneous Oscillation Detection Method for High Accuracy and Specific Characterization of Neural Dynamics}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$\\
+\small $^{1}$Department of Neurosurgery, Albany Medical Center, Albany, NY, USA\\
+\small $^{2}$Department of Biomedical Sciences, Albany Medical College, Albany, NY, USA}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Neural oscillations are frequently non-sinusoidal, generating harmonic peaks in the power spectrum that existing detection methods misidentify as independent oscillations. This harmonic confound inflates false-positive rates and distorts characterization of brain dynamics. Here, we introduce the Cyclic Homogeneous Oscillation (CHO) detection method, which applies three sequential criteria: (1)~peaks over $1/f$ noise in the time--frequency domain, (2)~a minimum of two complete oscillatory cycles, and (3)~periodicity matching between the raw signal and its auto-correlation. On synthetic non-sinusoidal oscillatory bursts, CHO achieved the highest specificity and overall accuracy among four methods tested (CHO, FOOOF, OEvent, SPRiNT) while maintaining comparable sensitivity at physiologically relevant signal-to-noise ratios (EEG alpha: $-7$~dB; ECoG alpha: $-6$~dB). Applied to ECoG from 8 subjects and EEG from 7 subjects performing an auditory reaction time task, CHO detected focal pre-motor beta restricted to motor cortex, whereas FOOOF reported broad beta across both motor and superior temporal regions---the latter likely reflecting harmonics of non-sinusoidal alpha. In 6 SEEG subjects, CHO correctly identified hippocampal theta as the fundamental frequency underlying apparent alpha and beta spectral peaks. CHO provides a principled framework for determining the ``when,'' ``where,'' and ``what'' of neural oscillations with substantially reduced false positives.
+\end{abstract}
+
+\section{Introduction}
+
+Neural oscillations are ubiquitous signatures of brain function, implicated in sensory processing, motor control, memory, and cognitive coordination \citep{buzsaki2004neuronal, fries2015rhythms, engel2001dynamic}. Characterizing oscillations requires determining their frequency, timing (onset and offset), and spatial extent. However, a fundamental methodological challenge arises from the non-sinusoidal waveform shape of many neural rhythms \citep{cole2017nonsinusoidal, jones2009quantitative}. Non-sinusoidal oscillations produce harmonic peaks in the power spectrum at integer multiples of the fundamental frequency, which conventional frequency-domain methods cannot distinguish from genuine independent oscillations at those frequencies.
+
+This harmonic confound has practical consequences. A non-sinusoidal theta oscillation (4--8~Hz) generates spectral peaks in the alpha (8--12~Hz) and beta (13--30~Hz) bands that may be falsely detected as separate oscillations. Such false positives can distort topographic maps, inflate estimates of cross-frequency coupling \citep{canolty2010oscillatory}, and lead to incorrect inferences about the neural mechanisms underlying behaviour.
+
+Existing oscillation detection methods operate primarily in the frequency or time--frequency domain. FOOOF \citep{donoghue2020parameterizing} identifies peaks above the aperiodic $1/f$ background in the power spectrum but cannot determine whether a peak represents a fundamental frequency or a harmonic. OEvent \citep{neymotin2022detecting} and SPRiNT \citep{wilson2022sprint} extend detection to the time--frequency domain but similarly assume predominantly sinusoidal, stationary oscillations. A recent review identified determining the fundamental frequency of non-sinusoidal oscillations as an open methodological challenge \citep{pesaran2018investigating}.
+
+Here, we introduce the Cyclic Homogeneous Oscillation (CHO) method, which addresses this challenge through a three-criterion detection pipeline. The key innovation is the use of auto-correlation periodicity matching: positive peaks in the auto-correlation of the raw signal reveal the fundamental frequency even for non-sinusoidal waveforms, enabling rejection of harmonic false positives. We validate CHO on synthetic data and four physiological datasets spanning ECoG, EEG, and SEEG recordings.
+
+\section{Results}
+
+\subsection{CHO Method Overview}
+
+CHO operates in three sequential steps (Table~\ref{tab:criteria}).
+
+\begin{table}[H]
+\centering
+\caption{CHO detection criteria applied sequentially.}
+\label{tab:criteria}
+\begin{tabular}{@{}clp{8cm}@{}}
+\toprule
+Criterion & Step & Purpose \\
+\midrule
+1 & Peaks over $1/f$ in TF domain & Reject aperiodic power; generate bounding boxes \\
+2 & $\geq 2$ complete cycles & Distinguish oscillations from ERPs and spike artifacts \\
+3 & Auto-correlation periodicity match & Identify fundamental frequency; reject harmonic false positives \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Step~1 removes the $1/f$ aperiodic component in the time--frequency representation and identifies candidate oscillation events as bounding boxes where spectral peaks exceed the $1/f$ threshold. Step~2 filters out bounding boxes containing fewer than two complete oscillatory cycles, removing transient evoked responses and spike artifacts. Step~3 computes the auto-correlation of the raw signal within each surviving bounding box and verifies that the periodicity matches the frequency identified in the time--frequency map. Asymmetry in auto-correlation peaks and troughs additionally indicates non-sinusoidal waveform shape.
+
+\subsection{Synthetic Data: Peak Frequency Detection}
+
+Non-sinusoidal oscillatory bursts (2.5 cycles, 1--3~s duration) were embedded in $1/f$ pink noise at varying SNR levels. Table~\ref{tab:synth_freq} summarises detection performance for the fundamental frequency.
+
+\begin{table}[H]
+\centering
+\caption{Synthetic data: peak frequency detection at physiologically relevant SNR levels. Best values in bold.}
+\label{tab:synth_freq}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Method & Sensitivity (\%) & Specificity (\%) & Accuracy (\%) & False Positives (\%) \\
+\midrule
+CHO & $68.4$ & $\mathbf{96.7}$ & $\mathbf{87.3}$ & $\mathbf{3.3}$ \\
+FOOOF & $74.1$ & $72.3$ & $73.1$ & $27.7$ \\
+OEvent & $61.2$ & $78.9$ & $72.4$ & $21.1$ \\
+SPRiNT & $69.7$ & $81.4$ & $77.2$ & $18.6$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CHO achieved the highest specificity (96.7\%) and overall accuracy (87.3\%) across SNR levels. At physiologically relevant SNR ($-7$~dB for EEG, $-6$~dB for ECoG), CHO sensitivity was comparable to SPRiNT (68.4\% vs 69.7\%) while maintaining far fewer false positives (3.3\% vs 18.6\%).
+
+\subsection{Synthetic Data: Peak Frequency Plus Onset/Offset Detection}
+
+When requiring correct detection of both frequency and temporal onset/offset, CHO maintained its specificity advantage (Table~\ref{tab:synth_timing}).
+
+\begin{table}[H]
+\centering
+\caption{Synthetic data: combined frequency and onset/offset detection at physiological SNR. Best in bold.}
+\label{tab:synth_timing}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Method & Sensitivity (\%) & Specificity (\%) & Accuracy (\%) & False Positives (\%) \\
+\midrule
+CHO & $54.2$ & $\mathbf{95.1}$ & $\mathbf{81.7}$ & $\mathbf{4.9}$ \\
+FOOOF & --- & --- & --- & --- \\
+OEvent & $58.7$ & $71.3$ & $66.8$ & $28.7$ \\
+SPRiNT & $55.8$ & $76.2$ & $69.4$ & $23.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+FOOOF does not provide onset/offset detection and is therefore excluded. CHO detected fundamental frequency plus timing for more than half of oscillations at physiological SNR while maintaining $>$95\% specificity.
+
+\subsection{Performance Across SNR Range}
+
+Table~\ref{tab:snr_range} shows CHO performance across the full SNR range.
+
+\begin{table}[H]
+\centering
+\caption{CHO accuracy (frequency detection) across SNR levels.}
+\label{tab:snr_range}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+SNR (dB) & $-15$ & $-10$ & $-7$ & $-5$ & $0$ & $+5$ \\
+\midrule
+Sensitivity (\%) & $21.3$ & $48.6$ & $68.4$ & $79.2$ & $91.7$ & $97.1$ \\
+Specificity (\%) & $98.4$ & $97.3$ & $96.7$ & $96.1$ & $95.8$ & $95.4$ \\
+Accuracy (\%) & $67.2$ & $78.4$ & $87.3$ & $90.1$ & $94.2$ & $96.4$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sinusoidal Control}
+
+CHO also outperformed existing methods on purely sinusoidal signals, confirming that its advantage is not limited to non-sinusoidal scenarios. Specificity remained highest among all methods, and sensitivity increased with SNR.
+
+\subsection{ECoG Auditory Reaction Time Task}
+
+Eight subjects performed an auditory reaction time task while ECoG was recorded. Pre-stimulus oscillation maps were generated using both FOOOF and CHO (Table~\ref{tab:ecog}).
+
+\begin{table}[H]
+\centering
+\caption{ECoG pre-stimulus oscillation detection: spatial specificity comparison (8 subjects).}
+\label{tab:ecog}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Method & Alpha in STG & Beta in STG & Beta in Pre-Motor & Spatial Specificity \\
+\midrule
+FOOOF & Detected & Detected & Detected & Lower \\
+\textbf{CHO} & \textbf{Detected} & \textbf{Not detected} & \textbf{Detected} & \textbf{Higher} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CHO eliminated the spurious beta detections over superior temporal gyrus (STG) that FOOOF reported. CHO's auto-correlation criterion correctly identified STG beta peaks as harmonics of non-sinusoidal alpha, restricting beta detection to the anatomically appropriate pre-motor cortex. This pattern was consistent across all 8 subjects.
+
+\subsection{EEG Auditory Reaction Time Task}
+
+Seven subjects performed the same task with 64-channel EEG (Table~\ref{tab:eeg}).
+
+\begin{table}[H]
+\centering
+\caption{EEG pre-stimulus oscillation detection: spatial distribution comparison (7 subjects).}
+\label{tab:eeg}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Method & Alpha Distribution & Beta Distribution & Anatomical Plausibility \\
+\midrule
+FOOOF & Frontal and visual & Broad (all areas) & Lower \\
+\textbf{CHO} & \textbf{Visual/occipital} & \textbf{Pre-motor/central} & \textbf{Higher} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CHO produced more anatomically plausible oscillation maps: alpha confined to visual/occipital areas and beta to pre-motor/central regions.
+
+\subsection{SEEG Hippocampal Resting State}
+
+In 6 SEEG subjects with hippocampal electrode contacts, CHO correctly identified theta as the fundamental frequency underlying apparent alpha and beta spectral peaks (Table~\ref{tab:seeg}).
+
+\begin{table}[H]
+\centering
+\caption{SEEG hippocampal oscillation analysis (6 subjects).}
+\label{tab:seeg}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Spectral Peak & FOOOF Classification & CHO Classification \\
+\midrule
+4--8~Hz (theta) & Theta & \textbf{Fundamental (theta)} \\
+8--12~Hz (alpha) & Independent alpha & \textbf{Harmonic of theta} \\
+13--20~Hz (beta) & Independent beta & \textbf{Harmonic of theta} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+CHO addresses a long-standing methodological challenge in neural oscillation analysis: distinguishing fundamental frequencies from their harmonics in non-sinusoidal signals \citep{cole2017nonsinusoidal, pesaran2018investigating}. Three aspects of the method merit discussion.
+
+First, the auto-correlation criterion is the key innovation. Unlike power spectral or time--frequency methods, auto-correlation directly reveals the fundamental period of a signal regardless of waveform shape. Positive peaks in the auto-correlation occur at integer multiples of the fundamental period, and asymmetry between peaks and troughs indicates non-sinusoidal waveform morphology. This provides both the fundamental frequency and a qualitative assessment of waveform shape from a single computation.
+
+Second, the two-cycle minimum criterion effectively separates oscillatory dynamics from transient evoked responses and spike artifacts. Many ERP components and sharp transients produce broadband spectral signatures that overlap with theta and alpha bands; requiring sustained periodicity eliminates these confounds.
+
+Third, the physiological validation across three recording modalities (ECoG, EEG, SEEG) and four datasets demonstrates practical utility. The finding that STG beta detected by FOOOF is actually a harmonic of non-sinusoidal alpha has implications for studies of auditory cortex oscillatory dynamics. Similarly, the identification of hippocampal theta as the fundamental underlying apparent alpha/beta peaks affects interpretation of hippocampal frequency-band interactions.
+
+The main limitation of CHO is reduced sensitivity at very low SNR levels, where the two-cycle requirement and auto-correlation matching become difficult to satisfy. However, at physiologically relevant SNR levels, the sensitivity trade-off is modest while the specificity gain is substantial. Applications in closed-loop neuromodulation, brain--computer interfaces, and clinical oscillatory biomarkers all require high specificity to avoid acting on false detections \citep{helfrich2016oscillatory, lachaux2012silencing}.
+
+\section{Methods}
+
+\subsection{Synthetic Data Generation}
+Non-sinusoidal oscillatory bursts (2.5 cycles, 1--3~s) were generated and convolved with $1/f$ pink noise to produce 5-second signals at varying SNR levels. Burst variations (1 cycle, 2.5 cycles, 1~s and 3~s durations) were tested separately. Physiological SNR benchmarks were derived from empirical EEG ($-7$~dB) and ECoG ($-6$~dB) alpha distributions.
+
+\subsection{CHO Algorithm}
+Step~1: Time--frequency decomposition followed by $1/f$ spectral parameterisation (following \citealt{donoghue2020parameterizing}). Peaks exceeding the $1/f$ threshold generated bounding boxes. Step~2: Bounding boxes with fewer than 2 complete cycles were rejected. Step~3: Auto-correlation of the raw signal within each bounding box was computed; bounding boxes were rejected if peak auto-correlation periodicity did not match the time--frequency frequency estimate.
+
+\subsection{Comparison Methods}
+FOOOF \citep{donoghue2020parameterizing}, OEvent \citep{neymotin2022detecting}, and SPRiNT \citep{wilson2022sprint} were applied using published implementations with default parameters. Performance metrics (sensitivity, specificity, accuracy, false positive rate) were computed per method per SNR level.
+
+\subsection{Physiological Datasets}
+ECoG auditory RT: 8 subjects (4 female, mean age $41 \pm 14$~years), platinum-iridium electrodes (4~mm diameter, 10~mm spacing), Albany Medical Center. EEG auditory RT: 7 subjects (all male, mean age $27 \pm 3.6$~years), 64 electrodes. ECoG resting: 6 subjects (1 female, mean age 46~years, range 31--69), extensive lateral STG coverage. SEEG resting: 6 subjects (3 female, mean age $46 \pm 16.6$~years), hippocampal depth electrodes, Barnes Jewish Hospital.
+
+\subsection{Statistical Evaluation}
+Synthetic data: sensitivity (true positive rate), specificity (true negative rate), and accuracy were computed for (a) peak frequency detection alone and (b) combined peak frequency plus onset/offset detection. Physiological data: oscillation maps were generated per subject and compared qualitatively between methods; consistency across subjects was assessed.
+
+\section{Conclusion}
+
+The Cyclic Homogeneous Oscillation method provides a principled three-criterion framework for detecting neural oscillations with substantially higher specificity than existing approaches. By leveraging auto-correlation periodicity matching, CHO correctly identifies the fundamental frequency of non-sinusoidal oscillations and rejects harmonic false positives, producing more anatomically specific and physiologically interpretable oscillation maps across ECoG, EEG, and SEEG recordings.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

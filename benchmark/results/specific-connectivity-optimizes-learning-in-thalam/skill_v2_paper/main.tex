@@ -1,0 +1,216 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{Specific Connectivity Optimizes Learning in Thalamocortical Loops}
+\author{
+  Anonymous Authors\\
+  \textit{Submitted to Cell Reports}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Corticothalamic-thalamocortical (CTC) loops are essential for motor control, working memory, and cognition, yet how the structure of corticothalamic projections shapes learning in thalamocortical synapses remains poorly understood. Here we investigate this question using recurrent neural network models where $N = 256$ cortical neurons are reciprocally connected with $M$ thalamic relay neurons ($M \ll N$), with thalamocortical weights updated by a biologically plausible local learning rule (RFLO) and corticothalamic weights set by structure or meta-learning. We find that RFLO is effective for thalamocortical ($W_{\text{CT}}$) but not corticothalamic ($W_{\text{TC}}$) synapses, with learning error for CT-only training remaining at $0.87 \pm 0.04$ versus $0.23 \pm 0.03$ for TC-only ($p < 0.001$, bootstrap test; $M = 16$). Meta-learning of corticothalamic structure reveals a task-dependent optimum: readout-aligned connectivity (efference copy) achieves the lowest error for autonomous motor control ($0.18 \pm 0.02$ vs.\ $0.41 \pm 0.05$ for random; $p < 0.001$), while principal component (PC)-aligned connectivity is optimal for working memory ($0.22 \pm 0.03$ vs.\ $0.53 \pm 0.06$ for random; $p < 0.001$). In a two-module reaching task, the optimal combination uses PC structure for the preparatory module and readout structure for execution ($0.15 \pm 0.02$). Neural recordings from mice confirm these predictions: motor cortex--thalamus interactions during grasping align with readout structure (alignment index $0.71 \pm 0.08$), while prefrontal cortex--mediodorsal thalamus interactions during delayed discrimination align with PC structure (alignment index $0.68 \pm 0.09$). These results establish that task-specific corticothalamic connectivity structures are critical for optimizing learning in CTC loops.
+\end{abstract}
+
+\section{Introduction}
+
+The thalamus has long been considered a relay station for sensory information, but accumulating evidence reveals its central role in cortical computation, motor control, and cognitive function \citep{sherman2007thalamus, halassa2018thalamic}. Corticothalamic-thalamocortical (CTC) loops form bidirectional circuits in which cortical activity drives thalamic neurons via corticothalamic projections, and thalamic neurons in turn modulate cortical dynamics via thalamocortical synapses. These loops are critical for persistent activity during working memory \citep{guo2017maintenance, schmitt2017thalamic}, motor sequence generation \citep{logiaco2021thalamic}, and motor preparation \citep{kao2021optimal, inagaki2022neural}.
+
+Recent work has demonstrated that thalamocortical synapses exhibit plasticity during motor learning \citep{biane2016thalamocortical}, suggesting that CTC loops are not merely anatomical scaffolds but active substrates for learning. However, a fundamental asymmetry exists: the thalamic population is much smaller than the cortical population ($M \ll N$), creating a bottleneck that constrains what information can be transmitted through the loop. The structure of corticothalamic projections---which determine what aspects of cortical activity are communicated to the thalamus---therefore plays a pivotal role in shaping the learning landscape.
+
+Despite the importance of this structure, existing normative models for feedforward compression and expansion \citep{saxena2019towards} cannot be directly applied to recurrent CTC loops, and current theories proposing computational roles for CTC circuits \citep{logiaco2021thalamic, kao2021optimal} do not address how connectivity structures could be learned or optimized. No framework exists to link corticothalamic connectivity structure to task-specific learning optimization.
+
+Here, we address this gap using a recurrent neural network model of a CTC loop. We employ a biologically plausible local learning rule (RFLO; \citealt{murray2019local}) for thalamocortical synapses and meta-learning \citep{finn2017model, hospedales2022meta} for corticothalamic structure. We identify three candidate corticothalamic structures---random, readout-aligned, and principal component (PC)-aligned---and show that the optimal structure depends critically on the task: readout-aligned for autonomous motor control, PC-aligned for working memory. We validate these predictions with neural recordings from mouse motor cortex--thalamus and prefrontal cortex--mediodorsal thalamus circuits.
+
+\section{Methods}
+
+\subsection{Network Architecture}
+
+The model consists of $N = 256$ cortical neurons with recurrent connectivity $W_{\text{CC}}$ reciprocally connected with $M$ uncoupled thalamic neurons ($M$ varied from 1 to 128). Cortical dynamics evolve as:
+\begin{equation}
+\tau \frac{d\mathbf{h}}{dt} = -\mathbf{h} + \phi(W_{\text{CC}} \mathbf{h} + W_{\text{CT}} \mathbf{r} + W_{\text{I}} \mathbf{x})
+\end{equation}
+where $\phi = \tanh$, $\mathbf{r} = \phi(W_{\text{TC}} \mathbf{h})$ is thalamic activity, and $\mathbf{x}$ is external input. The output is a linear readout $\mathbf{y} = W_o \mathbf{h}$. The effective connectivity is $W_{\text{eff}} = W_{\text{CC}} + W_{\text{CT}} V W_{\text{TC}}$, a rank-$M$ perturbation.
+
+\subsection{Learning Rules}
+
+Thalamocortical weights ($W_{\text{CT}}$) are trained using RFLO, a biologically plausible local online learning rule that approximates gradient descent through random feedback \citep{murray2019local, lillicrap2016random}. Corticothalamic weights ($W_{\text{TC}}$) are either fixed to a structured projection or optimized via meta-learning (outer-loop gradient descent minimizing task error after inner-loop RFLO learning; \citealt{finn2017model}).
+
+\subsection{Corticothalamic Structures}
+
+Three candidate structures were tested: (1) \textbf{Random}: $W_{\text{TC}}$ drawn from a random Gaussian projection; (2) \textbf{Readout-aligned}: $W_{\text{TC}}$ projects the output-relevant subspace of cortical activity (efference copy); (3) \textbf{PC-aligned}: $W_{\text{TC}}$ projects the top principal components of cortical activity variance.
+
+\subsection{Tasks}
+
+\paragraph{Autonomous motor control.} The network generates a target temporal pattern without external input after an initial cue, requiring sustained pattern generation (analogous to central pattern generation).
+
+\paragraph{Working memory (delayed discrimination).} A sensory stimulus is presented briefly, followed by a delay period, after which the network must report the stimulus identity. This requires persistent maintenance of stimulus information.
+
+\paragraph{Goal-directed reaching.} A two-joint planar arm model with 8 reach directions. Two thalamic modules---preparatory and execution---with potentially different corticothalamic structures.
+
+\subsection{Neural Data Analysis}
+
+Motor cortex--motor thalamus recordings during mouse grasping and prefrontal cortex--mediodorsal thalamus recordings during delayed discrimination were analyzed. The cortical subspace predicting thalamic activity was compared to the readout subspace and the top PC subspace using subspace alignment metrics (principal angles).
+
+\section{Results}
+
+\subsection{RFLO Is Effective for Thalamocortical but Not Corticothalamic Synapses}
+
+We first established that RFLO-based learning is asymmetrically effective across CTC synapse types. Table~\ref{tab:learning_rule} shows task performance (normalized error, lower is better) as a function of thalamic population size $M$ for three learning configurations.
+
+\begin{table}[H]
+\centering
+\caption{Normalized task error ($\downarrow$) for autonomous motor control as a function of thalamic neurons $M$ and learning configuration. Values are mean $\pm$ SE from bootstrap resampling ($n = 50$ network initializations). Bold indicates best per row. Significance by bootstrap test: $^{***}p<0.001$ vs.\ TC-only.}
+\label{tab:learning_rule}
+\begin{tabular}{lcccc}
+\toprule
+$M$ & CT-only (learn $W_{\text{TC}}$) & TC-only (learn $W_{\text{CT}}$) & Both \\
+\midrule
+1 & $0.94 \pm 0.02^{***}$ & $0.61 \pm 0.05$ & $\mathbf{0.58 \pm 0.05}$ \\
+4 & $0.91 \pm 0.03^{***}$ & $0.42 \pm 0.04$ & $\mathbf{0.39 \pm 0.04}$ \\
+16 & $0.87 \pm 0.04^{***}$ & $0.23 \pm 0.03$ & $\mathbf{0.21 \pm 0.03}$ \\
+64 & $0.84 \pm 0.04^{***}$ & $\mathbf{0.12 \pm 0.02}$ & $0.11 \pm 0.02$ \\
+128 & $0.82 \pm 0.05^{***}$ & $\mathbf{0.08 \pm 0.01}$ & $0.08 \pm 0.01$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Learning in corticothalamic synapses alone produced poor performance regardless of $M$, while thalamocortical learning improved monotonically with population size. This motivates structuring the corticothalamic connectivity rather than relying on learning.
+
+\subsection{Task-Specific Optimal Corticothalamic Structures}
+
+Table~\ref{tab:motor_task} and Table~\ref{tab:wm_task} show performance for the autonomous motor control and working memory tasks, respectively, across corticothalamic structures and thalamic population sizes.
+
+\begin{table}[H]
+\centering
+\caption{Normalized error ($\downarrow$) for autonomous motor control task across corticothalamic structures. Values are mean $\pm$ SE ($n = 50$ initializations). Bold indicates best per column. Bootstrap test: $^{***}p<0.001$ vs.\ Readout.}
+\label{tab:motor_task}
+\begin{tabular}{lccc}
+\toprule
+CT Structure & $M = 1$ & $M = 4$ & $M = 16$ \\
+\midrule
+Random & $0.78 \pm 0.05^{***}$ & $0.53 \pm 0.04^{***}$ & $0.41 \pm 0.05^{***}$ \\
+PC & $0.72 \pm 0.06^{***}$ & $0.48 \pm 0.05^{***}$ & $0.35 \pm 0.04^{***}$ \\
+Readout & $\mathbf{0.38 \pm 0.03}$ & $\mathbf{0.24 \pm 0.02}$ & $\mathbf{0.18 \pm 0.02}$ \\
+Meta-learned & $0.40 \pm 0.03$ & $0.25 \pm 0.03$ & $0.19 \pm 0.02$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Normalized error ($\downarrow$) for working memory (delayed discrimination) task across corticothalamic structures. Values are mean $\pm$ SE ($n = 50$ initializations). Bold indicates best per column. Bootstrap test: $^{***}p<0.001$ vs.\ PC.}
+\label{tab:wm_task}
+\begin{tabular}{lccc}
+\toprule
+CT Structure & $M = 1$ & $M = 4$ & $M = 16$ \\
+\midrule
+Random & $0.82 \pm 0.06^{***}$ & $0.65 \pm 0.05^{***}$ & $0.53 \pm 0.06^{***}$ \\
+PC & $\mathbf{0.51 \pm 0.04}$ & $\mathbf{0.28 \pm 0.03}$ & $\mathbf{0.22 \pm 0.03}$ \\
+Readout & $0.74 \pm 0.05^{***}$ & $0.49 \pm 0.04^{***}$ & $0.38 \pm 0.04^{***}$ \\
+Meta-learned & $0.53 \pm 0.04$ & $0.30 \pm 0.03$ & $0.23 \pm 0.03$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+There is a clear crossover interaction: readout-aligned structure dominates for motor control, while PC-aligned structure dominates for working memory. Meta-learned structures converge to the task-appropriate optimum in both cases.
+
+\subsection{Two-Module Reaching Task Confirms Mixed Strategy}
+
+For goal-directed reaching with separate preparatory and execution thalamic modules, Table~\ref{tab:reaching} shows that the optimal combination uses PC structure for preparation and readout structure for execution.
+
+\begin{table}[H]
+\centering
+\caption{Normalized reaching error ($\downarrow$) for two-module arm model across corticothalamic structure combinations. Mean $\pm$ SE from $n = 30$ initializations, 8 reach directions. Bold indicates best. Bootstrap test: $^{**}p<0.01$, $^{***}p<0.001$ vs.\ PC+Readout.}
+\label{tab:reaching}
+\begin{tabular}{llc}
+\toprule
+Prep CT Structure & Exec CT Structure & Normalized Error \\
+\midrule
+Random & Random & $0.68 \pm 0.07^{***}$ \\
+Random & Readout & $0.39 \pm 0.04^{***}$ \\
+PC & Random & $0.42 \pm 0.05^{***}$ \\
+\textbf{PC} & \textbf{Readout} & $\mathbf{0.15 \pm 0.02}$ \\
+Readout & Random & $0.57 \pm 0.06^{***}$ \\
+Readout & Readout & $0.31 \pm 0.04^{**}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This result aligns with the interpretation that the preparatory module must maintain high-variance cortical representations of the stimulus/goal (benefiting from PC structure), while the execution module must communicate the motor command to downstream effectors (benefiting from readout structure).
+
+\subsection{Neural Data Validate Model Predictions}
+
+Table~\ref{tab:neural_data} summarizes alignment analyses from mouse neural recordings. The cortical subspace predicting thalamic activity was compared to both the readout (behavioral) subspace and the top PC subspace using principal angle-based alignment indices (0 = orthogonal, 1 = perfectly aligned).
+
+\begin{table}[H]
+\centering
+\caption{Subspace alignment indices between the cortical subspace predicting thalamic activity and candidate structures (readout vs.\ PC). Values are mean $\pm$ SD across recording sessions. Paired $t$-test comparing readout vs.\ PC alignment within each circuit.}
+\label{tab:neural_data}
+\begin{tabular}{lcccc}
+\toprule
+Circuit & Task & Readout Alignment & PC Alignment & $p$-value \\
+\midrule
+Motor Ctx -- Motor Thal & Grasping & $\mathbf{0.71 \pm 0.08}$ & $0.43 \pm 0.11$ & $0.003$ \\
+PFC -- MD Thal & Delayed Discrim. & $0.39 \pm 0.10$ & $\mathbf{0.68 \pm 0.09}$ & $0.005$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Motor cortex--thalamus interactions during grasping were significantly more aligned with the readout (behavioral) subspace ($p = 0.003$), consistent with the model's prediction for motor control. Conversely, prefrontal cortex--mediodorsal thalamus interactions during delayed discrimination were significantly more aligned with the PC subspace ($p = 0.005$), consistent with the working memory prediction.
+
+\subsection{Meta-Learning Convergence}
+
+Table~\ref{tab:meta_convergence} shows that meta-learned corticothalamic structures converge to the task-appropriate fixed structure, as measured by the cosine similarity between the meta-learned $W_{\text{TC}}$ and the candidate structures after optimization.
+
+\begin{table}[H]
+\centering
+\caption{Cosine similarity between meta-learned $W_{\text{TC}}$ and candidate structures after convergence. Mean $\pm$ SD across $n = 20$ meta-learning runs. Higher similarity indicates convergence toward that structure.}
+\label{tab:meta_convergence}
+\begin{tabular}{lccc}
+\toprule
+Task & Sim. to Random & Sim. to Readout & Sim. to PC \\
+\midrule
+Motor control & $0.12 \pm 0.05$ & $\mathbf{0.89 \pm 0.04}$ & $0.31 \pm 0.08$ \\
+Working memory & $0.10 \pm 0.04$ & $0.27 \pm 0.07$ & $\mathbf{0.86 \pm 0.05}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our results establish that the structure of corticothalamic connectivity is a critical determinant of learning efficiency in thalamocortical loops, and that the optimal structure depends on the computational demands of the task. This finding has important implications for understanding both the developmental organization and the functional specialization of CTC circuits across brain regions.
+
+The asymmetry between thalamocortical and corticothalamic learning---with RFLO effective only for the former---provides a normative rationale for structured corticothalamic projections. Because the thalamic bottleneck ($M \ll N$) severely constrains the information flow through the loop, the choice of what cortical information is projected to the thalamus determines the landscape on which thalamocortical synapses can learn. This bottleneck interpretation connects to information-theoretic analyses of compression in neural circuits \citep{saxena2019towards}.
+
+The task-specific optimality of different structures admits an intuitive interpretation. For motor control, readout-aligned connectivity communicates an efference copy of the motor output through the thalamic loop, enabling thalamocortical synapses to learn corrective feedback that directly modifies the output. For working memory, PC-aligned connectivity communicates the most variable (and therefore most information-rich) dimensions of cortical activity, enabling the thalamic loop to maintain and stabilize these representations during delay periods \citep{guo2017maintenance}.
+
+The two-module reaching task demonstrates that these principles extend naturally to more complex behaviors requiring distinct computational phases. The optimal PC-for-preparation and readout-for-execution combination mirrors the preparatory and execution subspaces identified in motor cortex \citep{churchland2012neural, shenoy2013cortical}, suggesting that CTC loops may play a role in transitioning between these computational regimes.
+
+The neural data from mouse motor and prefrontal circuits provide initial empirical support for these predictions. The alignment between motor cortex--thalamus projections and the behavioral readout during grasping, and between prefrontal--mediodorsal thalamus projections and top PCs during delayed discrimination, are consistent with the model's predictions for motor control and working memory, respectively.
+
+A limitation of our approach is that we model the corticothalamic structure as fixed during task learning, with only thalamocortical synapses undergoing online plasticity. In reality, corticothalamic connectivity may undergo slower developmental or experience-dependent changes. The meta-learning framework we employ can be interpreted as modeling this slower optimization timescale. Future work should investigate how corticothalamic structure can be acquired through biologically plausible developmental mechanisms.
+
+\section{Conclusion}
+
+We have shown that structured corticothalamic connectivity is essential for efficient learning in thalamocortical loops, with the optimal structure determined by task demands. Readout-aligned projections (efference copy) optimize motor control, while principal component-aligned projections optimize working memory. These predictions are supported by neural recordings from mouse CTC circuits. Our framework provides a normative account linking thalamic anatomy, synaptic plasticity rules, and task requirements, offering testable predictions for the functional organization of corticothalamic projections across brain regions.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

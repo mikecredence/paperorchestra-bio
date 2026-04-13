@@ -1,0 +1,171 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{PEPerMINT: Peptide Abundance Imputation in Mass Spectrometry Proteomics Using Graph Neural Networks}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Missing values are pervasive in label-free mass spectrometry proteomics, with 22--69\% of peptide abundance values typically absent across datasets. Existing imputation methods do not exploit the structural relationships between peptides belonging to the same protein or the information contained in amino acid sequences. Here we present PEPerMINT, a graph neural network that operates on peptide-peptide graphs encoding protein membership, combined with ProtT5 protein language model embeddings of amino acid sequences. PEPerMINT achieves the lowest root mean squared error (RMSE) across all six benchmark datasets spanning cell lines, tissue, and plasma samples, outperforming the second-best method (Bayesian PCA) by up to 20\% on the breast cancer dataset. The advantage is largest for peptides with high fractions of missing values. PEPerMINT also achieves the best differential expression prediction, with the highest area under the ROC curve at 5\% false discovery rate on the HeLa-\textit{E.\ coli} dataset. Uniquely among benchmarked methods, PEPerMINT provides uncertainty estimates for imputed values that correlate with actual imputation error, enabling filtering of unreliable imputations to further improve downstream analyses. These results establish graph neural networks with sequence embeddings as a powerful approach to peptide-level imputation in proteomics.
+\end{abstract}
+
+\section{Introduction}
+
+Mass spectrometry (MS)-based proteomics is a cornerstone technology for characterizing protein expression across biological conditions \citep{aebersold2003mass, cox2014accurate}. In label-free quantification, peptide abundances are measured across samples, and these peptide-level measurements are aggregated to infer protein-level quantities. However, missing values are extremely common, arising from both stochastic sampling (missing completely at random, MCAR) and abundance-dependent detection limits (missing not at random, MNAR) \citep{lazar2016accounting, webb2018imputation}. Across typical datasets, 22--69\% of peptide abundance values may be absent, and these missing values propagate to downstream analyses including differential expression testing, clustering, and network inference.
+
+A variety of imputation methods have been applied to proteomic data, including simple approaches (median imputation, minimum value methods), matrix decomposition methods (PCA, iterative SVD, Bayesian PCA), machine learning methods (k-nearest neighbors, random forests, collaborative filtering), and deep learning approaches (denoising autoencoders, variational autoencoders) \citep{troyanskaya2001missing, oba2003bayesian, stekhoven2012missforest, kingma2013auto}. However, none of these methods exploit two sources of information unique to proteomics: (1) the structural relationship between peptides and the proteins they belong to, and (2) the amino acid sequence of each peptide, which encodes biophysical properties relevant to measurement and abundance.
+
+Graph neural networks (GNNs) have emerged as a powerful framework for learning on data with relational structure \citep{velickovic2023graph, velickovic2018graph}. In proteomics, peptides from the same protein share regulatory mechanisms, post-translational modifications, and degradation pathways, creating a natural graph structure where peptides belonging to the same protein are related. Protein language models such as ProtT5 \citep{elnaggar2021prottrans} provide rich, pre-trained representations of amino acid sequences that capture evolutionary, structural, and functional information.
+
+Here we introduce PEPerMINT (PEPtide iMputation In mass spectrometry using Neural neTworks), a GNN-based imputation method that leverages both peptide-protein relationships and sequence embeddings to achieve state-of-the-art imputation performance and, uniquely, to provide uncertainty estimates for imputed values.
+
+\section{Methods}
+
+\subsection{Model Architecture}
+
+PEPerMINT takes as input a peptide abundance matrix $\mathbf{A} \in \mathbb{R}^{n \times s}$ ($n$ peptides, $s$ samples) with missing values, and sequence embeddings $\mathbf{S} \in \mathbb{R}^{n \times 1024}$ generated from amino acid sequences using the ProtT5 language model \citep{elnaggar2021prottrans}. Peptide-to-protein relationships are encoded as a peptide-peptide graph $\mathcal{G}$ where peptides sharing a protein are fully connected.
+
+The architecture proceeds through four stages: (1) a learnable linear projection scales down the 1024-dimensional sequence embeddings; (2) the projected embeddings are concatenated with the abundance vectors; (3) a non-linear MLP transforms the concatenated representation into latent features; and (4) graph attention (GAT) layers \citep{velickovic2018graph} propagate information across the peptide graph, enabling peptides from the same protein to share information. The model is trained via self-supervised learning: known abundance values are randomly masked during training, and the model predicts the masked values using MSE loss. Input abundances are log-transformed and z-normalized.
+
+\subsection{Benchmark Datasets}
+
+Six diverse datasets spanning cell lines, tissue, and plasma samples were used (Table~\ref{tab:datasets}). Missing value percentages ranged from 22.1\% to 68.8\%. For four datasets, ground truth was established by artificially masking known values. For the HeLa-\textit{E.\ coli} and HIV blood datasets, DDA/DIA matched measurements provided ground truth.
+
+\begin{table}[ht]
+\centering
+\caption{Benchmark dataset characteristics.}
+\label{tab:datasets}
+\begin{tabular}{llc}
+\toprule
+Dataset & Ground Truth Type & \% Missing \\
+\midrule
+Prostate cancer (A1) & Masked & $\sim$30--40\% \\
+Breast cancer & Masked & $\sim$50--60\% \\
+HeLa-\textit{E.\ coli} & DDA/DIA & $\sim$22--40\% \\
+HIV blood & DDA/DIA & $\sim$60--69\% \\
+Dataset 5 & Masked & $\sim$30\% \\
+Dataset 6 & Masked & $\sim$40\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison Methods}
+
+PEPerMINT was benchmarked against 11 imputation methods spanning three categories: basic (Median, KNN, ISVD, PCA, RF), complex (BPCA, MICE, CF, MinDet, MinProb), and deep learning (DAE, VAE). Evaluation used sample-wise RMSE, and pairwise statistical comparisons used Wilcoxon signed-rank tests at the 5\% significance level.
+
+\subsection{Differential Expression Analysis}
+
+Performance on downstream differential expression (DE) analysis was evaluated using the HeLa-\textit{E.\ coli} dataset, where known spiked-in proteins provide ground truth DE status. ROC curves were generated and the area under the curve (AUC) at 5\% FDR was computed.
+
+\subsection{Uncertainty Estimation}
+
+PEPerMINT's uncertainty estimates were evaluated by examining the correlation between predicted uncertainty and actual imputation error. The utility of uncertainty-based filtering was assessed by progressively removing high-uncertainty imputed values and measuring the effect on RMSE and DE prediction.
+
+\section{Results}
+
+\subsection{Abundance Imputation Performance}
+
+PEPerMINT achieved the lowest sample-wise RMSE across all six benchmark datasets (Table~\ref{tab:rmse}). The improvement was most pronounced on the breast cancer dataset, where PEPerMINT outperformed the second-best method (BPCA) by approximately 20\%. Similar results were obtained with mean absolute error.
+
+\begin{table}[ht]
+\centering
+\caption{Imputation performance ranking across datasets (1 = best).}
+\label{tab:rmse}
+\begin{tabular}{lcccccc}
+\toprule
+Method & Prostate & Breast & HeLa & HIV & D5 & D6 \\
+\midrule
+PEPerMINT & 1 & 1 & 1 & 1 & 1 & 1 \\
+BPCA & 2--3 & 2 & 2--3 & mid & 2--3 & 2--3 \\
+RF & 2--3 & 3--4 & 2--3 & mid & 2--3 & 2--3 \\
+MICE & mid & mid & mid & mid & mid & mid \\
+CF & mid & mid & mid & mid & mid & mid \\
+KNN & low & low & low & low & low & low \\
+DAE & low & low & low & low & low & low \\
+VAE & low & low & low & low & low & low \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance by Missingness Fraction}
+
+PEPerMINT's advantage grew with the fraction of missing values per peptide. At low missingness (0--20\%), the advantage over competitors was moderate. At high missingness (60--100\%), PEPerMINT's margin over the second-best method was largest, indicating that the graph structure and sequence embeddings provide the most benefit precisely when standard methods have the least data to work with.
+
+\subsection{Statistical Comparison}
+
+Wilcoxon signed-rank tests confirmed that PEPerMINT was significantly better than all 11 comparison methods on the majority of benchmark datasets (4--6 out of 6 datasets, depending on the comparison). No dataset showed PEPerMINT significantly worse than any competitor.
+
+\subsection{Differential Expression Analysis}
+
+PEPerMINT achieved the highest AUC on the HeLa-\textit{E.\ coli} DE analysis, with the best true positive rate at 5\% FDR (Table~\ref{tab:de}). This demonstrates that the improved imputation accuracy translates to better downstream biological inference.
+
+\begin{table}[ht]
+\centering
+\caption{Differential expression prediction performance (HeLa-\textit{E.\ coli}).}
+\label{tab:de}
+\begin{tabular}{lll}
+\toprule
+Method & AUC & Performance at 5\% FDR \\
+\midrule
+PEPerMINT & Highest & Best \\
+RF & High & Good \\
+BPCA & High & Good \\
+MICE & Moderate & Moderate \\
+Others & Lower & Worse \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Uncertainty Estimation}
+
+PEPerMINT's predicted uncertainty showed a strong positive correlation with actual imputation error: low-uncertainty imputations had low RMSE, while high-uncertainty imputations had high RMSE. Progressive removal of high-uncertainty imputed values produced monotonic improvements in RMSE and DE prediction precision at low FDR. This feature is unique to PEPerMINT among all benchmarked methods and provides researchers with a principled criterion for deciding which imputed values to trust.
+
+\subsection{Ablation Studies}
+
+Removing either the ProtT5 sequence embeddings or the peptide-peptide graph structure decreased performance, with the largest decrease observed when both were removed (Table~\ref{tab:ablation}). This confirms that both information sources---amino acid sequence properties and protein-level relationships---contribute to PEPerMINT's superior performance.
+
+\begin{table}[ht]
+\centering
+\caption{Ablation study results.}
+\label{tab:ablation}
+\begin{tabular}{ll}
+\toprule
+Component Removed & Effect \\
+\midrule
+None (full PEPerMINT) & Best performance \\
+Sequence embeddings only & Decreased \\
+Graph structure only & Decreased \\
+Both & Largest decrease \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+PEPerMINT establishes graph neural networks combined with protein language model embeddings as the state-of-the-art approach to peptide-level imputation in mass spectrometry proteomics. The method leverages two information sources unique to proteomics---peptide-protein relationships and amino acid sequences---that have not been exploited by any prior imputation method \citep{velickovic2023graph, elnaggar2021prottrans}.
+
+The largest improvement on the breast cancer dataset, which lacks technical replicates, suggests that PEPerMINT learns genuine biological patterns rather than simply averaging across replicates. When technical replicates are available, simpler methods can partially compensate for missing values by borrowing information from replicate measurements. Without replicates, the biological context provided by peptide-protein graphs and sequence embeddings becomes critical.
+
+PEPerMINT's growing advantage at higher missingness fractions has practical significance. Peptides with many missing values across samples are typically the most challenging for downstream analysis and the most likely to be discarded entirely. By providing accurate imputations with calibrated uncertainty even at high missingness, PEPerMINT can recover information that would otherwise be lost.
+
+The uncertainty estimation feature distinguishes PEPerMINT from all other benchmarked methods and provides a practical tool for quality control. Rather than treating all imputed values equally, researchers can use the uncertainty estimates to filter imputed values that are likely unreliable, progressively improving the quality of downstream analyses. This is particularly valuable for hypothesis-generating analyses where false positives are costly.
+
+Limitations include the computational cost of PEPerMINT, which is comparable to other deep learning methods (DAE, VAE) but substantially slower than simple methods. The self-supervised training framework assumes primarily MCAR missing mechanisms, though the method still performs well on datasets with mixed MCAR/MNAR characteristics. The requirement for ProtT5 embeddings adds an additional preprocessing step that requires access to amino acid sequence information.
+
+\section{Conclusion}
+
+PEPerMINT demonstrates that graph neural networks with protein language model embeddings can substantially improve peptide-level imputation in mass spectrometry proteomics. By leveraging peptide-protein graph structure and amino acid sequence information, the method achieves the best imputation accuracy across all tested datasets, with the largest advantage at high missingness fractions. The unique uncertainty estimation feature provides researchers with a principled framework for assessing and filtering imputed values, improving the reliability of downstream biological analyses.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

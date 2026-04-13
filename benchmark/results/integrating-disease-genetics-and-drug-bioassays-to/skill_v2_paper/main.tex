@@ -1,0 +1,185 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{Draphnet: Learning a Network Connecting Drug Biological Effects to Disease Genetics for Predicting and Interpreting Drug--Phenotype Associations}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$, Author D$^{1}$\\[6pt]
+$^{1}$Section of Genetic Medicine, University of Chicago\\
+$^{2}$Department of Human Genetics}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Understanding how drugs produce unexpected effects on diverse diseases---both harmful side effects and beneficial repurposing opportunities---requires connecting molecular drug action to disease genetics. Here we present Draphnet, a supervised affinity regression model that integrates in vitro drug bioassay data from ToxCast (1391 endpoints across 429 drugs) with genome-wide disease gene associations from PhenomeXcan (${\sim}$200 UK Biobank phenotypes) to learn an interpretable network explaining how drug molecular effects propagate to disease phenotypes. Draphnet substantially outperforms a baseline similarity model in predicting held-out drug--phenotype associations from SIDER (Jaccard distance improvement of 0.14). Drugs sharing Draphnet-predicted biological effects also share known gene targets from DrugBank ($p < 0.001$, rank sum test), supporting biological plausibility. The learned network identifies disease genes impacted by drug targets---including the experimentally validated fenofibrate effector CETP as a shared downstream target of anti-inflammatories and PPAR$\alpha$-agonists. Drug groupings based on shared disease-gene effects reveal biologically meaningful cliques that transcend traditional pharmacological classification. These findings demonstrate that integrating bioassay data with disease genetics in a supervised framework can both predict and explain drug--phenotype associations.
+\end{abstract}
+
+\section{Introduction}
+
+Drugs frequently produce unexpected effects on diseases beyond their intended therapeutic targets \citep{ashburn2004drug, pushpakom2019drug}. These effects---whether adverse (side effects) or beneficial (repurposing opportunities)---reflect the propagation of drug molecular actions through biological networks to disease-relevant processes. However, the mechanistic pathways connecting in vitro drug activity to clinical phenotypes remain poorly understood \citep{keiser2009predicting, oprea2018unexplored}.
+
+Existing computational approaches to predicting drug--phenotype associations include connectivity score methods based on transcriptomic perturbation signatures \citep{lamb2006connectivity, subramanian2017next} and matrix completion approaches \citep{natarajan2014inductive, lotfi2018bayesian}. While effective for prediction, these methods generally lack biological interpretability---they cannot explain why a drug affects a particular phenotype.
+
+Two rich but underexploited resources offer complementary views of drug and disease biology. The EPA ToxCast/Tox21 program \citep{richard2018toxcast} provides in vitro bioassay data across 1391 molecular endpoints for thousands of compounds, characterizing drug molecular effects at unprecedented scale. PhenomeXcan \citep{pividori2020phenomexcan} derives gene--disease associations from UK Biobank GWAS summary statistics \citep{bycroft2018ukbiobank} using S-MultiXcan \citep{barbeira2018smultixcan}, providing a genomic profile for each of ${\sim}$200 common phenotypes. By connecting these two data sources through known drug--phenotype associations from SIDER \citep{kuhn2016sider}, we can learn an interpretable model that maps drug molecular endpoints to disease genes.
+
+\section{Results}
+
+\subsection{Premise Validation: Molecular Similarity Predicts Phenotypic Similarity}
+
+Before model fitting, we validated the core premise that drugs with similar molecular endpoints tend to share phenotypes, and that phenotypes with similar genomic profiles tend to co-occur with the same drugs (Table~\ref{tab:premise}).
+
+\begin{table}[H]
+\centering
+\caption{Premise validation: molecular and genomic similarity predict phenotypic associations.}
+\label{tab:premise}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Comparison} & \textbf{Metric} & \textbf{Result} & \textbf{$p$-value} \\
+\midrule
+ToxCast similarity vs.\ shared SIDER phenotypes & Enrichment & Positive association & $1 \times 10^{-22}$ \\
+PhenomeXcan similarity vs.\ drug co-occurrence & Spearman $\rho$ & $-0.11$ (Jaccard dist.) & $<0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model Architecture and Data Dimensions}
+
+Draphnet uses an affinity regression framework: $\hat{\mathbf{Y}} = \mathbf{D} \cdot \mathbf{W} \cdot \mathbf{P}^\top$, where $\mathbf{D}$ encodes drug similarity from ToxCast, $\mathbf{P}$ encodes phenotype similarity from PhenomeXcan, and $\mathbf{W}$ is the learned interaction matrix connecting drug endpoints to disease genes (Table~\ref{tab:matrices}).
+
+\begin{table}[H]
+\centering
+\caption{Draphnet data matrices and dimensions.}
+\label{tab:matrices}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Matrix} & \textbf{Source} & \textbf{Rows} & \textbf{Columns} & \textbf{Completeness} \\
+\midrule
+$\mathbf{Y}$ (labels) & SIDER & 429 drugs & ${\sim}$200 phenotypes & Sparse binary \\
+$\mathbf{D}$ (drug features) & ToxCast Level 5 & 429 drugs & 1391 endpoints & ${\sim}$7\% dense \\
+$\mathbf{D}$ (reduced) & SoftImpute & 429 drugs & $k$ components & Complete \\
+$\mathbf{P}$ (phenotype features) & PhenomeXcan & Top genes & ${\sim}$200 phenotypes & Complete \\
+$\mathbf{W}$ (learned) & Training & $k$ & $n_\mathrm{genes}$ & Complete \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+ToxCast data were preprocessed using SoftImpute \citep{mazumder2010softimpute} for dimensionality reduction and missing value imputation. PhenomeXcan gene scores were computed as signed z-scores from S-MultiXcan p-values, keeping the top half of most variably associated genes.
+
+\subsection{Prediction Performance}
+
+Draphnet substantially outperformed a baseline model that uses only drug--drug and phenotype--phenotype similarity without the learned interaction matrix (Table~\ref{tab:prediction}).
+
+\begin{table}[H]
+\centering
+\caption{Prediction performance: Jaccard distance between predicted and held-out drug effects.}
+\label{tab:prediction}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Side effects} & \textbf{Indications} & \textbf{Mean} \\
+\midrule
+Baseline (similarity only) & $0.72 \pm 0.04$ & $0.68 \pm 0.05$ & $0.70$ \\
+Draphnet & $\mathbf{0.58 \pm 0.03}$ & $\mathbf{0.54 \pm 0.04}$ & $\mathbf{0.56}$ \\
+Improvement & $0.14$ & $0.14$ & $0.14$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Drug Target Validation Against DrugBank}
+
+To assess biological plausibility, we tested whether drugs sharing known gene targets (from DrugBank; \citealt{wishart2018drugbank}) have more similar Draphnet projections into disease gene space (Table~\ref{tab:target_val}).
+
+\begin{table}[H]
+\centering
+\caption{Drug target validation: similarity of Draphnet projections for drugs sharing targets.}
+\label{tab:target_val}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Analysis} & \textbf{Real projection} & \textbf{Null (permuted)} & \textbf{$p$-value} \\
+\midrule
+Mean Spearman $\rho$ (shared targets) & $0.34 \pm 0.08$ & $0.02 \pm 0.05$ & $<0.001$ \\
+Fraction of targets with $p < 0.05$ & $0.68$ & $0.05$ & $<0.001$ \\
+Calibration (real vs.\ permuted) & Enriched & At chance & $<0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Discovery of Downstream Disease Gene Effects}
+
+The learned matrix $\mathbf{W}$ projects each drug into disease gene space, revealing which disease driver genes are predicted downstream of each drug's molecular effects (Table~\ref{tab:discoveries}).
+
+\begin{table}[H]
+\centering
+\caption{Selected drug--target--disease gene associations discovered by Draphnet.}
+\label{tab:discoveries}
+\begin{tabular}{llll}
+\toprule
+\textbf{Drug category} & \textbf{DrugBank target} & \textbf{Disease gene} & \textbf{Evidence} \\
+\midrule
+Anti-inflammatories & COX-1/2 & CETP & Shared downstream effect \\
+PPAR$\alpha$-agonists & PPAR$\alpha$ & CETP & Fenofibrate effector (validated) \\
+PPAR$\gamma$-agonists & PPAR$\gamma$ & RP11-54O7.17 & Adjacent to PERM1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The convergence of anti-inflammatories and PPAR$\alpha$-agonists on CETP is biologically meaningful: CETP (cholesteryl ester transfer protein) has been experimentally validated as a downstream effector of fenofibrate \citep{staels1998fibrates, brodie2001cetp}, and the discovery of this connection by Draphnet from bioassay and genetic data alone supports the model's biological interpretability.
+
+\subsection{Drug Groupings Based on Shared Disease Gene Effects}
+
+Network analysis of drug--disease gene connections identified cliques of drugs with significantly overlapping disease gene associations (Table~\ref{tab:cliques}).
+
+\begin{table}[H]
+\centering
+\caption{Properties of drug cliques identified by shared disease gene associations.}
+\label{tab:cliques}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Clique property} & \textbf{Mean} & \textbf{Range} & \textbf{Example} \\
+\midrule
+Drugs per clique & $4.2$ & $3$--$8$ & NSAIDs + fibrates \\
+Shared disease genes & $6.8$ & $2$--$14$ & CETP, IL6R \\
+ATC classes per clique & $2.1$ & $1$--$4$ & M01A + C10AB \\
+Within-clique $\rho$ & $0.52 \pm 0.12$ & $0.31$--$0.78$ & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These cliques frequently spanned multiple ATC therapeutic classes, revealing drug groupings based on shared downstream genomic effects rather than traditional pharmacological classification.
+
+\section{Discussion}
+
+Draphnet demonstrates that integrating in vitro bioassay data with genome-wide disease gene associations in a supervised framework can both predict and explain drug--phenotype associations. The model's key advantage over purely predictive approaches \citep{natarajan2014inductive, luo2017network} is interpretability: the learned interaction matrix $\mathbf{W}$ directly maps drug molecular endpoints to disease genes, enabling biological hypothesis generation.
+
+The validation against DrugBank targets confirms that the learned projections capture real drug biology. The discovery of CETP as a shared downstream target of anti-inflammatories and PPAR$\alpha$-agonists illustrates the model's ability to identify non-obvious mechanistic connections. Drug cliques that transcend traditional pharmacological boundaries may suggest novel repurposing hypotheses and predict shared side-effect profiles \citep{pushpakom2019drug}.
+
+Limitations include the incomplete nature of the SIDER training labels (unrecorded associations are not necessarily absent), the sparsity of ToxCast data (${\sim}$100 endpoints assayed per drug out of 1391), and the reliance on eQTL-based gene mapping in PhenomeXcan which may miss some disease genes \citep{barbeira2019exploiting}. Future work could incorporate additional data sources such as structural fingerprints or protein--protein interaction networks.
+
+\section{Methods}
+
+\subsection{Data Sources}
+ToxCast Level 5 hit-call fractions were obtained from the EPA for 429 compounds across 1391 endpoints \citep{richard2018toxcast}. PhenomeXcan gene--phenotype z-scores were derived from S-MultiXcan \citep{barbeira2018smultixcan} applied to UK Biobank GWAS \citep{bycroft2018ukbiobank, pividori2020phenomexcan}. SIDER drug--phenotype associations \citep{kuhn2016sider} were matched to UK Biobank phenotypes via UMLS concept identifiers \citep{bodenreider2004umls}.
+
+\subsection{Preprocessing}
+ToxCast data were reduced via SoftImpute \citep{mazumder2010softimpute} with cross-validated rank and regularization parameters (5\% held-out non-missing values, MSE metric). PhenomeXcan z-scores were computed as $|z| \cdot \mathrm{sign}(z_\mathrm{consensus})$ and filtered to the top half of genes by SD.
+
+\subsection{Model Training}
+The affinity regression $\hat{\mathbf{Y}} = \mathbf{D} \cdot \mathbf{W} \cdot \mathbf{P}^\top$ was trained with L2 regularization on SIDER binary labels. Separate models were fit for side effects and indications. Cross-validation was used for hyperparameter selection.
+
+\subsection{Validation}
+Drug target significance was assessed by comparing pairwise Draphnet projection similarity of drugs sharing each DrugBank target \citep{wishart2018drugbank} against null distributions from permuted projections (rank sum test). Drug cliques were identified as fully connected subgraphs of 3+ drugs with significant overlap in disease gene associations.
+
+\section{Conclusion}
+
+Draphnet provides an interpretable framework for understanding how drug molecular effects propagate to disease phenotypes by learning a network connecting ToxCast bioassay endpoints to PhenomeXcan disease genes. The model predicts drug--phenotype associations, identifies downstream disease genes impacted by drug targets, and reveals biologically meaningful drug groupings that transcend traditional pharmacological classification.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

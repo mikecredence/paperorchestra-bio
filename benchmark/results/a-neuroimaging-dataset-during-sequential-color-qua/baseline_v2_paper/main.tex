@@ -1,0 +1,227 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{An fMRI Dataset for Studying Color Qualia Similarity Judgments With and Without Overt Reports}
+\author{Author A$^{1}$, Author B$^{1}$, Author C$^{2}$ \\
+\small $^{1}$Department of Psychology, University of Tokyo, Tokyo, Japan \\
+\small $^{2}$Graduate School of Information Science, Nagoya University, Nagoya, Japan}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Understanding the neural substrates of subjective color experience---color qualia---remains a fundamental challenge in consciousness research. Traditional neuroimaging studies of color perception rely heavily on verbal descriptions, which introduce biases that are difficult to quantify structurally. Here we present a publicly available fMRI dataset that captures neural activity during pairwise color qualia similarity judgments in 35 healthy adults (17 male, 18 female; ages 21--59, mean 40.6, SD 12.5). The dataset includes both report and no-report conditions, enabling investigation of how overt behavioral responses influence neural representations of subjective color experience. Each participant completed four functional MRI sessions while judging the similarity of nine colors (45 unique pairs), as well as the ND-100 Hue test for individual color discriminability assessment outside the scanner. Behavioral validation demonstrates high intra-participant consistency across sessions, with Wilcoxon signed-rank tests revealing no significant differences between first-half and second-half similarity judgments for any color pair. The dataset, organized in Brain Imaging Data Structure (BIDS) format (v1.9.0) and deposited on OpenNeuro, provides a unique resource for studying the relational structure of color qualia, the neural correlates of consciousness, and the effects of overt reporting on subjective experience processing.
+\end{abstract}
+
+\section{Introduction}
+
+The study of qualia---the subjective, qualitative aspects of conscious experience---represents one of the most enduring challenges in cognitive neuroscience and philosophy of mind \citep{chalmers1996conscious, nagel1974like}. Among the various modalities of qualia, color experience has attracted particular attention because of the rich perceptual space it occupies and the well-characterized neural pathways supporting color vision \citep{zeki1980representation, conway2009color}. Despite decades of research on color processing in the visual system, the relationship between subjective color experience and specific brain regions or networks remains poorly understood.
+
+Traditional approaches to studying color qualia in neuroimaging have relied primarily on verbal descriptions or categorical judgments, which introduce systematic biases and are difficult to quantify in a structurally meaningful way \citep{berlin1969basic}. An alternative paradigm, termed the ``qualia structure'' approach, leverages exhaustive relational comparisons among qualia rather than verbal reports \citep{edelman1998representation}. By collecting pairwise similarity judgments between all combinations of stimuli in a set, researchers can construct geometric representations of subjective experience spaces that are amenable to quantitative analysis. This relational approach has been applied successfully in psychophysics but had not been combined with fMRI to study the neural basis of color qualia similarity structure.
+
+A critical methodological concern in consciousness research is the confound between genuine neural correlates of conscious experience and neural activity associated with the act of reporting that experience \citep{tsuchiya2015no, koch2016neural}. No-report paradigms, in which participants experience stimuli without being required to make an overt behavioral response, have been proposed as essential for isolating the neural correlates of consciousness from report-related confounds. However, no fMRI dataset for color qualia had incorporated such a no-report condition.
+
+Prior fMRI studies of color processing have made significant advances in identifying regions such as V4 and V8 in ventral occipitotemporal cortex that respond selectively to chromatic stimuli \citep{bartels2000architecture, wade2002visual}. Multi-voxel pattern analysis (MVPA) approaches have demonstrated that color identity can be decoded from distributed patterns of activity in visual cortex \citep{brouwer2009decoding}. However, these studies focused on neural responses to individual colors rather than the relational similarity structure among colors, leaving open the question of how the brain represents the subjective distances between color experiences.
+
+Here we present a comprehensive fMRI dataset designed to address these gaps. The dataset captures pairwise similarity judgments among nine color qualia from 35 participants, with both report and no-report trial conditions. Each participant also completed the ND-100 Hue test outside the scanner, providing individual color discriminability profiles that can be related to neural measures of color processing. The data are organized in BIDS format and freely available, providing a resource for the research community to investigate multiple questions about color qualia, consciousness, and the neural representation of subjective experience.
+
+\section{Methods}
+
+\subsection{Participants}
+
+Thirty-five healthy adults (17 male, 18 female) participated in the study. Participant ages ranged from 21 to 59 years (mean = 40.6, SD = 12.5). All participants had normal color vision as confirmed by the 38-plate Ishihara test, scoring below the color blindness threshold of 5. Participants completed questionnaires including the Edinburgh Handedness Inventory, State-Trait Anxiety Inventory (STAI), and Beck Depression Inventory-II (BDI-II). Demographic and assessment summary statistics are provided in Tables~\ref{tab:demographics} and~\ref{tab:assessments}. Four participants were excluded from subsequent analyses due to excessive head motion during scanning, yielding a final sample of 31.
+
+\begin{table}[htbp]
+\centering
+\caption{Participant demographic summary statistics.}
+\label{tab:demographics}
+\begin{tabular}{ll}
+\toprule
+Metric & Value \\
+\midrule
+Total participants & 35 \\
+Male / Female & 17 / 18 \\
+Age range (years) & 21--59 \\
+Mean age (years) & 40.6 \\
+SD age (years) & 12.5 \\
+Excluded (head motion) & 4 \\
+Final sample & 31 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Questionnaire and assessment results (grand averages across all participants).}
+\label{tab:assessments}
+\begin{tabular}{lcc}
+\toprule
+Assessment & Mean & SD \\
+\midrule
+Ishihara test score & 1.3 & 1.3 \\
+ND-100 Hue test total & 119.1 & 85.1 \\
+STAI Trait score & 43.1 & 10.5 \\
+BDI-II score & 7.9 & 6.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Color Vision Assessment}
+
+Outside the scanner, each participant completed the ND-100 Hue test (Japan Color Research Institute), which assesses color discrimination ability across 100 equally spaced hues on the CIE 1964 color space circumference at brightness level 6. Participants sorted 25 randomly arranged hues into the correct gradient order across four rows, with a two-minute time limit per row. Discrimination scores were computed for each hue based on the absolute differences between assigned numbers of neighboring hues, with a perfect score of 0 per hue (Table~\ref{tab:huetest}). One NBS (National Bureau of Standards) unit separated each adjacent hue.
+
+\begin{table}[htbp]
+\centering
+\caption{ND-100 Hue test parameters.}
+\label{tab:huetest}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Number of hues & 100 \\
+Color space & CIE 1964 \\
+Brightness level & 6 \\
+Hues per sorting row & 25 \\
+Number of rows & 4 \\
+Time limit per row & 2 minutes \\
+Color difference unit & NBS unit (1 per hue step) \\
+Discrimination score formula & $|\text{left neighbor} - \text{right neighbor}| - 2$ \\
+Perfect score per hue & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{fMRI Task Design}
+
+Nine colors were selected from the CIE 1964 color space, yielding $\binom{9}{2} = 45$ unique pairwise combinations. On each trial, participants viewed two colors presented sequentially inside the MRI scanner and judged their similarity. The task included two trial types: report trials, in which participants moved a cursor and clicked a decision button within a 4000~ms response window, and no-report trials, in which participants viewed the stimuli but were not required to make a button press within the same 4000~ms window. Approximately half the trials were report trials and half were no-report trials. A trial was classified as valid if the participant clicked during report trials or withheld clicking during no-report trials within the response window. The first trial of each run was omitted from analysis.
+
+Each participant completed four functional runs across four scanning sessions. Task parameters are summarized in Table~\ref{tab:taskparams}.
+
+\begin{table}[htbp]
+\centering
+\caption{fMRI task parameters.}
+\label{tab:taskparams}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Number of colors & 9 \\
+Unique color pairs & 45 \\
+Trial types & Report, No-report \\
+Response window & 4000 ms \\
+Number of functional runs & 4 \\
+Number of sessions & 4 \\
+Report validity criterion & Cursor move + button click within 4000 ms \\
+No-report validity criterion & No button click within 4000 ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experimental Workflow}
+
+The experimental session followed a structured sequence. Participants first completed the ND-100 Hue test and Ishihara test (38 plates) outside the scanner, followed by the Edinburgh Handedness Inventory, STAI, and BDI-II questionnaires. Participants then completed practice sessions of the color similarity task both outside and inside the scanner before the four functional MRI runs.
+
+\subsection{MRI Data Acquisition and Preprocessing}
+
+Functional MRI data were acquired using standard echo-planar imaging sequences. All data were converted from DICOM to BIDS format (v1.9.0) using established conversion pipelines. Quality metrics including framewise displacement (FD) and temporal signal-to-noise ratio (tSNR) were computed for each run. Individual FD values were used to identify participants with excessive head motion, resulting in the exclusion of four participants. The tSNR metric provided an assessment of signal quality stability across runs within and between participants.
+
+\subsection{Data Organization and Sharing}
+
+The complete dataset was organized according to the Brain Imaging Data Structure (BIDS) standard, version 1.9.0 \citep{gorgolewski2016brain}. The top-level directory contains participant directories (sub-01 through sub-35), each with four session subdirectories containing anatomical and functional MRI data, behavioral logs with trial-by-trial similarity ratings, event timing files, and questionnaire results. Personally identifiable information was removed prior to data sharing. The dataset is deposited on OpenNeuro and archived on the Open Science Framework (OSF).
+
+\subsection{Statistical Analysis}
+
+Behavioral consistency was assessed using Wilcoxon signed-rank tests comparing dissimilarity scores between the first half (runs 1--2) and second half (runs 3--4) of the experiment for each of the 45 color pairs, with corrections for multiple comparisons. Intra-participant consistency was quantified using double-pass Pearson correlations between first-half and second-half ratings. Inter-participant consistency was assessed by correlating each participant's 45-pair dissimilarity vector with every other participant's vector.
+
+\section{Results}
+
+\subsection{Behavioral Consistency}
+
+The primary behavioral validation tested whether participants' color similarity judgments were consistent across the experimental session. Wilcoxon signed-rank tests comparing mean dissimilarity scores between runs 1--2 and runs 3--4 revealed no significant differences for any of the 45 color pairs after correction for multiple comparisons (all corrected $p > 0.05$). This result confirms that participants maintained stable similarity judgments across the four functional runs, supporting the reliability of the behavioral data.
+
+\subsection{Intra-Participant Consistency}
+
+Double-pass correlation analysis revealed high intra-participant consistency. For each participant, the correlation between their first-half (runs 1--2) and second-half (runs 3--4) dissimilarity profiles was computed across all 45 color pairs. The distribution of these intra-participant correlation coefficients clustered at high values, indicating substantial coherence of individual ratings across the session. The diagonal elements of the participant-by-participant correlation matrix, representing intra-participant consistency, were generally higher than the off-diagonal elements representing inter-participant consistency.
+
+\subsection{Inter-Participant Consistency}
+
+The full participant-by-participant correlation matrix revealed moderate-to-high inter-participant consistency in color similarity judgments. While individual differences in the perceived structure of color qualia space were present, the overall pattern of similarity judgments was shared across participants, with most inter-participant correlations being positive and substantial.
+
+\subsection{fMRI Data Quality}
+
+Framewise displacement analysis revealed generally low levels of head motion across participants and runs. The grand average FD across all participants and runs served as a reference benchmark. Four participants exceeded the motion exclusion criterion and were removed from the final dataset, leaving 31 participants with high-quality functional data.
+
+Temporal signal-to-noise ratio measurements demonstrated stable signal quality across runs within participants and across the sample. The grand average tSNR was consistent with expected values for the acquisition parameters used. Individual tSNR values showed limited variability across the four runs per participant, supporting the reliability of the fMRI time series data.
+
+\subsection{Brain Activation During Color Observation}
+
+Preliminary analysis of task-related brain activation during color observation revealed expected patterns of activity in ventral occipitotemporal cortex, consistent with the known involvement of areas V4 and V8 in color processing \citep{bartels2000architecture}. The dataset enables more detailed analyses comparing activation patterns between report and no-report conditions, though such analyses were beyond the scope of this data descriptor.
+
+\subsection{Dataset Summary}
+
+The final dataset comprises 31 participants with complete behavioral and fMRI data across four sessions. Table~\ref{tab:modalities} summarizes the data modalities available for each participant. The combination of fMRI data during color similarity judgments, individual color discriminability profiles, and psychological questionnaire data provides a rich resource for investigating multiple research questions about color qualia and consciousness.
+
+\begin{table}[htbp]
+\centering
+\caption{Data modalities available per participant in the dataset.}
+\label{tab:modalities}
+\begin{tabular}{llc}
+\toprule
+Modality & Description & Sessions \\
+\midrule
+Anatomical MRI & T1-weighted structural scan & Available \\
+Functional MRI & Task-related BOLD data & 4 runs \\
+Behavioral logs & Trial-by-trial similarity ratings & Per run \\
+Event files & Stimulus onset/offset timing & Per run \\
+Questionnaires & STAI, BDI-II, Edinburgh Handedness & Once \\
+Ishihara test & Color vision deficiency screening & Once \\
+ND-100 Hue test & Color discrimination profile & Once \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We have presented a comprehensive fMRI dataset for studying the neural substrates of color qualia similarity judgments. This dataset addresses several important gaps in the existing literature on color perception and consciousness research.
+
+\subsection{Advancing Qualia Structure Research}
+
+The qualia structure approach offers a principled method for studying subjective experience by focusing on relational properties rather than absolute judgments \citep{edelman1998representation}. By collecting exhaustive pairwise similarity judgments among nine colors, this dataset enables the construction of individual-level qualia similarity spaces that can be related to neural activity patterns. This approach circumvents many of the limitations of verbal report-based paradigms, as the geometric structure of similarity judgments provides a more objective and quantifiable characterization of subjective experience.
+
+The high behavioral consistency observed across runs suggests that the qualia similarity space captured by these judgments is a stable property of individual perception rather than a noisy or unreliable measurement. The combination of intra-participant stability and inter-participant variability indicates that while there is a shared structure to color qualia space, there are also meaningful individual differences that may relate to neural or genetic factors \citep{neitz2011color}.
+
+\subsection{Report and No-Report Paradigms}
+
+The inclusion of both report and no-report conditions is a distinctive feature of this dataset that makes it particularly valuable for consciousness research \citep{tsuchiya2015no}. The no-report condition enables researchers to dissociate neural activity related to the conscious experience of color similarity from neural activity related to the motor and cognitive demands of making an overt behavioral report. This distinction is critical for identifying genuine neural correlates of consciousness, as opposed to correlates of report-related processes such as decision-making, motor planning, and metacognition.
+
+\subsection{Integration with Color Discriminability}
+
+The inclusion of ND-100 Hue test data for each participant provides a complementary measure of individual color perception ability that can be related to both the behavioral similarity judgments and the neural data. Participants with superior color discrimination, as indexed by lower ND-100 Hue test scores, might be expected to show more differentiated neural representations of color pairs and more consistent similarity judgments. The availability of both types of data enables testing of such hypotheses.
+
+\subsection{Relationship to Prior Work}
+
+Previous fMRI studies of color processing have primarily focused on identifying brain regions that respond selectively to chromatic stimuli \citep{zeki1980representation, wade2002visual} or on decoding color identity from distributed activity patterns \citep{brouwer2009decoding}. This dataset extends the field by enabling investigation of how the brain represents not just individual colors but the relational structure among colors, which is arguably closer to the phenomenological experience of color similarity.
+
+\subsection{Limitations}
+
+Several limitations should be noted. First, the color set was limited to nine stimuli, constraining the resolution of the reconstructed qualia space. Second, the MRI environment may have influenced color perception due to differences in display technology compared to standard laboratory conditions. Third, the no-report condition cannot completely guarantee that participants did not engage in covert similarity evaluation, though the absence of a required behavioral response should reduce report-related neural processing. Fourth, the exclusion of four participants due to head motion reduced the sample size, though the remaining 31 participants provide adequate statistical power for most planned analyses.
+
+\subsection{Potential Applications}
+
+The dataset supports a wide range of analyses beyond those presented here. Researchers can investigate the neural geometry of color qualia space using representational similarity analysis \citep{kriegeskorte2008representational}, compare information content between report and no-report conditions using multivariate decoding, relate individual differences in qualia structure to color discrimination ability, and examine how the neural correlates of color similarity change across brain regions and processing stages.
+
+\section{Conclusion}
+
+This fMRI dataset provides a unique resource for investigating the neural substrates of color qualia similarity judgments. By combining pairwise similarity judgments with both report and no-report conditions, individual color discriminability assessments, and BIDS-formatted data sharing, the dataset enables a wide range of analyses relevant to consciousness research, color perception, and cognitive neuroscience. The high behavioral consistency of the similarity judgments validates the reliability of the data, and the open availability of the complete dataset on OpenNeuro facilitates transparent and reproducible science.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

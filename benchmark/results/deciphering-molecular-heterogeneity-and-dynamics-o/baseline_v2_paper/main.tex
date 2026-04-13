@@ -1,0 +1,203 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Molecular Heterogeneity and Transcriptional Dynamics of Human Hippocampal Neural Stem Cells Across Neonatal, Adult, Aging, and Stroke-Injured States}
+\author{Author A,$^{1}$ Author B,$^{1}$ Author C,$^{2}$ Author D,$^{1}$ Author E$^{1,*}$\\
+\small $^{1}$Department of Neuroscience, University of Science\\
+\small $^{2}$Department of Neurosurgery, University Hospital\\
+\small $^{*}$Corresponding author: authore@university.edu}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Whether adult hippocampal neurogenesis persists in humans remains one of the most debated questions in neuroscience. Prior studies have reached conflicting conclusions using immunostaining and single-nucleus RNA sequencing (snRNA-seq), partly because traditional neurogenic markers such as DCX, PROX1, and STMN2 lack specificity in humans due to their expression in GABAergic interneurons. Here we generated a comprehensive single-nucleus transcriptomic atlas of 92,966 nuclei from 10 human hippocampal samples spanning neonatal (postnatal day 4), adult (31--32 years), aging (50--68 years), and stroke-injured (48 years) conditions, identifying 16 major cell populations including four neural stem cell (NSC) subtypes: qNSC1, qNSC2, primed NSC (pNSC), and active NSC (aNSC). Cross-species integration with mouse, pig, and rhesus macaque datasets confirmed neurogenic lineage identity. We identified novel specific neuroblast markers (CALM3, NEUROD2, NRGN, NGN1) by excluding genes co-expressed in GABAergic interneurons, overcoming the specificity limitations of traditional markers. RNA velocity and pseudotime analysis revealed that NSCs acquire quiescent properties after birth, enter deep quiescence during aging with marked decreases in pNSC and aNSC populations, and are partially reactivated following stroke injury. Immunostaining confirmed NES$^+$/Ki67$^+$ and VIM$^+$ active NSCs with radial morphology in the injured 48-year-old hippocampus. This atlas provides a unified framework for understanding the transcriptional dynamics governing human hippocampal neurogenesis from birth through aging and injury.
+\end{abstract}
+
+\section{Introduction}
+
+The existence and extent of adult hippocampal neurogenesis in humans has been the subject of intense scientific debate \citep{eriksson1998neurogenesis, spalding2013dynamics}. While some studies using immunohistochemistry reported persistent neurogenesis throughout the human lifespan \citep{boldrini2018human, moreno2015neuronal}, others concluded that neurogenesis drops sharply during childhood and becomes undetectable in adults \citep{sorrells2018human}. Single-nucleus RNA sequencing (snRNA-seq) studies have added to the controversy, with one study finding no evidence of adult neurogenic trajectories and others identifying NSCs and immature neurons in adult and aged hippocampi.
+
+A major source of confusion has been the lack of specificity of traditional neurogenic markers in human tissue. DCX, PROX1, and STMN2---widely used as markers of immature granule cells and neuroblasts in rodent studies---are also expressed in GABAergic interneurons in the human hippocampus. This means that immunostaining or transcriptomic studies relying solely on these markers risk contamination by interneuron populations, leading to either overestimation or misidentification of neurogenic cells.
+
+Beyond the debate about the existence of adult neurogenesis, fundamental questions about the heterogeneity of human hippocampal NSCs remain unanswered. In the mouse hippocampus, NSCs exhibit molecular heterogeneity including distinct quiescent and active states \citep{hochgerner2018conserved, bond2015adult}. Whether similar heterogeneity exists in humans, how NSC subtypes change across the lifespan, and whether quiescent NSCs in the aging human hippocampus retain the capacity for reactivation are all open questions.
+
+The aging hippocampus presents a particular challenge. Studies in mice have shown that aging is associated with deep quiescence of NSCs, reduced neurogenesis, and accumulation of protein aggregates in quiescent stem cells \citep{leeman2018lysosome}. Whether similar processes occur in human NSCs, and whether injury can reverse age-related quiescence, has important implications for understanding brain repair capacity and developing regenerative therapies.
+
+In this study, we address these questions through a comprehensive single-nucleus transcriptomic atlas of the human hippocampus across developmental stages and injury conditions. By combining snRNA-seq with cross-species validation, novel marker identification, and trajectory analysis, we provide a unified framework for understanding human hippocampal neurogenesis.
+
+\section{Methods}
+
+\subsection{Human Tissue Collection}
+
+Ten post-mortem human hippocampal tissues were collected from donors across four groups: neonatal ($n = 1$, postnatal day 4), adult ($n = 2$, ages 31--32), aging ($n = 6$, ages 50--68), and stroke injury ($n = 1$, age 48, hypoxic-ischemic encephalopathy). All samples had post-mortem intervals of approximately 3--4 hours. The anterior-middle hippocampus containing the dentate gyrus structure was dissected for sequencing; counterpart hippocampi were reserved for immunostaining validation.
+
+\begin{table}[ht]
+\centering
+\caption{Donor Information}
+\label{tab:donors}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Donor} & \textbf{Age} & \textbf{Group} & \textbf{Sex} & \textbf{Cause of Death} \\
+\midrule
+D4 & Day 4 & Neonatal & -- & Congenital heart disease \\
+31y & 31 years & Adult & Male & Cerebral infarction \\
+32y & 32 years & Adult & Male & Traumatic death \\
+48y & 48 years & Stroke & -- & Hypoxic-ischemic encephalopathy \\
+50y & 50 years & Aging & -- & Hypertension \\
+56y & 56 years & Aging & -- & Lung carcinoma \\
+60y & 60 years & Aging & -- & Lung carcinoma \\
+64y-1 & 64 years & Aging & -- & Multiple organ failure \\
+64y-2 & 64 years & Aging & -- & Lung carcinoma \\
+68y & 68 years & Aging & -- & Urinary bladder carcinoma \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Nuclei Isolation and Single-Nucleus RNA Sequencing}
+
+Frozen hippocampal tissue was minced with surgical scissors on ice and equilibrated in Hibernate A/B27/GlutaMAX medium. Nuclei were isolated using lysis buffer (10~mM Tris-HCl, 10~mM NaCl, 3~mM MgCl$_2$, 0.1\% NP-40 substitute) with 15~minutes incubation on ice. Samples were triturated, filtered through 30~$\mu$m MACS SmartStrainers, centrifuged at 500~$\times$~g, and washed with PBS/BSA/RNase inhibitor. Myelin was removed using Miltenyi Myelin Removal Beads II, and DAPI-positive nuclei were sorted by FACS. Libraries were prepared using the 10x Genomics platform.
+
+\subsection{Quality Control and Clustering}
+
+After sequencing, quality control removed cell debris, aggregates, and nuclei with $>$20\% mitochondrial gene transcripts. Retained nuclei were clustered using UMAP via Seurat \citep{hao2021integrated}, and populations were annotated using classical markers and differentially expressed genes. NSC subtypes were identified using single-cell Hierarchical Poisson Factorization (scHPF) combined with Seurat's FindAllMarkers.
+
+\begin{table}[ht]
+\centering
+\caption{Sequencing and Quality Control Summary}
+\label{tab:qc}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Total nuclei sequenced & 99,635 \\
+Nuclei retained after QC & 92,966 \\
+Nuclei removed & 6,669 \\
+Retention rate & 93.3\% \\
+Median genes per nucleus & 3,001 \\
+Mitochondrial gene threshold & 20\% \\
+Number of cell populations & 16 \\
+Number of NSC subtypes & 4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cross-Species Integration}
+
+Human snRNA-seq data were integrated with published mouse \citep{hochgerner2018conserved}, pig, and rhesus macaque \citep{franjic2022transcriptomic} datasets using UMAP-based cross-species alignment. Neurogenic lineage identity was validated by co-localization of cell types across species. Additionally, immunostaining was performed on cynomolgus monkey hippocampus for protein-level validation.
+
+\subsection{Trajectory Analysis}
+
+Developmental trajectories were inferred using RNA velocity analysis \citep{lamanno2018rna} and pseudotime reconstruction. RNA velocity vectors in the neonatal neurogenic lineage were examined for directional flow from qNSCs through to granule cells. Gene Ontology (GO) term analysis was performed on differentially expressed genes comparing NSC subtypes.
+
+\subsection{Marker Specificity Analysis}
+
+To identify neuroblast-specific markers, genes expressed in neuroblasts were cross-referenced against genes expressed in GABAergic interneurons. Markers expressed in both populations were classified as non-specific; markers exclusively expressed in neuroblasts were classified as specific.
+
+\section{Results}
+
+\subsection{A Single-Nucleus Atlas of 92,966 Human Hippocampal Nuclei}
+
+After quality control filtering of 99,635 sequenced nuclei, 92,966 nuclei were retained (93.3\% retention rate) with a median of 3,001 genes detected per nucleus. UMAP clustering identified 16 major cell populations, including astrocytes (AS1, AS2/qNSC), primed NSCs, active NSCs, neuroblasts, granule cells, GABAergic interneurons, pyramidal neurons, oligodendrocyte progenitors, oligodendrocytes, microglia, endothelial cells, pericytes, Cajal-Retzius cells, and two unidentified populations.
+
+\subsection{Four NSC Subtypes in the Human Hippocampal Neurogenic Lineage}
+
+Within the neurogenic lineage, we identified four distinct NSC subtypes using scHPF and Seurat's FindAllMarkers: qNSC1, qNSC2, pNSC, and aNSC. Each subtype exhibited distinct marker gene profiles. qNSC1 expressed LRRC3B, RHOJ, and SLC4A4; qNSC2 was transcriptionally distinct from qNSC1 with its own marker set. Known NSC genes including HOPX, SOX2, VIM, NES, and CHI3L1 were expressed across NSC populations, while proliferation-associated genes ASCL1 and EOMES showed dynamic expression across ages.
+
+\begin{table}[ht]
+\centering
+\caption{NSC Subtypes and Representative Markers}
+\label{tab:nsc}
+\begin{tabular}{llll}
+\toprule
+\textbf{Subtype} & \textbf{Full Name} & \textbf{Key Markers} & \textbf{Identified By} \\
+\midrule
+qNSC1 & Quiescent NSC type 1 & LRRC3B, RHOJ, SLC4A4 & scHPF + FindAllMarkers \\
+qNSC2 & Quiescent NSC type 2 & Distinct from qNSC1 & scHPF + FindAllMarkers \\
+pNSC & Primed NSC & Specific genes identified & scHPF + FindAllMarkers \\
+aNSC & Active NSC & Proliferation-associated & scHPF + FindAllMarkers \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Novel Specific Neuroblast Markers Overcome Interneuron Contamination}
+
+Traditional neuroblast markers DCX, PROX1, and STMN2 were found to be widely expressed in GABAergic interneurons, confirming the specificity problem that has confounded prior studies. By systematically excluding genes co-expressed in GABAergic interneurons, we identified four novel specific neuroblast markers: CALM3, NEUROD2, NRGN, and NGN1 (Table~\ref{tab:markers}).
+
+\begin{table}[ht]
+\centering
+\caption{Traditional vs. Novel Neuroblast Markers}
+\label{tab:markers}
+\begin{tabular}{llll}
+\toprule
+\textbf{Marker} & \textbf{In Neuroblasts} & \textbf{In GABA-IN} & \textbf{Specificity} \\
+\midrule
+DCX & Yes & Yes & Non-specific \\
+PROX1 & Yes & Yes & Non-specific \\
+STMN2 & Yes & Yes & Non-specific \\
+CALM3 & Yes & No & Specific (novel) \\
+NEUROD2 & Yes & No & Specific (novel) \\
+NRGN & Yes & No & Specific (novel) \\
+NGN1 & Yes & No & Specific (novel) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cross-Species Validation Confirms Neurogenic Lineage Identity}
+
+Integration of human snRNA-seq data with published mouse, pig, and macaque datasets confirmed that the identified neurogenic lineage populations (qNSC1, qNSC2, pNSC, aNSC, neuroblasts) co-localize with their cross-species counterparts in UMAP space. This cross-species conservation provides strong evidence that the populations identified in our human atlas represent bona fide neurogenic lineage cells rather than transcriptomic artifacts.
+
+\subsection{Age-Dependent Decline in Neurogenic Populations}
+
+Quantification of cell population proportions across age groups revealed dramatic changes in the neurogenic lineage (Table~\ref{tab:age}). pNSC and aNSC populations were abundant in the neonatal hippocampus but decreased markedly in adult and aging samples. qNSC1 and qNSC2 persisted across all ages but acquired deep quiescence signatures with aging. RNA velocity analysis in the neonatal hippocampus showed clear directional flow from qNSC through pNSC/aNSC to neuroblast and granule cell, confirming the expected differentiation trajectory. In aging samples, this trajectory was greatly attenuated, consistent with NSCs entering a deeply quiescent state.
+
+\begin{table}[ht]
+\centering
+\caption{NSC Population Changes Across Age Groups}
+\label{tab:age}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Population} & \textbf{Neonatal} & \textbf{Adult} & \textbf{Aging} & \textbf{Stroke} \\
+\midrule
+qNSC1 & Present & Present & Deep quiescence & Present \\
+qNSC2 & Present & Present & Deep quiescence & Present \\
+pNSC & Abundant & Markedly decreased & Markedly decreased & Recovered \\
+aNSC & Abundant & Markedly decreased & Markedly decreased & Recovered \\
+Neuroblast & Present & Reduced & Reduced & Present \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Stroke Injury Reactivates Quiescent NSCs}
+
+The most striking finding concerned the 48-year-old stroke-injured hippocampus. Despite the expected age-related decline, pNSC and aNSC populations were recovered to levels exceeding those observed in age-matched aging controls. Immunostaining confirmed the presence of NES$^+$/Ki67$^+$ cells, VIM$^+$ cells with radial morphology, and CHI3L1$^+$/NES$^+$ cells in the injured dentate gyrus, providing protein-level validation of active NSCs. This demonstrates that deeply quiescent NSCs in the aging human hippocampus retain the capacity for reactivation following injury, analogous to findings in mouse models.
+
+\section{Discussion}
+
+Our comprehensive single-nucleus atlas of the human hippocampus across developmental stages and injury conditions provides several key advances that help resolve the ongoing debate about human adult hippocampal neurogenesis.
+
+First, we demonstrate that the traditional neurogenic markers DCX, PROX1, and STMN2 lack specificity in human tissue due to their expression in GABAergic interneurons. This finding has profound implications for interpreting prior immunostaining studies: detection of DCX$^+$ cells in the human hippocampus cannot be taken as evidence of neurogenesis without ruling out interneuron contamination. Our identification of four novel specific markers (CALM3, NEUROD2, NRGN, NGN1) provides the field with more reliable tools for detecting neuroblasts in human tissue.
+
+Second, we resolve the molecular heterogeneity of human hippocampal NSCs by identifying four distinct subtypes (qNSC1, qNSC2, pNSC, aNSC), validated through cross-species integration with mouse, pig, and macaque datasets \citep{hochgerner2018conserved, franjic2022transcriptomic}. The two quiescent NSC subtypes (qNSC1, qNSC2) are particularly noteworthy: they persist throughout life but acquire progressively deeper quiescence signatures with aging, consistent with mouse studies showing age-related NSC quiescence \citep{leeman2018lysosome}.
+
+Third, our trajectory analysis using RNA velocity \citep{lamanno2018rna} and pseudotime reconstruction reveals the transcriptional dynamics underlying neurogenesis decline: rather than NSC loss, aging is characterized by a shift toward deep quiescence, with marked decreases in the transitional pNSC and aNSC populations. This suggests that the stem cell pool is not depleted but becomes functionally dormant.
+
+Fourth, and perhaps most remarkably, we demonstrate that stroke injury can reactivate deeply quiescent NSCs in the aging human hippocampus. The recovery of pNSC and aNSC populations in the 48-year-old stroke patient, confirmed by immunostaining showing NES$^+$/Ki67$^+$ and VIM$^+$ cells with radial morphology, provides direct evidence that human hippocampal NSCs retain regenerative potential even in the adult brain.
+
+Limitations include the single neonatal and single injury sample, the heterogeneity of causes of death in the aging cohort, and the cross-sectional rather than longitudinal design. Future studies should include larger cohorts and examine whether therapeutic interventions can induce NSC reactivation in the aging hippocampus.
+
+\section{Conclusion}
+
+This study presents a comprehensive single-nucleus atlas of 92,966 nuclei from the human hippocampus spanning neonatal through aging and stroke-injured conditions. We identify four NSC subtypes with distinct molecular signatures, establish novel specific neuroblast markers that overcome the interneuron contamination problem plaguing traditional markers, and demonstrate that age-related neurogenesis decline reflects deep NSC quiescence rather than stem cell loss. The finding that stroke injury reactivates quiescent NSCs in the aged hippocampus provides a foundation for future regenerative strategies aimed at restoring neurogenesis in the human brain.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

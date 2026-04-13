@@ -1,0 +1,196 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{lineno}
+\doublespacing
+\linenumbers
+
+\title{Permutation Testing as a Confidence Benchmark for Positive-Unlabeled Learning in High-Dimensional Biological Datasets}
+
+\author{Author One$^{1,*}$, Author Two$^{1}$, Author Three$^{2}$ \\
+\small $^1$Department of Biostatistics, University of Example, Example City, USA \\
+\small $^2$Department of Computer Science, University of Example, Example City, USA \\
+\small $^*$Corresponding author: author.one@example.edu}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Positive-unlabeled (PU) learning is increasingly applied to biological datasets where definitive negative examples are unavailable, yet validating PU classifications without ground truth negatives remains a major challenge. We present a permutation testing framework that provides a statistically grounded no-information-rate baseline for PU learning. Our pipeline combines an enhanced ``spy'' fold strategy with PU Bagging and label permutation, using two scoring methods: Explicit Positive Recall (EPR) and Mean Bagging Score (MBS). We demonstrate that comparing actual-label scores against the permuted-label null distribution via a one-sample $z$-score is more stable than independent two-sample $t$-tests, which can produce artificially inflated significance with increasing permutation counts. Validation across nine synthetic datasets varying in class separation and ground truth negative proportions, plus three real-world biological benchmarks (Wisconsin Diagnostic Breast Cancer, BRCA/LUAD RNA-seq, and a vaccine immunology dataset), confirms that our approach reliably distinguishes informative from non-informative PU models. MBS showed lower standard deviation than EPR for both actual and permuted labels, yielding improved sensitivity for detecting meaningful signal. Negative controls with zero class separation produced non-significant results, confirming the absence of false positive confidence. This framework enables researchers to assess PU learning model reliability without access to ground truth labels.
+\end{abstract}
+
+\section{Introduction}
+
+Positive-unlabeled (PU) learning addresses classification problems where only a subset of positive examples is labeled while the remaining data---comprising both unidentified positives and true negatives---are grouped into an unlabeled set \citep{bekker2020learning}. This setting arises naturally in numerous biological applications: identifying disease-associated genes when only some causal genes are known, detecting drug-target interactions when only confirmed interactions are available, and classifying patient subtypes when definitive negative diagnosis is impossible \citep{elkan2008learning, liu2003building}.
+
+A central challenge in PU learning is evaluation. Standard binary classification metrics such as accuracy, F1 score, and Matthews Correlation Coefficient require knowledge of both positive and negative labels. In practice, PU learning evaluations often rely on ground truth labels that would not be available in real-world applications, creating an unrealistic assessment framework \citep{bekker2020learning}. This disconnect between evaluation and deployment conditions is particularly problematic for high-dimensional biological datasets (where the number of features $p$ is comparable to or exceeds the number of samples $n$), which are especially vulnerable to overfitting and may produce seemingly accurate classifications that capture noise rather than genuine biological signal.
+
+Permutation testing is a well-established technique for assessing whether a model's performance exceeds chance expectations in fully supervised learning \citep{ojala2010permutation, good2005permutation}. By shuffling class labels and re-fitting the model, permutation tests generate a null distribution of performance scores against which the actual model's score can be compared. Despite its widespread use in supervised settings, permutation testing has never been adapted to the PU learning context, where the label structure (positive vs.\ unlabeled, rather than positive vs.\ negative) requires modifications to both the permutation procedure and the evaluation metrics.
+
+In this work, we address this gap by developing a permutation testing framework specifically designed for PU learning. Our approach combines an enhanced spy fold strategy---in which known positive (KP) samples are systematically held out as ``spies'' to estimate model performance---with PU Bagging \citep{mordelet2014bagging} and label permutation. We evaluate two scoring methods: Explicit Positive Recall (EPR, the proportion of spy samples correctly classified) and Mean Bagging Score (MBS, the average class 1 probability). Statistical confidence is assessed via one-sample $z$-scores and Cliff's delta effect sizes \citep{cliff1993dominance}. We validate the framework on synthetic datasets with controlled class separation and ground truth negative proportions, and on three real-world biological benchmarks.
+
+\section{Methods}
+
+\subsection{Pipeline Architecture}
+
+The pipeline consists of seven stages (Table~\ref{tab:pipeline}). In Stage 1, KP samples are randomly placed into the unlabeled set as ``spies'' via repeated cross-validated folds. In Stage 2, PU Bagging trains classifiers on the remaining positives versus the expanded unlabeled set and scores each spy's class 1 probability. Stages 3 and 4 aggregate these scores as EPR and MBS, respectively. In Stage 5, P/U labels are randomly shuffled among all samples. Stages 1--4 are repeated under the permuted labels (Stage 6) for multiple replicates, generating a null distribution. Stage 7 performs statistical comparison between actual and permuted scores.
+
+\begin{table}[ht]
+\centering
+\caption{Pipeline architecture for permutation-based PU learning confidence assessment.}
+\label{tab:pipeline}
+\begin{tabular}{cll}
+\toprule
+Stage & Component & Description \\
+\midrule
+1 & Spy fold creation & Sample KP into U as spies (cross-validated) \\
+2 & PU Bagging & Train on P vs.\ expanded U; score spy probabilities \\
+3 & EPR aggregation & Proportion of KP above threshold \\
+4 & MBS aggregation & Mean class 1 probability across spy folds \\
+5 & Label permutation & Shuffle P/U labels randomly \\
+6 & Repeat 1--4 & Generate null distribution under permuted labels \\
+7 & Statistical comparison & $z$-score, Cliff's delta, (optional) $t$-test \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Scoring Methods}
+
+\textbf{Explicit Positive Recall (EPR)} is defined as the fraction of spy KP samples with class 1 probability exceeding a classification threshold. \textbf{Mean Bagging Score (MBS)} is defined as the average class 1 probability of spy KP samples across all folds. MBS was hypothesized to have lower variance than EPR because it uses continuous probability values rather than binary threshold decisions.
+
+\subsection{Statistical Comparison Framework}
+
+Three statistical approaches were compared for assessing significance (Table~\ref{tab:statistics}). The one-sample $z$-score compares the single actual-label score to the distribution of permuted-label scores using the permuted distribution's mean and standard deviation. Cliff's delta provides a non-parametric effect size with 95\% confidence intervals. The two-sample independent $t$-test compares the group of actual-label score replicates against permuted-label score replicates.
+
+\begin{table}[ht]
+\centering
+\caption{Statistical comparison methods.}
+\label{tab:statistics}
+\begin{tabular}{llll}
+\toprule
+Test & Input & Output & Recommendation \\
+\midrule
+$z$-score & Actual vs.\ permuted ($\mu$, $\sigma$) & $p$-value & Preferred (stable) \\
+Cliff's delta & Actual vs.\ permuted scores & Effect size $\pm$ 95\% CI & Complementary \\
+$t$-test & Actual vs.\ permuted groups & $p$-value & Not recommended \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Synthetic Datasets}
+
+Nine synthetic datasets were generated using scikit-learn \citep{pedregosa2011scikit} with 200 samples and 200 features (30\% informative, 70\% redundant; $p \geq n$ setting). Class separation was varied across three levels (hypercube distance: 0, 1, 2) and true negative (TN) proportion was varied across three levels (10\%, 30\%, 50\%), yielding a $3 \times 3$ factorial design. An additional dataset (100 samples, 200 features) was generated for testing permutation count stability.
+
+\subsection{Real-World Benchmark Datasets}
+
+Three real-world datasets were used. (1) The Wisconsin Diagnostic Breast Cancer dataset (WDBC) contained 400 samples with 30 cell nuclei measurement features, with malignant cases as TN and benign as TP \citep{wolberg1995breast}. TN proportions of 10.8\%, 30\%, and 50\% were tested. (2) The BRCA/LUAD RNA-seq dataset comprised 441 samples (300 BRCA as TP, 141 LUAD as TN), reduced to 325 PCA components retaining 95\% variance \citep{weinstein2013cancer, jolliffe2016principal}. (3) The Lakhashe vaccine immunology dataset included 36 Rhesus Macaques with multiplex immunoassay features.
+
+\subsection{Experimental Protocol}
+
+For each dataset, 30 repetitions of the full pipeline were performed with actual labels, and multiple permutation replicates were generated. KP proportions were varied to stress-test applicability. All analyses used cross-validated spy folds with the classifier choice following prior PU Bagging recommendations \citep{mordelet2014bagging}.
+
+\section{Results}
+
+\subsection{MBS Outperforms EPR in Discriminating Actual from Permuted Labels}
+
+Across all datasets, MBS consistently showed lower standard deviation than EPR for both actual and permuted label scores (Table~\ref{tab:scoring_comparison}). This reduced variance improved the ability to detect differences between actual and permuted settings. In synthetic datasets with high class separation (distance = 2), both metrics showed clear separation between actual and permuted scores, but MBS provided tighter distributions and consequently larger effect sizes and more significant $z$-scores.
+
+\begin{table}[ht]
+\centering
+\caption{Comparison of EPR and MBS scoring across synthetic datasets (30\% TN, 30 repetitions).}
+\label{tab:scoring_comparison}
+\begin{tabular}{llcccc}
+\toprule
+Separation & Metric & Actual Mean & Actual SD & Permuted Mean & Separation \\
+\midrule
+High (dist=2) & EPR & High & Moderate & Baseline & Large \\
+High (dist=2) & MBS & High & Low & Baseline & Large \\
+Medium (dist=1) & EPR & Moderate & Moderate & Baseline & Moderate \\
+Medium (dist=1) & MBS & Moderate & Low & Baseline & Moderate \\
+None (dist=0) & EPR & Low & High & Similar & Near zero \\
+None (dist=0) & MBS & Low & Low--Moderate & Similar & Near zero \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Z-Score Provides Stable Significance Assessment}
+
+A critical finding was that the $z$-score $p$-value remained stable regardless of the number of permutation replicates, whereas the two-sample $t$-test $p$-value could be artificially deflated by increasing the permutation count. This occurs because the $t$-test's power increases with sample size (number of permutation replicates), producing arbitrarily low $p$-values even when the actual effect is small. The $z$-score, comparing a single actual-label score to the permuted distribution parameters, is immune to this inflation.
+
+Testing on the Lakhashe dataset and a dimension-matched synthetic dataset confirmed that while the permuted score distribution's mean and standard deviation stabilized quickly, the $t$-test $p$-value continued to decrease with additional permutations. In contrast, the $z$-score $p$-value and Cliff's delta remained constant after approximately 20 permutation replicates.
+
+\subsection{Validation on Real-World Datasets}
+
+\subsubsection{WDBC Dataset}
+
+Across all three TN proportions (10.8\%, 30\%, 50\%) and multiple KP levels, actual-label scores were significantly higher than permuted-label scores for both EPR and MBS. The WDBC dataset, with its well-characterized class structure, served as a positive control demonstrating that the framework correctly identifies informative PU models.
+
+\subsubsection{BRCA/LUAD RNA-Seq Dataset}
+
+After PCA reduction to 325 components retaining 95\% variance, the pipeline showed robust separation between actual and permuted scores across varied KP proportions, confirming applicability to high-dimensional genomic data.
+
+\subsubsection{Lakhashe Vaccine Immunology Dataset}
+
+With only 36 Rhesus Macaques, the pipeline showed moderate separation between actual and permuted scores. Statistical power was reduced with very few KP samples, as expected for a small-sample setting, but the methodology correctly identified meaningful signal where class separation existed.
+
+\subsection{Negative Controls Confirm Absence of False Positives}
+
+In synthetic datasets with zero class separation (distance = 0), the pipeline correctly identified that no meaningful classification was possible (Table~\ref{tab:negative_control}). EPR and MBS scores for actual labels were indistinguishable from permuted label scores. $z$-score $p$-values were non-significant, and Cliff's delta values were near zero. This negative control result is essential for validating that the methodology does not produce false positive confidence when there is genuinely no class structure in the data.
+
+\begin{table}[ht]
+\centering
+\caption{Negative control results (class separation = 0).}
+\label{tab:negative_control}
+\begin{tabular}{llll}
+\toprule
+Metric & Actual Label & Permuted Label & Interpretation \\
+\midrule
+EPR score & Low / near baseline & Low / near baseline & No information \\
+MBS score & Low / near baseline & Low / near baseline & No information \\
+$z$-score $p$ & Not significant & N/A & No false positive \\
+Cliff's delta & Near zero & N/A & No effect \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Impact of KP Proportion on Confidence}
+
+The proportion of known positive samples available for the spy fold procedure significantly affected statistical power. Very low KP proportions reduced the ability to distinguish actual from permuted scores, while moderate to high KP proportions provided adequate power for most datasets. Low class separation reduced confidence regardless of KP proportion, confirming that the methodology's power depends on both the inherent separability of the classes and the amount of labeled data available.
+
+\section{Discussion}
+
+We have presented the first application of permutation testing to positive-unlabeled learning, providing a principled method for assessing whether PU classification models contain meaningful predictive information. The key methodological contributions are threefold: (1) adaptation of the permutation framework to the PU label structure via spy fold integration, (2) demonstration that MBS is a more stable and sensitive scoring method than EPR for comparing actual and permuted labels, and (3) identification of the $z$-score as the preferred statistical test due to its invariance to permutation replicate count.
+
+The instability of the $t$-test in this context deserves emphasis. Because the $t$-test treats the number of permutation replicates as a sample size parameter, researchers could obtain arbitrarily significant $p$-values simply by increasing the number of permutations---a form of $p$-hacking that is particularly insidious because it appears methodologically rigorous. The $z$-score avoids this trap by using the permuted distribution only to estimate population parameters (mean and standard deviation) for a one-sample test.
+
+The combined use of Cliff's delta effect size and $z$-score $p$-values provides complementary information. The $z$-score addresses whether the actual-label score differs significantly from the null distribution, while Cliff's delta quantifies how large the difference is. Together, they allow researchers to identify situations where a PU model is statistically significant but practically uninformative (small effect size) or where a meaningful effect exists but sample size limits statistical power.
+
+Our validation strategy was designed to stress-test the methodology across a range of conditions. The synthetic datasets provided controlled variation in class separation and TN proportion, while the real-world datasets demonstrated applicability to diverse biological domains. The negative control results (zero class separation) are particularly important because they confirm the methodology's specificity: when there is no signal to detect, the framework does not falsely detect one.
+
+\subsection{Comparison with Prior Approaches}
+
+Previous PU learning evaluations have relied on ground truth labels for validation \citep{elkan2008learning, mordelet2014bagging}, creating a circular dependency: the method is designed for settings where negatives are unknown, but validation requires knowing the negatives. Our permutation approach breaks this circularity by providing an internal benchmark---the no-information-rate---that does not require ground truth negatives. The only requirement is sufficient known positives and enough class separation for the PU Bagging algorithm to detect.
+
+\subsection{Limitations and Future Directions}
+
+Several limitations should be noted. First, the framework requires a minimum number of KP samples to generate meaningful spy folds; with very few positives, the spy procedure may be underpowered. Second, while the methodology is theoretically classifier-agnostic, our validation used PU Bagging exclusively. Third, the approach assumes that label permutation preserves the feature distribution, which may not hold if labels are correlated with batch effects or confounding variables. Future work should extend the framework to other PU learning algorithms and investigate robustness to confounders in clinical and multi-site datasets.
+
+\section{Conclusion}
+
+Permutation testing provides a valid and practical confidence benchmark for positive-unlabeled learning. By generating a null distribution through label permutation and comparing actual-label scores using $z$-statistics and effect sizes, researchers can assess whether their PU models contain meaningful predictive information without access to ground truth negative labels. This framework addresses a critical methodological gap in the growing application of PU learning to biological and biomedical datasets.
+
+\section*{Data Availability}
+
+The WDBC dataset is available from the UCI Machine Learning Repository. The BRCA/LUAD dataset is available from The Cancer Genome Atlas. Code implementing the permutation PU pipeline is available at the project repository.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

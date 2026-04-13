@@ -1,0 +1,161 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\onehalfspacing
+
+\title{Spatial Landmark Detection and Tissue Registration with Deep Learning}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$ \\
+\small $^{1}$Department of Computational Biology, University of Research \\
+\small $^{2}$Department of Computer Science, University of Research}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Spatial landmark detection is essential for registering tissue sections across diverse imaging modalities, enabling atlas construction, region-of-interest tracking, and multi-omics data integration. Existing unsupervised landmark detection methods require large datasets (100,000+ images), cannot handle the nonlinear elastic deformations typical of tissue sections, and fail for multimodal data. Here we introduce Effortless Landmark Detection (ELD), a deep learning method using neural-network-guided thin-plate splines (TPS) that achieves robust landmark detection and tissue registration on small datasets without manual annotation. ELD removes the generative network component used in prior methods, reducing overfitting on datasets with fewer than 10 samples. On MAFL and AFLW face landmark benchmarks, ELD achieves superior consistency error and backward error compared to two state-of-the-art models. For spatial omics applications, ELD outperforms manual annotation combined with Eggplant and STAlign for single-modality Visium, H\&E, and in situ sequencing data registration. On mouse prostate 3D reconstruction, ELD improves the average tissue registration error (ATRE) metric compared to 8 competing registration models. For multimodal alignment of gene expression and histology data, separate landmark detectors with latent space similarity optimization achieve successful cross-modality registration. Runtime scales linearly with the number of genes/channels and landmarks, converging in minutes for typical configurations.
+\end{abstract}
+
+\section{Introduction}
+
+The rapid expansion of spatial omics technologies---including spatial transcriptomics (Visium, MERFISH, ISS), spatial proteomics, and spatial metabolomics---has created an urgent need for computational methods that can register tissue sections to common coordinate frameworks, align serial sections for 3D reconstruction, and integrate data across different measurement modalities \citep{moses2022,rao2021}. Central to all of these tasks is the detection of spatial landmarks: anatomically or morphologically consistent points across tissue sections that can serve as anchors for registration.
+
+Manual landmark annotation is the current standard but is labor-intensive, subjective, and creates a bottleneck for large-scale studies. A typical spatial omics experiment may include dozens of tissue sections, each requiring multiple landmarks, making manual annotation impractical \citep{lein2007}. Furthermore, manual annotation requires domain expertise and is poorly reproducible across annotators, introducing variability that propagates through downstream analyses.
+
+Unsupervised landmark detection methods from the computer vision literature offer an alternative, but existing approaches face three fundamental limitations when applied to spatial omics data. First, methods such as Thewlis et al. and Zhang et al. require large training datasets (100,000+ images), which are unavailable for most spatial omics experiments where sample sizes range from 2 to 20 \citep{thewlis2017,zhang2018}. Second, these methods use homography-based registration that assumes affine or projective transformations, but tissue sections undergo nonlinear elastic deformations during preparation that homography cannot capture. Third, no existing method handles multimodal data where corresponding tissue sections are imaged with fundamentally different technologies (e.g., gene expression vs histology).
+
+Here we introduce Effortless Landmark Detection (ELD), which addresses all three limitations through a combination of architectural simplification, thin-plate spline (TPS) registration, and a multi-scale structural similarity (MS-SSIM) cost function.
+
+\section{Methods}
+
+\subsection{ELD Architecture}
+
+ELD uses a convolutional neural network to predict landmark coordinates from input images, followed by TPS-based registration. Unlike prior methods that include both a landmark detector and a generative network (for image reconstruction), ELD removes the generative component entirely (Table~\ref{tab:design}). This architectural simplification is critical for small datasets: the generative network contains millions of parameters that overfit when training data is limited, while the landmark detector alone has far fewer parameters and can be effectively trained on as few as 2 images.
+
+\begin{table}[h]
+\centering
+\caption{Key design decisions in ELD.}
+\label{tab:design}
+\begin{tabular}{ll}
+\toprule
+Decision & Rationale \\
+\midrule
+Remove generative network & Reduces parameters; prevents overfitting \\
+Use TPS (not homography) & Handles nonlinear elastic deformations \\
+MS-SSIM cost function & Robust to batch effects \\
+Landmark drop-out (10\%) & Prevents landmark clustering \\
+Separate detectors (multimodal) & Modality-specific feature detection \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The TPS registration uses detected landmarks as control points to compute a smooth nonlinear transformation between images. TPS naturally handles the elastic deformations typical of tissue sections (stretching, compression, tearing) that homography-based methods cannot accommodate.
+
+\subsection{Cost Function and Training}
+
+The cost function is based on Multi-Scale Structural Similarity (MS-SSIM), computed using the PIQA package with default parameters and window size 5. MS-SSIM is more robust to intensity variations and batch effects than mean squared error (MSE), making it suitable for comparing tissue sections that may have different staining intensities or imaging conditions.
+
+Landmark drop-out is applied with probability 10\% during training: random subsets of landmarks are excluded from the TPS computation, preventing the optimizer from finding degenerate solutions where all landmarks collapse to a single cluster.
+
+\subsection{Configuration}
+
+All experiments used an NVIDIA A100-SXM 81GB GPU with 12 AMD EPYC 7742 processors (Table~\ref{tab:config}).
+
+\begin{table}[h]
+\centering
+\caption{Method configuration.}
+\label{tab:config}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Cost function & MS-SSIM \\
+Registration method & Thin-plate splines (TPS) \\
+Landmark drop-out & 10\% \\
+MS-SSIM window size & 5 \\
+MS-SSIM package & PIQA \\
+Hardware & NVIDIA A100; 12$\times$ AMD EPYC 7742 \\
+Default landmarks & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Benchmark Evaluation}
+
+ELD was evaluated on MAFL and AFLW face landmark benchmarks against two state-of-the-art unsupervised landmark detection methods. Three error metrics were computed: consistency error (deviation after forward-backward registration cycle), backward error (mapping from target to source), and forward error (mapping from source to target).
+
+\subsection{Single-Modality Registration}
+
+Three spatial omics modalities were tested: Visium spatial transcriptomics (gene expression), H\&E histology, and in situ sequencing (ISS). For Visium data, registration quality was assessed by computing correlations of target gene expression (Nrgn, Apoe, Omp) between registered and reference samples.
+
+\subsection{3D Reconstruction}
+
+For 3D tissue reconstruction from serial sections (mouse prostate), ELD produces anchor points using a combination of TPS and rigid transformation with a noise-augmented reference scheme. Performance was measured by ATRE and compared against 8 competing registration methods.
+
+\subsection{Multimodal Alignment}
+
+For cross-modality registration (gene expression + histology), separate landmark detectors were trained for each modality. Registration similarity was optimized in a shared latent tissue space rather than in the raw data space, enabling alignment of fundamentally different data types.
+
+\section{Results}
+
+\subsection{Face Landmark Benchmarks}
+
+On the MAFL and AFLW benchmarks, ELD achieved superior performance on consistency error and backward error compared to both competitor methods (Table~\ref{tab:benchmark}). The distribution of mean consistency error per image was shifted toward lower values for ELD, and per-landmark consistency error was more uniform across landmarks. Backward error (mapping from target back to source) was also lower for ELD. Forward error was marginally worse for ELD, reflecting a trade-off between forward and backward accuracy that is expected when removing the generative network.
+
+\begin{table}[h]
+\centering
+\caption{Face landmark benchmark performance.}
+\label{tab:benchmark}
+\begin{tabular}{lccc}
+\toprule
+Metric & ELD & Competitor 1 & Competitor 2 \\
+\midrule
+Consistency error & Superior (lower) & Higher & Higher \\
+Backward error & Superior (lower) & Higher & Higher \\
+Forward error & Marginally worse & Better & Similar \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Runtime Efficiency}
+
+ELD runtime scales linearly with both the number of genes/channels and the number of landmarks. With 10 landmarks and 3 channels, convergence occurred in minutes. With 100+ genes, runtime remained practical (under 30 minutes). This linear scaling makes ELD feasible for high-dimensional spatial omics datasets.
+
+\subsection{Single-Modality Registration}
+
+For Visium data, ELD with 14 landmarks produced higher correlations for target genes (Nrgn, Apoe, Omp) between registered and reference samples compared to both manual annotation-based registration and unregistered data. For H\&E histology, ELD achieved alignment quality comparable to STAlign and manual Eggplant annotation but without requiring manual labor. For ISS data, ELD similarly achieved good alignment quality.
+
+\subsection{3D Tissue Reconstruction}
+
+On the mouse prostate 3D reconstruction task, ELD significantly improved the ATRE metric compared to all 8 competing registration models. The anchor point approach, which combines TPS with rigid transformation and noise-augmented references, produced smooth 3D reconstructions that preserved tissue morphology across serial sections.
+
+\subsection{Multimodal Alignment}
+
+Separate landmark detectors for gene expression and histology modalities, combined with latent space similarity optimization, achieved successful cross-modality alignment. The detected landmarks for each modality captured modality-specific anatomical features, and the latent space mapping enabled correspondence between landmarks from different modalities. This approach was also demonstrated for gene expression and mass spectrometry imaging alignment.
+
+\section{Discussion}
+
+ELD addresses a critical gap in the spatial omics computational toolkit: the need for automated, unsupervised landmark detection and tissue registration that works with small datasets, handles nonlinear deformations, and supports multimodal data. The removal of the generative network is a counterintuitive but effective design choice: while generative models are powerful for large datasets, they are counterproductive for the small datasets typical of spatial omics, where overfitting to training examples prevents generalization \citep{thewlis2017}.
+
+The use of TPS rather than homography for registration is essential for tissue data. Unlike faces (which undergo primarily affine transformations between viewpoints), tissue sections undergo elastic deformations during cutting, mounting, and staining that are fundamentally nonlinear. TPS provides a mathematically principled framework for smooth nonlinear registration that naturally handles these deformations \citep{bookstein1989}.
+
+The MS-SSIM cost function provides robustness to the batch effects that are pervasive in spatial omics data. Different tissue sections, even from the same tissue block, may have different staining intensities, background levels, and contrast. MS-SSIM captures structural similarity at multiple spatial scales while being invariant to global intensity changes, making it more suitable than pixel-wise metrics like MSE \citep{wang2003}.
+
+The multimodal alignment capability is particularly important for the growing field of multi-omics spatial biology. Measuring gene expression, protein abundance, and metabolite distributions on adjacent tissue sections requires precise cross-modality registration to enable integrated analysis. The separate detector approach recognizes that different modalities capture fundamentally different features and require modality-specific landmark detection, while the shared latent space provides the common ground for cross-modality correspondence.
+
+Several limitations should be noted. First, ELD requires that tissue sections share recognizable anatomical structure; severely damaged or fragmented sections may lack sufficient structure for landmark detection. Second, the random binning of genes for Visium registration means that results may vary slightly across runs, though we observed high reproducibility in practice. Third, the current implementation requires GPU computation, which may not be available in all settings.
+
+\section{Conclusion}
+
+ELD provides an automated, unsupervised approach to spatial landmark detection and tissue registration that works with the small datasets, nonlinear deformations, and multimodal data characteristic of spatial omics experiments. By removing the generative network and using TPS registration with an MS-SSIM cost function, ELD achieves superior or comparable performance to manual annotation while eliminating the labor and subjectivity of hand-placed landmarks.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

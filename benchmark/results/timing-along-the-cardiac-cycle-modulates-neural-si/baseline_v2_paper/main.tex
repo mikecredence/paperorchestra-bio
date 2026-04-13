@@ -1,0 +1,185 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{setspace}
+\usepackage{lineno}
+
+\doublespacing
+
+\title{Cardiac Cycle Timing Modulates Neural Representations of Reward Prediction Errors During Learning}
+
+\author{Author A$^{1,*}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1,2}$ \\
+\\
+\small $^{1}$Department of Psychology, University of Neuroscience, City, Country \\
+\small $^{2}$Institute of Cognitive Science, University of Neuroscience, City, Country \\
+\small $^{*}$Corresponding author: author.a@university.edu}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Interoceptive signals from the cardiovascular system are known to modulate the perception of near-threshold sensory stimuli, yet whether such cardiac cycle effects extend to internal, non-sensory neural representations remains unknown. Here we investigated whether the timing of reward-related outcomes relative to the cardiac cycle influences neural representations of prediction errors (PEs) during reinforcement learning. Thirty-two participants performed a reward-guided decision task while simultaneous 64-channel EEG and ECG were recorded. Reinforcement learning models were fitted to behavioral data, and prediction errors were decomposed into absolute PE (indexing surprise) and signed PE (indexing valence). Cardiac-related signals (CRS) extracted from R-wave-locked EEG epochs discriminated between high and low absolute PEs but not between positive and negative signed PEs. Machine learning classification confirmed significant above-chance decoding of absolute PE magnitude from CRS-locked neural activity. Critically, absolute PE discrimination was reduced when outcomes occurred during cardiac systole compared to diastole, paralleling the well-established sensory suppression at systole. Furthermore, participants exhibiting stronger cardiac-cycle-dependent PE modulation showed higher learning rates and greater task accuracy. These findings demonstrate that interoceptive cardiac signals modulate internal reward representations, linking bodily rhythms to computational learning processes.
+\end{abstract}
+
+\section{Introduction}
+
+The heart and the brain are in continuous bidirectional communication, with cardiac signals modulating diverse aspects of perception and cognition \citep{garfinkel2015knowing, critchley2015neural}. A robust line of evidence has established that the phase of the cardiac cycle influences the detection and processing of near-threshold sensory stimuli. Specifically, stimuli presented during cardiac systole---the phase of active ventricular contraction---are perceived as less intense or are detected less frequently than those presented during diastole \citep{edwards2009sensory, salomon2016brain}. This phenomenon has been interpreted as a consequence of baroreceptor-mediated suppression of afferent sensory processing during the systolic phase, when arterial pressure waves maximally stimulate carotid and aortic baroreceptors \citep{rau2009baroreceptor, park2014peripheral}.
+
+While the cardiac modulation of exteroceptive sensory processing is well documented, a fundamental question remains unexplored: do cardiac cycle effects extend to purely internal neural representations that are not directly tied to sensory input? Prediction errors (PEs) generated during reinforcement learning provide an ideal testing ground for this question. PEs represent the discrepancy between expected and received outcomes and are central to adaptive behavior \citep{rescorla1972theory, sutton1998reinforcement}. Importantly, absolute PE magnitude---reflecting the degree of surprise or salience regardless of valence---can be near threshold in its neural representation even when the associated sensory outcome (e.g., a colored circle) is clearly suprathreshold \citep{schultz1997neural, behrens2007learning}. This dissociation enables a critical test: if cardiac cycle effects operate on internal representations rather than only on sensory transduction, then we should observe systolic suppression of PE-related neural signals even in the absence of sensory ambiguity.
+
+The cardiac-related signal (CRS) measured via EEG provides a window into the neural processing of cardiovascular afferent information. The CRS is a heartbeat-evoked potential extracted by time-locking EEG epochs to the ECG R-wave peak, reflecting cortical representations of cardiac activity \citep{schandry1986heartbeat, pollatos2007reduced}. Previous work has shown that CRS amplitude indexes the precision of interoceptive predictions \citep{ainley2016heartfelt, marshall2018heartbeat}, but its relationship to learning-related computations has not been investigated.
+
+In this study, we combined computational modeling of reinforcement learning with cardiac-phase analysis of EEG to test three hypotheses. First, we predicted that CRS amplitude would discriminate between different levels of absolute PE but not signed PE, as the cardiac afferent system is expected to track surprise magnitude rather than outcome valence. Second, we hypothesized that this discrimination would be reduced for outcomes occurring during systole relative to diastole, analogous to the systolic suppression of sensory perception. Third, we predicted that individual differences in the magnitude of cardiac-dependent PE modulation would correlate with learning performance, establishing a functional link between interoceptive processing and adaptive behavior.
+
+\section{Methods}
+
+\subsection{Participants}
+
+Thirty-five healthy adults were recruited for the study. Three participants were excluded due to excessive EEG artifact, yielding a final sample of 32 participants (10 female; mean age = 24 $\pm$ 7.13 years). All participants were right-handed (mean Edinburgh Handedness Inventory score = 0.83 $\pm$ 0.13) and reported no history of neurological or cardiovascular conditions. The study was approved by the institutional ethics committee and all participants provided written informed consent.
+
+\begin{table}[ht]
+\centering
+\caption{Participant demographics and recording parameters.}
+\label{tab:participants}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Recruited & 35 \\
+Excluded (EEG artifact) & 3 \\
+Analyzed & 32 \\
+Mean age $\pm$ SD & 24 $\pm$ 7.13 years \\
+Female participants & 10 \\
+Edinburgh Handedness & 0.83 $\pm$ 0.13 \\
+EEG channels & 64 \\
+Viewing distance & 70 cm \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Task Design}
+
+Participants performed a modified weather prediction task framed as a reward-guided decision paradigm. On each trial, a visual cue (either a face or a house image, drawn from a set of 10 each, 512$\times$512 pixels) was presented, and participants chose one of two color options (orange or blue circles, 125$\times$125 pixels). Following the choice, a 4-second outcome period was displayed, during which feedback was provided and multiple heartbeat cycles occurred (mean = 4.58 $\pm$ 0.85 heartbeats per outcome period). The task comprised 8 blocks of 60 trials each (480 total trials), with two new cue images introduced per block.
+
+Four association schemes governed the relationship between cues and outcomes across blocks (Table~\ref{tab:schemes}). Each scheme was presented twice during the session, and the ordering was counterbalanced across participants. The association schemes varied in the degree to which cues predicted outcomes, ranging from highly predictive to entirely non-predictive, thereby generating a natural range of prediction error magnitudes.
+
+\begin{table}[ht]
+\centering
+\caption{Association schemes governing cue-outcome relationships.}
+\label{tab:schemes}
+\begin{tabular}{lll}
+\toprule
+Scheme & Abbreviation & Cue-Colour Relationship \\
+\midrule
+Highly predictive anticorrelated & HA & Each cue predicts different colour \\
+Highly predictive correlated & HC & Both cues predict same colour \\
+Variable predictive & VP & One cue predictive, other not \\
+Non-predictive & NP & No cue-colour associations \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Modeling}
+
+Participant choice behavior was modeled using two reinforcement learning (RL) models based on standard Q-learning \citep{sutton1998reinforcement, daw2011trial}. The first model estimated prediction values based solely on the cue-outcome association history, with free parameters for learning rate ($\alpha$) and softmax temperature ($\beta$). The second model additionally included a cue bias parameter that allowed differential weighting of face versus house cues. Models were fitted to individual participant data by maximizing the log-likelihood, and model comparison was performed using the Bayesian Information Criterion (BIC) \citep{schwarz1978estimating}.
+
+From the winning model, trial-by-trial prediction errors were computed and decomposed into two components: signed PE (outcome value minus expected value, reflecting whether the outcome was better or worse than expected) and absolute PE (the unsigned magnitude of the prediction error, reflecting surprise or salience regardless of valence).
+
+\subsection{EEG and ECG Recording and Processing}
+
+EEG was recorded from 64 scalp electrodes using a standard 10-20 montage system. ECG was recorded simultaneously using a chest electrode. Data were sampled at 1000~Hz and offline-filtered using standard preprocessing pipelines. R-wave peaks were detected from the ECG signal using a peak-detection algorithm and visually verified.
+
+The cardiac-related signal was extracted by epoching the EEG data time-locked to R-wave peaks occurring during the 4-second outcome period. CRS waveforms were analyzed at fronto-central and central-parietal regions of interest (ROIs) where prominent cardiac-evoked potentials were observed. For cardiac phase assignment, each outcome onset was classified as occurring during systole or diastole based on its temporal relationship to the preceding R-wave, following established protocols \citep{garfinkel2014fear, azevedo2017cardiac}.
+
+\subsection{Machine Learning Classification}
+
+To quantify the discriminability of absolute PE levels from CRS-locked EEG, cross-validated discriminant analysis was employed \citep{parra2005recipes, sajda2009single}. For each participant, CRS epochs were sorted by absolute PE magnitude, and the highest and lowest quantiles were selected. A linear discriminant classifier was trained using leave-one-out cross-validation, and performance was quantified as the area under the ROC curve (Az). Statistical significance was assessed using permutation testing and group-level t-tests against chance (Az = 0.5).
+
+\section{Results}
+
+\subsection{Behavioral Performance}
+
+Accuracy and reaction times varied systematically across association schemes (Table~\ref{tab:behavior}), confirming that participants learned the cue-outcome associations when predictive information was available. In highly predictive blocks (HA and HC), accuracy was highest and reaction times were fastest. In variable predictive blocks (VP), intermediate performance was observed. In non-predictive blocks (NP), accuracy remained near chance level, indicating that participants appropriately did not form stable predictions when no reliable associations existed.
+
+\begin{table}[ht]
+\centering
+\caption{Behavioral performance across association scheme types.}
+\label{tab:behavior}
+\begin{tabular}{lll}
+\toprule
+Block Type & Relative Accuracy & Relative RT \\
+\midrule
+HA (highly predictive anticorrelated) & Highest & Fastest \\
+HC (highly predictive correlated) & High & Fast \\
+VP (variable predictive) & Moderate & Intermediate \\
+NP (non-predictive) & Chance level & Slowest \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model Comparison}
+
+Comparison of the two RL models revealed that the simple prediction model without cue bias provided a better fit to the data than the cue-biased model (BIC = 362.17 vs.\ 377.40), indicating that participants did not systematically favor face or house cues in their learning. All subsequent analyses used prediction errors derived from the winning simple model. The model accurately captured the temporal evolution of choice probabilities across blocks and association schemes, with model-predicted choice probabilities closely tracking observed behavior.
+
+\subsection{CRS Discriminates Absolute but Not Signed PE}
+
+Analysis of CRS waveforms revealed a clear dissociation between the two components of prediction error. CRS amplitude at fronto-central and central-parietal ROIs showed no significant difference between epochs associated with positive versus negative signed PEs, indicating that the cardiac-related neural signal does not encode outcome valence. In contrast, CRS amplitude significantly differed between epochs associated with high versus low absolute PEs ($p < 0.05$), demonstrating that the cardiac afferent representation tracks the surprise or salience dimension of prediction errors regardless of whether outcomes were better or worse than expected.
+
+\subsection{Machine Learning Confirms Above-Chance PE Decoding}
+
+Cross-validated discriminant analysis applied to CRS-locked EEG data confirmed that high versus low absolute PE could be decoded at above-chance levels. The mean Az across the 32 participants was significantly greater than 0.5 ($p < 0.05$), with peak discrimination occurring at latencies corresponding to the CRS peak. Individual subject Az values showed variability but were consistently above chance for the majority of participants.
+
+\subsection{Cardiac Phase Modulates PE Discrimination}
+
+The central finding of this study was that the cardiac cycle phase at which outcomes occurred modulated the neural discrimination of absolute PEs. CRS amplitude was significantly lower for outcomes occurring during systole compared to diastole ($p < 0.05$, $N = 32$), as visualized in violin plot distributions showing the per-participant systole-diastole differences. Critically, machine learning discrimination (Az) of high versus low absolute PE was also reduced for outcomes occurring at systole relative to diastole. This pattern directly parallels the well-established suppression of near-threshold sensory perception during systole \citep{salomon2016brain, al2020cardiac}, but extends it to a purely internal, non-sensory representation.
+
+Control analyses confirmed that this effect was not driven by trivial confounds. Trial counts across block types were balanced between systolic and diastolic outcome presentations. Mean absolute PE values did not differ between systole and diastole trials, nor did the frequency of rewarded outcomes, ruling out the possibility that cardiac phase was confounded with task variables.
+
+\subsection{Cardiac Modulation Predicts Learning Performance}
+
+Individual differences in the magnitude of cardiac-cycle-dependent PE modulation (quantified as the diastole-minus-systole difference in Az) were positively correlated with both learning rate and task accuracy. Participants with stronger cardiac-dependent suppression of PE discrimination at systole (and correspondingly stronger discrimination at diastole) exhibited higher fitted learning rates from the RL model and earned more rewards across the task. This relationship was specific to predictive blocks (HA, HC, VP) and absent in non-predictive blocks (NP), where learning was not possible by design. This specificity provides further evidence that the cardiac-learning relationship reflects genuine interoceptive modulation of reward learning rather than a non-specific arousal or attention effect.
+
+\section{Discussion}
+
+This study provides the first evidence that the timing of events relative to the cardiac cycle modulates internal neural representations of reward prediction errors during learning. Three key findings support this conclusion. First, the cardiac-related signal in EEG discriminates between high and low levels of absolute PE---reflecting surprise magnitude---but not between positive and negative signed PE. Second, this discrimination is suppressed when outcomes occur during cardiac systole, mirroring the well-established baroreceptor-mediated attenuation of sensory processing during this phase. Third, the strength of this cardiac-dependent modulation predicts individual learning performance, linking interoceptive processing to computational learning mechanisms.
+
+\subsection{Cardiac Signals Track Surprise, Not Valence}
+
+The selective sensitivity of CRS amplitude to absolute PE aligns with theoretical accounts proposing that interoceptive signals primarily encode precision or certainty rather than specific content \citep{seth2013interoceptive, barrett2015interoceptive}. Under predictive processing frameworks, the CRS may reflect the brain's representation of expected cardiovascular state, with perturbations driven by surprising events regardless of whether those events are positive or negative. This interpretation is consistent with evidence that heartbeat-evoked potentials index interoceptive prediction precision across various contexts \citep{marshall2018heartbeat, ainley2016heartfelt}.
+
+\subsection{Systolic Suppression of Internal Representations}
+
+The finding that PE discrimination is reduced at systole extends the phenomenon of cardiac-cycle-dependent sensory suppression to a fundamentally different domain. Previous studies have documented systolic suppression of visual, somatosensory, and nociceptive stimuli \citep{edwards2009sensory, salomon2016brain, park2014peripheral}, but these effects were attributable to baroreceptor-mediated gating of afferent sensory pathways. Because absolute PE magnitude is computed internally from the comparison of expected and received values, and because the sensory outcomes were suprathreshold, our results suggest that baroreceptor activity modulates cortical processing more broadly than previously appreciated.
+
+One potential mechanism involves the influence of cardiac afferent signals on prefrontal and insular cortices, which are critical for both interoceptive processing and reward learning \citep{critchley2015neural, behrens2007learning}. Baroreceptor activation during systole may transiently reduce the excitability of these regions, attenuating the neural encoding of prediction error signals that depend on these circuits. This interpretation is consistent with neuroimaging evidence showing cardiac-cycle-dependent modulation of insular and prefrontal BOLD responses \citep{garfinkel2015knowing}.
+
+\subsection{Linking Interoception to Learning}
+
+The correlation between cardiac-dependent PE modulation and learning performance has important implications for understanding individual differences in reward-based learning. Our findings suggest that individuals who are more sensitive to the cardiac modulation of prediction errors---and who therefore have stronger interoceptive representations during diastole---may benefit from enhanced precision of PE signals during the diastolic phase \citep{seth2013interoceptive}. This could facilitate more accurate credit assignment and faster learning. Conversely, individuals with weaker cardiac modulation may have noisier PE representations, potentially contributing to suboptimal learning strategies observed in clinical populations with interoceptive deficits \citep{paulus2010interoception, khalsa2018interoception}.
+
+\subsection{Methodological Considerations}
+
+Several methodological aspects merit discussion. The 4-second outcome period was critical to the design, ensuring that multiple heartbeat cycles occurred per trial (mean 4.58 $\pm$ 0.85) and enabling robust assignment of cardiac phase to outcome onset. The use of machine learning classification provided a sensitive, multivariate measure of PE discrimination that complemented the univariate CRS amplitude analysis. The computational modeling approach allowed principled decomposition of prediction errors into absolute and signed components, enabling dissociation of surprise from valence.
+
+A limitation is that our sample included only right-handed participants, and the generalizability to left-handed individuals is unknown. Additionally, while we demonstrated cardiac modulation of PE discrimination, the precise neural mechanisms---including the role of specific brain regions and neurotransmitter systems---remain to be elucidated by future imaging studies. The exclusion of three participants due to EEG noise is typical for EEG studies but may introduce minor selection bias.
+
+\subsection{Implications and Future Directions}
+
+These findings open several avenues for future research. Combining cardiac-phase analysis with functional MRI could reveal the specific cortical and subcortical circuits mediating the interoceptive modulation of prediction errors. Investigating clinical populations with known interoceptive abnormalities, such as anxiety disorders or alexithymia, could reveal whether disrupted cardiac-PE coupling contributes to maladaptive learning patterns \citep{paulus2010interoception}. Furthermore, real-time manipulation of cardiac phase during feedback delivery (e.g., using cardiac-triggered stimulus presentation) could establish causal relationships between cardiac timing and learning outcomes \citep{azevedo2017cardiac}.
+
+\section{Conclusion}
+
+We demonstrate that the cardiac cycle modulates neural representations of reward prediction errors during learning. Cardiac-related EEG signals track absolute prediction error magnitude, and this tracking is suppressed during cardiac systole in a manner paralleling sensory suppression. Individual differences in this cardiac-dependent modulation predict learning performance, establishing a functional link between interoceptive cardiac processing and adaptive reward-based behavior. These findings reveal that the brain's internal computations for learning are not insulated from the body's rhythmic physiology, but rather are shaped by the continuous dialogue between heart and brain.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

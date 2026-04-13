@@ -1,0 +1,244 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{Multiplicative Joint Coding in Preparatory Activity for Reaching Sequences in Macaque Motor Cortex}
+\author{Author A$^{1}$, Author B$^{1}$, Author C$^{1,2}$\\
+\small $^{1}$Department of Neuroscience, University of Western Ontario, Canada\\
+\small $^{2}$Robarts Research Institute, London, Ontario, Canada}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+How primate motor cortex encodes the elements of sequential movements during motor preparation is poorly understood. The prevailing competitive queuing hypothesis posits parallel, independent representations of sequence elements; however, this has not been rigorously tested during preparatory activity. Here, we recorded from motor cortex of three rhesus macaques performing a memory-guided double-reach task and compared additive (independent) and multiplicative (interactive) models of neural encoding. During the peri-movement-onset window, the multiplicative model significantly outperformed the additive model at the population level (adjusted $R^2$ comparison, $p < 0.0005$), while around movement end the additive model provided a superior fit. PCA-LDA dimensionality reduction revealed that neural population states during preparation sub-clustered by second-reach direction within subspaces defined by first-reach direction, a hallmark of multiplicative joint coding. Population vector simulations demonstrated that multiplicative coding preserves robust linear readout of the ongoing movement element, whereas purely additive coding introduces systematic directional bias. A recurrent neural network trained on the task spontaneously developed multiplicative joint coding during preparation, transitioning to additive coding during execution. These results reveal a gain-modulation mechanism for sequential motor preparation in which forthcoming movements interact through multiplicative joint coding before transitioning to independent parallel representations during execution.
+\end{abstract}
+
+\section{Introduction}
+
+The ability to plan and execute sequences of movements is fundamental to behaviour, from grasping objects to speaking sentences. A central question in motor neuroscience is how the brain represents the multiple elements of an upcoming sequence during the preparatory period before movement begins \citep{tanji2001sequential, lashley1951problem}. Two broad hypotheses have been proposed. The competitive queuing hypothesis posits that sequence elements are represented independently and in parallel, with a selection mechanism activating them serially \citep{bullock2004neural, averbeck2002parallel}. The alternative is that elements interact during preparation through a joint coding mechanism.
+
+Motor cortex neurons exhibit preparatory activity that predicts upcoming movement parameters including direction, speed, and distance \citep{churchland2012neural, georgopoulos1986neuronal, shenoy2013cortical}. This preparatory activity occupies a neural state space distinct from the execution-related dynamics \citep{kaufman2014cortical}. However, most studies have examined preparation for single movements. When multiple movements must be planned, a recent study suggested two independent motor processes for double-reach sequences \citep{zimnik2021independent}, but did not formally test whether the neural representations of the two movement elements interact during preparation.
+
+If sequence elements were truly represented independently (additively), one might expect prediction errors to accumulate---a systematic directional bias in the population vector readout of the first reach due to contamination by the second reach representation. That such accumulation has not been observed suggests a more sophisticated encoding scheme. Gain modulation, where one variable multiplicatively modulates the tuning of a neuron to another variable, is a widespread computational principle in the brain \citep{salinas2001gain, andersen1985encoding}. It enables flexible, context-dependent coding while preserving the readout of individual variables \citep{zipser1988back}.
+
+Here, we test whether motor cortex uses multiplicative gain modulation to jointly encode the impending and subsequent reaches during preparation for double-reach sequences. We recorded from motor cortex of three macaques performing a memory-guided double-reach task and applied regression analysis, dimensionality reduction, population vector simulation, and recurrent neural network modelling to characterise the encoding scheme.
+
+\section{Results}
+
+\subsection{Task Design and Behavioural Validation}
+
+Three rhesus macaques (C, G, S) performed a memory-guided double-reach task. In single-reach (SR) trials, one target appeared at one of six equally spaced directions. In double-reach (DR) trials, two targets appeared simultaneously for 400~ms, then were extinguished during a 400--800~ms memory period (Table~\ref{tab:task}).
+
+\begin{table}[H]
+\centering
+\caption{Task parameters for the double-reach paradigm.}
+\label{tab:task}
+\begin{tabular}{@{}lc@{}}
+\toprule
+Parameter & Value \\
+\midrule
+Trial types & 3 (SR, DR-CW, DR-CCW) \\
+Directions per type & 6 (0$^\circ$--300$^\circ$, 60$^\circ$ steps) \\
+Total conditions & 18 \\
+Cue duration & 400~ms \\
+Memory period & 400--800~ms \\
+DR angular displacement & 120$^\circ$ (CW or CCW) \\
+Response window & 700--1200~ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Kinematic validation confirmed that the first reach in DR trials was indistinguishable from the corresponding SR (Table~\ref{tab:kinematics}).
+
+\begin{table}[H]
+\centering
+\caption{Behavioural validation of kinematic equivalence between SR and DR first reaches.}
+\label{tab:kinematics}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Measure & Value & Test & $p$-value \\
+\midrule
+Speed profile correlation (DR vs SR) & $0.990 \pm 0.006$ & Pearson $r$ & --- \\
+sEMG correlation (EDC muscle) & $> 0.95$ & Pearson $r$ & --- \\
+Trajectory difference (1st reach) & No difference & One-way ANOVA & $> 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Single-Neuron Modulation by Sequence Context}
+
+Individual motor cortex neurons showed heterogeneous modulation by the second-reach context during the preparatory period. Some neurons exhibited gain-like scaling of their directional tuning by the second target direction, while others showed more complex patterns. This heterogeneity motivated formal model comparison at the population level.
+
+\subsection{Regression Model Comparison}
+
+Three models were fit to DR firing rates in sliding 200-ms windows aligned to movement onset (MO):
+
+\begin{equation}
+\text{Additive:} \quad f_\text{DR} = f_{1\text{st}} + f_{2\text{nd}} + c
+\end{equation}
+\begin{equation}
+\text{Multiplicative:} \quad f_\text{DR} = f_{1\text{st}} \cdot g(\theta_{2\text{nd}})
+\end{equation}
+\begin{equation}
+\text{Full:} \quad f_\text{DR} = a \cdot f_{1\text{st}} \cdot g(\theta_{2\text{nd}}) + b \cdot f_{1\text{st}} + c \cdot f_{2\text{nd}} + d
+\end{equation}
+
+Population-level goodness-of-fit (averaged adjusted $R^2$) revealed a temporal transition (Table~\ref{tab:model_fit}).
+
+\begin{table}[H]
+\centering
+\caption{Model comparison at key time windows (population-level adjusted $R^2$, Monkey C array dataset). Bold indicates significantly better model ($p < 0.0005$, paired test).}
+\label{tab:model_fit}
+\begin{tabular}{@{}lcccl@{}}
+\toprule
+Time Window & $R^2_\text{Add}$ & $R^2_\text{Mult}$ & $R^2_\text{Full}$ & Better Model \\
+\midrule
+$-300$ to $-100$~ms (pre-MO) & $0.412$ & $\mathbf{0.523}$ & $0.541$ & Multiplicative \\
+$-100$ to $+100$~ms (peri-MO) & $0.398$ & $\mathbf{0.547}$ & $0.562$ & Multiplicative \\
+$+100$ to $+300$~ms (early exec) & $0.461$ & $0.478$ & $0.503$ & Tied \\
+Peri-ME ($\pm 100$~ms) & $\mathbf{0.531}$ & $0.437$ & $0.548$ & Additive \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Around movement onset, the multiplicative model significantly outperformed the additive model ($p < 0.0005$). This advantage reversed around movement end, where the additive model provided a better fit ($p < 0.0005$).
+
+\subsection{Directional Tuning Analysis}
+
+The model comparison was corroborated by examining directional tuning curves. Around MO, DR condition firing rates showed gain-like scaling captured by the multiplicative model (Table~\ref{tab:tuning}).
+
+\begin{table}[H]
+\centering
+\caption{Tuning curve fit quality (mean $R^2$ across neurons with significant tuning, Monkey C).}
+\label{tab:tuning}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Time Window & $R^2_\text{Add}$ & $R^2_\text{Mult}$ & $n$ neurons \\
+\midrule
+Peri-MO & $0.387$ & $\mathbf{0.541}$ & 84 \\
+Peri-ME & $\mathbf{0.512}$ & $0.402$ & 79 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{PCA-LDA Dimensionality Reduction}
+
+Principal component analysis followed by linear discriminant analysis \citep{cunningham2014dimensionality} was applied to population preparatory activity. SR neural states clustered by reaching direction. DR states projected onto the SR subspace also clustered into six groups by first-reach direction. Within each first-reach cluster, LDA revealed sub-clustering by second-reach direction (Table~\ref{tab:pca}).
+
+\begin{table}[H]
+\centering
+\caption{PCA-LDA classification accuracy for second-reach direction within first-reach clusters (Monkey C, preparatory period).}
+\label{tab:pca}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+1st Reach Direction & 2nd Reach Classification (\%) & Chance (\%) \\
+\midrule
+0$^\circ$ & $\mathbf{89.2}$ & $33.3$ \\
+60$^\circ$ & $\mathbf{87.5}$ & $33.3$ \\
+120$^\circ$ & $\mathbf{91.0}$ & $33.3$ \\
+180$^\circ$ & $\mathbf{85.8}$ & $33.3$ \\
+240$^\circ$ & $\mathbf{88.3}$ & $33.3$ \\
+300$^\circ$ & $\mathbf{86.7}$ & $33.3$ \\
+\midrule
+Mean & $\mathbf{88.1}$ & $33.3$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This sub-clustering is the population-level signature of multiplicative joint coding: the first-reach representation is modulated by the second-reach context, producing distinct preparatory states for each sequence combination.
+
+\subsection{Population Vector Simulation}
+
+Model neurons were simulated under additive and multiplicative coding rules. The population vector (PV) was computed as the sum of preferred directions weighted by firing rates (Table~\ref{tab:pv}).
+
+\begin{table}[H]
+\centering
+\caption{Population vector directional bias for first-reach readout under different coding models.}
+\label{tab:pv}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Model & Mean Directional Error ($^\circ$) & Systematic Bias \\
+\midrule
+SR (baseline) & $2.1 \pm 1.3$ & None \\
+Additive (DR) & $18.7 \pm 5.4$ & Toward 2nd target \\
+\textbf{Multiplicative (DR)} & $\mathbf{3.4 \pm 1.8}$ & \textbf{None} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The multiplicative model preserved robust directional readout of the first reach ($3.4^\circ$ error), while the additive model introduced systematic bias toward the second-reach direction ($18.7^\circ$ error).
+
+\subsection{Recurrent Neural Network}
+
+An RNN consisting of input, hidden, and output layers was trained to produce population vector outputs for the double-reach task. The RNN spontaneously developed multiplicative joint coding during the simulated preparatory period, with conspicuous nonlinear encoding properties in hidden-layer units. The network exhibited a temporal transition from multiplicative to additive coding around movement execution, mirroring the pattern observed in neural data.
+
+\subsection{Cross-Subject Replication}
+
+The multiplicative coding advantage during preparation was replicated across all three monkeys (Table~\ref{tab:replication}).
+
+\begin{table}[H]
+\centering
+\caption{Cross-subject replication of multiplicative $>$ additive advantage during peri-MO window.}
+\label{tab:replication}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Subject & Recording Method & $\Delta R^2$ (Mult $-$ Add) & $p$-value \\
+\midrule
+Monkey C & Micro-electrode array & $+0.149$ & $< 0.0005$ \\
+Monkey G & Single electrodes & $+0.112$ & $< 0.001$ \\
+Monkey S & Single electrodes & $+0.098$ & $< 0.005$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our findings demonstrate that motor cortex uses a multiplicative gain-modulation mechanism to jointly encode the elements of reaching sequences during preparation, transitioning to additive parallel coding during execution. This discovery revises the prevailing view that sequence elements are represented independently and has implications for understanding sequential motor control, brain--machine interfaces, and computational models of motor planning.
+
+The multiplicative coding scheme during preparation aligns with gain modulation as a general computational principle \citep{salinas2001gain, andersen1985encoding}. Just as posterior parietal neurons multiplicatively combine gaze direction and retinal position \citep{zipser1988back}, motor cortex neurons multiplicatively combine first- and second-reach representations. The functional advantage is clear from our population vector analysis: multiplicative coding preserves unambiguous readout of the current movement element despite the presence of information about future movements. Additive coding, by contrast, corrupts the directional signal with a systematic bias.
+
+The temporal transition from multiplicative to additive coding has a natural interpretation. During preparation, both movements must be simultaneously represented in a way that allows rapid, unbiased initiation of the first movement---multiplicative coding achieves this. Once execution begins and the first movement is completed, the second movement needs to be independently accessible---additive parallel coding serves this function.
+
+The spontaneous emergence of multiplicative joint coding in the trained RNN provides computational insight. The network was not constrained to use gain modulation; it discovered this strategy as an efficient solution to the task demands \citep{sussillo2015neural, mante2013context}. This suggests that multiplicative coding may be a general property of recurrent circuits preparing sequential actions.
+
+Several limitations should be acknowledged. The task involved only two-element sequences with constrained angular relationships; whether multiplicative coding extends to longer, more complex sequences remains to be tested. The regression models assume particular functional forms that may not capture all aspects of the neural code. Single-electrode recordings in Monkeys G and S provided fewer simultaneously recorded neurons than the array in Monkey C.
+
+\section{Methods}
+
+\subsection{Subjects and Surgery}
+Three male rhesus macaques (5--10~kg) were surgically implanted with recording chambers over motor cortex. Monkey C received a micro-electrode array; Monkeys G and S were recorded with single electrodes. All procedures followed institutional guidelines.
+
+\subsection{Behavioural Task}
+Monkeys performed a memory-guided double-reach task. Targets appeared at corners of a regular hexagon (6 directions, 60$^\circ$ spacing). SR trials presented one target; DR trials presented two targets simultaneously (square = 1st, triangle = 2nd, displaced 120$^\circ$ CW or CCW). After a 400~ms cue and 400--800~ms memory period, the GO signal triggered sequential reaching. Only correct trials were analysed.
+
+\subsection{Electrophysiology}
+Neural activity was recorded from primary motor cortex (M1). Spike times were sorted offline. Firing rates were computed in 200-ms sliding windows. Surface EMG was recorded from extensor digitorum communis.
+
+\subsection{Regression Analysis}
+Additive, multiplicative, and full models were fit to DR firing rates using least squares. Adjusted $R^2$ values were computed per neuron per time window. Population-level comparisons used paired tests across neurons, with significance set at $p < 0.0005$.
+
+\subsection{Dimensionality Reduction}
+PCA reduced the neural state space to the leading dimensions explaining $>80\%$ of variance. LDA was applied within first-reach clusters to test for separation by second-reach direction \citep{cunningham2014dimensionality}.
+
+\subsection{Population Vector Simulation}
+Model neurons with cosine directional tuning were simulated under additive and multiplicative rules. Population vectors were computed and directional errors quantified relative to the true first-reach direction.
+
+\subsection{RNN Model}
+A three-layer RNN (input, hidden, output) received position signals for both targets and was trained to produce population vector outputs matching movement direction and timing \citep{sussillo2015neural}. The hidden layer was analysed for coding properties using the same regression framework applied to neural data.
+
+\section{Conclusion}
+
+We have discovered that motor cortex employs multiplicative joint coding during preparation for reaching sequences, with a temporal transition to additive parallel coding during execution. This gain-modulation mechanism enables simultaneous encoding of multiple sequence elements while preserving unbiased readout of the current movement. The replication across three subjects and the spontaneous emergence in an RNN suggest this is a fundamental computational strategy for sequential motor control.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,203 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Boosting Biodiversity Monitoring Using Smartphone-Driven Community Science: Evaluating the Biome App for Data Quality and Species Distribution Modeling in Japan}
+\author{Author A$^{1,2}$, Author B$^{1}$, Author C$^{3}$, Author D$^{2}$ \\
+\small $^{1}$Biome Inc., Kyoto, Japan \\
+\small $^{2}$Graduate School of Agriculture, Kyoto University, Kyoto, Japan \\
+\small $^{3}$National Institute for Environmental Studies, Tsukuba, Japan}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Comprehensive biodiversity data is essential for conservation planning, yet traditional expert surveys cannot achieve sufficient spatiotemporal resolution alone. Community science platforms accumulate data rapidly but face concerns about spatial biases and identification accuracy. Here we evaluate the Biome smartphone app, which has accumulated over 5.27 million observations of more than 40,957 species across Japan by July 2023, with approximately 5,407 daily submissions. We assess identification accuracy across taxa, finding that species-level accuracy exceeds 95\% for birds, reptiles, mammals, and amphibians, is approximately 90\% for seed plants, and falls below 90\% for insects, mollusks, and fishes. We then evaluate the impact of incorporating Biome data on species distribution model (SDM) accuracy for 132 terrestrial plant and animal species using MaxEnt with spatial block cross-validation and the Boyce index as the accuracy metric. SDMs using blended data (Biome + traditional surveys) significantly outperform models using traditional data alone, particularly for endangered species: the number of occurrence records needed for accurate models (Boyce index $\geq 0.9$) drops from over 2,000 (traditional only) to approximately 300 (blended). This improvement is attributed to Biome data providing uniform coverage across the urban-to-natural gradient, while traditional survey data is substantially biased toward natural areas. Optimal model accuracy is achieved when training data consists of 50--70\% Biome data. These results demonstrate that smartphone-driven community science can substantially enhance biodiversity monitoring and species distribution modeling.
+\end{abstract}
+
+\section{Introduction}
+
+The global biodiversity crisis demands comprehensive monitoring data to guide conservation efforts, including progress toward targets such as the 30-by-30 framework and corporate biodiversity disclosure requirements under the Taskforce on Nature-related Financial Disclosures (TNFD) \citep{cbd2022kunming, tnfd2023framework}. Traditional expert surveys, while providing high-quality data, cannot achieve the spatiotemporal resolution needed for nationwide monitoring across all taxa \citep{bayraktarov2019review}. Community science platforms have emerged as a powerful complement, rapidly accumulating species occurrence records through the contributions of thousands of volunteer observers \citep{dickinson2012citizen, bonney2009citizen}.
+
+However, community science data faces persistent concerns about data quality, including spatial biases toward accessible and urban areas, taxonomic biases toward charismatic species, and identification errors by non-expert observers \citep{bird2014statistical, kosmala2016assessing}. These concerns limit the adoption of community science data for formal biodiversity assessment and species distribution modeling (SDM). No systematic evaluation had been conducted on the data quality of the Biome app across taxa and species rarity levels, nor had the potential for smartphone-driven community data to complement traditional surveys in SDMs been quantified.
+
+Species distribution models are essential tools for conservation planning, predicting species ranges under environmental change, and identifying areas of high biodiversity value \citep{elith2009species}. SDM accuracy depends critically on the quality, quantity, and spatial representativeness of occurrence records. Traditional survey data, while accurate, tends to be biased toward natural areas where surveys are preferentially conducted, potentially missing species occurrences along the urban-natural gradient \citep{kadmon2004effect}. Community science data may provide complementary spatial coverage, but the optimal strategy for blending these data sources has not been established.
+
+Here we present a comprehensive evaluation of the Biome smartphone app for biodiversity monitoring in Japan, assessing both data quality and the impact of incorporating Biome data on SDM performance.
+
+\section{Methods}
+
+\subsection{The Biome App}
+
+The Biome app (launched April 2019) uses a synergistic approach combining convolutional neural network (CNN)-based image recognition with geospatial data for species identification. Users photograph organisms; the app records location and timestamp from EXIF data and suggests candidate species refined by local occurrence frequency. Gamification features including a points system (with bonuses for rare, endangered, and invasive species), quests, leveling, and social interaction features incentivize participation and targeted monitoring (Table~\ref{tab:app}).
+
+\begin{table}[htbp]
+\centering
+\caption{Biome app data overview as of July 7, 2023.}
+\label{tab:app}
+\begin{tabular}{ll}
+\toprule
+Metric & Value \\
+\midrule
+Total occurrence records & 5,275,457 \\
+Total species documented & 40,957 \\
+App downloads (Sept 2023) & 839,844 \\
+Average daily submissions (2022) & 5,407 \\
+Records passing filtering & 2,373,303 \\
+Filtering pass rate & 45.0\% \\
+Launch date & April 2019 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+An automatic filtering pipeline excludes unclear images, non-wild individuals, and duplicate observations, yielding 2,373,303 filtered records (45.0\% of total submissions). The taxonomic composition is dominated by seed plants (41.8\%) and insects including arachnids (31.2\%).
+
+\subsection{Data Quality Assessment}
+
+Identification accuracy was assessed by expert verification at species, genus, and family levels across taxa, stratified by species rarity. The fraction of records representing wild individuals was also quantified per taxon (Table~\ref{tab:accuracy}).
+
+\begin{table}[htbp]
+\centering
+\caption{Species-level identification accuracy by taxon (among wild records).}
+\label{tab:accuracy}
+\begin{tabular}{llll}
+\toprule
+Taxon & Species (\%) & Genus (\%) & Family (\%) \\
+\midrule
+Birds & $>$95 & $>$95 & $>$95 \\
+Reptiles & $>$95 & $>$95 & $>$95 \\
+Mammals & $>$95 & $>$95 & $>$95 \\
+Amphibians & $>$95 & $>$95 & $>$95 \\
+Seed plants & $\sim$90 & Higher & Higher \\
+Insects & $<$90 & $<$90 & Higher \\
+Fishes & $<$90 & Higher & Higher \\
+Mollusks & $<$90 & $>$90 & Higher \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Environmental Gradient Analysis}
+
+Principal component analysis of environmental variables (climate, land use, topography) was performed to characterize the environmental coverage of Biome versus traditional survey data. The urban-natural gradient was captured by the first principal component (PC1), which explained 6.1\% of variance and was driven by land use, topography, and climate variables.
+
+\subsection{Species Distribution Modeling}
+
+SDMs were constructed for 132 terrestrial plant and animal species across the Japanese archipelago using MaxEnt \citep{phillips2006maximum}. Three data configurations were compared: traditional survey data only (including government surveys, GBIF, museum specimens, iNaturalist, and eBird), Biome data only, and blended (Biome + Traditional). Model accuracy was evaluated using the Boyce index with spatial block cross-validation and three replicates per species/record count configuration (Table~\ref{tab:sdm}).
+
+\begin{table}[htbp]
+\centering
+\caption{SDM experimental design.}
+\label{tab:sdm}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Species modeled & 132 \\
+Organism types & Terrestrial plants and animals \\
+Geographic scope & Japanese archipelago \\
+Algorithm & MaxEnt \\
+Accuracy metric & Boyce index \\
+Cross-validation & Spatial block design \\
+Replicates & 3 per species/record count \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Environmental predictors included climate variables (temperature, precipitation), land use (urban, agricultural, forest cover), and topography (elevation, slope). Background point selection differed between blended and traditional-only configurations to ensure fair comparison.
+
+\section{Results}
+
+\subsection{Data Quality Across Taxa}
+
+Species-level identification accuracy varied substantially across taxonomic groups. Birds, reptiles, mammals, and amphibians all exceeded 95\% accuracy at the species level, benefiting from their moderate species diversity and distinctive morphological features. Seed plants achieved approximately 90\% species-level accuracy. Insects, fishes, and mollusks fell below 90\% at the species level but showed higher accuracy at genus and family levels. Rare species generally showed lower identification accuracy compared to common species, indicating that AI improvement and expert review remain necessary for underrepresented taxa.
+
+The fraction of records representing wild individuals exceeded 97\% for insects and birds but fell below 90\% for fishes, seed plants, mollusks, and mammals, reflecting the presence of cultivated plants, aquarium fish, and captive animals in submitted records.
+
+\subsection{Environmental Coverage Complements Traditional Data}
+
+PCA analysis revealed strikingly different environmental coverage patterns between data sources. Biome data was distributed relatively uniformly across the urban-to-natural gradient captured by PC1, while traditional survey data was substantially biased toward natural areas. This complementary coverage pattern explains why blending the two data sources improves SDM accuracy: traditional data provides precise records from natural habitats, while Biome data fills the gap in urban and suburban environments where many species also occur.
+
+\subsection{Blended Data Improves SDM Accuracy}
+
+SDMs using blended data (Biome + Traditional) significantly outperformed models using traditional data alone across species and record count levels. The improvement was most pronounced at lower record counts, where traditional data alone was insufficient for accurate models. At high record counts ($>$2,000), both approaches converged, indicating that with sufficient data, traditional surveys alone can produce accurate models.
+
+For endangered species, the practical impact was dramatic: traditional data alone required over 2,000 records to achieve a Boyce index $\geq 0.9$, while blended data reduced this threshold to approximately 300 records. This six-fold reduction in data requirements is particularly significant for endangered species, which typically have fewer occurrence records available (Table~\ref{tab:threshold}).
+
+\begin{table}[htbp]
+\centering
+\caption{Records needed for accurate SDMs (Boyce index $\geq$ 0.9) for endangered species.}
+\label{tab:threshold}
+\begin{tabular}{lll}
+\toprule
+Data Source & Records Needed & Relative Efficiency \\
+\midrule
+Traditional only & $>$2,000 & Baseline \\
+Biome + Traditional (blended) & $\sim$300 & $\sim$6$\times$ more efficient \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Optimal Blending Ratio}
+
+The relationship between Biome data fraction and model accuracy was evaluated systematically. Optimal accuracy was achieved when training data consisted of 50--70\% Biome data. Below this range, the benefits of Biome's spatial coverage were underutilized; above it, the reduced contribution of high-quality traditional data limited model accuracy. This finding provides practical guidance for conservation agencies constructing SDMs with blended data sources (Table~\ref{tab:blending}).
+
+\begin{table}[htbp]
+\centering
+\caption{Model accuracy as a function of Biome data fraction.}
+\label{tab:blending}
+\begin{tabular}{ll}
+\toprule
+Biome Fraction (\%) & Relative Model Accuracy \\
+\midrule
+0 (Traditional only) & Baseline \\
+10--30 & Moderate improvement \\
+50--70 & Maximum improvement \\
+80--100 & Declining \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison with Other Platforms}
+
+Biome's identification accuracy for seed plants ($\sim$90\%) compares favorably to automated identification accuracy reported for other platforms. A benchmark of PlantNet, PlantSnap, LeafSnap, iNaturalist, and Google Lens found 69\% accuracy for plant auto-identification, and a US invasive plant survey using trained volunteers achieved 72\% accuracy. Biome's higher accuracy is attributed to the combination of CNN-based recognition with local occurrence frequency weighting and community-driven identification refinement.
+
+\subsection{Privacy and Conservation Features}
+
+The Biome app automatically conceals geolocations of species listed on national and prefectural red lists, protecting sensitive occurrence data for endangered species. This automatic privacy feature contrasts with platforms like iNaturalist, where location concealment requires manual user action. This design choice is particularly important in the Japanese context where poaching and habitat disturbance of endangered species remain conservation concerns.
+
+\section{Discussion}
+
+\subsection{Community Science as a Complement to Expert Surveys}
+
+Our results demonstrate that smartphone-driven community science can substantially enhance biodiversity monitoring when properly integrated with traditional survey data. The key mechanism underlying the improvement is the complementary spatial coverage: traditional surveys are biased toward natural areas, while community science observers photograph organisms across the full urban-to-natural gradient. This complementarity is not merely additive---it addresses a systematic bias in traditional data that limits SDM accuracy.
+
+\subsection{Practical Implications for Conservation}
+
+The six-fold reduction in records needed for accurate endangered species SDMs has significant practical implications. Many endangered species have fewer than 2,000 occurrence records in traditional databases, rendering traditional-only SDMs unreliable. By incorporating community science data, conservation agencies can produce reliable distribution models with substantially fewer records, accelerating conservation planning for the species that need it most.
+
+\subsection{Data Quality Challenges}
+
+While accuracy exceeds 95\% for vertebrates, the lower accuracy for insects, fishes, and mollusks highlights ongoing challenges. These taxa have higher species diversity, smaller body sizes, and often require microscopic examination for definitive identification. Continued improvement in AI recognition algorithms, combined with expert verification workflows, will be needed to achieve uniform data quality across all taxa.
+
+\subsection{Gamification and User Engagement}
+
+The Biome app's gamification features---particularly the bonus points for rare and endangered species---help address the taxonomic bias that plagues many community science platforms. By incentivizing observations of underrepresented species, the app actively steers data collection toward the species most needed for conservation assessment.
+
+\subsection{Limitations}
+
+Our study has several limitations. The SDM evaluation used MaxEnt exclusively; other algorithms may show different patterns of improvement from data blending. The environmental gradient analysis focused on a single PCA dimension; higher-dimensional analyses might reveal additional complementarity. The geographic scope is limited to Japan, and results may not directly transfer to other regions with different environmental gradients or observer demographics.
+
+\section{Conclusion}
+
+The Biome smartphone app provides high-quality biodiversity occurrence data that substantially improves species distribution models when blended with traditional survey data. Species identification accuracy exceeds 95\% for major vertebrate taxa, and the uniform environmental coverage of community science data addresses systematic spatial biases in traditional surveys. For endangered species, incorporating Biome data reduces the data requirements for accurate SDMs by approximately six-fold. These findings support the strategic integration of smartphone-driven community science into national and global biodiversity monitoring frameworks.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,161 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{caption}
+\usepackage{multirow}
+
+\title{Full Epistatic Interaction Maps Retrieve Part of Missing Heritability and Improve Phenotypic Prediction}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{1}$ \\
+\small $^{1}$Universit\'{e} de Lyon, CNRS \\
+\small $^{2}$Institut National de la Sant\'{e} et de la Recherche M\'{e}dicale}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Standard genome-wide association studies (GWAS) explain only a fraction of heritable phenotypic variation, a long-standing problem known as missing heritability. Epistasis---gene-gene interactions---is widely suspected to account for a substantial portion of this unexplained variance, but evaluating the full pairwise combinatorial space has been computationally prohibitive. Here we present Next-Gen GWAS (NGG), a GPU-accelerated framework that evaluates over 60 billion pairwise SNP interactions within hours on a single server equipped with four GPUs. Benchmarking on \textit{Arabidopsis thaliana} data demonstrates that NGG produces single-locus signals concordant with the standard EMMA mixed model, including recovery of the known FLC flowering time locus. Full two-dimensional epistatic maps at gene resolution reveal substantial interaction structure for flowering time and ionomic phenotypes. Principal component analysis shows that epistatic interactions substantially increase explained heritability (adjusted $R^2$) beyond single-locus signals alone. Furthermore, incorporating epistatic SNP markers into six machine learning models (SVM, random forest, deep neural network, Gaussian processes, LASSO, and elastic net) consistently improves prediction accuracy for 18 elemental concentration phenotypes. These results establish that a large fraction of missing heritability can be recovered through exhaustive epistatic mapping and that the recovered signals have practical utility for phenotype prediction.
+\end{abstract}
+
+\section{Introduction}
+
+Genome-wide association studies have identified thousands of genetic variants associated with complex traits in humans, plants, and model organisms. However, for most traits, the variants identified by standard GWAS collectively explain only a fraction of the heritable variation estimated from family-based or twin studies---a discrepancy known as missing heritability \citep{manolio2009}. Epistasis, or the interaction between genetic loci, has been proposed as a major contributor to missing heritability \citep{zuk2012, marchini2005}, but testing the full combinatorial space of pairwise SNP interactions has been computationally infeasible for genome-scale studies.
+
+Consider a typical GWAS with 350,000 SNPs after minor allele frequency (MAF) filtering. The number of unique pairwise combinations exceeds 61 billion, and evaluating each combination with even a simple statistical model requires enormous computational resources. Previous approaches have attempted to address this using high-performance computing clusters, but even with substantial resources, exhaustive pairwise scans can take years for a single phenotype. This has limited most epistasis studies to candidate-gene approaches, reduced SNP panels, or heuristic search strategies that may miss important interactions.
+
+The established mixed model approach EMMA \citep{kang2008} handles single-locus GWAS effectively by accounting for population structure through kinship matrices, but it cannot be extended to the full pairwise interaction space at genome scale. There is therefore a critical need for computationally efficient methods that can evaluate the complete epistatic landscape within practical time frames.
+
+Here we introduce Next-Gen GWAS (NGG), a GPU-accelerated framework that leverages the massive parallelism of modern graphics processing units to evaluate over 60 billion pairwise SNP interactions in hours rather than years. We apply NGG to two \textit{Arabidopsis thaliana} datasets \citep{atwell2010, campos2021} spanning flowering time and 18 elemental concentration phenotypes, demonstrating concordance with established methods for single-locus signals, recovery of known biology, substantial recovery of missing heritability through epistatic interactions, and improved machine learning phenotype prediction.
+
+\section{Methods}
+
+\subsection{Datasets}
+
+We used genotype data from the 1001 Genomes \textit{Arabidopsis thaliana} project \citep{oneill2019}, comprising 9,124,892 SNPs across 1,135 ecotypes. After MAF filtering at MAF $> 0.3$, the working matrix was reduced to 341,067--371,956 SNPs for Atwell phenotypes and 346,094 SNPs for Campos phenotypes (Table~\ref{tab:datasets}).
+
+\begin{table}[htbp]
+\centering
+\caption{Datasets and SNP counts after MAF filtering.}
+\label{tab:datasets}
+\begin{tabular}{lcccc}
+\toprule
+Dataset & Raw SNPs & Filtered SNPs & Ecotypes & Phenotypes \\
+\midrule
+Atwell et al. (2010) & 9,124,892 & 341,067--371,956 & 1,135 & Flowering time \\
+Campos et al. (2021) & 9,124,892 & 346,094 & 1,135 & 18 elements (ICP-MS) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{NGG Algorithm}
+
+For each SNP pair $(i, j)$, NGG estimates the effect $\theta_{ij}$ on the phenotype using a regression framework with the Col-0 reference genome as baseline. The diagonal of the resulting 2D interaction map contains single-SNP effects (equivalent to 1D-GWAS), while off-diagonal elements represent pairwise epistatic interactions. A bootstrap procedure distinguishes real signals from noise by identifying effects that consistently emerge above the noise distribution.
+
+\subsection{Computational Infrastructure}
+
+All computations were performed on a PowerEdge T640 DELL server with 377~GB RAM and four NVIDIA Quadro RTX 6000 GPUs (24~GB each). The GPU parallelism enabled evaluation of the full pairwise space---approximately 61.2 billion SNP combinations---within hours for each phenotype (Table~\ref{tab:compute}).
+
+\begin{table}[htbp]
+\centering
+\caption{Computational resources and scalability comparison.}
+\label{tab:compute}
+\begin{tabular}{lcc}
+\toprule
+Approach & Pairwise Evaluation Time & Scalability \\
+\midrule
+Standard GWAS + HPC & Years & Poor for full pairwise \\
+EMMA mixed model & Feasible for 1D only & Not scalable to 2D \\
+NGG (GPU-accelerated) & Hours & Practical on single server \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Heritability Estimation}
+
+To assess the heritability recovered by epistatic interactions, we applied PCA to the 1D-only signals (diagonal of the interaction map) and to the combined 1D + 2D signals (diagonal plus off-diagonal triangle). Adjusted $R^2$ was computed with increasing numbers of principal components, comparing 1D-only versus 1D + 2D signal sources.
+
+\subsection{Machine Learning Prediction}
+
+Six machine learning models were trained to predict discretized phenotype classes from SNP features: support vector machines (SVM) \citep{cortes1995}, random forests (RF) \citep{breiman2001}, deep neural networks (DNN) \citep{lecun2015}, Gaussian processes (GP), LASSO \citep{tibshirani1996}, and elastic net \citep{zou2005}. Models were evaluated with varying numbers of input SNPs (50, 100, 500, 1000) and phenotype discretizations (3 or 5 classes), comparing features derived from 1D-only signals versus 1D + 2D epistatic signals. This yielded 16 input configurations per model per phenotype (Table~\ref{tab:mlconfigs}).
+
+\begin{table}[htbp]
+\centering
+\caption{Machine learning input configurations.}
+\label{tab:mlconfigs}
+\begin{tabular}{lccc}
+\toprule
+Configuration & Classes & SNPs & Signal Source \\
+\midrule
+1--4 & 3 & 50, 100, 500, 1000 & 1D only \\
+5--8 & 5 & 50, 100, 500, 1000 & 1D only \\
+9--12 & 3 & 50, 100, 500, 1000 & 1D + 2D \\
+13--16 & 5 & 50, 100, 500, 1000 & 1D + 2D \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\subsection{Simulation Validation}
+
+We first validated NGG using simulated genotype and phenotype data with five planted epistatic interactions across a 100 $\times$ 100 SNP space with random noise. NGG correctly recovered all five simulated signals with minimal false positives, confirming the method's ability to detect epistatic interactions from noisy data.
+
+\subsection{1D-GWAS Benchmarking: NGG versus EMMA}
+
+Comparison of NGG single-locus signals (diagonal of the 2D map) with the established EMMA mixed model on Atwell et al.\ flowering time data showed largely concordant results. Both methods prominently detected SNPs near the FLOWERING LOCUS C (FLC) gene for the days-to-flowering trait (8-week vernalization, phenotype ID 48), the major known genetic determinant of flowering time in \textit{Arabidopsis} \citep{michaelson2009}. This concordance validates NGG as producing biologically meaningful single-locus signals while simultaneously enabling the 2D epistatic analysis that EMMA cannot perform.
+
+NGG additionally provides direct estimation of each SNP's effect (signed $\theta$) on the phenotype relative to the Col-0 reference, enabling visualization of both the magnitude and direction of genetic effects. Bootstrap-colored signals distinguish robust associations from noise.
+
+\subsection{Full 2D Epistatic Interaction Maps}
+
+Application of NGG to the full pairwise space generated 2D epistatic maps at gene resolution for multiple phenotypes. For flowering time (FT10, phenotype ID 31), the 2D heatmap revealed extensive off-diagonal interaction structure, with numerous SNP pairs showing epistatic effects that were not apparent from single-locus analysis alone. Similar interaction structure was observed for phosphorus content from the Campos ionomics dataset. The distribution of interaction effect sizes followed a heavy-tailed distribution, with most interactions being small but a substantial number showing large effects.
+
+\subsection{Recovery of Missing Heritability}
+
+PCA-based heritability analysis revealed that including epistatic interactions substantially increased explained phenotypic variance. When adjusted $R^2$ was plotted against an increasing number of PCA components, the 1D + 2D signal consistently achieved higher heritability estimates than 1D-only signals. The 1D-only curve plateaued at a lower heritability value, while the 1D + 2D curve continued to increase, indicating that the epistatic interactions capture meaningful phenotypic variance not accessible from single-locus signals.
+
+This finding directly addresses the missing heritability problem: a substantial portion of the heritability gap between GWAS-explained variance and family-based estimates can be attributed to pairwise epistatic interactions that standard 1D-GWAS cannot detect.
+
+\subsection{Improved Machine Learning Phenotype Prediction}
+
+Across all six ML models and 18 elemental concentration phenotypes from the Campos dataset, including 2D epistatic markers in the input features consistently improved prediction accuracy compared to 1D-only markers. This improvement was observed across all input configurations (varying SNP counts and class numbers), indicating that epistatic signals provide genuinely informative features for phenotype prediction.
+
+The improvement was robust across model types: SVM, random forest, DNN, Gaussian processes, LASSO, and elastic net all benefited from the inclusion of epistatic markers. The effect was present even at low SNP counts (50 features), suggesting that the top epistatic signals carry substantial predictive information. Three-class prediction was generally more accurate than five-class prediction, but the relative improvement from including 2D markers was similar in both settings.
+
+\section{Discussion}
+
+We have demonstrated that GPU-accelerated exhaustive epistatic mapping is computationally feasible and biologically informative. The NGG framework evaluates over 60 billion pairwise SNP interactions within hours on a single multi-GPU server, making full 2D epistatic maps a practical tool for genetics research.
+
+\subsection{Addressing Missing Heritability}
+
+Our PCA-based heritability analysis provides direct evidence that pairwise epistatic interactions account for a substantial fraction of phenotypic variance beyond what single-locus GWAS captures \citep{manolio2009, zuk2012}. This supports the theoretical prediction that epistasis contributes to missing heritability and provides, to our knowledge, the first genome-scale empirical demonstration in a real organism with full pairwise evaluation.
+
+The practical importance of this finding is underscored by the machine learning results: the additional variance captured by epistatic interactions translates into improved phenotype prediction across six different model types and 18 phenotypes. This suggests that epistatic signals are not merely statistical artifacts but reflect genuine biological interactions that influence phenotypic outcomes.
+
+\subsection{Validation and Known Biology}
+
+The concordance between NGG and EMMA for single-locus signals, including recovery of the well-characterized FLC locus for flowering time, validates the method against established approaches. The bootstrap procedure for signal identification provides additional confidence by filtering out noise-driven associations.
+
+\subsection{Scalability Considerations}
+
+The primary advantage of NGG over existing approaches is computational scalability. While conventional epistasis testing methods require years of compute time on HPC clusters for a single phenotype at genome scale, NGG achieves the same in hours on a single server. This difference makes exhaustive epistatic mapping feasible as a routine analysis rather than a specialized endeavor.
+
+The MAF filtering threshold of 0.3 reduces the SNP space substantially (from over 9 million to approximately 350,000) while retaining common variants likely to have the largest effect sizes. Future work could explore lower MAF thresholds, though this would increase the pairwise space quadratically and may require additional computational resources.
+
+\subsection{Limitations and Future Directions}
+
+Several limitations should be noted. First, our analysis is restricted to pairwise interactions; higher-order epistasis may also contribute to missing heritability but is computationally prohibitive even with GPU acceleration. Second, the method is applied here to a relatively small organism (\textit{Arabidopsis}) with 1,135 ecotypes; application to larger human GWAS cohorts with hundreds of thousands of individuals and millions of SNPs would require further algorithmic and hardware scaling. Third, the phenotype discretization required for ML prediction may lose quantitative information; continuous prediction methods could be explored in future work.
+
+\section{Conclusion}
+
+NGG makes exhaustive pairwise epistatic mapping computationally practical, revealing that a substantial fraction of missing heritability can be recovered through epistatic interactions. The recovered signals are biologically meaningful, concordant with established methods for single-locus effects, and improve machine learning phenotype prediction across diverse model types and phenotypes. These results establish full epistatic interaction mapping as a powerful complement to standard GWAS for understanding the genetic architecture of complex traits.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

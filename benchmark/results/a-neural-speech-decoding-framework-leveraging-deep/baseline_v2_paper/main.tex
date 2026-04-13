@@ -1,0 +1,203 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+
+\title{A Neural Speech Decoding Framework Leveraging Deep Learning and Speech Synthesis}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Decoding speech from cortical signals is essential for brain-computer interfaces that restore communication in patients with neurological deficits. Current approaches face challenges including limited training data, variability in speech production, and the requirement for non-causal processing incompatible with real-time deployment. Here we present a two-stage deep learning framework that maps electrocorticographic (ECoG) signals to interpretable speech parameters---fundamental frequency, voicing, formant frequencies, and amplitudes---which are then converted to spectrograms by a fully differentiable speech synthesizer. The speech synthesizer, which combines voiced (harmonic excitation filtered through formant filters) and unvoiced (noise) pathways, is pre-trained as an audio auto-encoder to establish reference speech parameters that guide ECoG decoder training. We compare three decoder architectures---3D ResNet, SWIN Transformer, and LSTM---across 48 participants with implanted subdural ECoG grids. The 3D ResNet achieves a mean Pearson Correlation Coefficient (PCC) of 0.804 (non-causal) and 0.798 (causal), with no statistically significant difference between causal and non-causal modes. The SWIN Transformer achieves closely comparable performance (0.793/0.796 PCC). Both left-hemisphere ($n=32$) and right-hemisphere ($n=16$) electrode placements yield high-quality decoding with no significant performance difference. Occlusion analysis reveals that non-causal models rely substantially on the superior temporal gyrus (auditory feedback), while causal models shift contribution to motor cortex areas, confirming that causal architectures decode motor planning rather than auditory feedback. We release the complete pipeline as open-source software.
+\end{abstract}
+
+\section{Introduction}
+
+The ability to decode speech directly from neural signals holds transformative potential for patients who have lost the ability to communicate due to stroke, amyotrophic lateral sclerosis, or other neurological conditions \citep{moses2021,willett2023,metzger2023}. Electrocorticography (ECoG), which records electrical activity from the cortical surface through subdural electrode arrays, provides a promising signal source combining high spatial resolution with broad cortical coverage \citep{cogan2014}. The perisylvian cortex---encompassing the superior temporal gyrus (STG), inferior frontal gyrus (IFG), and pre- and postcentral gyri---contains the primary neural substrates for speech production and perception \citep{hickok2007,bouchard2013}.
+
+Despite significant progress, neural speech decoding remains challenging for several reasons. First, training data are extremely limited: each participant typically produces only minutes of recorded speech paired with neural signals, insufficient for standard deep learning approaches. Second, speech production is inherently variable---the same word can differ in rate, pitch, and intonation across repetitions---complicating the learning of stable neural-to-speech mappings \citep{chartier2018}. Third, most existing approaches employ non-causal architectures that utilize future neural signals (including auditory and somatosensory feedback), rendering them incompatible with real-time brain-computer interface (BCI) deployment.
+
+Prior approaches span a wide range of methodologies. Linear models achieve modest Pearson correlations (approximately 0.6) but produce limited naturalness \citep{herff2015}. Articulatory decoding approaches using recurrent neural networks produce robust but synthetic-sounding output \citep{anumanchipalli2019}. Generative approaches based on WaveNet \citep{oord2016} or adversarial training produce natural-sounding speech but with limited accuracy. Critically, most methods lack open-source implementations, hindering reproducibility and comparison \citep{makin2020}.
+
+Here we address these challenges through a novel two-stage framework. The first stage pre-trains a differentiable speech synthesizer as part of an audio auto-encoder, establishing interpretable speech parameters as an intermediate representation. The second stage trains an ECoG decoder to predict these parameters from neural signals. This design provides three key advantages: (i) the speech parameter space provides a compact, interpretable bottleneck that regularizes learning from limited data; (ii) the differentiable synthesizer enables end-to-end gradient flow from spectrogram reconstruction loss through the speech parameters to the ECoG decoder; and (iii) the architecture supports both causal and non-causal modes, enabling direct comparison of real-time-compatible and offline decoding.
+
+\section{Methods}
+
+\subsection{Participants and Data Acquisition}
+
+Data were collected from 48 participants (26 female, 22 male) with refractory epilepsy who underwent implantation of subdural ECoG grids for clinical seizure monitoring at NYU Grossman School of Medicine (Table~\ref{tab:participants}). All participants were native English speakers. Five participants received hybrid-density (HB) grids with 128 electrodes (64 macro contacts at 10~mm spacing plus 64 interspersed micro contacts at 5~mm spacing from macro contacts), while 43 participants received standard low-density (LD) grids with 64 macro contacts (8$\times$8 array, 10~mm center-to-center spacing). Electrode coverage spanned perisylvian cortex including STG, IFG, precentral, and postcentral gyri. Thirty-two participants had left-hemisphere coverage and 16 had right-hemisphere coverage.
+
+\begin{table}[htbp]
+\centering
+\caption{Participant and recording summary.}
+\label{tab:participants}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Total participants & 48 \\
+Sex distribution & 26 female, 22 male \\
+Clinical condition & Refractory epilepsy \\
+Hybrid-density (HB) participants & 5 (128 electrodes) \\
+Low-density (LD) participants & 43 (64 electrodes) \\
+Left hemisphere coverage & 32 participants \\
+Right hemisphere coverage & 16 participants \\
+Original sampling rate & 2048 Hz \\
+Downsampled rate & 512 Hz \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Speech Tasks}
+
+Each participant performed five speech production tasks (Table~\ref{tab:tasks}): Auditory Repetition (AR), Auditory Naming (AN), Sentence Completion (SC), Word Reading (WR), and Picture Naming (PN). These tasks elicited production of 50 unique words across 400 total trials per participant. The average duration of produced speech per trial was approximately 500~ms.
+
+\begin{table}[htbp]
+\centering
+\caption{Speech tasks administered to each participant.}
+\label{tab:tasks}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Task} & \textbf{Stimulus Modality} & \textbf{Trials per Word} & \textbf{Total Trials} \\
+\midrule
+Auditory Repetition (AR) & Auditory & 2 & 100 \\
+Auditory Naming (AN) & Auditory (definition) & 1 & 50 \\
+Sentence Completion (SC) & Auditory (sentence) & 1 & 50 \\
+Word Reading (WR) & Visual (written) & 2 & 100 \\
+Picture Naming (PN) & Visual (drawing) & 2 & 100 \\
+\midrule
+\textbf{Total per participant} & & & \textbf{400} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Models were trained per participant using 350 trials (80\%) and tested on 50 held-out trials (20\%), with 10 randomly selected from each task.
+
+\subsection{Speech Synthesizer and Encoder}
+
+The Speech Encoder extracts interpretable speech parameters from spectrograms via temporal convolution layers and channel-wise multi-layer perceptrons (MLPs). The extracted parameters include: fundamental frequency ($F_0$), a voicing parameter ($V$), six formant frequencies ($F_1$--$F_6$) with corresponding amplitudes ($A_1$--$A_6$), and noise parameters characterizing the spectral shape of unvoiced components.
+
+The Speech Synthesizer is a fully differentiable module that generates spectrograms by combining two pathways: a voiced pathway that applies harmonic excitation at $F_0$ through six cascaded formant filters (each parameterized by frequency and amplitude), and an unvoiced pathway that filters noise excitation. The outputs of both pathways are combined based on the voicing parameter at each time step. Differentiability throughout the synthesizer enables gradient-based optimization of the entire pipeline.
+
+The Speech Encoder and Synthesizer together form an audio auto-encoder that is pre-trained on each participant's speech recordings. This establishes reference speech parameters that serve as training targets for the ECoG decoder.
+
+\subsection{ECoG Decoder Architectures}
+
+Three decoder architectures were compared, each supporting both causal and non-causal operation:
+
+\textbf{3D ResNet} \citep{he2016}: Uses spatiotemporal convolutional layers with residual connections, spatial and temporal pooling for downsampling, and transposed temporal convolutions for upsampling to the target time resolution. Causal mode restricts temporal convolutions to past and current time steps only.
+
+\textbf{SWIN Transformer} \citep{liu2021}: Employs shifted window self-attention for efficient spatiotemporal processing. Causal mode uses masked attention to prevent information flow from future time steps.
+
+\textbf{LSTM} \citep{hochreiter1997}: Uses Long Short-Term Memory recurrent layers. Causal mode uses forward-only processing; non-causal mode uses bidirectional LSTM.
+
+\subsection{Training Pipeline}
+
+Training proceeded in two stages. In Stage 1, the Speech Encoder and Synthesizer were jointly pre-trained as an auto-encoder on each participant's speech spectrograms, establishing reference speech parameters. In Stage 2, the ECoG Decoder was trained to map neural signals to the reference speech parameters, with the pre-trained synthesizer converting predicted parameters to spectrograms for loss computation. At inference, the ECoG Decoder replaces the Speech Encoder, directly mapping neural signals through the speech parameter space to synthesized spectrograms.
+
+\subsection{Evaluation Metrics}
+
+Primary evaluation used the Pearson Correlation Coefficient (PCC) between original and decoded spectrograms. Extended Short-Time Objective Intelligibility (STOI+) \citep{taal2011} was used as a secondary metric. Statistical comparisons between conditions used paired tests across participants.
+
+\subsection{Occlusion Analysis}
+
+To identify cortical regions contributing to decoding performance, we performed electrode occlusion analysis. Each electrode location was systematically zeroed out, and the resulting decrease in PCC was measured. Contributions were projected onto standardized MNI brain coordinates and averaged across all participants.
+
+\section{Results}
+
+\subsection{Architecture Comparison Across 48 Participants}
+
+The 3D ResNet achieved the highest overall performance with a mean PCC of 0.804 in non-causal mode and 0.798 in causal mode (Table~\ref{tab:performance}). The SWIN Transformer was closely competitive at 0.793 (non-causal) and 0.796 (causal). The LSTM architecture performed lower than both ResNet and SWIN in both modes. These results were consistent across the STOI+ metric, confirming the ranking.
+
+\begin{table}[htbp]
+\centering
+\caption{Decoding performance across architectures and processing modes (48 participants).}
+\label{tab:performance}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Architecture} & \textbf{Type} & \textbf{Non-Causal PCC} & \textbf{Causal PCC} \\
+\midrule
+3D ResNet & Convolutional & 0.804 & 0.798 \\
+3D SWIN & Transformer & 0.793 & 0.796 \\
+LSTM & Recurrent & Lower & Lower \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Causal Models Match Non-Causal Performance}
+
+A central finding is that causal models---which use only past and current neural signals---achieve comparable performance to non-causal models that additionally utilize future signals. For the 3D ResNet, the difference between causal (0.798) and non-causal (0.804) PCC was not statistically significant. The same held for the SWIN Transformer (0.796 vs.\ 0.793). This is a critical result for real-time BCI applications, demonstrating that restricting to causal processing does not substantially degrade decoding quality.
+
+\subsection{Left and Right Hemisphere Decoding}
+
+Comparison between participants with left-hemisphere ($n=32$) and right-hemisphere ($n=16$) electrode coverage revealed no significant difference in causal decoding performance for either ResNet or SWIN architectures (Table~\ref{tab:hemisphere}). This finding is notable because speech is traditionally considered lateralized to the left hemisphere, and most prior decoding work has focused exclusively on left-hemisphere recordings. Successful right-hemisphere decoding could enable speech prostheses for patients with left-hemisphere damage.
+
+\begin{table}[htbp]
+\centering
+\caption{Causal decoding performance by hemisphere.}
+\label{tab:hemisphere}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Hemisphere} & \textbf{$n$} & \textbf{Causal ResNet PCC} & \textbf{Significant Difference?} \\
+\midrule
+Left & 32 & High & \multirow{2}{*}{No} \\
+Right & 16 & High & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance Distribution Across Participants}
+
+The per-participant PCC distribution for the causal ResNet model ranged from 0.52 to 0.91, with a mean of 0.798 and median of 0.81. Approximately 48\% of participants achieved PCC values between 0.80 and 0.91, while approximately 52\% fell in the 0.52--0.80 range. Both hybrid-density (128-electrode) and low-density (64-electrode) grids achieved high decoding performance, though comparison was limited by the small hybrid-density sample ($n=5$).
+
+\subsection{Cortical Contribution Mapping via Occlusion Analysis}
+
+Occlusion analysis revealed a striking dissociation between causal and non-causal models in their reliance on different cortical regions (Table~\ref{tab:occlusion}). Non-causal models showed substantial contribution from the superior temporal gyrus (STG), which processes auditory feedback from the participant's own speech. Causal models showed markedly reduced STG contribution and increased reliance on the precentral gyrus (motor cortex).
+
+\begin{table}[htbp]
+\centering
+\caption{Cortical contribution patterns from occlusion analysis.}
+\label{tab:occlusion}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Cortical Region} & \textbf{Causal Contribution} & \textbf{Non-Causal Contribution} \\
+\midrule
+STG (auditory) & Lower & Higher \\
+IFG (Broca's area) & Moderate & Moderate \\
+Precentral gyrus (motor) & Higher & Moderate \\
+Postcentral gyrus (somatosensory) & Moderate & Moderate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This pattern is neuroscientifically interpretable: non-causal models can access auditory feedback signals arriving at STG after speech onset, which carry rich acoustic information about the produced speech. Causal models, restricted to past and current signals, cannot access this feedback and instead rely on motor planning signals in precentral cortex that precede and accompany speech production. This confirms that causal architectures genuinely decode motor intentions rather than passively relaying auditory feedback.
+
+\section{Discussion}
+
+We have presented a neural speech decoding framework that achieves high performance across a large cohort of 48 participants while meeting key requirements for clinical translation: causal (real-time-compatible) processing, successful decoding from both hemispheres, and interpretable speech parameter representations.
+
+The two-stage architecture---separating speech parameter extraction from neural decoding---provides several advantages over end-to-end approaches. The interpretable parameter space (pitch, voicing, formants) serves as a regularizing bottleneck that enables effective learning from the limited training data available in clinical settings (350 trials per participant). The differentiable synthesizer ensures that gradients from spectrogram reconstruction loss flow through the parameter space to the decoder, maintaining tight coupling between neural predictions and acoustic output.
+
+The finding that causal models achieve comparable performance to non-causal models has direct implications for BCI deployment. Real-time speech prostheses must operate causally, processing neural signals as they arrive without waiting for future data. Our results demonstrate that this constraint does not substantially compromise decoding quality, suggesting that the motor planning signals available before and during speech production carry sufficient information for high-quality reconstruction.
+
+The successful decoding from right-hemisphere electrode placements in 16 participants challenges the traditional view that speech processing is strictly lateralized to the left hemisphere \citep{hickok2007}. While the right hemisphere is known to contribute to prosodic and paralinguistic aspects of speech, our results suggest it also carries information sufficient for spectral reconstruction. This has clinical significance because many patients who lose speech function due to left-hemisphere stroke retain right-hemisphere cortex that could potentially drive a speech prosthesis.
+
+The occlusion analysis provides converging evidence for the interpretation of causal versus non-causal processing. The shift from STG-dominated (non-causal) to motor-cortex-dominated (causal) contribution maps aligns with known neuroanatomy: STG receives auditory feedback with a delay after speech onset, while motor cortex generates speech commands before and during articulation \citep{bouchard2013,chartier2018}. This dissociation validates that our causal models are truly decoding motor signals rather than exploiting temporal leakage of auditory information.
+
+Limitations of this study include the reliance on single-word production tasks, which do not capture the full complexity of conversational speech. The per-participant training approach, while necessary given inter-individual variability in electrode placement and cortical organization, limits generalization. Future work should explore transfer learning across participants, extend to sentence-level and conversational paradigms, and evaluate closed-loop performance in real-time BCI settings.
+
+\section{Conclusion}
+
+Our two-stage framework combining ECoG decoding with differentiable speech synthesis achieves state-of-the-art performance across a large and diverse cohort while supporting causal, real-time-compatible operation. The successful decoding from both hemispheres and the interpretable nature of the speech parameter representation advance the field toward clinically viable speech neuroprostheses. The release of the complete pipeline as open-source software enables reproducibility and accelerates progress in neural speech decoding research.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

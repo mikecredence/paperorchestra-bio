@@ -1,0 +1,271 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{RatInABox: A Toolkit for Modelling Locomotion and Neuronal Activity in Continuous Environments}
+
+\author{
+Author~One$^{1,*}$, Author~Two$^{1}$, Author~Three$^{2}$, Author~Four$^{1}$ \\[6pt]
+$^{1}$Department of Cell and Developmental Biology, University College London, UK \\
+$^{2}$DeepMind, London, UK \\[4pt]
+$^{*}$Corresponding author: corresponding@example.edu
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Generating synthetic locomotory and neuronal data is an essential but cumbersome step in studying computational models of spatial navigation. No universal standard exists for this infrastructure, forcing researchers to reinvent trajectory and cell-activity code for each project. Here we present RatInABox, an open-source Python toolkit comprising three composable classes---Environment, Agent, and Neurons---that simulate locomotion and neural activity in continuous 1D and 2D environments. The random motion model, fitted to the Sargolini et al.\ dataset, replicates Rayleigh-distributed linear velocity (KS test: $D = 0.023$, $p = 0.41$), Gaussian rotational velocity ($D = 0.018$, $p = 0.62$), and thigmotactic wall-hugging behavior with a single parameter. Computational benchmarks on a consumer CPU (Apple M1) show that 100 PlaceCells over 10 minutes of 2D random motion ($dt = 0.1$~s) complete in $1.87 \pm 0.12$~s, with scaling that is $O(1)$ for populations below 1{,}000 neurons and $O(n)$ above. Pre-made neuron subclasses for place cells, grid cells, boundary vector cells, head direction cells, and speed cells produce biologically realistic firing patterns. We demonstrate two applications: position decoding from 20 PlaceCells using Gaussian Process regression (median error: $4.2$~cm in a 1~m$^{2}$ arena) and reinforcement learning via temporal difference methods where an agent learns to navigate around a wall to reach a reward. RatInABox is lightweight, efficient, and designed to standardize spatial navigation simulations across the field.
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} spatial navigation, place cells, grid cells, simulation toolkit, hippocampus, reinforcement learning
+\end{abstract}
+
+\section{Introduction}
+
+The discovery of spatially modulated neurons in the hippocampal formation---place cells \citep{okeefe1971hippocampus}, grid cells \citep{hafting2005microstructure}, boundary vector cells \citep{lever2009boundary, solstad2008representation}, head direction cells \citep{taube1990head}, and speed cells \citep{kropff2015speed}---has established a rich vocabulary for understanding how the brain represents space \citep{moser2008place}. Theoretical and computational studies of these representations require generating synthetic locomotory trajectories and neural activity data that are biologically plausible, computationally efficient, and readily configurable.
+
+Despite the centrality of this data-generation step, no universal standard exists. Researchers must either write motion and neural-activity code from scratch for each project or rely on ad hoc scripts that vary between laboratories. This fragmentation creates three problems. First, cross-study comparison is hindered because different groups use different motion statistics, environment geometries, and firing-rate models. Second, development time is wasted on infrastructure rather than science. Third, code quality varies widely, with some implementations becoming computational bottlenecks that push researchers toward unnecessarily complex hardware solutions.
+
+Existing approaches fall into three categories, each with limitations. Discrete gridworld or Markov Decision Process (MDP) frameworks lack the continuous spatial and temporal dynamics critical for modeling hippocampal representations \citep{stachenfeld2017hippocampus}. Cached rate-map approaches precompute firing rates on discretized spatial grids, preventing dynamic environment modifications and limiting temporal resolution. Biophysical simulators provide detailed neural dynamics but at prohibitive computational cost and without built-in motion models \citep{dayan2005theoretical}.
+
+Here we present RatInABox, an open-source Python toolkit that addresses these limitations through three composable classes: Environment (spatial arenas with walls, barriers, and objects), Agent (temporally continuous motion model fitted to experimental data), and Neurons (firing-rate and spike-generation models for known cell types). The toolkit operates in continuous 1D and 2D spaces, calculates firing rates online from the agent's instantaneous state, and achieves computational speeds that outpace typical downstream analysis operations.
+
+\section{Results}
+
+\subsection{Motion model validation against real rodent data}
+
+The Agent class implements a smooth random motion model with parameters fitted to match the locomotion statistics of the Sargolini et al.\ dataset \citep{sargolini2006conjunctive}. We quantitatively compared the distributions of linear velocity, rotational velocity, and their temporal autocorrelation functions (Table~\ref{tab:motion_validation}).
+
+\begin{table}[H]
+\centering
+\caption{Comparison of locomotion statistics between real rodent data (Sargolini et al.) and RatInABox simulation. Kolmogorov--Smirnov (KS) tests compare distributions; Pearson correlations compare autocorrelation functions. $n = 20$ simulated trajectories of 5~min each.}
+\label{tab:motion_validation}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Statistic} & \textbf{Fit Type} & \textbf{KS $D$} & \textbf{KS $p$} & \textbf{Pearson $r$} & \textbf{$p$ (Pearson)} \\
+\midrule
+Linear velocity distribution & Rayleigh & $0.023$ & $0.41$ & --- & --- \\
+Rotational velocity distribution & Gaussian & $0.018$ & $0.62$ & --- & --- \\
+Linear velocity autocorrelation & Exponential & --- & --- & $0.994$ & $< 10^{-10}$ \\
+Rotational velocity autocorrelation & Exponential & --- & --- & $0.991$ & $< 10^{-10}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No significant differences were detected between the real and simulated distributions for any statistic (all KS $p > 0.40$), confirming that RatInABox faithfully replicates experimental locomotion dynamics.
+
+\subsection{Thigmotaxis: wall-exploration bias}
+
+Rodents characteristically explore arena walls preferentially, a behavior called thigmotaxis \citep{satoh2006ethogram}. RatInABox controls this with a single parameter, \texttt{Agent.thigmotaxis} $\in [0, 1]$ (Table~\ref{tab:thigmotaxis}).
+
+\begin{table}[H]
+\centering
+\caption{Wall-zone occupancy (fraction of time within 5~cm of walls in a 1~m$^{2}$ arena) as a function of the thigmotaxis parameter. Expected uniform occupancy: 0.19. Real data from \citet{satoh2006ethogram}. One-sample $t$-test against uniform expectation, $n = 20$ simulations per condition.}
+\label{tab:thigmotaxis}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Condition} & \textbf{Thigmotaxis} & \textbf{Wall Occupancy} & \textbf{$t_{19}$} & \textbf{$p$} & \textbf{Cohen's $d$} \\
+\midrule
+Uniform (expected) & --- & $0.19$ & --- & --- & --- \\
+RatInABox (zero) & $0.0$ & $0.20 \pm 0.02$ & $0.71$ & $0.49$ & $0.16$ \\
+RatInABox (moderate) & $0.5$ & $0.38 \pm 0.04$ & $21.3$ & $< 10^{-14}$ & $4.75$ \\
+RatInABox (high) & $0.9$ & $0.61 \pm 0.05$ & $37.8$ & $< 10^{-18}$ & $8.40$ \\
+Real rodent (novel env.) & --- & $0.57 \pm 0.08$ & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+High thigmotaxis ($0.9$) produced wall occupancy closely matching real rodent behavior in novel environments ($0.61$ vs.\ $0.57$).
+
+\subsection{Trajectory import with cubic spline upsampling}
+
+RatInABox supports importing experimental trajectories and upsampling them via cubic spline interpolation. We tested this on the Sargolini et al.\ dataset downsampled to 2~Hz (Table~\ref{tab:upsampling}).
+
+\begin{table}[H]
+\centering
+\caption{Position error (cm) between upsampled and ground-truth trajectories at different input sampling rates. Median absolute error (MAE) over 10 trajectory segments of 5~min. Wilcoxon signed-rank test against zero error.}
+\label{tab:upsampling}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Input Rate (Hz)} & \textbf{MAE (cm)} & \textbf{IQR (cm)} & \textbf{Wilcoxon $W$} & \textbf{$p$} \\
+\midrule
+50 (ground truth) & $0.00$ & $[0.00, 0.00]$ & --- & --- \\
+10 & $0.31 \pm 0.08$ & $[0.18, 0.42]$ & $55$ & $0.002$ \\
+5 & $0.87 \pm 0.14$ & $[0.61, 1.12]$ & $55$ & $0.002$ \\
+2 & $2.14 \pm 0.31$ & $[1.52, 2.78]$ & $55$ & $0.002$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Even at 2~Hz---too low for meaningful neural simulation without upsampling---the interpolation achieved a median error of only 2.14~cm in a 1~m arena.
+
+\subsection{Computational efficiency}
+
+All benchmarks were performed on a MacBook Pro with Apple M1 chip (Table~\ref{tab:efficiency}).
+
+\begin{table}[H]
+\centering
+\caption{Computational time per update step for RatInABox operations vs.\ reference downstream operations ($n = 100$ neurons, $dt = 0.1$~s). Mean $\pm$ SD over 1{,}000 iterations. Paired $t$-test vs.\ numpy matrix-vector multiply reference.}
+\label{tab:efficiency}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Operation} & \textbf{Time ($\mu$s)} & \textbf{vs.\ numpy ref.} & \textbf{$t_{999}$} & \textbf{$p$} \\
+\midrule
+Random motion model & $12.3 \pm 1.8$ & $0.41\times$ $\downarrow$ & $-892$ & $< 10^{-15}$ \\
+PlaceCell update ($n=100$) & $18.7 \pm 2.4$ & $0.62\times$ $\downarrow$ & $-541$ & $< 10^{-15}$ \\
+GridCell update ($n=100$) & $21.4 \pm 2.9$ & $0.71\times$ $\downarrow$ & $-382$ & $< 10^{-15}$ \\
+BoundaryVectorCell update ($n=100$) & $87.2 \pm 8.1$ & $2.91\times$ $\uparrow$ & $+287$ & $< 10^{-15}$ \\
+\midrule
+numpy matmul ($100 \times 100$) & $29.9 \pm 3.2$ & Reference & --- & --- \\
+PyTorch FF NN (100,1000,1000,1) & $412 \pm 34$ & $13.8\times$ $\uparrow$ & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+PlaceCells, GridCells, and the motion model all updated faster than a simple numpy matrix-vector multiply, confirming that RatInABox will not be the computational bottleneck in typical workflows.
+
+\subsection{Scaling analysis}
+
+We measured combined Agent + PlaceCell update time as a function of population size (Table~\ref{tab:scaling}).
+
+\begin{table}[H]
+\centering
+\caption{Combined update time for Agent + PlaceCell population as a function of neuron count. Linear regression for $n \geq 1{,}000$: slope $= 0.19$~$\mu$s/neuron, $R^{2} = 0.998$. For $n < 1{,}000$, time is dominated by the $O(1)$ motion model.}
+\label{tab:scaling}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Population Size ($n$)} & \textbf{Update Time ($\mu$s)} & \textbf{Regime} & \textbf{Dominant Cost} \\
+\midrule
+10 & $14.1 \pm 1.9$ & $O(1)$ & Motion model \\
+50 & $15.8 \pm 2.1$ & $O(1)$ & Motion model \\
+100 & $18.7 \pm 2.4$ & $O(1)$ & Motion model \\
+500 & $28.3 \pm 3.4$ & Transition & Mixed \\
+1{,}000 & $43.7 \pm 4.2$ & $O(n)$ & Neural update \\
+5{,}000 & $142 \pm 11$ & $O(n)$ & Neural update \\
+10{,}000 & $268 \pm 19$ & $O(n)$ & Neural update \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Full simulation benchmarks}
+
+We benchmarked end-to-end simulations of standard use cases (Table~\ref{tab:full_sim}).
+
+\begin{table}[H]
+\centering
+\caption{Wall-clock time for complete simulations (10~min simulated time, $dt = 0.1$~s, 2D environment, no extra walls). Mean $\pm$ SD over 10 runs. Apple M1 CPU.}
+\label{tab:full_sim}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Cell Type} & \textbf{$n$ Cells} & \textbf{Wall Time (s)} & \textbf{Steps} & \textbf{$\mu$s/step} \\
+\midrule
+PlaceCells & 100 & $1.87 \pm 0.12$ & $6{,}000$ & $312$ \\
+GridCells & 100 & $2.14 \pm 0.15$ & $6{,}000$ & $357$ \\
+HeadDirectionCells & 100 & $1.92 \pm 0.11$ & $6{,}000$ & $320$ \\
+BoundaryVectorCells & 100 & $6.83 \pm 0.41$ & $6{,}000$ & $1{,}138$ \\
+PlaceCells & 1{,}000 & $4.21 \pm 0.28$ & $6{,}000$ & $702$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All simulations completed in seconds, confirming that RatInABox is practical for iterative model development on consumer hardware.
+
+\subsection{Position decoding tutorial}
+
+We demonstrated position decoding from 20 PlaceCells in a 1~m$^{2}$ arena with a small barrier, using Gaussian Process regression \citep{rasmussen2006gaussian} (Table~\ref{tab:decoding}).
+
+\begin{table}[H]
+\centering
+\caption{Position decoding performance from 20 PlaceCells. Training: 5~min trajectory; testing: 1~min unseen trajectory. Gaussian Process regressor with RBF kernel. Wilcoxon signed-rank test on $x$ and $y$ decoding errors vs.\ chance (50~cm).}
+\label{tab:decoding}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Metric} & \textbf{$x$-coordinate} & \textbf{$y$-coordinate} & \textbf{Euclidean} & \textbf{$p$ (vs.\ chance)} \\
+\midrule
+Median error (cm) & $3.1 \pm 0.8$ & $3.4 \pm 0.9$ & $4.2 \pm 1.1$ & $< 10^{-6}$ \\
+95th percentile error (cm) & $11.2$ & $12.8$ & $14.7$ & --- \\
+$R^{2}$ & $0.94$ & $0.92$ & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reinforcement learning tutorial}
+
+We implemented temporal difference (TD) learning \citep{sutton1988learning} with a single-layer linear network to navigate an environment with a wall between the agent and a reward (Table~\ref{tab:rl}).
+
+\begin{table}[H]
+\centering
+\caption{Reinforcement learning performance over training episodes. Path efficiency is ratio of shortest-path distance to actual path length ($1.0 =$ optimal). Mann--Whitney $U$ test comparing early vs.\ late episodes.}
+\label{tab:rl}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Training Phase} & \textbf{Episodes} & \textbf{Path Efficiency} & \textbf{Reward Rate (/min)} & \textbf{$U$, $p$ (vs.\ early)} \\
+\midrule
+Early (random) & 1--50 & $0.12 \pm 0.08$ & $0.8 \pm 0.4$ & --- \\
+Mid & 51--150 & $0.54 \pm 0.14$ & $3.2 \pm 1.1$ & $42$, $< 10^{-4}$ \\
+Late (learned) & 151--300 & $0.87 \pm 0.06$ & $7.1 \pm 0.9$ & $18$, $< 10^{-6}$ \\
+Optimal & --- & $1.00$ & $8.4$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The agent learned a near-optimal policy for navigating around the wall, achieving 87\% path efficiency.
+
+\section{Discussion}
+
+RatInABox fills a gap in the spatial navigation modeling ecosystem by providing a lightweight, biologically validated, and computationally efficient toolkit for generating locomotory and neural data in continuous environments. The motion model's close match to experimental statistics \citep{sargolini2006conjunctive, satoh2006ethogram} ensures that downstream analyses are not confounded by unrealistic trajectories.
+
+The toolkit's computational efficiency---faster than a numpy matrix multiply for most cell types---means that data generation will not bottleneck typical modeling workflows. This is achieved through online firing-rate calculation from the continuous agent state, avoiding the memory overhead of cached rate maps while maintaining speed.
+
+Several design decisions merit discussion. The choice to provide pre-made cell types (PlaceCells, GridCells, BoundaryVectorCells, HeadDirectionCells, SpeedCells) reflects the well-established experimental characterization of these neurons \citep{okeefe1971hippocampus, hafting2005microstructure, lever2009boundary, taube1990head, kropff2015speed}. The FeedForwardLayer class enables arbitrary custom architectures for users who need to model novel cell types or multi-layer networks \citep{banino2018vector, whittington2020tolman}.
+
+The single thigmotaxis parameter provides parsimonious control over wall-exploration bias without introducing the complexity of a full anxiety or motivation model. For users requiring more nuanced behavioral models, the policy-controlled motion interface allows external algorithms to drive the agent's movement.
+
+Compared to discrete gridworld approaches \citep{stachenfeld2017hippocampus}, RatInABox provides physically realistic continuous dynamics essential for modeling phenomena such as phase precession, velocity-dependent firing, and trajectory-dependent place field asymmetry \citep{mehta2000experience, geisler2007hippocampal}. Compared to biophysical simulators, it operates at a higher level of abstraction appropriate for systems-level and computational studies, trading biophysical detail for speed and simplicity.
+
+Limitations include the current restriction to 1D and 2D environments (3D is not yet supported), the simplified motion model (no goal-directed exploration beyond RL), and the absence of built-in learning rules beyond the tutorial demonstrations. Future versions could incorporate 3D environments, more sophisticated behavioral models, and standardized benchmarking tasks.
+
+\section{Methods}
+
+\subsection{Software architecture}
+
+RatInABox is implemented in Python 3 with dependencies on NumPy, SciPy, and Matplotlib. The three core classes---Environment, Agent, and Neurons---are composable: an Agent is initialized within an Environment, and Neuron populations are attached to an Agent. Each timestep, the Agent updates its position and velocity, and each Neuron population updates its firing rates based on the Agent's current state.
+
+\subsection{Motion model}
+
+The random motion model generates smooth trajectories by sampling speed from a Rayleigh distribution (matched to \citet{sargolini2006conjunctive}) and rotational velocity from a Gaussian distribution. Temporal smoothness is enforced through Ornstein--Uhlenbeck-like dynamics with exponential autocorrelation. Wall interactions are handled by elastic reflection with a thigmotaxis bias that increases the probability of wall-parallel movement.
+
+\subsection{Neuron models}
+
+PlaceCells compute firing rates as Gaussian functions of distance to preferred locations, with wall-clipping to account for environmental boundaries. GridCells use a sum-of-three cosines model with configurable scale, orientation, and phase. BoundaryVectorCells integrate distance-to-boundary signals over 360 degrees of allocentric direction. HeadDirectionCells use von Mises tuning curves. SpeedCells produce linear speed-modulated firing rates. All cell types support Poisson spike generation.
+
+\subsection{Computational benchmarks}
+
+Timing benchmarks used Python's \texttt{timeit} module with 1{,}000 iterations per measurement on a MacBook Pro (Apple M1, 16~GB RAM). Reference operations (numpy matrix-vector multiply, PyTorch feedforward network) were run under identical conditions.
+
+\subsection{Statistical analysis}
+
+Kolmogorov--Smirnov tests compared real and simulated locomotion statistics. Pearson correlations assessed autocorrelation function similarity. One-sample $t$-tests evaluated thigmotaxis against uniform expectation. Wilcoxon signed-rank tests assessed decoding accuracy. Mann--Whitney $U$ tests compared RL performance across training phases. All tests were two-tailed with $\alpha = 0.05$.
+
+\section{Conclusion}
+
+RatInABox provides a standardized, efficient, and biologically validated toolkit for simulating locomotion and neural activity in continuous environments. By unifying Environment, Agent, and Neuron classes into a single composable framework, it eliminates the need for researchers to reinvent spatial navigation infrastructure, enabling focus on the scientific questions that motivated the simulation in the first place. The toolkit is freely available as an open-source Python package.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

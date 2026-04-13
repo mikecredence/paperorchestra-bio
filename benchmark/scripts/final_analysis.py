@@ -130,7 +130,7 @@ categories = {}
 for paper_id in all_data:
     meta_path = tc_dir / paper_id / "metadata.json"
     if meta_path.exists():
-        categories[paper_id] = json.loads(meta_path.read_text()).get("category", "unknown")
+        categories[paper_id] = json.loads(meta_path.read_text(encoding="utf-8")).get("category", "unknown")
     else:
         categories[paper_id] = "unknown"
 

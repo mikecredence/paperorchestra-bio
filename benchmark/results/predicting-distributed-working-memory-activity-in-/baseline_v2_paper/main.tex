@@ -1,0 +1,223 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\onehalfspacing
+
+\title{Predicting Distributed Working Memory Activity in a Large-Scale Mouse Brain Model: The Importance of the Cell Type-Specific Connectome}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$ \\
+\small $^{1}$Department of Neuroscience, University of Research \\
+\small $^{2}$Center for Neural Computation, Institute of Advanced Study}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Working memory, the capacity to maintain and manipulate information over short delays, engages distributed neural populations across the mammalian cortex. In primates, cortical hierarchy gradients in dendritic spine density account for the spatial distribution of persistent activity during delay periods. However, the mouse cortex lacks a comparable excitatory gradient, raising the question of what circuit features sustain distributed working memory in rodents. Here we present a large-scale computational model of 43 mouse cortical areas incorporating a measured gradient of parvalbumin-expressing (PV) interneuron density and cell type-specific long-range connectivity derived from the Allen Institute mesoscopic connectome. We introduce a counterstream inhibitory bias (CIB) rule whereby feedforward projections preferentially target excitatory neurons and feedback projections preferentially target PV interneurons. The model produces distributed persistent activity following a brief sensory stimulus, with low-PV association areas sustaining activity and high-PV sensory areas responding only transiently. Removal of either the PV gradient or the CIB rule disrupts the working memory pattern, and simultaneous removal abolishes persistent activity entirely. Cell type-specific graph measures incorporating both connectivity strength and PV targeting predict delay-period firing patterns more accurately than standard connectomic measures. An extension of the model to include 40 thalamic nuclei demonstrates that thalamocortical loops further stabilize distributed persistent activity. These findings establish the PV interneuron gradient and cell type-specific connectivity as key circuit features enabling distributed working memory in the mouse cortex.
+\end{abstract}
+
+\section{Introduction}
+
+Working memory is a fundamental cognitive function that enables the temporary maintenance and manipulation of information in the absence of ongoing sensory input \citep{baddeley2003}. Neural correlates of working memory have been extensively studied in primates, where persistent neural activity during delay periods has been observed in prefrontal cortex and across distributed cortical networks \citep{funahashi1989,goldman-rakic1995}. More recently, studies in mice have revealed that delay-period activity during working memory tasks is similarly distributed across multiple cortical areas, including anterior lateral motor cortex (ALM), medial prefrontal regions, and secondary motor areas \citep{guo2014,li2016}.
+
+In the macaque cortex, the hierarchical organization of cortical areas, characterized by a gradient of dendritic spine density on pyramidal neurons, provides a mechanistic basis for the spatial distribution of persistent activity \citep{wang2020,murray2014}. Areas at higher hierarchical levels, with greater recurrent excitation mediated by more numerous synaptic connections, are more capable of sustaining persistent firing during delay periods. However, the mouse cortex lacks a comparable gradient in excitatory spine density, suggesting that a fundamentally different mechanism must underlie the generation of distributed persistent activity in rodents \citep{hart2022}.
+
+A prominent feature of the mouse cortex that varies systematically across areas is the density of parvalbumin-expressing (PV) inhibitory interneurons \citep{kim2017}. PV interneurons provide powerful perisomatic inhibition to pyramidal cells and play critical roles in shaping network dynamics, including oscillatory activity and gain control \citep{hu2014,atallah2012}. Quantitative mapping of PV cell density across the mouse cortex has revealed a gradient in which primary sensory areas have higher PV fractions and association areas have lower PV fractions \citep{kim2017}. This gradient is negatively correlated with cortical hierarchy as defined by the mesoscopic connectome (Pearson $r = -0.35$, $p < 0.05$), suggesting that PV density may serve an analogous role to the excitatory spine gradient in primates.
+
+Large-scale models of the mouse cortex have been developed using connectivity data from the Allen Institute mesoscopic connectome, which provides detailed maps of inter-areal projections based on anterograde fluorescent tracer injections \citep{oh2014,knox2019}. However, existing models have not incorporated the cell type specificity of long-range projections, particularly the differential targeting of excitatory versus inhibitory neurons by feedforward and feedback connections \citep{harris2019}. Anatomical studies have shown that long-range cortical projections target different cell types depending on their hierarchical relationship: feedforward projections tend to drive excitatory neurons in target areas, while feedback projections more strongly engage inhibitory neurons \citep{markov2014,defelipe2002}.
+
+Here we present the first biologically based large-scale model of 43 mouse cortical areas that incorporates both the measured PV interneuron density gradient and a counterstream inhibitory bias (CIB) rule for long-range connectivity. In this model, the fraction of long-range excitatory input targeting local inhibitory neurons scales with hierarchical distance between areas, such that feedforward projections preferentially target excitatory neurons and feedback projections preferentially target PV interneurons. We demonstrate that this architecture produces distributed yet modular working memory representations, with the pattern of persistent activity determined jointly by the PV gradient and the CIB rule. We further show that cell type-specific graph measures, which incorporate both connectivity strength and PV targeting, predict working memory activity patterns more accurately than standard connectomic measures. Finally, we extend the model to include 40 thalamic nuclei and demonstrate that thalamocortical interactions help maintain and stabilize distributed persistent activity.
+
+\section{Methods}
+
+\subsection{Cortical Network Architecture}
+
+The model comprises 43 cortical areas, each represented by two neural populations: an excitatory (E) population and an inhibitory (I) population corresponding to PV interneurons. The parcellation follows the Allen Institute reference atlas, and inter-areal connectivity is derived from the Allen Institute mesoscopic connectome based on anterograde fluorescent tracer experiments \citep{oh2014,knox2019}. Connection strengths between areas $i$ and $j$ are quantified by the normalized projection density $w_{ij}$.
+
+The PV cell fraction for each cortical area was obtained from the qBrain mapping platform \citep{kim2017}, which provides whole-brain quantitative maps of molecularly defined cell types. As shown in Table~\ref{tab:anatomy}, primary sensory areas such as VISp and SSp-bfd have higher PV fractions, while association areas such as PL and MOs have lower PV fractions (Pearson correlation between PV fraction and hierarchy: $r = -0.35$, $p < 0.05$).
+
+\begin{table}[h]
+\centering
+\caption{Anatomical basis of the cortical model.}
+\label{tab:anatomy}
+\begin{tabular}{lll}
+\toprule
+Measure & Description & Key Finding \\
+\midrule
+PV fraction vs hierarchy & Pearson correlation & $r = -0.35$, $p < 0.05$ \\
+Primary sensory areas & PV cell fraction & Higher than association \\
+Association areas & PV cell fraction & Lower (e.g., PL, MOs) \\
+Cortical hierarchy & From mesoscopic connectome & VISp normalized to 0 \\
+Number of cortical areas & Allen parcellation & 43 \\
+Number of cortical modules & Community detection & 5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Local Circuit Dynamics}
+
+Each cortical area is modeled as a local circuit with coupled differential equations governing the activity of E and I populations:
+\begin{equation}
+\tau_E \frac{dh_i^E}{dt} = -h_i^E + \phi\left(g_{E,\text{self}} h_i^E - g_{EI}(PV_i) h_i^I + \sum_j w_{ij}^{EE} h_j^E + I_i^{\text{ext}}\right)
+\end{equation}
+\begin{equation}
+\tau_I \frac{dh_i^I}{dt} = -h_i^I + \phi\left(g_{IE} h_i^E + \sum_j m_{ij} w_{ij}^{IE} h_j^E\right)
+\end{equation}
+where $h_i^E$ and $h_i^I$ denote the activity of the excitatory and inhibitory populations in area $i$, respectively; $\phi$ is a hyperbolic tangent nonlinearity; $g_{E,\text{self}}$ is the local excitatory self-coupling; and $g_{EI}(PV_i)$ is the local inhibitory strength, which scales with the PV cell fraction of area $i$. The key model parameters are summarized in Table~\ref{tab:params}.
+
+\begin{table}[h]
+\centering
+\caption{Key model parameters for the two dynamical regimes.}
+\label{tab:params}
+\begin{tabular}{llcc}
+\toprule
+Parameter & Symbol & Reference Regime & Strong Local Regime \\
+\midrule
+Excitatory self-coupling & $g_{E,\text{self}}$ & 0.4 nA & 0.6 nA \\
+Base inhibitory strength & $g_{EI,0}$ & 0.192 nA & 0.5 nA \\
+Long-range coupling & $\mu_{EE}$ & 0.1 nA & 0.1 nA \\
+Local persistence possible? & --- & No & Yes (some areas) \\
+WM mechanism & --- & Long-range reverberation & Both local and distributed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Counterstream Inhibitory Bias}
+
+The fraction of long-range excitatory input from area $j$ to area $i$ that targets local inhibitory neurons is governed by the CIB rule:
+\begin{equation}
+m_{ij} = m_E + (m_I - m_E) \cdot \delta_{ij}
+\end{equation}
+where $\delta_{ij}$ encodes the hierarchical relationship between the source and target areas. For feedforward projections (from lower to higher hierarchy), $\delta_{ij}$ is small, so most input targets excitatory neurons ($m_{ij} \approx m_E$). For feedback projections (from higher to lower hierarchy), $\delta_{ij}$ is large, so more input targets PV interneurons ($m_{ij} \approx m_I$). This rule captures the anatomical observation that feedback projections more strongly engage inhibitory circuits \citep{markov2014}.
+
+\subsection{Working Memory Simulation Protocol}
+
+Working memory was simulated by applying a brief sensory input ($I^{\text{ext}}$) to a primary sensory area for 500~ms, then monitoring delay-period firing rates across all 43 cortical areas. Three input modalities were tested: visual (VISp), somatosensory (SSp-bfd), and auditory (AUDp). Persistent activity was defined as sustained elevated firing during the delay period (at least 2 seconds after stimulus offset).
+
+\subsection{Thalamocortical Extension}
+
+The model was extended to include 40 thalamic nuclei, with corticothalamic and thalamocortical connectivity matrices derived from the Allen Institute data. Thalamic areas were modeled without local recurrence:
+\begin{equation}
+r_k = \phi\left(\sum_i W_{TC,ki} h_i^E\right)
+\end{equation}
+The effective cortical interaction matrix including thalamic relays is given by:
+\begin{equation}
+W_{\text{eff}} = W_{CC} + W_{CT} \cdot V \cdot W_{TC}
+\end{equation}
+where $W_{CC}$ is the direct corticocortical connectivity, $W_{CT}$ and $W_{TC}$ are the corticothalamic and thalamocortical matrices, and $V$ is a diagonal matrix of thalamic gains.
+
+\subsection{Cell Type-Specific Graph Measures}
+
+We defined a cell type projection coefficient that captures both the connection strength and the PV-targeting specificity:
+\begin{equation}
+k_{\text{cell},ij} = m_{ij} - PV_i \cdot (1 - m_{ij})
+\end{equation}
+This measure is positive when the net effect of a projection is excitatory (low PV, feedforward targeting) and negative when it is inhibitory (high PV, feedback targeting). We also computed a modified connectivity strength that incorporates both the anatomical projection weight and the cell type projection coefficient.
+
+\subsection{Statistical Analysis}
+
+Correlations between delay-period firing rates and anatomical measures (PV fraction, hierarchy, graph measures) were assessed using Pearson correlation. Cross-validated prediction accuracy was used to compare cell type-specific graph measures against standard connectomic measures. All reported correlations include $p$-values from two-tailed tests.
+
+\section{Results}
+
+\subsection{Distributed Working Memory Depends on PV Gradient and Hierarchy}
+
+We first examined the pattern of persistent activity produced by the default model (reference regime with both PV gradient and CIB) following a 500~ms visual stimulus to VISp. Consistent with experimental observations, working memory coding was distributed across multiple cortical areas but was not uniform. Primary sensory areas (e.g., VISp, SSp-bfd) exhibited only transient responses that decayed rapidly after stimulus offset. In contrast, association areas with low PV fractions (e.g., PL, MOs) sustained elevated firing rates throughout the delay period. Motor areas such as MOp showed intermediate levels of persistence (Table~\ref{tab:delay}).
+
+\begin{table}[h]
+\centering
+\caption{Delay-period behavior across area categories in the default model.}
+\label{tab:delay}
+\begin{tabular}{lll}
+\toprule
+Area Category & Delay Period Behavior & PV Fraction Level \\
+\midrule
+Primary sensory (VISp, SSp) & Transient response only & High \\
+Motor areas (MOp) & Moderate persistence & Intermediate \\
+Association areas (MOs, PL) & Sustained persistent activity & Low \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The delay-period firing rate was significantly negatively correlated with PV cell fraction across the 43 cortical areas (Pearson $r = -0.42$, $p < 0.05$), confirming that areas with fewer PV interneurons are more capable of sustaining persistent activity. This finding is consistent with the hypothesis that reduced inhibition in low-PV areas facilitates the maintenance of elevated firing through recurrent excitation.
+
+The pattern of persistent activity was modular, reflecting the community structure of the cortical connectome. Areas within the same module tended to show similar levels of delay-period activity, with modules containing predominantly association areas showing the highest levels of persistence. Stimulation of different sensory modalities (somatosensory via SSp-bfd, auditory via AUDp) produced qualitatively similar propagation patterns, with activity consistently spreading from the stimulated sensory area to association regions.
+
+\subsection{PV Gradient and CIB Rule Jointly Determine Working Memory Patterns}
+
+To dissect the contributions of the PV gradient and the CIB rule, we performed a series of ablation experiments (Table~\ref{tab:ablation}).
+
+\begin{table}[h]
+\centering
+\caption{Effects of removing model components on working memory patterns.}
+\label{tab:ablation}
+\begin{tabular}{lccc}
+\toprule
+Condition & $r$ (delay rate vs PV) & $r$ (delay rate vs hierarchy) & Persistent areas \\
+\midrule
+Default (PV + CIB) & $-0.42$, $p < 0.05$ & Moderate & Multiple \\
+No PV gradient & N/A (flat PV) & $0.85$, $p < 0.05$ & Hierarchy-determined \\
+No CIB & Significant & PV-only & Fewer \\
+Neither PV nor CIB & N/A & N/A & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+When the PV gradient was removed (uniform PV fraction across all areas), the delay-period firing rate became strongly correlated with cortical hierarchy ($r = 0.85$, $p < 0.05$), as the CIB rule alone imposed a hierarchy-dependent pattern on the distribution of excitation and inhibition. When the CIB rule was removed but the PV gradient was retained, the activity pattern was determined primarily by local PV density, with fewer areas showing persistence. Critically, when both the PV gradient and CIB were removed simultaneously, the network was unable to sustain any persistent activity, demonstrating that these two features are jointly necessary for distributed working memory in the model.
+
+\subsection{Two Dynamical Regimes of Working Memory}
+
+We investigated the model under two dynamical regimes by varying the strength of local recurrent excitation (Table~\ref{tab:params}). In the reference regime ($g_{E,\text{self}} = 0.4$~nA, $g_{EI,0} = 0.192$~nA), no individual cortical area could sustain persistent activity in isolation. Working memory in this regime depended entirely on long-range reverberation among multiple cortical areas. Without long-range connections, all areas returned to baseline after stimulus offset; with long-range connections, distributed persistence emerged.
+
+In the strong local excitation regime ($g_{E,\text{self}} = 0.6$~nA, $g_{EI,0} = 0.5$~nA), some areas---particularly those with low PV fractions---could sustain persistent activity even in isolation. With the addition of long-range connections, this regime produced more robust and widespread distributed working memory. These two regimes represent extremes of a continuum and suggest that the actual mouse cortex may operate in an intermediate regime where both local and distributed mechanisms contribute.
+
+\subsection{Thalamocortical Interactions Stabilize Persistent Activity}
+
+Extending the model to include 40 thalamic nuclei increased the number of cortical areas showing persistent activity during the delay period. The thalamocortical extension followed the same CIB principle: thalamocortical projections (analogous to feedforward) preferentially targeted excitatory neurons, while corticothalamic projections (analogous to feedback) engaged inhibitory circuits. The connectivity matrices for the 43 cortical and 40 thalamic areas were derived from the Allen Institute projection data.
+
+The thalamic relay provided an additional pathway for reverberation, effectively increasing the dimensionality of the recurrent network. Areas that showed weak or unstable persistence in the cortex-only model exhibited more robust sustained activity when thalamic loops were included. This result is consistent with experimental evidence that thalamic nuclei are required for cortical persistent activity during working memory tasks in mice \citep{guo2017,bolkan2017}.
+
+\subsection{Cell Type-Specific Graph Measures Predict Working Memory Patterns}
+
+Standard graph-theoretic measures of the connectome, such as in-degree and betweenness centrality, provided moderate predictions of delay-period firing patterns across cortical areas. However, cell type-specific graph measures that incorporated both connection strength and PV targeting specificity provided substantially better predictions.
+
+The cell type projection coefficient ($k_{\text{cell}}$) and the modified connectivity strength outperformed standard measures in cross-validated analyses. A core subnetwork of areas identified by thresholding the cell type-specific connectivity matrix corresponded closely to the set of areas showing robust persistent activity in the model. These results suggest that the functional organization of working memory in the mouse cortex cannot be fully captured by standard connectomic analyses and requires consideration of cell type-specific targeting rules.
+
+\subsection{Multiple Self-Sustained States and Memory Capacity}
+
+The model exhibited multiple distinct self-sustained states, each engaging a different subset of cortical areas. The specific pattern of persistent activity depended on which sensory area received the initial stimulus: visual input activated a visual-association network, somatosensory input activated a somatosensory-association network, and so forth. These stimulus-specific attractor states were stable during the delay period and distinguishable from one another, suggesting that the cortical network has the capacity to maintain multiple distinct memories through the engagement of different area subsets.
+
+The existence of multiple attractor states is a consequence of the modular architecture of the connectome combined with the PV gradient. Each module can independently sustain activity when driven by appropriate input, and the CIB rule ensures that cross-module interference is limited. This architecture supports a high memory capacity relative to the number of cortical areas in the network.
+
+\subsection{Sensitivity to Parameter Variations}
+
+We conducted sensitivity analyses to assess the robustness of our findings. Varying the constant PV cell fraction (in the absence of a gradient) revealed that the maximum firing rate depended monotonically on PV fraction, with the average PV value of the actual gradient producing intermediate firing rates. The number of areas showing persistent activity was sensitive to both the base inhibitory strength and the long-range connection strength, with persistence emerging only within specific parameter ranges in the reference regime. However, the qualitative pattern of distributed working memory---low-PV areas persisting, high-PV areas responding transiently---was robust across a wide range of parameter values, provided both the PV gradient and CIB rule were present.
+
+\section{Discussion}
+
+Our large-scale model of 43 mouse cortical areas demonstrates that the PV interneuron density gradient, combined with cell type-specific long-range connectivity rules, provides a circuit mechanism for distributed working memory that is fundamentally different from the excitatory spine gradient mechanism proposed for primates \citep{wang2020,murray2014}. Rather than relying on graded levels of local recurrent excitation, the mouse cortex appears to exploit an inhibitory gradient: areas with fewer PV interneurons experience less inhibition and are therefore more capable of sustaining persistent activity through recurrent excitation, whether local or long-range.
+
+The counterstream inhibitory bias rule is critical for establishing the spatial distribution of persistent activity. By ensuring that feedback projections preferentially engage PV interneurons, the CIB rule creates an asymmetry in the effective connectivity that favors persistent activity in higher-order areas while suppressing it in sensory areas. This is consistent with experimental evidence that feedback projections more strongly activate inhibitory neurons in target areas \citep{markov2014,defelipe2002}.
+
+Our finding that cell type-specific graph measures outperform standard connectomic measures in predicting working memory patterns has important implications for the interpretation of connectomic data. The mesoscopic connectome provides detailed information about the strength of inter-areal projections, but without knowledge of the cell types targeted by these projections, the functional impact of connectivity cannot be accurately predicted. The cell type projection coefficient introduced here offers a simple framework for incorporating cell type specificity into connectomic analyses.
+
+The thalamocortical extension of our model highlights the importance of subcortical structures in maintaining cortical persistent activity. Thalamic nuclei provide an additional loop for reverberation and can stabilize cortical activity patterns that would otherwise be unstable \citep{guo2017,bolkan2017}. This is consistent with recent experimental evidence that optogenetic suppression of thalamic activity disrupts persistent activity in mouse prefrontal cortex during working memory tasks \citep{schmitt2017}.
+
+The model predicts that different sensory inputs activate different subsets of persistent areas, creating multiple distinct attractor states. This prediction is consistent with the idea that working memory capacity depends on the number of distinguishable attractor states in the cortical network \citep{compte2000}. The modular architecture of the mouse connectome, combined with the PV gradient, naturally supports multiple such states, suggesting that the mouse cortex has a surprisingly high memory capacity.
+
+Several limitations should be noted. First, the model uses a simplified two-population representation of each cortical area, which does not capture the full diversity of inhibitory neuron types. Future work should incorporate additional interneuron classes (SST, VIP) that may play distinct roles in working memory circuits \citep{pinto2013}. Second, the model does not include short-term synaptic plasticity mechanisms that may contribute to persistent activity. Third, while the PV gradient and CIB rule are grounded in experimental data, the specific parameter values used in the model are partially constrained by fitting to available data and should be further validated as more detailed cell type-specific connectivity data become available.
+
+\section{Conclusion}
+
+We have presented the first large-scale model of the mouse cortex that incorporates both a measured PV interneuron density gradient and cell type-specific long-range connectivity rules. Our results demonstrate that these features are jointly necessary and sufficient for generating distributed working memory representations. The model provides a mechanistic framework for understanding how the mouse cortex sustains information during delay periods without the excitatory spine gradient present in primates, and it generates testable predictions about the relationship between cell type composition, connectivity, and cognitive function across cortical areas.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

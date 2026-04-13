@@ -1,0 +1,181 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\onehalfspacing
+
+\title{Selective Recruitment: Evidence for Task-Dependent Gating of Inputs to the Cerebellum}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$ \\
+\small $^{1}$Department of Psychology, University of Research \\
+\small $^{2}$Department of Neuroscience, University of Research}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The cerebellum is activated across nearly all cognitive and motor task domains in neuroimaging studies, but cerebellar BOLD signal primarily reflects mossy fiber input rather than Purkinje cell output, raising the question of whether observed activation represents genuine functional involvement or merely passive reflection of neocortical activity through fixed anatomical connections. Here we introduce a null model approach to distinguish between task-invariant transmission and selective recruitment of cerebellar processing. We trained a cortico-cerebellar connectivity model (Ridge regression) on a multi-domain task battery and used it to predict cerebellar activity from neocortical patterns in two novel task contexts. In a motor task with parametric manipulation of force and speed, cerebellar activity for speed conditions exceeded model predictions (positive residuals), while force conditions fell precisely on the regression line, consistent with clinical evidence that cerebellar lesions impair rapid alternating movements but not force generation. In a digit span working memory task, selective recruitment was observed specifically during memory encoding but not during retrieval or manipulation. These findings demonstrate that the cerebellum receives task-dependent gating of neocortical inputs, with upregulated transmission during conditions that specifically require cerebellar computation.
+\end{abstract}
+
+\section{Introduction}
+
+The cerebellum has long been recognized as essential for motor coordination, but neuroimaging evidence increasingly implicates it in cognitive functions including working memory, language processing, and executive function \citep{schmahmann2019,buckner2013}. Functional MRI studies consistently show cerebellar BOLD signal increases across diverse task conditions, leading to questions about what cerebellar activation actually signifies. A fundamental interpretive challenge arises from the fact that cerebellar BOLD signal primarily reflects mossy fiber input arriving from the cerebral cortex via the pons, rather than Purkinje cell output \citep{diedrichsen2019,mathiesen1998}. This means that cerebellar activation could simply reflect the pattern of neocortical activity transmitted through fixed cortico-ponto-cerebellar projections, without any functional involvement of cerebellar processing.
+
+Clinical evidence provides a critical counterpoint to the ubiquitous cerebellar activation seen in neuroimaging. Patients with cerebellar lesions show specific deficits in rapid alternating movements and motor timing but relatively preserved force generation, despite the fact that both tasks produce robust cerebellar BOLD increases in healthy individuals \citep{spencer2003,bastian2006}. This dissociation suggests that cerebellar activation per se does not indicate functional engagement: some activated conditions may reflect passive input transmission while others reflect genuine cerebellar computation.
+
+The concept of selective recruitment offers a framework for resolving this ambiguity. If the cerebellum receives a fixed proportion of neocortical output (task-invariant transmission), cerebellar activity should be predictable from neocortical activity patterns regardless of the task. Selective recruitment occurs when cerebellar input is actively upregulated beyond what would be predicted by the standard neocortical-to-cerebellar mapping, indicating that the pontine relay has increased its gain for the specific information required by the cerebellum \citep{ramnani2006,allen2005}.
+
+Here we operationalize the null model of task-invariant transmission using a cortico-cerebellar connectivity model trained on a multi-domain task battery (MDTB). We then test for selective recruitment in two novel tasks: a motor task parametrically manipulating force and speed, and a digit span working memory task separating encoding, delay, and retrieval phases.
+
+\section{Methods}
+
+\subsection{Participants}
+
+Sixteen healthy right-handed volunteers participated in Experiment 1 (motor task) and Experiment 2 (digit span working memory task). All participants provided informed consent and the study was approved by the institutional ethics committee.
+
+\subsection{Experiment 1: Motor Task}
+
+Participants performed an alternating finger tapping task with independent manipulation of force and speed (Table~\ref{tab:motor}). The baseline condition required 6 taps at 2.5~N target force. Force was increased to 4.0~N and 6.0~N while keeping tap count constant. Speed was increased by requiring 9 or 12 taps in the same time window while maintaining 2.5~N force. Each condition was presented in a block design with 12-second task blocks and 12-second rest blocks.
+
+\begin{table}[h]
+\centering
+\caption{Motor task conditions with behavioral parameters ($n = 16$).}
+\label{tab:motor}
+\begin{tabular}{lccl}
+\toprule
+Condition & Target Force (N) & Target Taps & Error Rate \\
+\midrule
+Baseline & 2.5 & 6 & Higher (completed fast) \\
+Medium Force & 4.0 & 6 & Low \\
+High Force & 6.0 & 6 & Low \\
+Medium Speed & 2.5 & 9 & Low \\
+High Speed & 2.5 & 12 & Low \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experiment 2: Digit Span Working Memory Task}
+
+Participants performed forward and backward digit span tasks with memory loads of 3, 5, and 7 digits. Each trial consisted of four phases: cue (indicating forward or backward recall), encoding (sequential digit presentation), delay (maintenance period), and retrieval (typed response). Go trials required full recall; no-go trials terminated after encoding to isolate encoding-related activity.
+
+\subsection{fMRI Acquisition and Preprocessing}
+
+Functional images were acquired on a 3T MRI scanner using a standard echo-planar imaging sequence (TR = 1 s, voxel size = 2 mm isotropic). Preprocessing included motion correction, slice timing correction, spatial normalization to MNI space, and spatial smoothing (6 mm FWHM for cerebral cortex, 4 mm for cerebellum). Cerebellar data were mapped to the SUIT flatmap \citep{diedrichsen2009}.
+
+\subsection{Cortico-Cerebellar Connectivity Model}
+
+A Ridge regression model was trained on task set A of the MDTB dataset to predict each cerebellar voxel's activity from the pattern of neocortical activity across all cortical ROIs \citep{king2019}. The model captures the average mapping from cortical to cerebellar activity across diverse task conditions. For novel tasks, the model predicts cerebellar activity from the observed cortical patterns, and residuals (observed minus predicted) indicate deviations from the task-invariant transmission baseline.
+
+Positive residuals indicate selective recruitment: cerebellar input is upregulated beyond what the standard cortical-to-cerebellar mapping would predict. Negative residuals indicate suppressed input. Near-zero residuals indicate that cerebellar activity is fully explained by the fixed connectivity model.
+
+The model was validated using alternative approaches including Lasso regression and a 5-dataset Ridge model (Table~\ref{tab:model}).
+
+\begin{table}[h]
+\centering
+\caption{Connectivity model specifications.}
+\label{tab:model}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Training dataset & MDTB task set A \\
+Regression method & Ridge regression \\
+Alternatives tested & Lasso; 5-dataset Ridge \\
+Evaluation metric & Cosine similarity \\
+Model performance & Good prediction across novel tasks \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Region of Interest Analysis}
+
+For the motor task, the primary ROI was the right cerebellar hand area. For the digit span task, the ROI was the D3R sub-region of the cerebellar multi-demand network. Cortical ROIs included left M1/S1 for the motor task and distributed frontoparietal regions for the working memory task.
+
+\subsection{Statistical Analysis}
+
+ROI activation was assessed using one-sample $t$-tests against baseline ($n = 16$). Selective recruitment was evaluated by plotting observed versus predicted cerebellar activity across conditions and examining residuals. If conditions fall on the regression line, activity is explained by the connectivity model; systematic positive deviations indicate selective recruitment. Significance was assessed at $p < 0.05$.
+
+\section{Results}
+
+\subsection{Motor Task: Cortical and Cerebellar Activation}
+
+Both force and speed manipulations produced significant increases in cortical and cerebellar activation (Table~\ref{tab:motoract}). In the left M1/S1 cortical ROI, high force produced a robust increase ($t_{15} = 9.41$, $p = 1.10 \times 10^{-7}$) as did high speed ($t_{15} = 8.29$, $p = 5.54 \times 10^{-7}$). In the right cerebellar motor ROI, both high force ($t_{15} = 14.21$, $p = 4.14 \times 10^{-10}$) and high speed ($t_{15} = 7.60$, $p = 1.59 \times 10^{-6}$) produced significant increases. Thus, standard activation analysis would suggest equivalent cerebellar involvement in both force and speed processing.
+
+\begin{table}[h]
+\centering
+\caption{Motor task activation statistics ($n = 16$).}
+\label{tab:motoract}
+\begin{tabular}{llcc}
+\toprule
+ROI & Condition & $t_{15}$ & $p$-value \\
+\midrule
+M1/S1 (left) & High Force vs Baseline & 9.41 & $1.10 \times 10^{-7}$ \\
+M1/S1 (left) & High Speed vs Baseline & 8.29 & $5.54 \times 10^{-7}$ \\
+Cerebellar motor (right) & High Force vs Baseline & 14.21 & $4.14 \times 10^{-10}$ \\
+Cerebellar motor (right) & High Speed vs Baseline & 7.60 & $1.59 \times 10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Motor Task: Selective Recruitment for Speed but Not Force}
+
+The connectivity model revealed a striking dissociation between force and speed conditions. When observed cerebellar activity was plotted against model-predicted activity, force conditions (baseline, medium force, high force) fell precisely on the regression line, indicating that cerebellar activation during force modulation is fully explained by the standard cortical-to-cerebellar mapping. The cerebellar increase during high force simply reflects the increased M1/S1 activity being transmitted through fixed connectivity.
+
+In contrast, speed conditions showed systematic positive residuals: observed cerebellar activity exceeded model predictions. Medium speed fell slightly above the line and high speed fell substantially above it. This pattern indicates that cerebellar input is selectively upregulated during speed conditions, consistent with active recruitment of cerebellar processing for motor timing.
+
+This dissociation is directly consistent with clinical observations: cerebellar lesions impair rapid alternating movements (which require the timing computations that speed conditions engage) but spare force generation (which does not require cerebellar computation beyond what is transmitted through fixed connectivity).
+
+\subsection{Digit Span: Selective Recruitment During Encoding}
+
+In the digit span task, both cortical and cerebellar ROIs showed activation during encoding and retrieval phases, with activity scaling with memory load. The connectivity model was used to predict cerebellar D3R activity from the frontoparietal cortical pattern during each task phase and load level (Table~\ref{tab:wm}).
+
+\begin{table}[h]
+\centering
+\caption{Digit span selective recruitment analysis.}
+\label{tab:wm}
+\begin{tabular}{llcc}
+\toprule
+Phase & Load & Residual & Selective Recruitment? \\
+\midrule
+Encoding & 3 & Positive & Yes \\
+Encoding & 5 & Positive & Yes \\
+Encoding & 7 & Positive & Yes \\
+Retrieval (Forward) & 3--7 & Near zero & No \\
+Retrieval (Backward) & 3--7 & Near zero & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Encoding conditions showed consistent positive residuals across all memory loads, indicating that cerebellar input is upregulated during the encoding phase. The magnitude of the residual increased with load, suggesting that the degree of selective recruitment scales with the computational demands placed on the cerebellum during encoding.
+
+In contrast, retrieval conditions---both forward and backward recall---showed residuals near zero. Cerebellar activity during retrieval was fully explained by the connectivity model. This pattern suggests that the cerebellum is actively recruited during the encoding of digit sequences into working memory, possibly for articulatory rehearsal or temporal sequencing, but that retrieval and manipulation do not require additional cerebellar computation beyond what is transmitted through fixed cortico-cerebellar pathways.
+
+\subsection{Model Validation}
+
+Alternative connectivity models (Lasso regression, multi-dataset Ridge) produced qualitatively similar predictions, confirming that the selective recruitment findings are not artifacts of the specific model choice. The cosine similarity between predicted and observed cerebellar patterns was high across novel tasks, validating the model's ability to capture the general cortical-to-cerebellar mapping.
+
+\section{Discussion}
+
+Our results provide the first direct evidence for task-dependent gating of neocortical inputs to the cerebellum, resolving a longstanding ambiguity in the interpretation of cerebellar neuroimaging data. The selective recruitment framework distinguishes between conditions where cerebellar activation simply mirrors neocortical activity through fixed connectivity (force production, working memory retrieval) and conditions where cerebellar input is actively upregulated (speed modulation, working memory encoding).
+
+The motor task findings validate the selective recruitment approach by demonstrating a dissociation that precisely matches the clinical lesion literature \citep{spencer2003,bastian2006}. Force conditions, which are spared after cerebellar damage, show no evidence of selective recruitment. Speed conditions, which are impaired after cerebellar damage, show robust selective recruitment. This correspondence between the neuroimaging null model and the clinical evidence provides strong convergent validation.
+
+The working memory findings are novel and suggest that the cerebellum's contribution to cognitive function is phase-specific. During encoding, the sequential presentation of digits may engage cerebellar timing and sequencing mechanisms, consistent with the cerebellum's proposed role in articulatory rehearsal \citep{desmond2005,mariuen2014}. During retrieval, the cerebellum may still receive input proportional to neocortical activity but is not actively recruited for additional computation.
+
+The connectivity model approach has broader implications for interpreting neuroimaging data. Any brain region that receives massive input from another region faces the same interpretive challenge: does activation reflect input transmission or functional engagement? The null model framework could be applied to other systems, such as the thalamus or basal ganglia, where input-driven BOLD signal may similarly confound interpretation \citep{diedrichsen2019}.
+
+Several limitations should be noted. First, the connectivity model is trained on a finite set of tasks and may not fully capture the range of cortical-to-cerebellar mappings. However, the use of a diverse multi-domain task battery and the convergent results across alternative models mitigate this concern. Second, the current approach uses ROI-level analysis; future work could extend the framework to voxel-wise selective recruitment maps. Third, the working memory task used a digit span paradigm, and different working memory tasks may show different patterns of cerebellar recruitment.
+
+\section{Conclusion}
+
+We have demonstrated that the cerebellum receives task-dependent gating of neocortical inputs, with selective recruitment occurring specifically when cerebellar computation is functionally required. The cortico-cerebellar connectivity model provides a principled null model for distinguishing genuine functional involvement from passive input transmission. Applied to motor and working memory tasks, this approach reveals that only a subset of conditions showing cerebellar activation represent true functional recruitment, while others simply reflect the transmission of neocortical activity through fixed anatomical pathways.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\onehalfspacing
+
+\title{RNAseqCovarImpute: A Multiple Imputation Procedure That Outperforms Complete Case and Single Imputation Differential Expression Analysis}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$ \\
+\small $^{1}$Department of Biostatistics, School of Public Health \\
+\small $^{2}$Department of Epidemiology, School of Public Health}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Missing covariate data is ubiquitous in large observational studies with transcriptomic outcomes but has received little attention in the RNA-seq differential expression literature. Standard multiple imputation (MI) requires including the outcome in the imputation model, which is infeasible with tens of thousands of genes. Complete case (CC) analysis drops individuals with missing data, reducing power and potentially introducing bias. Single imputation (SI) ignores uncertainty in imputed values, producing overconfident standard errors. Here we present RNAseqCovarImpute, an R package implementing a gene-binning strategy that enables MI to incorporate high-dimensional gene expression data in the imputation model. Genes are randomly binned into groups of approximately one gene per ten individuals, MI is performed per bin using the \texttt{mice} R package with log-CPM values as imputation predictors, and results are combined using Rubin's rules after limma-voom modeling. Across three simulation studies---with real covariates and real counts ($N = 1{,}044$), real covariates and synthetic counts, and fully synthetic data ($N = 100$--$1{,}000$)---MI consistently identified more true positive differentially expressed genes (DEGs) without inflation of the false discovery rate (FDR) compared to CC and SI approaches, under both missing completely at random (MCAR) and missing at random (MAR) conditions at 10--50\% missingness levels. Applied to a maternal age--placental transcriptome analysis, MI identified the largest set of DEGs with biologically plausible enrichments. The RNAseqCovarImpute package is freely available and integrates directly with the limma-voom pipeline.
+\end{abstract}
+
+\section{Introduction}
+
+RNA sequencing (RNA-seq) has become a standard tool for measuring genome-wide gene expression, enabling the identification of differentially expressed genes (DEGs) associated with exposures, treatments, or phenotypes of interest \citep{conesa2016,love2014}. As sequencing costs decline, RNA-seq is increasingly incorporated into large-scale observational studies and epidemiologic cohorts, where rich covariate data enable adjustment for confounding variables \citep{hutter2019}. However, missing covariate data is pervasive in such studies, arising from non-response, data collection errors, or the merging of datasets with different variable sets.
+
+The standard approach to handling missing data in regression analysis is complete case (CC) analysis, which excludes all individuals with any missing covariate values. While valid under the strong assumption that data are missing completely at random (MCAR), CC analysis reduces statistical power proportionally to the fraction of excluded individuals and can introduce bias when data are missing at random (MAR) or missing not at random (MNAR) \citep{little2019}. Single imputation (SI) methods fill in missing values with a single best guess (e.g., mean, regression prediction) but treat imputed values as observed, underestimating standard errors and potentially producing anti-conservative inference \citep{schafer2002}.
+
+Multiple imputation (MI) addresses these limitations by creating $M$ completed datasets, each with missing values drawn from their predictive posterior distribution conditional on observed data. Analyses are performed on each completed dataset, and results are combined using Rubin's rules, which account for both within-imputation and between-imputation variability \citep{rubin1987,vanbuuren2018}. A critical requirement of MI is that the imputation model must be at least as rich as the analysis model, including all variables used in the analysis and ideally the outcome itself \citep{meng1994}.
+
+For RNA-seq studies, including the outcome in the MI model poses a unique challenge: there are tens of thousands of genes, and including all of them simultaneously in the imputation model is computationally infeasible and statistically unstable. This challenge has prevented the adoption of MI for RNA-seq differential expression analysis. Existing MI software, such as the \texttt{mice} R package \citep{vanbuuren2011}, can handle modest numbers of variables but not the high-dimensional gene expression matrices typical of transcriptomic studies.
+
+Here we introduce RNAseqCovarImpute, an R package that solves this problem through a gene-binning strategy. Genes are randomly divided into bins of approximately one gene per ten individuals, and MI is performed separately for each bin with the binned log-CPM values included as predictors in the imputation model. This approach satisfies the requirement of including the outcome in the imputation model while keeping the dimensionality of each imputation manageable. After imputation, limma-voom models are fit per bin and imputation, results are un-binned, empirical Bayes variance shrinkage is applied, and final results are pooled using Rubin's rules with FDR correction.
+
+\section{Methods}
+
+\subsection{RNAseqCovarImpute Pipeline}
+
+The method proceeds in six steps (Table~\ref{tab:pipeline}):
+
+\begin{table}[h]
+\centering
+\caption{RNAseqCovarImpute pipeline steps.}
+\label{tab:pipeline}
+\begin{tabular}{clc}
+\toprule
+Step & Description & Default Parameter \\
+\midrule
+1 & Bin genes randomly & 1 gene per 10 individuals \\
+2 & MI per bin (mice, log-CPM as predictor) & $M$ imputations \\
+3 & voom + lmFit per bin/imputation & Global mean-variance curve \\
+4 & Un-bin + squeezeVar & Per $M$ set \\
+5 & Pool with Rubin's rules & Standard Rubin's \\
+6 & FDR adjustment & Benjamini--Hochberg \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In step 1, genes passing expression filtering are randomly assigned to bins such that each bin contains approximately one gene per ten observations. For a study with $N = 1{,}000$ individuals, each bin would contain approximately 100 genes. In step 2, for each bin, the \texttt{mice} package creates $M$ imputed datasets. The imputation predictor matrix includes all covariates in the analysis model plus the log-CPM values of the genes in that bin. Continuous variables are imputed using predictive mean matching, binary variables using logistic regression, categorical variables using polytomous regression, and ordered variables using proportional odds models.
+
+In step 3, a modified voom function is applied that uses a global mean-variance trend estimated from all genes (not just the bin) to ensure stable variance estimates. The lmFit function from limma is then applied to fit linear models for each gene within each bin and imputation. In step 4, results from all bins within each imputation are combined (un-binned), and the squeezeVar function applies empirical Bayes moderation of gene-wise variances toward a common value. In step 5, coefficients, standard errors, and test statistics are pooled across the $M$ imputations using Rubin's rules. In step 6, $p$-values are adjusted for multiple testing using the Benjamini--Hochberg FDR method.
+
+\subsection{Simulation Study Designs}
+
+Three simulation studies were conducted to evaluate the performance of MI relative to CC and SI (Table~\ref{tab:simdesign}).
+
+\begin{table}[h]
+\centering
+\caption{Simulation study designs.}
+\label{tab:simdesign}
+\begin{tabular}{lccc}
+\toprule
+Parameter & Sim 1 & Sim 2 & Sim 3 \\
+\midrule
+Covariates & Real & Real & Synthetic \\
+Counts & Real RNA-seq & Synthetic & Synthetic \\
+$N$ & 1,044 & 1,044 & 100, 250, 500, 1,000 \\
+Missingness & MCAR, MAR & MCAR, MAR & MCAR, MAR \\
+Levels & 10\%, 30\%, 50\% & 10\%, 30\%, 50\% & 10\%, 30\%, 50\% \\
+Null gene rate & N/A & 82.5\%, 50\% & Simulation-defined \\
+Replicates & 10 per condition & 10 per condition & 10 per condition \\
+Methods & CC, SI, MI & CC, SI, MI & CC, SI, MI \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Simulation 1} used real covariate data and real RNA-seq count data from a placental transcriptomic study ($N = 1{,}044$). Missing values were introduced into covariates according to MCAR and MAR mechanisms at 10\%, 30\%, and 50\% levels. For each condition, 10 replicate analyses were performed with CC, SI, and MI, and results were compared against the complete data analysis (gold standard).
+
+\textbf{Simulation 2} used the same real covariates but replaced the RNA-seq counts with synthetic counts generated with known differential expression signal. This allowed computation of true positive (TP) and false discovery rates since the ground truth was known. Two null gene rates were tested: 82.5\% (typical) and 50\% (high signal).
+
+\textbf{Simulation 3} used fully synthetic data with known confounding structure, allowing complete control over the data-generating process. Sample sizes of 100, 250, 500, and 1,000 were tested to evaluate how MI performance scales with sample size.
+
+\subsection{Performance Metrics}
+
+For Simulation 1, performance was assessed by error (deviation from the gold standard complete data result) and bias (systematic deviation in effect size estimates). For Simulations 2 and 3, true positive rate (sensitivity), FDR, and bias in estimated coefficients were computed using the known ground truth.
+
+\subsection{Applied Analysis}
+
+The method was applied to investigate the association between maternal age and placental gene expression in $N = 1{,}044$ samples from a birth cohort with covariate missingness in demographic, clinical, and lifestyle variables. A directed acyclic graph (DAG) was constructed to identify confounders requiring adjustment.
+
+\section{Results}
+
+\subsection{Simulation 1: MI Reduces Error and Bias with Real Data}
+
+Under MCAR conditions, MI consistently showed the lowest error and bias compared to CC and SI across all missingness levels (Table~\ref{tab:sim1}). At 10\% missingness, the differences between methods were modest, as expected given the relatively small amount of missing data. However, at 30\% and 50\% missingness, MI showed substantially lower error and bias for both all genes and the subset of true DEGs. CC showed progressively worse performance with increasing missingness due to the loss of statistical power from sample reduction. SI performed intermediate to CC and MI, with reduced bias compared to CC but less accurate standard errors than MI.
+
+\begin{table}[h]
+\centering
+\caption{Simulation 1 summary: relative performance across missingness conditions.}
+\label{tab:sim1}
+\begin{tabular}{llccc}
+\toprule
+Mechanism & Level & CC Bias & SI Bias & MI Bias \\
+\midrule
+MCAR & 10\% & Moderate & Reduced & Lowest \\
+MCAR & 30\% & Increased & Moderate & Low \\
+MCAR & 50\% & Highest & Moderate & Moderate \\
+MAR & 10\% & Potentially biased & Moderate & Lowest \\
+MAR & 30\% & Biased & Moderate & Low \\
+MAR & 50\% & Most biased & Moderate & Moderate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Under MAR conditions, CC analysis showed additional bias due to the non-random pattern of missingness, which SI partially mitigated. MI provided the most principled handling of MAR data by incorporating the relationship between observed variables and missingness into the imputation model.
+
+\subsection{Simulation 2: MI Identifies More True Positives Without FDR Inflation}
+
+With synthetic counts and known ground truth, MI identified the highest number of true positive DEGs across all conditions while maintaining FDR at or below the nominal 5\% level. At the 82.5\% null gene rate, CC showed controlled but conservative FDR with reduced sensitivity. SI showed intermediate sensitivity but with slightly elevated FDR in some conditions, suggesting that ignoring imputation uncertainty can lead to anti-conservative inference. At the 50\% null gene rate (higher signal density), the pattern was similar, with SI showing more pronounced FDR elevation while MI maintained control.
+
+\subsection{Simulation 3: MI Advantages Scale with Sample Size}
+
+In the fully synthetic simulation with sample sizes from 100 to 1,000, MI showed improved true positive rates compared to CC at every sample size and missingness level. The advantage of MI over CC increased with both sample size and missingness level, as larger samples provide more information for the imputation model while higher missingness levels cause greater power loss for CC. FDR was controlled for all methods across all conditions. Bias was consistently lowest for MI and highest for CC, with the difference being most pronounced under MAR conditions.
+
+\subsection{Applied Analysis: Maternal Age and Placental Transcriptome}
+
+Application of the three methods to the maternal age--placental transcriptome analysis revealed that MI identified the largest set of DEGs, with CC and SI each identifying subsets that partially overlapped with the MI results. MI found additional unique DEGs not detected by either CC or SI, many of which had biologically plausible roles in placental development and aging. Volcano plots showed that MI produced effect size estimates intermediate between CC and SI, with appropriately calibrated standard errors. The top 10 genes ranked by MI $p$-value included genes with established roles in placental function, supporting the biological validity of the MI results.
+
+\section{Discussion}
+
+RNAseqCovarImpute provides the first MI framework for RNA-seq differential expression analysis that properly includes gene expression in the imputation model. The gene-binning strategy overcomes the dimensionality barrier that has prevented MI adoption in transcriptomics, while the integration with limma-voom ensures that the method leverages the well-established strengths of this pipeline, including empirical Bayes variance shrinkage and the voom mean-variance correction \citep{law2014,ritchie2015}.
+
+The consistent superiority of MI over CC and SI across three simulation studies spanning different data sources, missingness mechanisms, and sample sizes provides strong evidence for adopting MI as the default approach for RNA-seq studies with missing covariate data. The most important advantage of MI is in the MAR setting, where CC analysis can introduce systematic bias that MI avoids by modeling the relationship between observed variables and the probability of missingness \citep{little2019}.
+
+The gene-binning strategy introduces a design choice: the number of genes per bin. Our default of one gene per ten individuals balances the need to include expression data in the imputation model against the risk of overfitting the imputation model with too many predictors. Sensitivity analyses (not shown) indicate that the results are robust to moderate changes in this ratio, though very small bins (approaching one gene per individual) can lead to instability.
+
+A key practical consideration is computational cost. MI with gene binning requires fitting the imputation model and analysis model for each bin and each imputation, resulting in a computation time that scales approximately linearly with the number of bins and imputations. For a typical study with 15,000 expressed genes, $N = 500$ individuals, and $M = 10$ imputations, the method completes in several hours on a standard workstation. This is substantially more expensive than CC or SI analysis but is feasible for modern computing environments.
+
+Several limitations should be noted. First, MI assumes that data are MAR; when data are MNAR, MI may still be biased, though typically less so than CC \citep{vanbuuren2018}. Second, the random binning of genes means that correlated genes may be split across bins, potentially reducing the information available for imputation. Future work could explore structured binning based on gene co-expression networks. Third, the method currently supports the limma-voom pipeline and does not integrate with other popular RNA-seq frameworks such as DESeq2 \citep{love2014}.
+
+\section{Conclusion}
+
+RNAseqCovarImpute enables proper multiple imputation for RNA-seq differential expression analysis through a practical gene-binning strategy. Across diverse simulation conditions, MI consistently outperforms CC and SI by identifying more true positive DEGs without FDR inflation and with reduced bias. The method is implemented as an R package that integrates with the established limma-voom pipeline, making it accessible to the genomics research community. We recommend MI as the default approach for RNA-seq studies with missing covariate data.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

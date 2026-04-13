@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Deciphering the Genetic Code of Neuronal Type Connectivity Through Bilinear Modeling}
+\author{Author A,$^{1}$ Author B,$^{2}$ Author C,$^{1,*}$\\
+\small $^{1}$Department of Computational Neuroscience, University of Science\\
+\small $^{2}$Department of Biology, University of Science\\
+\small $^{*}$Corresponding author: authorc@university.edu}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The genetic mechanisms governing synaptic specificity---why particular neuronal types connect to certain partners but not others---remain poorly understood. Single-cell transcriptomics and connectomics each provide rich but separate views of neuronal identity and wiring, yet computational frameworks to systematically bridge gene expression to connectivity are lacking. Here we develop a bilinear model inspired by collaborative filtering in recommendation systems that factorizes the gene-expression-to-connectivity rule matrix into two transformation matrices, projecting pre- and postsynaptic gene expression vectors into a shared latent feature space where their inner product predicts connectivity strength. Applied to \textit{C. elegans} gap junction reconstruction from innexin expression profiles, the bilinear model achieves ROC-AUC comparable to or slightly exceeding the spatial connectome model (SCM), while capturing all innexin interactions found by the SCM plus additional putative interactions. Applied to mouse retinal data, the model reconstructs bipolar cell (BC)-to-retinal ganglion cell (RGC) connectivity from single-cell transcriptomic profiles, revealing two latent dimensions corresponding to recognized ON/OFF connectivity motifs. Gene signature analysis of the top 50 genes per latent dimension identifies enrichment for cell-cell adhesion and synapse formation Gene Ontology terms. The model further predicts BC partners for transcriptomically defined RGC types with unknown connectivity, with predictions aligning with known functional descriptions. This bilinear framework provides an interpretable, scalable approach to deciphering the genetic rules of synaptic specificity, with natural extensions to deep learning architectures.
+\end{abstract}
+
+\section{Introduction}
+
+A defining feature of nervous systems is the specificity of their synaptic connections: particular neuronal types form synapses with specific partners while avoiding others \citep{sanes2015synaptic, sudhof2018towards}. This wiring specificity is essential for circuit function and is believed to be encoded, at least in part, in the molecular identities of pre- and postsynaptic neurons---particularly in the combinatorial expression of cell adhesion molecules, guidance cues, and synaptic organizing proteins \citep{washbourne2004cell}. However, the computational rules by which gene expression profiles of two neurons determine their connectivity remain poorly understood.
+
+Two technological advances have created an unprecedented opportunity to address this question. First, single-cell RNA sequencing has revealed the transcriptomic diversity of neuronal types across multiple brain regions and species \citep{zeng2017neuronal, shekhar2016comprehensive, tran2019single}. Second, large-scale connectomic reconstructions using serial electron microscopy have mapped the complete or near-complete wiring diagrams of circuits including the \textit{C. elegans} nervous system \citep{varshney2011structural} and the mouse retinal inner plexiform layer \citep{helmstaedter2013connectomic, bae2018digital}. The convergence of these datasets creates the possibility of building predictive models that link gene expression to connectivity.
+
+The spatial connectome model (SCM) \citep{kovacs2020genetic} represents the primary existing approach to this problem. The SCM models connectivity as a function of gene expression through a full rule matrix $\mathbf{O}$ that captures pairwise interactions between pre- and postsynaptic genes. While effective, this approach has limitations: the full rule matrix has a large number of parameters (proportional to the product of pre- and postsynaptic gene counts), limiting scalability and potentially overfitting when gene sets are large.
+
+We propose an alternative approach inspired by collaborative filtering, a technique widely used in recommendation systems \citep{koren2020forecasting}. In recommendation systems, user preferences for items are predicted by projecting users and items into a shared latent feature space. Analogously, we model neuronal connectivity by projecting pre- and postsynaptic gene expression vectors into a shared latent space using two learned transformation matrices $\mathbf{A}$ and $\mathbf{B}$. The connectivity between a presynaptic and postsynaptic neuron is then predicted by the inner product of their latent representations: $z = \mathbf{x}^T \mathbf{A}^T \mathbf{B} \mathbf{y}$, where $\mathbf{x}$ and $\mathbf{y}$ are gene expression vectors.
+
+This bilinear formulation factorizes the rule matrix as $\mathbf{A}\mathbf{B}^T$ (a low-rank approximation of the full rule matrix $\mathbf{O}$), offering several advantages: fewer parameters, better scalability, interpretable latent dimensions, and natural extensibility to nonlinear deep learning architectures.
+
+\section{Methods}
+
+\subsection{Model Formulation}
+
+Given presynaptic gene expression vector $\mathbf{x} \in \mathbb{R}^{G_x}$ and postsynaptic gene expression vector $\mathbf{y} \in \mathbb{R}^{G_y}$, the predicted connectivity is:
+\begin{equation}
+z = \mathbf{x}^T \mathbf{A}^T \mathbf{B} \mathbf{y}
+\end{equation}
+where $\mathbf{A} \in \mathbb{R}^{G_x \times K}$ and $\mathbf{B} \in \mathbb{R}^{G_y \times K}$ are learned transformation matrices and $K$ is the latent dimensionality. The optimization objective minimizes the weighted Frobenius norm of the difference between the predicted covariance matrix and the observed connectivity matrix, with $L_2$ regularization on $\mathbf{A}$ and $\mathbf{B}$:
+\begin{equation}
+\mathcal{L} = \left\| \mathbf{W} \odot \left( \mathbf{X}^T \mathbf{A} \mathbf{B}^T \mathbf{Y} - \mathbf{C} \right) \right\|_F^2 + \lambda \left( \|\mathbf{A}\|_F^2 + \|\mathbf{B}\|_F^2 \right)
+\end{equation}
+where $\mathbf{C}$ is the observed connectivity matrix, $\mathbf{W}$ is a weight matrix ensuring equal contribution across cell types, and $\lambda$ is the regularization strength.
+
+In the practical scenario where transcriptomic and connectomic data come from different sources, cell-level gene expressions and connectivity are approximated by their type-level averages. PCA is applied to gene expression vectors before model fitting.
+
+\subsection{Datasets}
+
+\textbf{\textit{C. elegans} dataset:} Innexin gene expression profiles for individual neurons and gap junction connectivity matrix \citep{varshney2011structural, kovacs2020genetic}. Spatial constraints (physical contact between neurons) were incorporated into the weight matrix $\mathbf{W}$.
+
+\textbf{Mouse retinal dataset:} BC type gene expression profiles from single-cell RNA-seq \citep{shekhar2016comprehensive}, RGC type gene expression profiles \citep{tran2019single}, and BC-RGC connectivity matrix from serial EM connectomics \citep{helmstaedter2013connectomic, bae2018digital}. Transcriptomic and connectomic data were aligned at the cell-type level.
+
+\subsection{Hyperparameter Selection}
+
+Regularization strength $\lambda$ and latent dimensionality $K$ were selected via cross-validation. For \textit{C. elegans}, $\lambda$ was tested over $\{10^{-8}, 10^{-6}, 10^{-4}, 10^{-2}, 1\}$ and $K$ over $\{2, 4, 6, 8, 10, 12, 14, 16\}$. For mouse retina, $\lambda$ was tested over $\{0.1, 1, 10, 100\}$ and $K$ over $\{1, 2, 3, 4, 8\}$. Validation loss (log$_{10}$) was computed across the parameter grid.
+
+\subsection{Evaluation Metrics}
+
+ROC-AUC was used for binary classification performance on \textit{C. elegans} gap junctions. Visual matrix comparison (heatmaps of predicted versus observed connectivity) was used for the mouse retinal dataset. Gene Ontology enrichment analysis was applied to the top genes per latent dimension to assess biological interpretability.
+
+\section{Results}
+
+\subsection{\textit{C. elegans} Gap Junction Reconstruction}
+
+The bilinear model reconstructed \textit{C. elegans} gap junction connectivity from innexin expression profiles with ROC-AUC comparable to or slightly exceeding the SCM (Table~\ref{tab:celegans}). Visual comparison of the predicted connectivity matrix with the observed matrix confirmed that the major connectivity patterns were accurately captured.
+
+\begin{table}[ht]
+\centering
+\caption{\textit{C. elegans} Gap Junction Reconstruction Performance}
+\label{tab:celegans}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{ROC-AUC} & \textbf{Notes} \\
+\midrule
+Bilinear model & Comparable or slightly higher & Factorized rule matrix $\mathbf{AB}^T$ \\
+SCM & Baseline & Full rule matrix $\mathbf{O}$ \\
+Chance level & 0.50 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Comparison of the rule matrices revealed that the bilinear model's $\mathbf{AB}^T$ captured all major innexin interaction entries identified by the SCM's $\mathbf{O}$ matrix, plus additional entries not present in the SCM, representing putative novel innexin interactions for experimental exploration.
+
+\begin{table}[ht]
+\centering
+\caption{Comparison of Bilinear Model and SCM Properties}
+\label{tab:comparison}
+\begin{tabular}{lll}
+\toprule
+\textbf{Property} & \textbf{Bilinear Model} & \textbf{SCM} \\
+\midrule
+Rule matrix & $\mathbf{AB}^T$ (factorized, low-rank) & $\mathbf{O}$ (full rank) \\
+Parameter count & Lower & Higher \\
+Scalability & More efficient & Less scalable \\
+Interpretability & Latent dimensions & Gene pair entries \\
+Known interactions & All captured & Reference \\
+Additional interactions & Yes (novel) & None \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mouse Retinal BC-RGC Connectivity Reconstruction}
+
+Cross-validation selected a latent dimensionality of $K = 2$ for the mouse retinal dataset. The bilinear model successfully reconstructed BC-RGC connectivity, with the predicted matrix closely matching the observed connectivity matrix from connectomic data.
+
+\subsection{Latent Dimensions Correspond to Connectivity Motifs}
+
+Analysis of the two latent dimensions revealed that each captured a distinct connectivity motif. When the reconstructed connectivity was decomposed into contributions from each dimension individually, dimension 1 captured one major BC-RGC connectivity pattern and dimension 2 captured an orthogonal pattern. Plotting BC types in the 2D latent feature space showed that they clustered according to their IPL stratification profiles, with the two dimensions separating BC types along recognized ON/OFF and stratification depth axes.
+
+\subsection{Gene Signatures Enriched for Synaptic Function}
+
+Analysis of the top 50 genes per latent dimension for both BCs and RGCs revealed biologically meaningful signatures (Table~\ref{tab:go}).
+
+\begin{table}[ht]
+\centering
+\caption{Gene Ontology Enrichment of Latent Dimension Gene Signatures}
+\label{tab:go}
+\begin{tabular}{llll}
+\toprule
+\textbf{Dimension} & \textbf{Cell Type} & \textbf{Enriched GO Terms} \\
+\midrule
+Dimension 1 & BCs & Cell-cell adhesion, synapse formation \\
+Dimension 1 & RGCs & Synapse organization, synaptic signaling \\
+Dimension 2 & BCs & Cell adhesion, axon guidance \\
+Dimension 2 & RGCs & Synaptic transmission, neurotransmitter receptors \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The enrichment for cell-cell adhesion and synapse formation terms is consistent with the biological expectation that the genes most important for determining synaptic specificity encode adhesion molecules and synaptic organizing factors \citep{sanes2015synaptic, washbourne2004cell}.
+
+\subsection{Prediction of BC Partners for Novel RGC Types}
+
+Transcriptomically defined RGC types with unknown connectivity \citep{tran2019single} were projected into the learned latent space alongside RGC types with known connectivity. The resulting predicted BC-RGC connectivity matrix showed structured partner preferences that aligned with known functional descriptions of the RGC types. This demonstrates the model's utility for generating testable predictions about the wiring of newly characterized neuronal types.
+
+\section{Discussion}
+
+We have developed a bilinear model that provides an interpretable, scalable framework for linking gene expression to neuronal connectivity. By drawing on the analogy between synaptic partner selection and collaborative filtering in recommendation systems, our approach factorizes the gene-expression-to-connectivity rule matrix into two transformation matrices that project pre- and postsynaptic gene expressions into a shared latent space.
+
+The model offers several advantages over the SCM. First, the factorized representation has fewer parameters, improving scalability to larger gene sets and more complex circuits. Second, the latent dimensions provide directly interpretable representations of connectivity motifs---in the mouse retina, the two dimensions map onto recognized ON/OFF stratification patterns \citep{masland2012neuronal}. Third, the factorized architecture naturally extends to deep learning: the linear transformation matrices $\mathbf{A}$ and $\mathbf{B}$ can be replaced by deep neural networks in a two-tower architecture, enabling the capture of nonlinear gene expression-to-connectivity relationships.
+
+The \textit{C. elegans} results demonstrate that the bilinear model captures all known innexin interactions while identifying additional putative interactions, suggesting that the factorized representation may better capture the underlying biology than the full rule matrix approach. The mouse retinal results show that the model scales to the mammalian nervous system, where transcriptomic and connectomic data come from different sources and must be aligned at the cell-type level.
+
+The gene signature analysis provides biological validation: the top genes per latent dimension are enriched for cell-cell adhesion and synapse formation terms, consistent with the known roles of adhesion molecules in synaptic specificity \citep{sanes2015synaptic, sudhof2018towards}. This suggests that the model is learning biologically meaningful gene-connectivity relationships rather than statistical artifacts.
+
+Limitations include the assumption of linearity in the gene expression-to-connectivity mapping, the requirement for aligned cell-type nomenclatures across datasets, and the current restriction to pairwise connectivity without considering higher-order circuit motifs. Future work should explore the deep learning extension and application to additional brain regions.
+
+\section{Conclusion}
+
+We present a bilinear model that deciphers the genetic rules of neuronal type connectivity by projecting gene expression profiles into a shared latent feature space. The model achieves performance comparable to or exceeding existing approaches on \textit{C. elegans} gap junction reconstruction, reveals interpretable connectivity motifs in the mouse retina corresponding to ON/OFF stratification patterns, identifies gene signatures enriched for synaptic function, and generates testable predictions about the wiring of novel cell types. This framework establishes collaborative filtering-inspired modeling as a powerful approach for bridging transcriptomics and connectomics.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

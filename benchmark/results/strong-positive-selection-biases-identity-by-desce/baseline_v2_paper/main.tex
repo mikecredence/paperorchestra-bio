@@ -1,0 +1,193 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{authblk}
+
+\title{Strong Positive Selection Biases Identity-by-Descent-Based Inferences of Demography and Population Structure in \textit{Plasmodium falciparum}}
+
+\author[1]{Author A}
+\author[1,2]{Author B}
+\author[3]{Author C}
+\author[1]{Author D}
+\affil[1]{Department of Epidemiology, Harvard T.H. Chan School of Public Health, Boston, MA, USA}
+\affil[2]{Center for Communicable Disease Dynamics, Harvard University, Boston, MA, USA}
+\affil[3]{Broad Institute of MIT and Harvard, Cambridge, MA, USA}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Identity-by-descent (IBD) sharing is widely used in malaria genomic surveillance to estimate effective population size ($N_e$) and infer population structure. However, \textit{Plasmodium falciparum} has undergone multiple strong selective sweeps driven by antimalarial drug resistance, and the impact of these sweeps on IBD-based demographic inference has not been systematically evaluated. Here we analyze whole-genome sequencing data from 2,055 \textit{P.~falciparum} isolates from eastern Southeast Asia (including 640 newly sequenced genomes) along with a West African validation dataset. We demonstrate through both simulation and empirical analysis that strong positive selection distorts IBD segment length distributions, shifting them toward longer segments, which causes IBDNe to underestimate $N_e$ and blurs IBD-based population structure. We develop an IBD peak removal strategy that identifies genomic regions with excess IBD sharing---corresponding to known drug resistance loci including \textit{kelch13}, \textit{dhfr}, \textit{dhps}, \textit{mdr1}, and \textit{crt}---and excludes these regions before downstream analysis. The correction substantially improves $N_e$ estimation and community detection resolution in the high-transmission West African setting (low background relatedness) but has minimal effect in the low-transmission Southeast Asian setting (high background relatedness). These findings demonstrate that selection-aware corrections are essential for IBD-based malaria surveillance in high-transmission regions.
+\end{abstract}
+
+\section{Introduction}
+
+Genomic surveillance of \textit{Plasmodium falciparum} malaria increasingly relies on identity-by-descent (IBD) analysis to track parasite population dynamics and connectivity \citep{taylor2019identity, hamilton2017ibd_malaria, daniels2015ibd}. IBD segments---genomic regions inherited from a recent common ancestor---provide information about recent demographic history, population structure, and gene flow patterns that are critical for malaria elimination efforts. IBDNe, a widely used method for estimating effective population size from IBD segment length distributions, assumes that IBD reflects neutral demographic processes \citep{browning2018ibdne}.
+
+However, \textit{P.~falciparum} has experienced some of the strongest documented selective sweeps in any organism, driven by resistance to antimalarial drugs including chloroquine, sulfadoxine-pyrimethamine, mefloquine, and artemisinin \citep{ariey2014kelch13, miotto2015resistance}. These sweeps increase IBD sharing in the vicinity of resistance loci and generate longer haplotype blocks that persist for many generations due to the parasite's high recombination rate \citep{schaffner2018plasmodium}. The resulting inflation of IBD at selected loci violates the assumption that IBD reflects purely demographic processes, potentially biasing $N_e$ estimates and distorting population structure inference.
+
+The interaction between selection and IBD is particularly complex in malaria parasite populations, which exhibit simultaneously (i) declining $N_e$ in many endemic regions due to control interventions, (ii) strong positive selection at multiple drug resistance loci, and (iii) variable background genetic relatedness depending on transmission intensity \citep{henden2018selection_ibd}. In low-transmission settings like Southeast Asia (SEA), high background relatedness means that parasites share extensive IBD even at neutral loci, potentially masking the additional effect of selection. In high-transmission settings like West Africa (WAF), lower background relatedness means selection-driven IBD peaks may constitute a larger fraction of total IBD sharing and thus have a proportionally greater biasing effect.
+
+We address this gap by systematically quantifying the effect of positive selection on IBD-based demographic inference in \textit{P.~falciparum}, developing a correction strategy, and validating it across two epidemiologically distinct settings. We analyze 2,055 eastern SEA isolates spanning 14 years and four countries, complemented by a West African validation dataset from MalariaGEN Pf6 \citep{malariagen2021pf6}.
+
+\section{Methods}
+
+\subsection{Parasite Samples and Sequencing}
+
+We analyzed whole-genome sequencing data from 2,055 \textit{P.~falciparum} isolates from eastern SEA (Table~\ref{tab:dataset}). Of these, 751 were sequenced in-house (including 640 newly generated genomes), and 1,304 were obtained from MalariaGEN Pf6 \citep{malariagen2021pf6}. Samples spanned 18 provinces across Cambodia, Thailand, Laos, and Vietnam over 14 years.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of the Southeast Asian dataset.}
+\label{tab:dataset}
+\begin{tabular}{lc}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Total analyzable isolates & 2,055 \\
+Newly sequenced & 640 \\
+Total in-house sequenced & 751 \\
+MalariaGEN Pf6 & 1,304 \\
+Countries & 4 \\
+Provinces & 18 \\
+Time span & 14 years \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Quality Control and Monoclonality Assessment}
+
+Sequencing coverage was assessed at 5x, 10x, and 25x thresholds. Monoclonality was determined using the $F_{ws}$ metric, with $F_{ws} > 0.95$ indicating monoclonal infections. Polyclonal infections were deconvolved using dEploid \citep{zhu2019deploid} to extract predominant clone haplotypes when possible.
+
+\subsection{Simulation Framework}
+
+\paragraph{Single-Population Model.} A single-population simulation with decreasing $N_e$, strong positive selection at a single locus, and high recombination rate (matching \textit{P.~falciparum}) was designed to test the effect of selection on IBD segment length distributions and $N_e$ estimation. True IBD was extracted directly from simulated genealogies to avoid artifacts from IBD calling methods.
+
+\paragraph{Multi-Population Model.} A one-dimensional stepping-stone model with five subpopulations (p1--p5) and symmetric migration between adjacent demes was used to test the effect of selection on IBD-based population structure inference. A favored allele was introduced in one terminal deme and allowed to spread across the chain.
+
+\subsection{IBD Analysis}
+
+IBD segments were identified using haplotype-based methods for empirical data and extracted as true IBD from simulation genealogies. $N_e$ was estimated using IBDNe \citep{browning2018ibdne}. Population structure was inferred via community detection on IBD-sharing networks \citep{taylor2019identity}.
+
+\subsection{IBD Peak Removal}
+
+Genomic regions with excess IBD sharing were identified by computing the proportion of sample pairs sharing IBD at each genomic position. Regions exceeding a genome-wide threshold were flagged as IBD peaks and excluded from downstream analyses. These peaks were compared to known drug resistance loci for biological validation.
+
+\section{Results}
+
+\subsection{Monoclonality and Coverage}
+
+The SEA population exhibited high monoclonality (80\% with $F_{ws} > 0.95$), consistent with low transmission intensity (Table~\ref{tab:monoclonal}). Among polyclonal infections, 44.3\% had a predominant clone suitable for analysis. The West African validation population showed 50.7\% monoclonality, consistent with higher transmission and multiplicity of infection.
+
+\begin{table}[htbp]
+\centering
+\caption{Monoclonality and sequencing coverage across populations.}
+\label{tab:monoclonal}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Parameter} & \textbf{SEA} & \textbf{WAF} \\
+\midrule
+Monoclonal ($F_{ws} > 0.95$) & 80\% & 50.7\% \\
+Polyclonal & 20\% & 49.3\% \\
+Polyclonal with predominant clone & 44.3\% of polyclonal & --- \\
+$\geq$5x coverage ($>$80\% genome) & 79.3\% & --- \\
+$\geq$10x coverage ($>$80\% genome) & 68.0\% & --- \\
+$\geq$25x coverage ($>$80\% genome) & 46.1\% & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Selection Distorts IBD Distributions in Simulations}
+
+Under neutral conditions, IBD segments followed the expected exponential-like length distribution and were uniformly distributed along the chromosome. Under strong positive selection, three key distortions emerged: (i) the IBD segment length distribution shifted toward longer segments, (ii) total pairwise IBD sharing increased between isolates, and (iii) IBD was concentrated in peaks centered on the selected locus rather than being uniformly distributed. These distortions directly impacted $N_e$ estimation: IBDNe underestimated true $N_e$ under selection because longer IBD segments are interpreted as evidence for smaller or more recent population sizes. IBD peak removal partially restored $N_e$ accuracy.
+
+\subsection{Selection Blurs Population Structure in Simulations}
+
+In the stepping-stone model, selection dramatically altered IBD-based population structure inference (Table~\ref{tab:sim_structure}). Under neutral conditions, pairwise genetic differentiation showed a clear gradient from p1 to p5 and community detection correctly identified five distinct communities. Under selection, the gradient was blurred, and community detection merged adjacent populations. IBD peak removal partially restored the stepping-stone pattern.
+
+\begin{table}[htbp]
+\centering
+\caption{Effect of selection on population structure inference in the stepping-stone simulation.}
+\label{tab:sim_structure}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metric} & \textbf{Neutral} & \textbf{With Selection} & \textbf{After Peak Removal} \\
+\midrule
+Differentiation gradient & Clear & Blurred & Partially restored \\
+Communities detected & 5 & 2--3 & 4--5 \\
+Network structure & Matches truth & Distorted & Improved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Empirical IBD Peaks at Drug Resistance Loci}
+
+Genome-wide IBD coverage profiles in the SEA empirical data revealed prominent peaks centered on known drug resistance genes (Table~\ref{tab:resistance_loci}). These peaks were evident both among all isolates and among unrelated isolates (at reduced magnitude), confirming that drug resistance selection creates IBD sharing detectable even among genetically distant parasites.
+
+\begin{table}[htbp]
+\centering
+\caption{Drug resistance loci identified in IBD peaks.}
+\label{tab:resistance_loci}
+\begin{tabular}{llc}
+\toprule
+\textbf{Gene} & \textbf{Drug Resistance} & \textbf{Chromosome} \\
+\midrule
+\textit{kelch13} & Artemisinin & 13 \\
+\textit{dhfr} & Pyrimethamine & 4 \\
+\textit{dhps} & Sulfadoxine & 8 \\
+\textit{mdr1} & Mefloquine/chloroquine & 5 \\
+\textit{crt} & Chloroquine & 7 \\
+Plasmepsin 2/3 & Piperaquine & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Differential Impact of Correction Between Settings}
+
+The effect of IBD peak removal differed dramatically between SEA and WAF (Table~\ref{tab:sea_vs_waf}). In SEA, where background relatedness is high due to low transmission, peak removal had minimal impact on either $N_e$ estimation or community structure. In WAF, where background relatedness is low due to high transmission, peak removal substantially increased $N_e$ estimates (correcting the previous underestimation) and revealed finer population structure by splitting a dominant community into multiple geographically coherent subcommunities.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of IBD peak removal effects between Southeast Asia and West Africa.}
+\label{tab:sea_vs_waf}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{SEA} & \textbf{West Africa} \\
+\midrule
+Transmission intensity & Low & High \\
+Background relatedness & High & Low \\
+Monoclonal fraction & 80\% & 50.7\% \\
+Effect of peak removal on $N_e$ & Minimal & Substantial \\
+Effect on community structure & Minimal & Substantial \\
+Correction recommended & Not necessary & Strongly recommended \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our results demonstrate that strong positive selection from antimalarial drug resistance systematically biases IBD-based demographic inference in \textit{P.~falciparum}. The bias operates through a straightforward mechanism: selection generates extended haplotype blocks with excess IBD sharing that IBDNe and community detection algorithms interpret as evidence for recent shared ancestry. This leads to underestimated $N_e$ (because longer IBD segments imply smaller populations) and blurred population structure (because selection-driven IBD obscures geographic patterns of gene flow).
+
+The finding that the impact of correction depends on the epidemiological setting has important practical implications for malaria genomic surveillance. In low-transmission settings like SEA, where background genetic relatedness is already high due to small $N_e$ and recent population bottlenecks, the additional IBD from selection is a relatively small perturbation \citep{miotto2015resistance}. In these settings, IBD-based analyses may be reasonably robust to selection even without correction. However, in high-transmission settings like West Africa, where neutral IBD sharing is low and selection-driven IBD peaks can dominate the signal, correction is essential for accurate demographic inference.
+
+The IBD peak removal strategy we propose is conceptually simple and biologically motivated: by identifying and excluding genomic regions where IBD exceeds a genome-wide threshold, we specifically target the regions most affected by selective sweeps \citep{henden2018selection_ibd}. The biological validation---showing that peaks correspond to known resistance genes including \textit{kelch13}, \textit{dhfr}, \textit{dhps}, \textit{mdr1}, \textit{crt}, and the plasmepsin locus---provides confidence that the method targets true selection signals rather than artifacts.
+
+Our study contributes the largest eastern SEA \textit{P.~falciparum} genomic dataset to date, with 640 newly sequenced isolates complementing 1,304 from MalariaGEN Pf6 \citep{malariagen2021pf6}. The high monoclonality rate (80\%) in SEA facilitates haplotype-based analyses, while the lower monoclonality in WAF (50.7\%) reflects the epidemiological differences between these settings and the challenges of working with polyclonal infections in high-transmission areas \citep{zhu2019deploid}.
+
+\paragraph{Limitations.} Our peak removal approach requires prior knowledge or discovery of the regions under selection. In populations with novel selective pressures, peaks may go undetected. The correction also removes all IBD in flagged regions, potentially discarding neutral IBD segments that happen to overlap with selected regions. More sophisticated methods that model selection explicitly within the IBD estimation framework could improve upon this simple exclusion approach.
+
+\section{Conclusion}
+
+Strong positive selection from drug resistance biases IBD-based inference of \textit{P.~falciparum} demography and population structure. The bias is most consequential in high-transmission settings where background relatedness is low. Our IBD peak removal strategy provides a practical correction that substantially improves $N_e$ estimation and population structure resolution in these settings. As genomic surveillance expands to guide malaria elimination, awareness of and correction for selection bias in IBD analyses will be essential for accurate interpretation of parasite population dynamics.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

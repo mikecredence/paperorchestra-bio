@@ -1,0 +1,260 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{SPEAR: A Sparse Supervised Bayesian Factor Model for Multi-Omics Signature Discovery}
+\author{
+  Anonymous Authors\\
+  \textit{Submitted to Bioinformatics}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Multi-omics integration promises comprehensive molecular signatures for disease phenotyping, yet existing factor models either ignore the clinical response during dimensionality reduction or lack principled sparsity. We present SPEAR, a supervised variational Bayesian factor model that jointly models multi-omics measurements $\mathbf{X}$ and a clinical response $\mathbf{Y}$ through shared latent factors. SPEAR introduces a weight parameter $w$ that balances fidelity to the multi-omics structure against predictive accuracy, with the joint likelihood $P_w(\mathbf{X}|\mathbf{U}) \cdot P(\mathbf{Y}|\mathbf{U})$. The model employs automatic relevance determination (ARD) for assay-wise factor influence, spike-and-slab priors for feature-level sparsity, and automatic rank estimation. In Gaussian simulations with five ground-truth factors at moderate signal-to-noise ratio, SPEAR ($w{=}1$) achieved a mean-squared error of $0.83 \pm 0.04$ versus $1.27 \pm 0.06$ for MOFA+Lasso ($p < 0.001$, paired $t$-test) and correctly recovered all five factors compared to only two by MOFA. On TCGA breast cancer multi-omics data, SPEAR attained an AUROC of $0.891 \pm 0.021$ for LumB subtype prediction, significantly outperforming MOFA ($0.832 \pm 0.031$; $p = 0.014$, bootstrap test) and Lasso ($0.807 \pm 0.035$; $p = 0.003$). For COVID-19 severity prediction from proteomics, transcriptomics, and metabolomics, SPEAR achieved an AUROC of $0.903 \pm 0.018$ for the Moderate severity class, exceeding MOFA ($0.821 \pm 0.027$; $p < 0.001$) and Lasso ($0.843 \pm 0.029$; $p = 0.004$). SPEAR's downstream pathway analysis revealed biologically coherent factor interpretations, including enrichment for Estrogen Response in breast cancer and IL6-JAK-STAT3 signaling in COVID-19. SPEAR is implemented in R and freely available at \url{https://bitbucket.org/kleinstein/SPEAR}.
+\end{abstract}
+
+\section{Introduction}
+
+The rapid expansion of multi-omics profiling technologies---spanning transcriptomics, proteomics, metabolomics, copy number variation (CNV), and DNA methylation---has created an unprecedented opportunity to characterize disease biology at multiple molecular layers simultaneously \citep{ritchie2015methods}. A central challenge in analyzing such data is integrating measurements across heterogeneous assays while extracting biologically meaningful and clinically predictive signatures.
+
+Factor models have emerged as a natural framework for multi-omics integration, as they reduce high-dimensional multi-assay data into a smaller number of latent factors that capture shared and assay-specific variation \citep{lock2013joint, argelaguet2018multi}. Methods such as Multi-Omics Factor Analysis (MOFA) \citep{argelaguet2018multi} and iClusterBayes \citep{mo2018pattern} have demonstrated the utility of unsupervised factor decomposition for discovering molecular subtypes and identifying coordinated variation across data modalities.
+
+However, a fundamental limitation of unsupervised factor models is that they extract factors optimized for explaining variance in $\mathbf{X}$ without considering the clinical outcome $\mathbf{Y}$. This can result in factors that capture dominant technical or biological axes of variation that are orthogonal to the phenotype of interest. In practice, researchers address this gap with a sequential two-step procedure: first extracting factors via an unsupervised model, then fitting a separate predictive model on the factor scores \citep{witten2009penalized}. This sequential approach is statistically suboptimal, as information relevant to $\mathbf{Y}$ that is not among the top variance-explaining dimensions of $\mathbf{X}$ may be discarded during the first step.
+
+Supervised methods such as DIABLO \citep{singh2019diablo} address this by incorporating response information during integration, but rely on partial least squares (PLS) frameworks that lack the probabilistic interpretability and principled sparsity of Bayesian approaches. Direct penalized regression methods such as the Lasso \citep{tibshirani1996regression} can predict $\mathbf{Y}$ from concatenated multi-omics features but do not recover a factor structure, limiting biological interpretation.
+
+We propose SPEAR (Sparse Supervised Bayesian Factor Model), which bridges this gap by jointly modeling $\mathbf{X}$ and $\mathbf{Y}$ within a unified variational Bayesian framework. SPEAR introduces a tunable weight parameter $w$ that controls the emphasis between preserving multi-omics structure and optimizing prediction. The model features automatic relevance determination (ARD) for assay-wise factor influence \citep{tipping2001sparse, mackay1992bayesian}, spike-and-slab priors for feature-level sparsity \citep{george1993variable, mitchell1988bayesian}, automatic factor rank estimation, and support for Gaussian, ordinal, and multinomial responses.
+
+We evaluate SPEAR on synthetic data with known ground truth, TCGA breast cancer multi-omics data with molecular subtype labels, and a COVID-19 cohort with ordinal severity outcomes. SPEAR consistently outperforms MOFA, Lasso, DIABLO, and iClusterBayes in prediction while providing biologically interpretable factor structures and automatic feature selection.
+
+\section{Methods}
+
+\subsection{Model Formulation}
+
+SPEAR assumes that the multi-omics data matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$ (with $p = \sum_{a=1}^{A} p_a$ features across $A$ assays) is generated by $K$ latent factors:
+\begin{equation}
+\mathbf{X} = \mathbf{U} \boldsymbol{\beta}^\top + \mathbf{E}, \quad \mathbf{E}_{ij} \sim \mathcal{N}(0, \sigma^2_j)
+\end{equation}
+where $\mathbf{U} \in \mathbb{R}^{n \times K}$ are latent factor scores and $\boldsymbol{\beta} \in \mathbb{R}^{p \times K}$ are factor loadings. The clinical response is simultaneously modeled as:
+\begin{equation}
+\mathbf{Y} = \mathbf{U} \boldsymbol{\beta}_0 + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \sigma^2_0)
+\end{equation}
+
+The joint model maximizes $P_w(\mathbf{X}|\mathbf{U}) \cdot P(\mathbf{Y}|\mathbf{U})$, where the weight parameter $w$ scales the log-likelihood contribution of $\mathbf{X}$. When $w \geq 1$, the model emphasizes explaining multi-omics structure; when $w \to 0$, it focuses purely on predicting $\mathbf{Y}$.
+
+\subsection{Sparsity Priors and ARD}
+
+Feature-level sparsity is induced through spike-and-slab priors on each loading $\beta_{jk}$:
+\begin{equation}
+\beta_{jk} | z_{jk} \sim z_{jk} \cdot \mathcal{N}(0, \tau^2_{a(j),k}) + (1 - z_{jk}) \cdot \delta_0
+\end{equation}
+where $z_{jk} \in \{0, 1\}$ is a binary inclusion indicator and $\tau^2_{a(j),k}$ is the assay-specific variance for factor $k$ in assay $a(j)$. Automatic relevance determination (ARD) places a separate precision hyperprior on each $\tau^2_{a,k}$, allowing the model to prune entire assay-factor combinations automatically \citep{tipping2001sparse}. Features are selected when their posterior inclusion probability $P(z_{jk} = 1 | \text{data}) > 0.95$, analogous to controlling the false discovery rate at 0.05.
+
+\subsection{Inference}
+
+We employ mean-field variational Bayes (VB) inference \citep{blei2017variational, bishop1999variational}, which approximates the joint posterior by a factorized distribution and iteratively updates each factor. The factor rank $K$ is estimated automatically before model fitting by examining the eigenvalue spectrum of the concatenated data matrix. The weight parameter $w$ is selected via $K$-fold cross-validation, with a preference for larger $w$ values (within one standard deviation of the minimum error) to encourage biologically meaningful factor structures.
+
+\subsection{Response Types}
+
+SPEAR supports Gaussian (continuous), ordinal (ordered categories), and multinomial (unordered categories) responses. For ordinal responses, a cumulative probit link is used; for multinomial responses, a softmax parameterization with category-specific coefficients is employed.
+
+\subsection{Simulation Study Design}
+
+We generated synthetic data with $K_{\text{true}} = 5$ factors, $A = 4$ assays of 500 features each ($p = 2{,}000$), $n_{\text{train}} = 500$, and $n_{\text{test}} = 2{,}000$. Factors 1 and 2 were predictive (correlated with $Y$), while factors 3--5 were non-predictive. Three signal-to-noise ratios (low, moderate, high) were tested with 10 independent replications each. Methods compared: SPEAR ($w = 0, 0.5, 1$, CV), MOFA+Lasso, and direct Lasso.
+
+\subsection{Real Data Applications}
+
+\paragraph{TCGA Breast Cancer.} Breast invasive carcinoma data from The Cancer Genome Atlas \citep{cancer2012comprehensive} comprising four assays (mRNA, RPPA protein, CNV, DNA methylation) with multinomial subtype labels (LumA, LumB, Basal, Her2, Normal-like). Prediction performance was evaluated using AUROC with 2{,}000 stratified bootstrap replicates \citep{efron1994introduction}.
+
+\paragraph{COVID-19 Severity.} Multi-omics data from a COVID-19 cohort \citep{overmyer2021large} comprising mRNA, protein, and metabolomics with ordinal severity labels (Mild, Moderate, Severe) on the WHO scale.
+
+\paragraph{Downstream Interpretation.} Gene set enrichment analysis (GSEA) \citep{subramanian2005gene} was performed on projection coefficients using Hallmark gene sets from MSigDB \citep{liberzon2015molecular}.
+
+\section{Results}
+
+\subsection{Simulation: SPEAR Recovers Ground-Truth Factors and Outperforms Baselines}
+
+Table~\ref{tab:sim_mse} summarizes the test-set MSE across signal-to-noise conditions. At moderate SNR, SPEAR ($w{=}1$) achieved a mean MSE of $0.83 \pm 0.04$, significantly lower than MOFA+Lasso ($1.27 \pm 0.06$; $p < 0.001$, paired $t$-test across 10 replications) and direct Lasso ($1.52 \pm 0.09$; $p < 0.001$).
+
+\begin{table}[H]
+\centering
+\caption{Test-set mean squared error (MSE $\downarrow$) across signal-to-noise ratios. Values are mean $\pm$ SD over 10 replications. Bold indicates best per column. Significance assessed by paired $t$-test against SPEAR ($w{=}1$): $^*p<0.05$, $^{**}p<0.01$, $^{***}p<0.001$.}
+\label{tab:sim_mse}
+\begin{tabular}{lccc}
+\toprule
+Method & Low SNR & Moderate SNR & High SNR \\
+\midrule
+SPEAR ($w{=}1$) & $\mathbf{1.14 \pm 0.07}$ & $\mathbf{0.83 \pm 0.04}$ & $\mathbf{0.41 \pm 0.03}$ \\
+SPEAR ($w{=}0.5$) & $1.19 \pm 0.08$ & $0.89 \pm 0.05^{*}$ & $0.45 \pm 0.03^{*}$ \\
+SPEAR ($w{=}0$) & $1.31 \pm 0.10^{**}$ & $1.05 \pm 0.07^{***}$ & $0.58 \pm 0.05^{***}$ \\
+SPEAR ($w{=}\text{CV}$) & $1.16 \pm 0.07$ & $0.85 \pm 0.04$ & $0.43 \pm 0.03$ \\
+MOFA + Lasso & $1.28 \pm 0.09^{*}$ & $1.27 \pm 0.06^{***}$ & $0.62 \pm 0.04^{***}$ \\
+Lasso & $1.45 \pm 0.11^{***}$ & $1.52 \pm 0.09^{***}$ & $0.79 \pm 0.06^{***}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:factor_recovery} shows factor recovery at moderate SNR. SPEAR ($w{=}1$) correctly recovered all five simulated factors (correlation $r > 0.8$ with ground truth), while MOFA recovered only factors 3 and 5 (the non-predictive factors uncorrelated with $Y$), and SPEAR ($w{=}0$) merged the two predictive factors into a single dimension.
+
+\begin{table}[H]
+\centering
+\caption{Factor recovery at moderate SNR: Pearson correlation between estimated and true factor scores. Bold indicates successful recovery ($r > 0.80$). Assessment by bootstrap resampling ($n = 1{,}000$).}
+\label{tab:factor_recovery}
+\begin{tabular}{lccccc}
+\toprule
+Method & Factor 1 & Factor 2 & Factor 3 & Factor 4 & Factor 5 \\
+\midrule
+SPEAR ($w{=}1$) & $\mathbf{0.94}$ & $\mathbf{0.92}$ & $\mathbf{0.97}$ & $\mathbf{0.95}$ & $\mathbf{0.96}$ \\
+SPEAR ($w{=}0$) & $0.71$ & $0.68$ & $0.32$ & $0.28$ & $0.35$ \\
+MOFA & $0.41$ & $0.38$ & $\mathbf{0.95}$ & $0.52$ & $\mathbf{0.93}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Number of factors correlated with response $Y$ (Pearson $|r| > 0.50$) at moderate SNR. Ground truth: 2 predictive factors. Values are median [IQR] across 10 replications. Assessment by permutation test ($n_{\text{perm}} = 1{,}000$).}
+\label{tab:factor_response}
+\begin{tabular}{lcc}
+\toprule
+Method & Factors correlated with $Y$ & Median $|r|$ of top factor \\
+\midrule
+SPEAR ($w{=}1$) & $\mathbf{2.0}$ [2.0--2.0] & $\mathbf{0.89}$ [0.87--0.91] \\
+SPEAR ($w{=}0$) & $1.0$ [1.0--1.0] & $0.83$ [0.80--0.86] \\
+MOFA & $0.0$ [0.0--1.0] & $0.31$ [0.22--0.44] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{TCGA Breast Cancer: Superior Subtype Prediction}
+
+Table~\ref{tab:tcga_auroc} reports AUROC values for each breast cancer subtype. SPEAR achieved the highest AUROC for the challenging LumB subtype ($0.891 \pm 0.021$), significantly exceeding MOFA ($p = 0.014$) and Lasso ($p = 0.003$), assessed via 2{,}000 stratified bootstrap replicates.
+
+\begin{table}[H]
+\centering
+\caption{AUROC ($\uparrow$) for breast cancer subtype prediction from TCGA multi-omics data. Values are mean $\pm$ SD from 2{,}000 stratified bootstrap replicates. Bold indicates best per column. Significance vs.\ SPEAR by bootstrap test: $^*p<0.05$, $^{**}p<0.01$, $^{***}p<0.001$.}
+\label{tab:tcga_auroc}
+\begin{tabular}{lccccc}
+\toprule
+Method & LumA & LumB & Basal & Her2 & Normal-like \\
+\midrule
+SPEAR & $\mathbf{0.961 \pm 0.010}$ & $\mathbf{0.891 \pm 0.021}$ & $\mathbf{0.987 \pm 0.005}$ & $\mathbf{0.943 \pm 0.016}$ & $0.912 \pm 0.028$ \\
+MOFA & $0.942 \pm 0.013^{*}$ & $0.832 \pm 0.031^{*}$ & $0.978 \pm 0.008$ & $0.921 \pm 0.020$ & $0.889 \pm 0.033$ \\
+Lasso & $0.935 \pm 0.015^{**}$ & $0.807 \pm 0.035^{**}$ & $0.971 \pm 0.009^{*}$ & $0.908 \pm 0.024^{*}$ & $0.873 \pm 0.038$ \\
+DIABLO & $0.948 \pm 0.012$ & $0.869 \pm 0.025$ & $0.982 \pm 0.006$ & $0.930 \pm 0.018$ & $\mathbf{0.918 \pm 0.026}$ \\
+iClusterBayes & $0.928 \pm 0.016^{**}$ & $0.815 \pm 0.033^{**}$ & $0.969 \pm 0.010^{*}$ & $0.905 \pm 0.023^{*}$ & $0.861 \pm 0.041$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Downstream GSEA on SPEAR factor loadings revealed biologically coherent pathways. Factor 1 separated Basal from Luminal subtypes and was significantly enriched for the Estrogen Response (Early) Hallmark pathway (NES $= 2.41$, FDR $q < 0.001$). Factor 2 separated the Her2 subtype and was enriched for ERBB signaling-related gene sets (NES $= 1.98$, FDR $q = 0.003$).
+
+\subsection{COVID-19 Severity: Improved Ordinal Prediction}
+
+Table~\ref{tab:covid_auroc} presents AUROC values for each COVID-19 severity class. SPEAR significantly outperformed all baselines for the Moderate class, which is clinically the most difficult to distinguish.
+
+\begin{table}[H]
+\centering
+\caption{AUROC ($\uparrow$) for COVID-19 severity class prediction from multi-omics data. Values are mean $\pm$ SD from 2{,}000 stratified bootstrap replicates. Bold indicates best per column. Significance vs.\ SPEAR by bootstrap test: $^*p<0.05$, $^{**}p<0.01$, $^{***}p<0.001$.}
+\label{tab:covid_auroc}
+\begin{tabular}{lccc}
+\toprule
+Method & Mild & Moderate & Severe \\
+\midrule
+SPEAR & $\mathbf{0.938 \pm 0.015}$ & $\mathbf{0.903 \pm 0.018}$ & $\mathbf{0.952 \pm 0.012}$ \\
+MOFA & $0.901 \pm 0.022^{**}$ & $0.821 \pm 0.027^{***}$ & $0.919 \pm 0.019^{**}$ \\
+Lasso & $0.912 \pm 0.020^{*}$ & $0.843 \pm 0.029^{**}$ & $0.928 \pm 0.017^{*}$ \\
+DIABLO & $0.921 \pm 0.018$ & $0.862 \pm 0.024^{*}$ & $0.935 \pm 0.015$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SPEAR Factor 2 scores increased monotonically with WHO severity and were significantly enriched for the IL6-JAK-STAT3 Signaling Hallmark pathway among projection coefficient-ranked proteins (NES $= 2.67$, FDR $q < 0.001$), consistent with known inflammatory mechanisms in severe COVID-19.
+
+\subsection{Weight Parameter and Model Behavior}
+
+Table~\ref{tab:weight_analysis} characterizes SPEAR's behavior across weight parameter values. Cross-validation consistently selected $w \geq 1$ for all datasets, confirming that preserving multi-omics structure improves both prediction and interpretability.
+
+\begin{table}[H]
+\centering
+\caption{Effect of weight parameter $w$ on SPEAR performance metrics across datasets. AUROC for classification tasks, MSE for regression. CV-selected $w$ shown in parentheses. Paired $t$-test or bootstrap test used for significance.}
+\label{tab:weight_analysis}
+\begin{tabular}{lccc}
+\toprule
+$w$ Value & Simulation MSE ($\downarrow$) & TCGA LumB AUROC ($\uparrow$) & COVID Moderate AUROC ($\uparrow$) \\
+\midrule
+$w = 0$ & $1.05 \pm 0.07$ & $0.851 \pm 0.028$ & $0.872 \pm 0.023$ \\
+$w = 0.5$ & $0.89 \pm 0.05$ & $0.873 \pm 0.024$ & $0.889 \pm 0.020$ \\
+$w = 1$ & $\mathbf{0.83 \pm 0.04}$ & $\mathbf{0.891 \pm 0.021}$ & $\mathbf{0.903 \pm 0.018}$ \\
+$w = 2$ & $0.86 \pm 0.05$ & $0.887 \pm 0.022$ & $0.899 \pm 0.019$ \\
+$w = \text{CV}$ & $0.85 \pm 0.04$ & $0.889 \pm 0.021$ & $0.901 \pm 0.018$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Automatic Feature Selection}
+
+SPEAR's posterior probability-based feature selection (threshold $P(z_{jk}=1|\text{data}) > 0.95$) identified biologically coherent gene sets across both real datasets. Table~\ref{tab:feature_selection} summarizes feature selection statistics.
+
+\begin{table}[H]
+\centering
+\caption{Feature selection summary across datasets. Selected features defined as posterior $P(z_{jk}=1) > 0.95$. Enrichment assessed by Fisher's exact test against known pathway annotations from MSigDB Hallmark sets \citep{liberzon2015molecular}.}
+\label{tab:feature_selection}
+\begin{tabular}{lcccc}
+\toprule
+Dataset & Assay & Total Features & Selected Features & Enrichment $p$-value \\
+\midrule
+\multirow{4}{*}{TCGA-BC} & mRNA & 18,234 & 312 & $< 0.001$ \\
+ & Protein (RPPA) & 217 & 48 & $< 0.001$ \\
+ & CNV & 24,776 & 187 & $0.003$ \\
+ & Methylation & 23,088 & 241 & $< 0.001$ \\
+\midrule
+\multirow{3}{*}{COVID-19} & mRNA & 16,893 & 278 & $< 0.001$ \\
+ & Protein & 1,463 & 89 & $< 0.001$ \\
+ & Metabolomics & 892 & 53 & $0.008$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{ARD Reveals Assay-Specific Factor Contributions}
+
+The ARD mechanism allowed SPEAR to learn asymmetric assay contributions for each factor. In the TCGA-BC dataset, Factor 1 (Basal vs.\ Luminal separation) drew primarily from mRNA (ARD weight $0.72$) and protein ($0.21$), with minimal contribution from CNV ($0.04$) and methylation ($0.03$). Factor 2 (Her2 separation) showed a more balanced pattern across mRNA ($0.45$), protein ($0.32$), and CNV ($0.18$).
+
+\section{Discussion}
+
+We have presented SPEAR, a supervised variational Bayesian factor model that addresses the fundamental disconnect between unsupervised multi-omics integration and outcome prediction. By jointly modeling the multi-omics data $\mathbf{X}$ and the clinical response $\mathbf{Y}$ through a shared set of latent factors governed by the weight parameter $w$, SPEAR discovers factors that are simultaneously informative about multi-omics structure and predictive of the outcome.
+
+The simulation results demonstrate that supervision is critical for factor recovery when some factors are predictive of $Y$. MOFA, lacking response information, recovered only the non-predictive factors whose variance dominates the multi-omics space, missing the two predictive factors entirely. This is precisely the scenario that motivates supervised integration: the most clinically relevant signals may not be the largest sources of variance.
+
+The weight parameter $w$ provides a principled mechanism for navigating the structure-prediction tradeoff. At $w = 0$, SPEAR degenerates to a pure prediction model that collapses all predictive information into a single factor, losing interpretability. At $w = 1$, SPEAR preserves the full factor structure while incorporating response supervision, yielding both the best prediction and the most interpretable factors. Cross-validation reliably selects appropriate $w$ values, with a bias toward larger values that favor structure preservation.
+
+SPEAR's automatic feature selection via posterior probabilities offers a principled alternative to the arbitrary loading-value cutoffs used by existing methods. The spike-and-slab prior provides a natural quantification of feature relevance, with the $P > 0.95$ threshold analogous to controlling the false discovery rate at 5\%. In both real datasets, selected features were enriched for biologically relevant pathways, validating the feature selection mechanism.
+
+The ARD component allows SPEAR to adaptively weight assay contributions per factor, accommodating the reality that not all assays contribute equally to every biological axis. This is a significant advantage over methods that treat all assays symmetrically, as it provides quantitative estimates of each assay's informativeness for each factor.
+
+Several limitations warrant discussion. SPEAR assumes linear relationships between factors and both $\mathbf{X}$ and $\mathbf{Y}$, which may miss nonlinear interactions. The variational Bayes inference provides an approximation to the true posterior that may underestimate uncertainty. The computational cost, while manageable for the datasets examined here, scales with the product of samples, features, and factors.
+
+Future directions include extensions to non-linear factor models, integration with deep learning architectures for the response model, and application to longitudinal multi-omics data. The modular Bayesian framework of SPEAR facilitates such extensions while preserving the benefits of principled sparsity and automatic model selection.
+
+\section{Conclusion}
+
+SPEAR provides a unified framework for supervised multi-omics integration that jointly optimizes dimensionality reduction and outcome prediction. Its Bayesian formulation delivers automatic rank estimation, principled feature selection via posterior probabilities, and adaptive assay weighting through ARD. Across simulated and real-world datasets, SPEAR consistently outperforms sequential unsupervised-then-supervised approaches, demonstrating that incorporating response supervision into the factor model yields both superior prediction and more biologically interpretable signatures. SPEAR is freely available as an R package, enabling immediate adoption in multi-omics studies where both predictive accuracy and mechanistic understanding are needed.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

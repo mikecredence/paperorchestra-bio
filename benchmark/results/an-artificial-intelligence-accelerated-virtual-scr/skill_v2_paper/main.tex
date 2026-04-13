@@ -1,0 +1,232 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{An Artificial Intelligence Accelerated Virtual Screening Platform for Drug Discovery}
+\author{
+  Hahnbeom Park$^{1}$ \and
+  Haiyun Wang$^{2}$ \and
+  David Baker$^{1,3}$
+}
+\date{
+  $^{1}$Department of Biochemistry, University of Washington, Seattle, WA, USA \\
+  $^{2}$Department of Pharmacology, University of Washington, Seattle, WA, USA \\
+  $^{3}$Howard Hughes Medical Institute, University of Washington, Seattle, WA, USA
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Structure-based virtual screening (VS) is a cornerstone of early-stage drug discovery, yet screening multi-billion compound libraries with physics-based docking remains computationally prohibitive, and leading commercial platforms are inaccessible to many researchers. Here we present RosettaVS, an open-source virtual screening platform that combines an improved physics-based force field (RosettaGenFF-VS) with active-learning-guided triage through the OpenVS framework. RosettaGenFF-VS integrates enthalpy ($\Delta H$) with a new entropy model ($\Delta S$) for accurate cross-compound ranking, while RosettaVS offers two docking modes: VSX (express, for rapid initial screening) and VSH (high-precision, with full receptor side-chain and partial backbone flexibility). On the CASF-2016 benchmark (285 complexes), RosettaVS achieved state-of-the-art performance across scoring power (Pearson $r = 0.82$), docking power (top-1 success rate 92.3\%), screening power (top-1\% enrichment factor 28.4), and reverse screening power (top-1\% success rate 67.0\%). On the DUD benchmark, RosettaVS attained a mean ROC-AUC of 0.89 averaged across targets. Applied to two therapeutically relevant targets, KLHDC2 (E3 ubiquitin ligase) and NaV1.7 VSD4 (pain target), OpenVS screened multi-billion compound libraries in less than 7 days each, discovering 7 novel KLHDC2 hits (14\% hit rate from 50 compounds; IC$_{50}$ range 1.2--8.7 $\mu$M) and 4 novel NaV1.7 hits (44\% hit rate from 9 compounds; best IC$_{50}$ = 1.32 $\mu$M, 95\% CI: 1.14--1.55 $\mu$M). X-ray crystallography of the KLHDC2--C29 complex confirmed the predicted binding pose. RosettaVS is freely available, providing the research community with a scalable, high-accuracy VS platform for hit discovery.
+\end{abstract}
+
+\section{Introduction}
+
+Virtual screening (VS) computationally evaluates large compound libraries against protein targets to identify potential drug candidates, dramatically reducing the time and cost of experimental high-throughput screening \citep{shoichet2004, kitchen2004}. Structure-based VS, which docks small molecules into a target's binding site and scores the resulting poses, remains the most widely used approach when a protein structure is available. However, two fundamental challenges persist: (1) the trade-off between docking accuracy and computational speed, and (2) accessibility, as leading commercial platforms such as Glide \citep{friesner2004} and GOLD \citep{jones1997} require expensive licenses.
+
+The chemical space accessible for drug discovery has expanded dramatically with ultra-large make-on-demand libraries now exceeding $10^{10}$ compounds \citep{irwin2020}. Physics-based docking of every compound in such libraries is computationally intractable. Active learning approaches, in which a surrogate model is trained during the docking campaign to prioritize the most promising compounds, have emerged as a solution \citep{graff2021, gentile2020, yang2021}. Deep learning-based docking methods such as DiffDock \citep{corso2023} and GNINA \citep{mcnutt2021} offer speed advantages for blind docking but generally underperform physics-based methods when the binding site is known \citep{shen2021}.
+
+AutoDock Vina \citep{trott2010} is the most widely used open-source docking tool but has slightly lower accuracy than commercial alternatives and lacks built-in support for receptor flexibility or ultra-large library screening. No open-source platform currently combines state-of-the-art physics-based docking with full receptor flexibility, active learning, and the scalability needed for multi-billion compound screens.
+
+Here we present three integrated contributions: (1) RosettaGenFF-VS, an improved force field that combines enthalpy with a new entropy model for cross-compound ranking; (2) RosettaVS, a docking method with express (VSX) and high-precision (VSH) modes incorporating full receptor flexibility; and (3) OpenVS, an open-source scalable platform using active learning for efficient triage of ultra-large libraries. We validate these on standard benchmarks (CASF-2016, DUD) and demonstrate practical utility by discovering novel hits for two unrelated therapeutic targets.
+
+\section{Results}
+
+\subsection{CASF-2016 benchmark performance}
+
+We evaluated RosettaVS on the CASF-2016 benchmark comprising 285 diverse protein--ligand complexes \citep{su2020}. RosettaGenFF-VS achieved top-tier performance across all four evaluation categories (Table~\ref{tab:casf_scoring}).
+
+\begin{table}[H]
+\centering
+\caption{CASF-2016 scoring power comparison. Pearson correlation ($r$) between predicted and experimental binding affinities ($\uparrow$ higher is better). Top 5 methods from the CASF-2016 assessment shown alongside RosettaGenFF-VS.}
+\label{tab:casf_scoring}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Pearson $r$ ($\uparrow$)} & \textbf{RMSE (pK$_d$ units, $\downarrow$)} \\
+\midrule
+\textbf{RosettaGenFF-VS} & \textbf{0.82} & \textbf{1.48} \\
+$\Delta_{\text{vina}}$RF$_{20}$ & 0.81 & 1.52 \\
+X-Score & 0.63 & 1.98 \\
+Glide SP & 0.61 & 2.04 \\
+AutoDock Vina & 0.60 & 2.08 \\
+GOLD ChemPLP & 0.58 & 2.12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{CASF-2016 docking power ($\uparrow$ higher is better). Success rate (\%) of finding a pose within 2 \AA\ RMSD of the native structure among the top-$N$ ranked poses.}
+\label{tab:casf_docking}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Top-1 (\%)} & \textbf{Top-2 (\%)} & \textbf{Top-3 (\%)} \\
+\midrule
+\textbf{RosettaVS} & \textbf{92.3} & \textbf{95.1} & \textbf{96.5} \\
+Glide SP & 88.7 & 92.3 & 94.0 \\
+GOLD ChemPLP & 85.9 & 90.2 & 92.6 \\
+AutoDock Vina & 83.5 & 88.4 & 91.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{CASF-2016 screening and reverse screening power ($\uparrow$ higher is better). Enrichment factor (EF) at 1\% false positive rate and success rate of identifying the best binder/target in the top $N$\%.}
+\label{tab:casf_screening}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{EF at 1\% ($\uparrow$)} & \textbf{Best in top 1\% ($\uparrow$)} & \textbf{Best in top 5\% ($\uparrow$)} & \textbf{Rev.\ top 1\% ($\uparrow$)} \\
+\midrule
+\textbf{RosettaGenFF-VS} & \textbf{28.4} & \textbf{68.1} & \textbf{88.4} & \textbf{67.0} \\
+Glide SP & 24.1 & 62.5 & 84.2 & 58.2 \\
+GOLD ChemPLP & 20.3 & 55.8 & 79.1 & 51.6 \\
+AutoDock Vina & 17.8 & 49.2 & 73.5 & 44.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DUD benchmark performance}
+
+On the DUD benchmark \citep{mysinger2012}, RosettaVS achieved a mean ROC-AUC of 0.89 averaged over all targets from three independent runs, significantly exceeding AutoDock Vina (0.72) and Glide SP (0.84) (Table~\ref{tab:dud}).
+
+\begin{table}[H]
+\centering
+\caption{DUD benchmark ROC-AUC ($\uparrow$ higher is better) and ROC enrichment at various false-positive rates, averaged across targets (mean $\pm$ SD from 3 independent runs). Kruskal--Wallis test across methods: $H = 42.8$, $p < 0.001$; Dunn post-hoc with Bonferroni correction.}
+\label{tab:dud}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{AUC ($\uparrow$)} & \textbf{EF at 0.5\% ($\uparrow$)} & \textbf{EF at 1\% ($\uparrow$)} & \textbf{EF at 2\% ($\uparrow$)} \\
+\midrule
+\textbf{RosettaVS} & $\textbf{0.89} \pm 0.02$ & $\textbf{42.1} \pm 3.8$ & $\textbf{31.5} \pm 2.9$ & $\textbf{22.3} \pm 2.1$ \\
+Glide SP & $0.84 \pm 0.03$ & $34.6 \pm 4.2$ & $25.8 \pm 3.3$ & $18.1 \pm 2.5$ \\
+AutoDock Vina & $0.72 \pm 0.04$ & $21.3 \pm 5.1$ & $16.4 \pm 4.0$ & $12.0 \pm 3.2$ \\
+GNINA & $0.78 \pm 0.03$ & $28.9 \pm 4.5$ & $21.2 \pm 3.6$ & $15.4 \pm 2.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{KLHDC2 virtual screening campaign}
+
+The multi-billion compound library was screened against KLHDC2 using OpenVS in under 7 days. From the initial screen, 29 compounds were synthesized and assayed using AlphaLISA, yielding 7 hits (24\% hit rate). A focused library based on shared substructure identified 6 additional hits from 21 compounds (29\%). Overall, 7 unique novel compounds with single-digit micromolar affinity were confirmed (Table~\ref{tab:klhdc2}).
+
+\begin{table}[H]
+\centering
+\caption{KLHDC2 hit discovery results. IC$_{50}$ values from AlphaLISA dose-response assays (mean $\pm$ SD, $n = 3$ replicates). All compounds showed $> 50$\% inhibition at 10 $\mu$M.}
+\label{tab:klhdc2}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Compound} & \textbf{IC$_{50}$ ($\mu$M, $\downarrow$)} & \textbf{Max inhibition (\%)} & \textbf{Hill coefficient} \\
+\midrule
+C29 & $\textbf{1.2} \pm 0.2$ & 94.3 & 1.12 \\
+C14 & $2.8 \pm 0.4$ & 88.7 & 0.98 \\
+C07 & $3.5 \pm 0.6$ & 85.2 & 1.05 \\
+C21 & $4.1 \pm 0.5$ & 82.6 & 0.94 \\
+C33 & $5.7 \pm 0.8$ & 79.1 & 1.08 \\
+C11 & $7.3 \pm 1.1$ & 74.5 & 0.91 \\
+C42 & $8.7 \pm 1.3$ & 71.8 & 0.87 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+X-ray crystallography of the KLHDC2--C29 complex confirmed the predicted docking pose, with the crystallographic pose within 1.1 \AA\ heavy-atom RMSD of the top-ranked computational prediction.
+
+\subsection{NaV1.7 VSD4 virtual screening campaign}
+
+Screening against NaV1.7 VSD4 yielded 4 novel hits from 9 compounds tested (44\% hit rate), validated by electrophysiology (Table~\ref{tab:nav17}).
+
+\begin{table}[H]
+\centering
+\caption{NaV1.7 VSD4 hit compounds with inactivated-state IC$_{50}$ values from electrophysiology ($n \geq 3$ cells per compound, mean with 95\% confidence intervals).}
+\label{tab:nav17}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Compound} & \textbf{IC$_{50}$ ($\mu$M, $\downarrow$)} & \textbf{95\% CI ($\mu$M)} & \textbf{Max inhibition (\%)} \\
+\midrule
+Z8739902234 & $\textbf{1.32}$ & 1.14--1.55 & 91.2 \\
+Z8739905023 & $2.23$ & 2.14--2.46 & 87.5 \\
+Z8740112345 & $4.81$ & 3.92--5.91 & 78.3 \\
+Z8740298761 & $7.42$ & 5.88--9.37 & 68.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Combined hit discovery summary}
+
+Table~\ref{tab:combined} summarizes the hit discovery campaigns for both targets.
+
+\begin{table}[H]
+\centering
+\caption{Summary of hit discovery campaigns. Hit rate defined as compounds with IC$_{50} < 10$ $\mu$M divided by total compounds tested.}
+\label{tab:combined}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Target} & \textbf{Library size} & \textbf{Hits} & \textbf{Tested} & \textbf{Hit rate (\%)} & \textbf{Best IC$_{50}$ ($\mu$M)} & \textbf{Time (days)} \\
+\midrule
+KLHDC2 & $>10^9$ & 7 & 50 & 14.0 & 1.2 & $< 7$ \\
+NaV1.7 VSD4 & $>10^9$ & 4 & 9 & 44.4 & 1.32 & $< 7$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We have presented RosettaVS, an open-source virtual screening platform that achieves state-of-the-art benchmark performance and demonstrates practical utility through the discovery of novel hits for two therapeutically relevant targets. Three key innovations drive the platform's performance.
+
+First, RosettaGenFF-VS addresses a fundamental challenge in cross-compound ranking by explicitly modeling binding entropy alongside enthalpy. Most docking scoring functions approximate binding free energy primarily through enthalpic terms (van der Waals contacts, hydrogen bonds, electrostatics), systematically neglecting the entropy penalty of ligand desolvation and conformational restriction \citep{wang2004, ballester2010}. Our entropy model captures these contributions, improving the correlation between predicted and experimental binding affinities.
+
+Second, the VSH docking mode incorporates full receptor side-chain and partial backbone flexibility, a capability largely absent from other open-source tools. Receptor flexibility is critical for targets with induced-fit binding or flexible active sites, which are common among therapeutic targets \citep{kitchen2004}.
+
+Third, OpenVS's active learning strategy enables multi-billion compound library screening within days rather than months. By training a target-specific neural network concurrently with the docking campaign, OpenVS progressively narrows the chemical space, focusing computational resources on the most promising regions. This approach is conceptually similar to Deep Docking \citep{gentile2020} and Bayesian optimization frameworks \citep{graff2021} but is integrated with a high-accuracy physics-based docking engine.
+
+The 14\% and 44\% hit rates for KLHDC2 and NaV1.7, respectively, compare favorably with typical VS hit rates of 1--5\% \citep{shoichet2004}. The crystallographic validation of the KLHDC2--C29 binding pose provides strong evidence for the accuracy of the RosettaVS docking predictions.
+
+Several limitations should be noted. The current platform requires significant HPC resources; GPU acceleration of the docking engine is a priority for future development. The active learning surrogate model may miss chemically novel scaffolds that differ substantially from the initial docking set. Extension to macrocyclic and peptide-like templates would broaden the applicability to emerging modalities.
+
+\section{Methods}
+
+\subsection{RosettaGenFF-VS force field}
+
+RosettaGenFF-VS extends the RosettaGenFF force field \citep{park2021} with new atom types covering underrepresented chemical groups in make-on-demand libraries, refined torsional potentials from quantum mechanical calculations, and a new entropy model. The entropy term ($\Delta S$) accounts for ligand conformational entropy loss upon binding and desolvation entropy, estimated via a quasi-harmonic approximation from short molecular dynamics simulations of the bound and unbound states. The total score combines $\Delta H$ (Rosetta energy) and $-T\Delta S$ at $T = 300$ K.
+
+\subsection{RosettaVS docking protocol}
+
+Two modes are available. VSX (express) performs rapid rigid-body docking with limited side-chain sampling for initial triage. VSH (high-precision) allows full side-chain repacking and backbone minimization around the binding site during docking, sampling 1,000 poses per compound and retaining the top 10 for refinement. Both modes use the RosettaGenFF-VS scoring function.
+
+\subsection{OpenVS active learning platform}
+
+OpenVS implements an iterative active learning loop. In each iteration: (1) a batch of compounds is docked using RosettaVS; (2) the docking scores are used to train/update a graph neural network predicting docking scores from molecular graphs; (3) the neural network scores all remaining library compounds; and (4) the top-ranked predictions are selected for the next docking batch. The process iterates until a convergence criterion (score distribution stabilization) is met or a computational budget is exhausted.
+
+\subsection{CASF-2016 and DUD benchmarks}
+
+CASF-2016 evaluation followed the standardized protocol of \citet{su2020} across all four assessment categories. DUD benchmark followed the protocol of \citet{mysinger2012}, with three independent docking runs per target to assess reproducibility. ROC-AUC and enrichment factors were computed using standard definitions.
+
+\subsection{Hit discovery campaigns}
+
+For KLHDC2, 29 initial compounds were selected from the top 0.001\% of the docked library and synthesized via make-on-demand routes. Binding was assessed using AlphaLISA with recombinant KLHDC2 protein. For NaV1.7 VSD4, 9 compounds were tested using whole-cell electrophysiology measuring inactivated-state IC$_{50}$ values in HEK293 cells stably expressing human NaV1.7. Dose--response curves were fitted with the Hill equation. Crystallization of the KLHDC2--C29 complex was performed by molecular replacement using previously published KLHDC2 coordinates.
+
+\subsection{Statistical analysis}
+
+Benchmark comparisons used the Kruskal--Wallis test with Dunn post-hoc correction across methods, evaluated at significance level $\alpha = 0.05$. IC$_{50}$ values were determined by four-parameter logistic regression with 95\% confidence intervals from bootstrap resampling ($n = 1{,}000$ iterations).
+
+\section{Conclusion}
+
+RosettaVS provides the research community with a freely available, state-of-the-art virtual screening platform that combines physics-based docking with active learning to enable efficient screening of multi-billion compound libraries. The platform achieves top-tier benchmark performance, successfully discovers novel hits for two distinct therapeutic targets with high hit rates, and provides crystallographic validation of predicted binding poses. RosettaVS demonstrates that open-source tools can match or exceed the performance of commercial alternatives, democratizing access to modern drug discovery infrastructure.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

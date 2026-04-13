@@ -1,0 +1,164 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Optimizing 5'UTRs for mRNA-Delivered Gene Editing Using Deep Learning}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Messenger RNA (mRNA) therapeutics are rapidly expanding, yet methods to optimize the primary sequence for enhanced protein expression remain underdeveloped. The 5' untranslated region (5'UTR) is a critical determinant of translation efficiency, but its effects are difficult to predict due to complex interactions among cis-regulatory elements, RNA-binding proteins, and cell-type-specific factors. Here we measured translation efficiency from approximately 205,000 randomized 5'UTR variants across three cell types (HEK293T, T cells, and HepG2) using polysome profiling-based massively parallel reporter assays. Mean Ribosome Load (MRL) was highly correlated between cell types ($r^2 = 0.837$--$0.871$), indicating substantial conservation of 5'UTR regulatory logic. The Optimus 5-Prime convolutional neural network, trained only on HEK293T data, generalized well to T cell and HepG2 predictions ($r^2$ up to 0.937 on held-out test sets). Using gradient descent (Fast SeqProp) and generative neural networks (Deep Exploration Networks), we designed de novo 5'UTRs that achieved gene editing efficiencies exceeding 40\% for TGFBR2 and 80\% for PDCD1 when incorporated into megaTAL mRNA delivered to K562 cells. One designed UTR achieved up to 50\% higher TGFBR2 editing than all control sequences, matching or exceeding the top 0.02\% of the random MPRA library. A new model, Optimus 5-Prime(25), trained on fully randomized 25-nucleotide UTRs, captured positional effects near the 5' cap including out-of-frame uAUG inhibition and 5'-proximal poly-C/T enhancement. These results demonstrate that deep learning-guided 5'UTR design can substantially improve mRNA-delivered gene editing.
+\end{abstract}
+
+\section{Introduction}
+
+Messenger RNA therapeutics have emerged as a transformative platform for medicine, with applications spanning vaccines, protein replacement therapy, cancer immunotherapy, and gene editing \citep{sahin2014mrna, polack2020safety}. The success of mRNA COVID-19 vaccines demonstrated the clinical potential of this modality at scale. However, most mRNA therapeutics employ 5'UTRs derived from alpha- and beta-globin genes by default, leaving substantial room for optimization of translational output through sequence engineering.
+
+The 5'UTR plays a critical role in regulating translation initiation and efficiency \citep{kozak1987analysis}. Cis-regulatory elements within the 5'UTR, including upstream AUG codons (uAUGs), internal ribosome entry sites, secondary structures, and sequence motifs that interact with RNA-binding proteins and microRNAs, collectively determine how efficiently ribosomes are recruited and initiate translation. These effects are complex and often context-dependent, making rational design of optimal 5'UTRs extremely challenging.
+
+Recent advances in deep learning have enabled quantitative prediction of translation from 5'UTR sequence. The Optimus 5-Prime model \citep{sample2019human}, a convolutional neural network trained on massively parallel reporter assay (MPRA) data, demonstrated that translation efficiency can be predicted from sequence alone with high accuracy. However, this model has not been applied to guide de novo UTR design for therapeutic applications, and whether its predictions generalize across cell types relevant to mRNA therapeutics (T cells for immunotherapy, hepatocytes for liver-targeted therapies) was unknown.
+
+Here we extend this framework in three directions. First, we characterize 5'UTR translation regulation across three therapeutically relevant cell types using polysome profiling MPRAs with approximately 205,000 variants. Second, we apply model-guided design algorithms---gradient descent and generative neural networks \citep{linder2020fast, lecun2015deep}---to create de novo 5'UTRs optimized for maximal translation. Third, we experimentally validate designed UTRs by incorporating them into mRNA encoding megaTAL gene editing enzymes \citep{certo2012tracking, weingartengasser2022megatal} and measuring gene editing efficiency in human cell lines.
+
+\section{Methods}
+
+\subsection{MPRA Library Design and Profiling}
+
+Two 5'UTR libraries were constructed. The fixed-end library contained a 25-nucleotide constant region followed by a 50-nucleotide fully random region upstream of the EGFP coding sequence and BGH 3'UTR. The random-end library contained only GGG (required for T7 transcription) followed by a 25-nucleotide fully random region. Libraries were transcribed in vitro and transfected into HEK293T cells (2 replicates), primary T cells derived from PBMCs (2 replicates), and HepG2 hepatocytes (1 replicate) at 1~$\mu$g mRNA per 1,000,000 cells using a Lonza 4D Nucleofector (Table~\ref{tab:mpra}).
+
+After 8 hours of incubation, cycloheximide (100~$\mu$g/mL) was added for 5 minutes to arrest translating ribosomes. Cell lysates were fractionated on sucrose gradients to separate polysome fractions, and each fraction was sequenced on Illumina platforms. Mean Ribosome Load (MRL) was calculated for each 5'UTR by multiplying normalized read counts per fraction by the corresponding ribosome number. After filtering for sequences with at least 100 reads across all datasets, 204,803 common variants were retained.
+
+\begin{table}[ht]
+\centering
+\caption{MPRA experimental parameters.}
+\label{tab:mpra}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Fixed-end UTR architecture & 25~nt constant + 50~nt random \\
+Random-end UTR architecture & GGG + 25~nt random \\
+CDS & EGFP \\
+3'UTR & BGH \\
+mRNA per transfection & 1~$\mu$g \\
+Cells per transfection & 1,000,000 \\
+Incubation & 8 hours \\
+Translation inhibitor & Cycloheximide (100~$\mu$g/mL) \\
+Common variants (filtered) & 204,803 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cross-Cell-Type Correlation}
+
+MRL values were compared between cell types using the top 20,000 highest-coverage sequences to minimize noise from low-count variants.
+
+\subsection{Model-Based 5'UTR Design}
+
+Two design algorithms were employed using the Optimus 5-Prime CNN as the predictive oracle:
+
+\textbf{Fast SeqProp:} Gradient-based sequence optimization via backpropagation through the frozen predictor model \citep{linder2020fast}.
+
+\textbf{Deep Exploration Networks (DENs):} Generative neural networks that take 100-dimensional random latent vectors and output 50$\times$4 continuous logits representing optimized sequences.
+
+Both approaches were tested with and without Variational AutoEncoder (VAE) regularization \citep{kingma2013auto} to constrain designed sequences to the distribution of natural-like sequences (Table~\ref{tab:designs}).
+
+\begin{table}[ht]
+\centering
+\caption{Design strategy combinations tested.}
+\label{tab:designs}
+\begin{tabular}{lll}
+\toprule
+Algorithm & Regularization & UTR Length \\
+\midrule
+Fast SeqProp & None & 50~nt \\
+Fast SeqProp & VAE & 50~nt \\
+DEN & None & 50~nt \\
+DEN & VAE & 50~nt \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Gene Editing Validation}
+
+Designed 5'UTRs were incorporated into mRNA encoding megaTAL gene editing enzymes targeting TGFBR2 and PDCD1 genes. mRNAs were individually transfected into K562 and Jurkat cells. Gene editing efficiency was measured via flow cytometry by quantifying surface protein knockout. Control sequences included the top 4 UTRs from the MPRA library (high MRL, no uATGs, $\geq$1000 reads) and randomly selected library members.
+
+\section{Results}
+
+\subsection{Cross-Cell-Type MRL Conservation}
+
+MRL was highly correlated between cell types (Table~\ref{tab:correlations}), indicating that 5'UTR regulatory logic is substantially conserved across HEK293T, T cells, and HepG2. Within-cell-type replicate correlations were higher ($r^2 = 0.814$--$0.938$), as expected, confirming that the majority of cross-cell-type variance reflects biological rather than technical variation.
+
+\begin{table}[ht]
+\centering
+\caption{Cross-cell-type MRL correlations (top 20,000 sequences).}
+\label{tab:correlations}
+\begin{tabular}{lc}
+\toprule
+Comparison & $r^2$ \\
+\midrule
+HEK293T vs.\ T cells & 0.837--0.870 \\
+HEK293T vs.\ HepG2 & 0.847--0.871 \\
+HEK293T rep 1 vs.\ rep 2 & 0.938 \\
+T cell rep 1 vs.\ rep 2 & 0.814 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model Prediction and Generalization}
+
+Optimus 5-Prime, trained exclusively on HEK293T MPRA data, achieved $r^2 = 0.937$ on the held-out HEK293T test set and generalized well to T cell and HepG2 predictions. Retraining the model separately on each cell type did not consistently improve performance, indicating that the HEK293T-trained model already captures most of the relevant 5'UTR regulatory logic across cell types.
+
+\subsection{25-Nucleotide Random-End Library}
+
+Analysis of the fully randomized 25-nucleotide library revealed position-dependent regulatory effects near the 5' cap that were not captured by the original model trained on the fixed-end library. Out-of-frame uAUGs close to the cap had a smaller inhibitory effect than those further downstream. Poly-C and poly-T tracts near the 5' end showed a small enhancing effect that increased with proximity to the cap. A new model, Optimus 5-Prime(25), trained specifically on this library, captured these 5'-proximal effects.
+
+\subsection{Gene Editing Efficiency}
+
+Designed 5'UTRs achieved high gene editing efficiencies when incorporated into megaTAL mRNA (Table~\ref{tab:editing}). For TGFBR2 in K562 cells, designed UTRs exceeded 40\% editing efficiency, matching or exceeding the top 0.02\% of random MPRA library sequences. One design achieved up to 50\% higher TGFBR2 editing than all control sequences tested. For PDCD1, editing efficiency exceeded 80\% for the best designs. However, the single best-performing UTR for TGFBR2 did not maintain its advantage for PDCD1, indicating some degree of cargo-specific performance.
+
+\begin{table}[ht]
+\centering
+\caption{Gene editing efficiency of designed 5'UTRs.}
+\label{tab:editing}
+\begin{tabular}{llll}
+\toprule
+Target & Cell Line & Editing (designed) & vs.\ Controls \\
+\midrule
+TGFBR2 & K562 & $> 40\%$ & $\geq$ top 0.02\% of library \\
+PDCD1 & K562 & $> 80\%$ & Strong \\
+TGFBR2 (best) & K562 & Up to 50\% higher & Exceeds all controls \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Editing efficiency was correlated between cell types and gene targets, though imperfectly, suggesting that designed UTRs generally support high expression across contexts but that the single best performer may be context-specific.
+
+The inverse regression DEN successfully generated sequences targeting specific intermediate MRL values, demonstrating that the design framework can produce UTRs tuned to any desired expression level, not just the maximum.
+
+\section{Discussion}
+
+We demonstrate that deep learning-guided 5'UTR design can substantially improve the efficiency of mRNA-delivered gene editing. The high cross-cell-type conservation of 5'UTR regulatory effects ($r^2 > 0.83$) is an encouraging finding for therapeutic applications, as it suggests that UTRs optimized in one cell type are likely to perform well in others. The strong generalization of Optimus 5-Prime from HEK293T training data to T cell and HepG2 predictions further supports this conclusion and simplifies the practical workflow for UTR optimization.
+
+The success of both gradient-based (Fast SeqProp) and generative (DEN) design approaches validates the use of predictive neural networks as design oracles for biological sequence engineering \citep{bogard2019deep, linder2020fast}. The VAE-regularized designs, which are constrained to resemble natural sequence distributions, provide a conservative option that may be preferred when sequence naturalness is valued, while unconstrained designs can explore more of sequence space and potentially achieve higher peak performance.
+
+The 5'-proximal effects identified through the 25-nucleotide random-end library---diminished uAUG inhibition and enhanced poly-C/T effects near the cap---extend our understanding of 5'UTR regulation \citep{kozak1987analysis}. These position-dependent effects are missed by models trained only on fixed-end libraries where the 5'-proximal region is constant, highlighting the importance of library design in capturing the full regulatory landscape.
+
+The cargo-specificity of the single best-performing UTR (exceptional for TGFBR2 but not for PDCD1) cautions against assuming that a universally optimal 5'UTR exists. While most designed UTRs performed consistently well across targets, the peak performer varied. This suggests that for clinical applications requiring maximal expression, UTR optimization should ideally be performed with the intended cargo, or a panel of high-performing designs should be screened.
+
+\section{Conclusion}
+
+Deep learning-guided design of 5'UTRs provides a practical and effective approach to optimizing mRNA-delivered gene editing. High cross-cell-type conservation of translation regulation, strong model generalization, and experimentally validated editing efficiencies demonstrate the maturity of this approach for therapeutic applications. The combination of massively parallel measurement, predictive modeling, and generative design creates a scalable framework that can be extended to other mRNA therapeutic modalities and cargo types.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

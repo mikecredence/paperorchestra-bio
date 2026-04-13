@@ -1,0 +1,192 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Linking NMDAR Synaptic Deficits to Spike Desynchronization in Schizophrenia Through a Prefrontal Spiking Network Model Operating Near a Steady-Oscillatory Boundary}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$ \\
+\small $^{1}$Department of Neuroscience, University of Minnesota, Minneapolis, MN, USA \\
+\small $^{2}$Center for Neural Computation, Hebrew University of Jerusalem, Israel}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Schizophrenia involves prefrontal cortical dysfunction, and converging evidence from primate pharmacology and mouse genetics implicates NMDA receptor (NMDAR) hypofunction in the loss of task-locked spike synchrony. However, the mechanism connecting synaptic-level NMDAR deficits to network-level desynchronization remains unclear. Here we develop a recurrent spiking network model of 4,000 excitatory and 1,000 inhibitory leaky integrate-and-fire neurons with explicit AMPA, NMDA, and GABA receptor-mediated synaptic currents. Using mean field theory and linear stability analysis, we derive a state diagram in the AMPA/GABA versus external input parameter plane, identifying a critical boundary ($\lambda = 0$) that separates asynchronous from synchronous oscillatory regimes. We show that a network tuned near this critical boundary can transition from asynchronous firing to synchronous gamma oscillations ($\sim$40 Hz) with small increases in external input, producing the zero-lag spike synchrony observed in primate prefrontal cortex before motor responses during cognitive control tasks. Reducing NMDAR conductance---simulating the effect of the NMDAR antagonist phencyclidine (PCP)---prevents the network from crossing into the synchronous regime, reproducing the experimentally observed desynchronization. Direct comparison with spike correlation data from 47 neural ensembles (893 neurons) recorded in macaque dorsolateral PFC during a cognitive control task confirms that the model captures both the emergence of pre-response synchrony in the drug-naive condition and its abolition under PCP. Our results establish a mechanistic link from NMDAR synaptic deficits to prefrontal circuit failure in schizophrenia.
+\end{abstract}
+
+\section{Introduction}
+
+Schizophrenia is a devastating psychiatric disorder characterized by positive symptoms, negative symptoms, and cognitive deficits, with prefrontal cortical dysfunction playing a central role in cognitive impairment \citep{lewis2012cortical, uhlhaas2010neural}. Genetic studies have increasingly implicated glutamatergic signaling, particularly through NMDA receptors, as a convergent pathogenic mechanism \citep{schizophrenia2014biological}. The NMDAR hypofunction hypothesis posits that reduced NMDAR-mediated signaling disrupts the balance of excitation and inhibition in cortical circuits, leading to the cognitive deficits observed in the disease \citep{javitt2012nmda}.
+
+Experimental work in non-human primates has provided direct evidence linking NMDAR blockade to failures in spike synchrony. Recordings from macaque dorsolateral prefrontal cortex (dlPFC) during a cognitive control task (the dot-pattern expectancy, or DPX, task) revealed that administration of the NMDAR antagonist phencyclidine (PCP) reduces zero-lag synchronous spiking that normally emerges before motor responses \citep{zick2018blocking}. A similar desynchronization phenotype was observed in a mouse genetic model with deletion of a miRNA-processing risk gene, suggesting convergent pathogenesis across species and perturbation types \citep{kummerfeld2020dendritic}. These findings point to NMDAR-dependent spike synchrony as a critical circuit-level phenotype in schizophrenia, but the computational mechanism explaining why NMDAR loss specifically prevents the emergence of synchrony remained unknown.
+
+Theoretical models of cortical circuits have established that recurrent networks of excitatory and inhibitory neurons can exhibit transitions between asynchronous and synchronous states depending on network parameters \citep{brunel2000dynamics, brunel2003fast}. The balance between excitatory and inhibitory synaptic currents determines the stability of the asynchronous state, with instabilities leading to oscillatory population activity. However, existing models had not been specifically applied to explain the NMDAR-dependent emergence and loss of spike synchrony in the context of schizophrenia.
+
+Here we develop a spiking network model that bridges this gap. By deriving the critical boundary in parameter space that separates asynchronous from synchronous regimes, we show that a network operating near this boundary (a ``critical state'') can exhibit input-dependent transitions to synchrony that are abolished by NMDAR conductance reduction. We validate the model against experimental recordings from macaque dlPFC, demonstrating quantitative agreement between model predictions and observed spike correlation patterns.
+
+\section{Methods}
+
+\subsection{Network Architecture}
+
+The model consists of a sparsely connected recurrent network of leaky integrate-and-fire (LIF) neurons, comprising $N_E = 4{,}000$ excitatory and $N_I = 1{,}000$ inhibitory neurons. Neurons are connected randomly with a connection probability of 0.2. Network parameters are summarized in Table~\ref{tab:network}.
+
+\begin{table}[htbp]
+\centering
+\caption{Network model parameters.}
+\label{tab:network}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Excitatory neurons ($N_E$) & 4,000 \\
+Inhibitory neurons ($N_I$) & 1,000 \\
+Connection probability & 0.2 \\
+Neuron model & Leaky integrate-and-fire \\
+Excitatory synapse types & AMPA (fast) + NMDA (slow) \\
+Inhibitory synapse type & GABA \\
+External input model & Independent Poisson spike trains \\
+Prescribed excitatory firing rate & 5 Hz \\
+Prescribed inhibitory firing rate & 20 Hz \\
+External input spike rate (baseline) & 5 Hz \\
+NMDA/GABA balance (reference) & 0.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Excitatory synapses carry both fast AMPA receptor-mediated currents and slow NMDA receptor-mediated currents, while inhibitory synapses carry GABA receptor-mediated currents. The NMDA current incorporates voltage-dependent magnesium block, modeled as a sigmoidal function of postsynaptic membrane potential \citep{jahr1990voltage}. External inputs are modeled as independent Poisson spike trains driving both excitatory and inhibitory populations.
+
+\subsection{Mean Field Theory and Linear Stability Analysis}
+
+The analytical framework combines mean field theory with linear stability analysis of the asynchronous state \citep{brunel2000dynamics, renart2010asynchronous}. Mean field theory provides self-consistent solutions for firing rates and synaptic conductances in the asynchronous state, given the network parameters. The stability of this asynchronous state is then assessed through linearization of the population dynamics around the mean field solution.
+
+The linear stability analysis yields the rate of instability growth, $\lambda$, as a function of network parameters. The critical line is defined as the set of parameters for which $\lambda = 0$, separating the stable asynchronous region ($\lambda < 0$) from the oscillatory synchronous region ($\lambda > 0$). The analysis is performed in multiple parameter planes: the ($I_\text{AMPA}/I_\text{GABA}$, $I_{X,E}/I_{\theta,E}$) plane, and the ($\nu_X$, $g_\text{NMDA}$) plane, where $\nu_X$ is the external input rate and $g_\text{NMDA}$ is the NMDA synaptic conductance.
+
+\subsection{Reference Networks}
+
+Two reference networks were analyzed to illustrate the importance of proximity to the critical boundary. The \textit{steady state network} is positioned deep in the asynchronous regime (large negative $\lambda$), while the \textit{critical state network} is positioned just below the critical boundary ($\lambda$ slightly negative). These two configurations predict qualitatively different behaviors in response to external input modulation and NMDAR blockade (Table~\ref{tab:states}).
+
+\begin{table}[htbp]
+\centering
+\caption{Properties of the two reference network states.}
+\label{tab:states}
+\begin{tabular}{llll}
+\toprule
+Network State & $\lambda$ & $I_\text{AMPA}/I_\text{GABA}$ & Behavior \\
+\midrule
+Steady state & Negative, far from 0 & Low ratio & Insensitive to input \\
+Critical state & Slightly negative & Near critical line & Poised for synchrony \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experimental Data}
+
+Model predictions were compared with electrophysiological recordings from macaque dorsolateral PFC. The experimental dataset comprised 47 neural ensembles totaling 893 simultaneously recorded neurons from the principal sulcus (Brodmann area 46) of rhesus macaques (8--10 kg, male) performing the DPX cognitive control task \citep{zick2018blocking, zick2021blocking}. Recording parameters are summarized in Table~\ref{tab:recording}.
+
+\begin{table}[htbp]
+\centering
+\caption{Electrophysiological recording parameters.}
+\label{tab:recording}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Species & Rhesus macaque (8--10 kg, male) \\
+Brain region & dlPFC, principal sulcus (BA 46) \\
+Recording system & Thomas Recording Eckhorn drive \\
+Electrodes & 16, spaced 400 $\mu$m apart \\
+Neurons per ensemble & 15--30 \\
+Total ensembles & 47 \\
+Total neurons & 893 \\
+Drug & Phencyclidine (PCP), 0.25--0.30 mg/kg IM \\
+Synchrony resolution & 2 ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Spike synchrony was quantified as the ratio of the observed frequency of synchronous spikes (within 2~ms) to the expected frequency under statistical independence, minus 1. This metric was computed for pairwise neuron combinations within each ensemble and averaged across the population, separately for drug-naive and PCP conditions, and for different task epochs aligned to either cue onset or response time.
+
+\section{Results}
+
+\subsection{State Diagram Identifies a Critical Boundary}
+
+Mean field analysis combined with linear stability analysis yielded a color-coded state diagram in the ($I_\text{AMPA}/I_\text{GABA}$, $I_{X,E}/I_{\theta,E}$) parameter plane. The critical line ($\lambda = 0$) clearly separates the asynchronous stable region from the synchronous oscillatory region. The steady state network is located deep within the asynchronous region, while the critical state network sits just below the critical boundary.
+
+Analysis of the oscillation frequency along the critical line revealed that the frequency increases with the AMPA/GABA ratio, with gamma-range oscillations ($\sim$40 Hz) emerging at physiologically relevant parameter values. This result connects the AMPA/GABA balance to the frequency of emergent oscillations, consistent with experimental observations of gamma oscillations in PFC circuits.
+
+\subsection{Critical State Network Exhibits Input-Dependent Synchrony}
+
+Network simulations confirmed the predictions of the stability analysis. The steady state network produced asynchronous irregular spiking at both low and high levels of external input, with no detectable population oscillations in either condition. In contrast, the critical state network transitioned from asynchronous irregular firing at low input to synchronous oscillatory firing at high input, with individual neurons becoming stochastically entrained to the gamma rhythm (Table~\ref{tab:simresults}).
+
+\begin{table}[htbp]
+\centering
+\caption{Network simulation results across conditions.}
+\label{tab:simresults}
+\begin{tabular}{lllll}
+\toprule
+Metric & Steady (low) & Steady (high) & Critical (low) & Critical (high) \\
+\midrule
+Spike pattern & Async & Async & Async & Sync oscillatory \\
+Population oscillation & Absent & Absent & Absent & Gamma present \\
+Pairwise correlation & Weak & Weak & Weak & Strong \\
+Zero-lag synchrony & Low & Low & Low & High \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The power spectrum analysis confirmed these observations: the steady state network showed flat spectra at both input levels, while the critical state network developed a sharp gamma-band peak only at high input levels. This input-dependent transition provides the mechanism by which task-related increases in external input can drive the emergence of synchrony in PFC circuits.
+
+\subsection{NMDAR Reduction Prevents Synchrony Transition}
+
+Analysis of the state diagram in the ($\nu_X$, $g_\text{NMDA}$) parameter plane revealed the critical mechanism linking NMDAR deficits to desynchronization. For the critical state network, the operating point sits near the critical boundary, and modulation of external input rate ($\nu_X$) can push the network across the boundary into the synchronous regime. However, reducing NMDAR conductance ($g_\text{NMDA}$) moves the network operating point away from the critical boundary, so that the same increase in external input is no longer sufficient to trigger the transition to synchrony.
+
+The NMDA/GABA balance controls the orientation of the critical line in this parameter plane. At higher NMDA/GABA ratios, the critical line has a shallower slope, making the network more sensitive to external input modulation. At lower ratios (corresponding to NMDAR hypofunction), the critical line becomes steeper, reducing the effectiveness of input modulation in driving synchrony transitions. This dependence provides a direct mechanistic link between the NMDAR deficit and the circuit-level failure.
+
+\subsection{Model Reproduces Experimental Desynchronization}
+
+Direct comparison between model spike correlations and monkey PFC recordings confirmed quantitative agreement across conditions and task epochs. In the drug-naive condition, both the experimental data and the critical state model showed weak pairwise correlations in the post-probe period (0--200 ms after probe onset), with a strong zero-lag correlation peak emerging in the pre-response period (200 ms before motor response). Under PCP (experimentally) or NMDAR conductance reduction (in the model), the pre-response correlation peak was abolished, and correlations remained flat across both time windows.
+
+The steady state network, by contrast, failed to reproduce the experimental data: correlations remained weak and unchanged across all conditions regardless of input modulation or NMDAR status, confirming that proximity to the critical boundary is essential for capturing the experimental phenomenology.
+
+\subsection{Proposed Circuit Mechanism}
+
+The results support a mechanistic account in which prefrontal circuits normally operate near the critical boundary in (NMDAR conductance, external input) space. During behavior---particularly in the pre-response period---extrinsic inputs increase, possibly from structures such as the mediodorsal thalamus, pushing the circuit past the critical boundary into the synchronous oscillatory regime \citep{mitchell2014advances}. Gamma oscillations emerge in population activity, and individual neurons stochastically entrain to the gamma rhythm, producing zero-lag synchrony that may support information integration and cognitive control \citep{fries2005mechanism}. NMDAR blockade or genetic reduction prevents the network from crossing the critical boundary, leaving it in the asynchronous state despite increased input. The failure of synchrony to emerge may then disconnect circuits through spike-timing-dependent plasticity mechanisms, contributing to the progressive aspects of the disease.
+
+\section{Discussion}
+
+\subsection{Bridging Synaptic and Network Scales}
+
+A central challenge in understanding schizophrenia is connecting genetic and molecular risk factors to circuit-level and behavioral phenotypes \citep{schizophrenia2014biological}. Our model provides such a bridge for the specific case of NMDAR hypofunction and prefrontal desynchronization. The key insight is that the effect of NMDAR reduction is not simply to reduce excitation uniformly, but rather to alter the network's position relative to a critical boundary in parameter space. This geometric perspective explains why NMDAR loss has a qualitatively different effect from other forms of excitatory reduction: it specifically prevents the input-driven transition to synchrony by changing the orientation of the critical line.
+
+\subsection{Relationship to Prior Theoretical Work}
+
+Our analysis builds on the foundational work of \citet{brunel2000dynamics} and \citet{brunel2003fast} on the dynamics of sparsely connected networks of integrate-and-fire neurons. The novel contribution is the explicit incorporation of separate AMPA, NMDA, and GABA synaptic currents and the derivation of the critical boundary's dependence on the ratios of these currents. This extension allows us to make specific predictions about the effects of pharmacological or genetic perturbations targeting individual receptor types.
+
+The concept of operating near a critical boundary connects to broader theories of criticality in neural systems \citep{beggs2003neuronal}. However, our model does not require the network to be precisely at criticality; rather, it needs to be close enough that behaviorally relevant input modulations can drive transitions. This ``near-critical'' regime may be more biologically realistic than strict criticality.
+
+\subsection{Convergent Pathogenesis}
+
+The finding that both pharmacological NMDAR blockade in primates and genetic NMDAR pathway disruption in mice produce similar desynchronization phenotypes \citep{zick2018blocking, kummerfeld2020dendritic} is consistent with our model's prediction that the critical mechanism is the network's distance from the critical boundary, which can be perturbed by any intervention that reduces NMDAR-mediated currents. This provides a theoretical framework for understanding how diverse genetic risk factors may converge on a common circuit-level phenotype.
+
+\subsection{Limitations}
+
+The model makes several simplifying assumptions. The network consists of only two neuron types (excitatory and inhibitory), whereas PFC contains multiple interneuron subtypes with distinct roles in generating oscillations \citep{hu2014interneurons}. The external input is modeled as homogeneous Poisson processes, whereas real thalamic and cortical inputs have structured temporal correlations. The model does not include short-term synaptic plasticity, neuromodulation, or network heterogeneity. Despite these simplifications, the model captures the essential qualitative features of the experimental data, suggesting that the critical boundary mechanism is robust to biological details.
+
+\subsection{Clinical Implications}
+
+Our results suggest that therapeutic strategies for cognitive deficits in schizophrenia should aim to restore the network's proximity to the critical boundary rather than simply increasing overall excitation. This could potentially be achieved through positive allosteric modulators of NMDARs, which enhance NMDAR function without directly activating the receptors \citep{bhatt2017targeting}. The model provides a framework for predicting the circuit-level effects of such interventions.
+
+\section{Conclusion}
+
+We have developed a spiking network model that explains how NMDAR synaptic deficits lead to the loss of zero-lag spike synchrony in prefrontal cortex, a circuit-level phenotype implicated in the cognitive deficits of schizophrenia. The model identifies a critical boundary in parameter space whose proximity determines the network's ability to generate input-dependent synchronous oscillations. NMDAR reduction moves the network away from this boundary, preventing the emergence of synchrony. These results provide a mechanistic link from synaptic perturbation to network failure, bridging the gap between genetic risk factors and circuit-level dysfunction in schizophrenia.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

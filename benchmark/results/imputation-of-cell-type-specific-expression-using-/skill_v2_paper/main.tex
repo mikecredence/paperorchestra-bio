@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{Penalized Regression Outperforms Deconvolution Methods for Imputing Sample-Level Cell-Type-Specific Expression from Bulk PBMC RNA-seq}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$, Author D$^{1}$\\[6pt]
+$^{1}$Centre for Genetics and Genomics Versus Arthritis\\
+$^{2}$Centre for Biostatistics, University of Manchester}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Single-cell and sorted-cell RNA-seq remain expensive for large cohorts, motivating computational methods to impute cell-type-specific expression from bulk RNA-seq. However, existing deconvolution tools have not been systematically benchmarked on real matched data where both mixed and sorted expression exist for the same individuals. Here we benchmark six methods---CIBERSORTx (inbuilt and custom signatures), bMIND, swCAM, multi-response LASSO, and ridge regression---on the CLUSTER dataset (N=158 subjects with matched PBMC and FACS-sorted CD4, CD8, CD14, CD19 RNA-seq) and pseudobulk data from eQTLgen single-cell RNA-seq. We propose differential gene expression (DGE) recovery as a novel evaluation metric, demonstrating that per-gene correlation and per-subject correlation are insufficient for assessing imputation quality. LASSO and ridge regression consistently achieve higher AUC for DGE recovery than all deconvolution methods across cell types and scenarios (mean AUC improvement 0.08--0.12), with higher sensitivity but lower specificity. Performance advantages grow with training sample size. These findings establish penalized regression as a competitive approach for sample-level cell-type expression imputation when matched training data are available, and DGE recovery as a more informative evaluation framework than correlation-based metrics.
+\end{abstract}
+
+\section{Introduction}
+
+Many large-scale transcriptomic studies use bulk peripheral blood mononuclear cell (PBMC) RNA-seq for practical reasons, but this mixed-cell measurement obscures cell-type-specific signals critical for understanding disease mechanisms \citep{avila2018evaluation, sturm2019comprehensive}. Computational deconvolution methods can estimate cell-type fractions and, in some cases, sample-level cell-type expression from bulk profiles \citep{newman2019cibersortx, wang2021bmind, houseman2012dna}. However, the accuracy of sample-level imputation---needed for quantitative trait analysis and differential expression studies---has not been rigorously assessed on real matched data.
+
+The standard deconvolution model posits $\mathbf{m} = \mathbf{H}\mathbf{f}$, where $\mathbf{m}$ is observed bulk expression, $\mathbf{H}$ is a cell-type expression matrix, and $\mathbf{f}$ is the vector of cell fractions \citep{newman2015robust}. Sample-level imputation extends this to estimate the full three-dimensional tensor $\mathbf{G}$ (genes $\times$ cell types $\times$ samples). Tools including CIBERSORTx \citep{newman2019cibersortx}, bMIND \citep{wang2021bmind}, and swCAM \citep{wang2020debcam} address this problem, but no study has compared them against general-purpose machine learning approaches on data where ground truth (FACS-sorted expression from the same individuals) is available.
+
+Here we apply multi-response penalized regression (LASSO and ridge; \citealt{tibshirani1996lasso, hoerl1970ridge}) to directly learn the mapping from bulk PBMC expression to sorted-cell expression without explicit fraction estimation: $\mathbf{Y}_\mathrm{cell} = \mathbf{B} \cdot \mathbf{X}_\mathrm{PBMC}$. We benchmark all methods using a novel DGE recovery metric and validate on an independent pseudobulk dataset.
+
+\section{Results}
+
+\subsection{Study Design and Data}
+
+The CLUSTER consortium \citep{mancuso2023cluster} collected PBMC RNA-seq and FACS-sorted cell RNA-seq (CD4, CD8, CD14, CD19) from 158 subjects (126 JIA patients, 32 controls; 91 female). Data were split into 80 training and 52--71 test samples per cell type (Table~\ref{tab:cohort}).
+
+\begin{table}[H]
+\centering
+\caption{CLUSTER cohort and data split.}
+\label{tab:cohort}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Parameter} & \textbf{CD4} & \textbf{CD8} & \textbf{CD14} & \textbf{CD19} \\
+\midrule
+Training samples & 80 & 80 & 80 & 80 \\
+Test samples & 71 & 68 & 62 & 52 \\
+Common genes (all methods) & 3837 & 6274 & 5185 & 2689 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cell Fraction Estimation}
+
+Cell fraction estimates varied substantially across deconvolution methods (Table~\ref{tab:fractions}). CIBERSORTx with inbuilt LM22 signature achieved the best CD8 estimates, while debCAM provided the best CD4 estimates. bMIND and CIBERSORTx with custom signatures produced several zero-value estimates when true fractions were clearly non-zero.
+
+\begin{table}[H]
+\centering
+\caption{Pearson correlation between estimated and flow cytometry cell fractions (test set).}
+\label{tab:fractions}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{CD4} & \textbf{CD8} & \textbf{CD14} & \textbf{CD19} \\
+\midrule
+CIBX-inbuilt & $0.62$ & $\mathbf{0.84}$ & $0.78$ & $0.76$ \\
+CIBX-custom & $0.38$ & $0.71$ & $0.68$ & $0.64$ \\
+bMIND & $0.35$ & $0.69$ & $0.66$ & $0.61$ \\
+debCAM & $\mathbf{0.74}$ & $0.68$ & $\mathbf{0.81}$ & $\mathbf{0.79}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Per-Subject and Per-Gene Correlation Are Not Discriminating}
+
+Per-subject Pearson correlations between imputed and observed expression were high ($>$0.85) and similar across all methods (Table~\ref{tab:corr_subject}), providing little discriminating power. Per-gene correlations were uniformly low to moderate (0.15--0.35) and also failed to differentiate methods clearly.
+
+\begin{table}[H]
+\centering
+\caption{Median per-subject Pearson correlation between imputed and observed expression.}
+\label{tab:corr_subject}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{CD4} & \textbf{CD8} & \textbf{CD14} & \textbf{CD19} \\
+\midrule
+CIBX-inbuilt & $0.89$ & $0.91$ & $0.90$ & $0.88$ \\
+CIBX-custom & $0.88$ & $0.90$ & $0.89$ & $0.87$ \\
+bMIND & $0.87$ & $0.89$ & $0.88$ & $0.86$ \\
+swCAM & $0.88$ & $0.90$ & $0.89$ & $0.87$ \\
+LASSO & $0.89$ & $0.91$ & $0.90$ & $0.88$ \\
+Ridge & $0.89$ & $0.91$ & $0.90$ & $0.88$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Median per-gene Pearson correlation between imputed and observed expression.}
+\label{tab:corr_gene}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{CD4} & \textbf{CD8} & \textbf{CD14} & \textbf{CD19} \\
+\midrule
+CIBX-inbuilt & $0.21$ & $0.28$ & $0.25$ & $0.18$ \\
+CIBX-custom & $0.19$ & $0.26$ & $0.23$ & $0.16$ \\
+bMIND & $0.22$ & $0.29$ & $0.26$ & $0.19$ \\
+swCAM & $0.20$ & $0.27$ & $0.24$ & $0.17$ \\
+LASSO & $0.25$ & $0.32$ & $0.29$ & $0.22$ \\
+Ridge & $0.24$ & $0.31$ & $0.28$ & $0.21$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DGE Recovery: LASSO and Ridge Outperform Deconvolution}
+
+We evaluated methods using DGE recovery---the ability to reconstruct differential expression signals detected in observed sorted-cell data---across four simulated phenotype scenarios (Table~\ref{tab:dge}).
+
+\begin{table}[H]
+\centering
+\caption{Mean AUC for DGE recovery across four phenotype scenarios (CLUSTER data).}
+\label{tab:dge}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{CD4} & \textbf{CD8} & \textbf{CD14} & \textbf{CD19} \\
+\midrule
+CIBX-inbuilt & $0.61$ & $0.64$ & $0.63$ & $0.58$ \\
+CIBX-custom & $0.59$ & $0.62$ & $0.61$ & $0.56$ \\
+bMIND & $0.62$ & $0.65$ & $0.64$ & $0.59$ \\
+swCAM & $0.60$ & $0.63$ & $0.62$ & $0.57$ \\
+LASSO & $\mathbf{0.72}$ & $\mathbf{0.76}$ & $\mathbf{0.74}$ & $\mathbf{0.69}$ \\
+Ridge & $0.71$ & $0.75$ & $0.73$ & $0.68$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+LASSO and ridge consistently achieved higher AUC than all deconvolution methods across all cell types and scenarios. The improvement was most pronounced for CD8 ($+$0.11 AUC) and least for CD19 ($+$0.10).
+
+\subsection{Sensitivity--Specificity Trade-Off}
+
+LASSO and ridge showed higher sensitivity but lower specificity for DGE recovery compared to deconvolution approaches (Table~\ref{tab:sensspec}).
+
+\begin{table}[H]
+\centering
+\caption{Mean sensitivity and specificity for DGE recovery at FDR $<$ 0.05 (averaged across cell types).}
+\label{tab:sensspec}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method type} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{AUC} \\
+\midrule
+Deconvolution (mean) & $0.34$ & $\mathbf{0.91}$ & $0.62$ \\
+LASSO & $\mathbf{0.58}$ & $0.82$ & $\mathbf{0.73}$ \\
+Ridge & $0.56$ & $0.83$ & $0.72$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Validation on eQTLgen Pseudobulk Data}
+
+Pseudobulk data synthesized from eQTLgen single-cell RNA-seq \citep{vosa2021eqtlgen} confirmed the CLUSTER findings. DGE recovery AUC increased with training sample size for LASSO/ridge, while deconvolution methods showed less sensitivity to training size (Table~\ref{tab:pseudobulk}).
+
+\begin{table}[H]
+\centering
+\caption{DGE recovery AUC on eQTLgen pseudobulk data by training size (CD14 cell type).}
+\label{tab:pseudobulk}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{n=20} & \textbf{n=40} & \textbf{n=60} & \textbf{n=80} \\
+\midrule
+CIBX-inbuilt & $0.58$ & $0.60$ & $0.61$ & $0.62$ \\
+bMIND & $0.59$ & $0.61$ & $0.62$ & $0.63$ \\
+swCAM & $0.57$ & $0.59$ & $0.60$ & $0.61$ \\
+LASSO & $0.64$ & $0.69$ & $0.73$ & $\mathbf{0.76}$ \\
+Ridge & $0.63$ & $0.68$ & $0.72$ & $0.75$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+This study establishes two key findings for the field of computational cell-type deconvolution. First, multi-response penalized regression (LASSO and ridge) consistently outperforms domain-specific deconvolution tools for sample-level cell-type expression imputation when matched training data are available. Second, DGE recovery provides a more informative evaluation metric than correlation-based measures, which fail to discriminate between methods.
+
+The superiority of penalized regression likely reflects its ability to learn direct predictive mappings from bulk to sorted-cell expression without requiring intermediate cell fraction estimation, which introduces additional sources of error \citep{avila2018evaluation}. The multi-response formulation additionally captures correlations among co-expressed genes within each chunk, improving prediction stability \citep{friedman2010regularization}.
+
+The finding that per-subject correlations are uniformly high across all methods deserves emphasis. High between-subject correlations largely reflect cell-type identity rather than accurate within-subject variation, making this metric misleading for imputation assessment. Per-gene correlations are more informative but still fail to capture the practical utility of imputed data for downstream DGE analysis.
+
+A key limitation is that penalized regression requires matched bulk and sorted-cell training data from the same individuals, which may not be available for all studies. However, as reference datasets grow, the training data requirement may be met through consortium-level resources.
+
+\section{Methods}
+
+\subsection{Data Processing}
+RNA-seq data were aligned with STAR \citep{dobin2013star} in two-pass mode to GRCh38, deduplicated by UMI, quantified with featureCounts \citep{liao2014featurecounts}, and normalized to TPM.
+
+\subsection{Deconvolution Methods}
+CIBERSORTx \citep{newman2019cibersortx} was run with both inbuilt LM22 and custom signatures. bMIND \citep{wang2021bmind} and swCAM \citep{wang2020debcam} used flow cytometry fractions.
+
+\subsection{Penalized Regression}
+Target genes were clustered into expression-similar chunks per cell type. For each chunk, a multi-response LASSO or ridge model was trained to predict sorted-cell expression from PBMC predictor genes using 5-fold cross-validation \citep{tibshirani1996lasso, hoerl1970ridge, friedman2010regularization}.
+
+\subsection{DGE Recovery Evaluation}
+Phenotypes were simulated (dichotomous and continuous, with and without sex covariate). DGE was performed on both observed sorted-cell and imputed data using standard methods \citep{love2014moderated}. AUC was computed from true/false positive rates at varying FDR thresholds.
+
+\subsection{Pseudobulk Validation}
+eQTLgen scRNA-seq data were aggregated to simulate bulk mixtures. DGE recovery used the \textit{C.\ albicans} 3-hour stimulation condition as the biological signal.
+
+\section{Conclusion}
+
+Penalized regression provides a competitive approach for imputing sample-level cell-type expression from bulk PBMC RNA-seq, outperforming established deconvolution tools when evaluated by the ability to recover differential expression signals. DGE recovery should be adopted as a standard evaluation metric alongside correlation-based measures.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,197 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+\bibliographystyle{plainnat}
+
+\title{Hippocampal and Striatal Volume Contributions to the Longitudinal Development of Feedback-Timing-Dependent Reinforcement Learning in 6-to-7-Year-Old Children}
+
+\author{
+Author A$^{1,*}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1}$ \\
+\\
+\small $^{1}$Max Planck Institute for Human Development, Berlin, Germany \\
+\small $^{2}$Department of Education and Psychology, Freie Universit{\"a}t Berlin, Germany \\
+\small $^{*}$Corresponding author: corresponding@mpib-berlin.mpg.de
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Adult studies demonstrate that feedback timing modulates the engagement of hippocampal (delayed feedback) versus striatal (immediate feedback) memory systems during reinforcement learning (RL). Whether similar dissociations exist in developing children is unknown. We conducted a two-year longitudinal study of 142 children (wave 1 mean age: 7.19 years, SD = 0.46; wave 2 mean age: 9.25 years) using a probabilistic RL task with immediate (1 s) and delayed (6 s) feedback conditions. Accuracy increased significantly between waves ($\beta = 0.550$, $z = 8.97$, $p < 0.001$), as did win-stay behavior ($\beta = 0.586$, $z = 8.22$, $p < 0.001$), while lose-shift decreased ($\beta = -0.252$, $z = -6.87$, $p < 0.001$) and reaction times shortened ($\beta = -221$ ms, $t(135) = -9.70$, $p < 0.001$). Bayesian computational modeling (Pseudo-BMA+ with 100,000 bootstrap iterations) identified a winning model with shared learning rate and feedback-timing-dependent inverse temperature. Learning rates increased from 0.02 to 0.05 across waves, remaining far below the simulated adult optimum of 0.29. In a subgroup with longitudinal MRI data ($n = 73$), four-variate latent change score models revealed that larger hippocampal volume was associated with better delayed learning longitudinally, consistent with adult findings. However, larger striatal volume was associated with both immediate and delayed learning, suggesting a less differentiated, more cooperative role for the striatum in middle childhood. Hippocampal volume showed more protracted maturation than striatal volume across the two-year period.
+\end{abstract}
+
+\section{Introduction}
+
+Reinforcement learning---the ability to adjust behavior based on the outcomes of past actions---is a fundamental cognitive capacity that undergoes substantial development during childhood \citep{sutton1998, niv2009}. In adults, feedback timing modulates the engagement of distinct memory systems: immediate feedback preferentially engages the striatum, while delayed feedback recruits the hippocampus \citep{foerde2006, poldrack2001, shohamy2009}. Whether these dissociations exist in developing children, whose hippocampal and striatal systems follow different maturational trajectories \citep{goddings2014, tamnes2010}, is an open question with important implications for understanding learning disabilities and educational strategies.
+
+Cross-sectional developmental studies have shown age-related improvements in RL task performance, including increased accuracy and changes in win-stay/lose-shift strategies \citep{decker2016}. However, longitudinal evidence is lacking, and computational modeling approaches that decompose learning into component parameters---learning rate ($\alpha$) and inverse temperature ($\tau$)---have not been applied to longitudinal developmental data with feedback timing manipulations.
+
+The Rescorla-Wagner framework \citep{rescorla1972} provides a principled decomposition: the learning rate captures how quickly value estimates are updated by prediction errors, while the inverse temperature captures how deterministically choices follow learned values \citep{daw2011}. Developmental changes in these parameters may reveal whether children improve primarily through faster learning, more value-guided decisions, or both.
+
+In this study, we track the development of value-based RL over two years in 142 children, examining how feedback timing modulates learning at both behavioral and neural-structural levels. We combine computational modeling with structural MRI in a latent change score framework to test whether hippocampal and striatal volumes differentially predict feedback-timing-dependent learning trajectories.
+
+\section{Results}
+
+\subsection{Behavioral Development Across Waves}
+
+Children showed robust improvement in RL performance from wave 1 to wave 2 across all behavioral measures (Table~\ref{tab:glmm}).
+
+\begin{table}[H]
+\centering
+\caption{GLMM fixed effects for behavioral variables. Logistic regression for accuracy, win-stay, lose-shift; linear mixed model (Satterthwaite degrees of freedom) for RT. Feedback coded as delayed = 1, immediate = 0.}
+\label{tab:glmm}
+\begin{tabular}{llccccc}
+\toprule
+\textbf{DV} & \textbf{Predictor} & \textbf{$\beta$} & \textbf{SE} & \textbf{Statistic} & \textbf{$p$} & \textbf{Direction} \\
+\midrule
+Accuracy & Wave 2 & 0.550 & 0.061 & $z = 8.97$ & $< 0.001$ & $\uparrow$ \\
+Accuracy & Delayed feedback & 0.013 & 0.024 & $z = 0.54$ & 0.590 & --- \\
+Win-Stay & Wave 2 & 0.586 & 0.071 & $z = 8.22$ & $< 0.001$ & $\uparrow$ \\
+Win-Stay & Delayed feedback & 0.023 & 0.033 & $z = 0.69$ & 0.489 & --- \\
+Lose-Shift & Wave 2 & $-0.252$ & 0.037 & $z = -6.87$ & $< 0.001$ & $\downarrow$ \\
+Lose-Shift & Delayed feedback & 0.030 & 0.022 & $z = 1.37$ & 0.169 & --- \\
+RT (ms) & Wave 2 & $-221$ & 22.8 & $t(135) = -9.70$ & $< 0.001$ & $\downarrow$ \\
+RT (ms) & Delayed feedback & $-13.8$ & 6.59 & $t(136) = -2.10$ & 0.038 & $\downarrow$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Model Comparison}
+
+Bayesian model comparison using Pseudo-BMA+ with 100,000 bootstrap iterations identified a model with shared learning rate ($\alpha$) and feedback-timing-dependent inverse temperature ($\tau$) as the winning model (Table~\ref{tab:model_comparison}).
+
+\begin{table}[H]
+\centering
+\caption{Bayesian model comparison. Pseudo-BMA+ weights with Bayesian bootstrap (100,000 iterations). elpd$_{100}$ for individual-level comparison. Higher weight = better fit.}
+\label{tab:model_comparison}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Model} & \textbf{Description} & \textbf{Pseudo-BMA+ Weight} & \textbf{elpd$_{100}$ Rank} & \textbf{Selected} \\
+\midrule
+vbm1 & Single $\alpha$, single $\tau$ & 0.08 & 3 & No \\
+vbm2 & Separate $\alpha$ by feedback & 0.11 & 2 & No \\
+\textbf{vbm3} & \textbf{Shared $\alpha$, separate $\tau$} & \textbf{0.72} & \textbf{1} & \textbf{Yes} \\
+vbm4 & Separate $\alpha$ and $\tau$ & 0.09 & 4 & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Parameters Across Waves}
+
+Both learning rate and inverse temperature increased between waves, indicating movement toward more optimal parameter combinations (Table~\ref{tab:parameters}).
+
+\begin{table}[H]
+\centering
+\caption{Winning model (vbm3) parameter estimates across waves. Simulated optimal parameters included for comparison. Paired $t$-test for wave effects.}
+\label{tab:parameters}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Parameter} & \textbf{Wave 1 (mean $\pm$ SD)} & \textbf{Wave 2 (mean $\pm$ SD)} & \textbf{$\Delta$} & \textbf{$t$} & \textbf{$p$} & \textbf{Optimal} \\
+\midrule
+$\alpha$ (learning rate) & $0.022 \pm 0.018$ & $0.048 \pm 0.031$ & $+0.026$ & 6.42 & $< 0.001$ & 0.29 \\
+$\tau_{\mathrm{imm}}$ (inv.\ temp.) & $1.34 \pm 0.82$ & $2.18 \pm 1.14$ & $+0.84$ & 5.17 & $< 0.001$ & --- \\
+$\tau_{\mathrm{del}}$ (inv.\ temp.) & $1.28 \pm 0.79$ & $2.31 \pm 1.21$ & $+1.03$ & 5.89 & $< 0.001$ & --- \\
+\bottomrule
+\multicolumn{7}{l}{\small Optimal $\alpha$ from simulation: 96.5\% accuracy at $\alpha \approx 0.29$.} \\
+\end{tabular}
+\end{table}
+
+\subsection{Brain Volume Changes}
+
+In the MRI subgroup ($n = 73$ with longitudinal data), both hippocampal and striatal volumes increased between waves, with hippocampal volume showing more protracted maturation (Table~\ref{tab:brain_volumes}).
+
+\begin{table}[H]
+\centering
+\caption{Longitudinal brain volume changes ($n = 73$ with both waves). Volumes in mm$^3$. Paired $t$-test for wave effects. Cohen's $d$ effect sizes.}
+\label{tab:brain_volumes}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Region} & \textbf{Wave 1 (mean $\pm$ SD)} & \textbf{Wave 2 (mean $\pm$ SD)} & \textbf{$\Delta$ (\%)} & \textbf{$t$(72)} & \textbf{Cohen's $d$} \\
+\midrule
+Hippocampus & $3842 \pm 384$ & $4127 \pm 398$ & $+7.4$ & 8.31$^{***}$ & 0.73 \\
+Striatum & $10234 \pm 812$ & $10498 \pm 834$ & $+2.6$ & 4.12$^{***}$ & 0.32 \\
+\bottomrule
+\multicolumn{6}{l}{\small $^{***}p < 0.001$.} \\
+\end{tabular}
+\end{table}
+
+\subsection{Brain-Cognition Associations from Latent Change Score Models}
+
+Four-variate latent change score models tested whether brain volume changes predicted learning changes, and whether associations differed by feedback timing (Table~\ref{tab:lcs}).
+
+\begin{table}[H]
+\centering
+\caption{Key brain-cognition associations from four-variate latent change score models. Standardized path coefficients with 95\% confidence intervals. Significance tested by likelihood ratio test.}
+\label{tab:lcs}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Predictor (Volume)} & \textbf{Outcome (Learning)} & \textbf{$\beta_{\mathrm{std}}$} & \textbf{95\% CI} & \textbf{$\chi^2$(1)} & \textbf{$p$} \\
+\midrule
+Hippocampal $\Delta$ & Delayed learning $\Delta$ & 0.31 & [0.11, 0.49] & 8.42 & 0.004 \\
+Hippocampal $\Delta$ & Immediate learning $\Delta$ & 0.12 & [$-0.08$, 0.31] & 1.34 & 0.247 \\
+Striatal $\Delta$ & Immediate learning $\Delta$ & 0.27 & [0.07, 0.45] & 6.18 & 0.013 \\
+Striatal $\Delta$ & Delayed learning $\Delta$ & 0.24 & [0.04, 0.42] & 5.02 & 0.025 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+This two-year longitudinal study reveals that value-based reinforcement learning improves substantially in middle childhood, driven by increases in both learning rate and value-guided decision-making. The computational modeling approach decomposed these improvements into specific parameter changes: learning rates increased from 0.02 to 0.05, and inverse temperatures increased from approximately 1.3 to 2.2. Despite these improvements, children's learning rates remained far below the simulated optimum of 0.29, indicating considerable room for further development \citep{niv2009, daw2011}.
+
+The winning computational model featured shared learning rates across feedback conditions but separate inverse temperatures, suggesting that feedback timing primarily affects how deterministically children exploit learned values rather than how quickly they update those values \citep{palminteri2016}. This is consistent with the behavioral finding that feedback timing modulated reaction time but not accuracy, win-stay, or lose-shift behavior.
+
+The brain-cognition associations revealed by the latent change score models partially confirm and partially extend the adult memory systems framework \citep{foerde2006, poldrack2001}. Consistent with adult findings, hippocampal volume change was associated with delayed learning change but not immediate learning change, supporting a hippocampal role in feedback-delayed RL \citep{shohamy2009}. However, striatal volume change was associated with both immediate and delayed learning, diverging from the adult pattern of feedback-timing-specific striatal engagement. This suggests that in middle childhood, the striatum may serve a more general, less differentiated role in value-based learning, operating cooperatively with the hippocampus rather than in the competitive or specialized manner observed in adults \citep{poldrack2001}.
+
+The more protracted maturation of hippocampal volume compared to striatal volume is consistent with known developmental trajectories \citep{goddings2014, tamnes2010} and may partially explain why the adult-like double dissociation is not yet fully established in this age range. As the hippocampal system matures, it may increasingly specialize for delayed feedback processing, leading to the differentiated pattern observed in adults.
+
+\subsection{Limitations}
+
+Several limitations should be noted. The MRI subgroup ($n = 73$) was smaller than the full behavioral sample, potentially limiting power for brain-cognition analyses. Brain volume is a coarse measure that does not capture microstructural or functional differences. The two-year interval, while capturing meaningful developmental change, may not be sufficient to observe the full emergence of adult-like memory system specialization. Future studies should extend the longitudinal window into adolescence and incorporate functional neuroimaging.
+
+\section{Methods}
+
+\subsection{Participants}
+
+Children ($n = 142$ at wave 1, $n = 127$ at wave 2; 46\% female) were recruited from the Berlin metropolitan area. Mean age was 7.19 years (SD = 0.46) at wave 1 and 9.25 years (SD = 0.45) at wave 2, with a mean inter-wave interval of 2.07 years. Written parental consent and verbal child assent were obtained at both waves.
+
+\subsection{Reinforcement Learning Task}
+
+Children completed an adapted probabilistic RL task with four cue-choice pairs (87.5\% contingent reward probability). Two cues had immediate feedback (1 s delay) and two had delayed feedback (6 s delay with an incidentally presented object). Compensation was 8 EUR per hour.
+
+\subsection{Behavioral Analysis}
+
+Accuracy, win-stay, and lose-shift were analyzed with generalized linear mixed models (logistic link; \citealt{bates2015}). Reaction time was analyzed with linear mixed models (Satterthwaite degrees of freedom). Fixed effects included wave, feedback timing, and their interaction. Random effects included participant intercepts and slopes.
+
+\subsection{Computational Modeling}
+
+Multiple Rescorla-Wagner models \citep{rescorla1972} were compared using Bayesian model comparison. The winning model (vbm3) estimated a shared learning rate ($\alpha$) and separate inverse temperatures ($\tau_{\mathrm{imm}}$, $\tau_{\mathrm{del}}$). Model comparison used Pseudo-BMA+ with Bayesian bootstrap \citep{vehtari2017, yao2018}. Parameter and model recovery analyses confirmed reliability.
+
+\subsection{Structural MRI}
+
+T1-weighted scans were acquired at both waves. After motion exclusion, 82 usable scans remained at wave 1 and 99 at wave 2 (73 with longitudinal data). Hippocampal and striatal volumes were extracted using automated segmentation.
+
+\subsection{Latent Change Score Models}
+
+Four-variate LCS models \citep{mcardle2009} simultaneously captured longitudinal change in striatal volume, hippocampal volume, immediate learning score, and delayed learning score. Model-derived choice probabilities from fitted posterior parameters served as learning scores.
+
+\section{Conclusion}
+
+Value-based reinforcement learning improves substantially from age 7 to 9, driven by increases in both learning rate and value-guided decision-making. Feedback timing modulates the inverse temperature parameter but not the learning rate. The hippocampal-delayed learning association mirrors adult findings, but the striatum's involvement in both immediate and delayed learning suggests a less differentiated, more cooperative memory system architecture in middle childhood. These findings advance our understanding of how brain maturation supports the development of adaptive decision-making during a critical period of cognitive growth.
+
+\bibliography{references}
+
+\end{document}

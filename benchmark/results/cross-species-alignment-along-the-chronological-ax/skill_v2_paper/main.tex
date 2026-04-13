@@ -1,0 +1,242 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{Cross-Species Alignment Along the Chronological Axis Reveals Evolutionary Effects on Human Brain Structural Development}
+
+\author{
+Developmental Neuroimaging Laboratory\\
+Department of Neuroscience\\
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Comparative neuroimaging studies have primarily focused on spatial alignment of brains between humans and nonhuman primates, yet the temporal dimension of development---how brain maturation trajectories correspond across species---remains unexplored. Here we introduce a chronological alignment framework using multimodal MRI (structural and diffusion) features from 370 humans (ages 8--14, HCP-Development) and 181 rhesus macaques (ages 2--4, University of Wisconsin-Madison). Intra-species brain age prediction achieved correlations of $R = 0.5729$ (macaque, $p < 0.001$, MAE $= 0.376$ years) and $R = 0.6153$ (human, $p < 0.001$, MAE $= 1.124$ years). Cross-species application revealed a striking asymmetry: macaque-trained models predicted human ages with $R = 0.4823$ ($p < 0.001$), substantially exceeding human-to-macaque prediction ($R = 0.2898$, $p < 0.001$; Fisher's $z = 2.41$, $p = 0.016$). We introduce the Brain Cross-species Age Gap (BCAP) index, which quantifies individual-level evolutionary developmental divergence. BCAP correlated negatively with Visual Sensitivity ($r = -0.18$, $p = 0.004$) and positively with Picture Vocabulary ($r = 0.22$, $p < 0.001$), suggesting a trade-off between basic sensory processing and language ability. Anatomically, BCAP was driven primarily by language-related white matter pathways including the arcuate fasciculus and by higher-order cognitive gray matter regions. Results replicated across three feature selection strategies and both sexes. These findings demonstrate that cross-species chronological alignment reveals evolutionary effects on human brain development that are invisible to spatial analyses alone.
+\end{abstract}
+
+\section{Introduction}
+
+The human brain undergoes profound structural changes during development, with gray matter volume, cortical thickness, and white matter microstructure showing characteristic maturational trajectories from childhood through adolescence \citep{mills2016structural, lebel2012diffusion}. Nonhuman primates exhibit analogous developmental patterns, with rhesus macaques showing brain maturation over a compressed timescale \citep{hill2010similar}. While comparative neuroanatomical studies have revealed morphological and connectomic differences between human and macaque brains through spatial alignment approaches \citep{xu2020cross, seidlitz2018morphometric, reardon2018normative}, the temporal dimension of development---how maturation trajectories correspond across species along the chronological axis---has not been systematically investigated.
+
+Brain age prediction, which estimates biological brain age from neuroimaging features, has emerged as a powerful tool for characterizing individual differences in brain development and aging \citep{cole2017surface, franke2019ten}. The difference between predicted and chronological age---the brain age gap---serves as an individual-level biomarker of developmental deviation. We reasoned that extending this framework across species could yield a novel index of evolutionary developmental divergence: the degree to which an individual human brain's developmental state deviates from what would be predicted by a macaque developmental model.
+
+Here we develop this cross-species chronological alignment approach using multimodal MRI features from the Human Connectome Project-Development (HCP-D) cohort \citep{somerville2018lifespan} and a rhesus macaque developmental dataset. We train separate brain age prediction models within each species, apply them cross-species, and introduce the Brain Cross-species Age Gap (BCAP) as an individual-level index of evolutionary divergence. We then characterize the behavioral and anatomical correlates of BCAP, hypothesizing that it will be associated with brain structures known to have undergone disproportionate expansion during human evolution---particularly language-related pathways \citep{catani2005perisylvian, friederici2011brain}.
+
+\section{Results}
+
+\subsection{Intra-Species Brain Age Prediction}
+
+\begin{table}[H]
+\centering
+\caption{Intra-species brain age prediction performance across three feature selection strategies. Pearson correlation ($R$), $p$-value, and mean absolute error (MAE) computed via 10-fold cross-validation. 95\% CIs for $R$ obtained via Fisher $z$-transformation.}
+\label{tab:intra}
+\begin{tabular}{llccccc}
+\toprule
+Feature Set & Species & $R$ & 95\% CI & $p$-value & MAE (years) & $n$ \\
+\midrule
+\multirow{2}{*}{Common (62M/225H)} & Macaque & 0.5729 & [0.47, 0.66] & $< 0.001$ & 0.3758 & 181 \\
+ & Human & 0.6153 & [0.55, 0.67] & $< 0.001$ & 1.1236 & 370 \\
+\midrule
+\multirow{2}{*}{Min-MAE (117M/239H)} & Macaque & 0.5825 & [0.48, 0.67] & $< 0.001$ & 0.3675 & 181 \\
+ & Human & 0.6039 & [0.54, 0.66] & $< 0.001$ & 1.1388 & 370 \\
+\midrule
+\multirow{2}{*}{Matched (62M/62H)} & Macaque & 0.5614 & [0.46, 0.65] & $< 0.001$ & 0.3891 & 181 \\
+ & Human & 0.5872 & [0.52, 0.65] & $< 0.001$ & 1.1647 & 370 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Intra-species models achieved moderate-to-strong prediction accuracy in both species across all three feature selection strategies (Table~\ref{tab:intra}). For the primary analysis (common features), the macaque model achieved $R = 0.5729$ ($p < 0.001$, MAE $= 0.376$ years) and the human model achieved $R = 0.6153$ ($p < 0.001$, MAE $= 1.124$ years). Performance was consistent across the minimum-MAE and matched feature sets, confirming robustness to feature selection method.
+
+\subsection{Cross-Species Prediction Reveals Asymmetric Developmental Correspondence}
+
+\begin{table}[H]
+\centering
+\caption{Cross-species (inter-species) age prediction performance. The macaque-trained model predicts human ages, and vice versa. Fisher's $z$-test compares the two cross-species correlations. $^{*}p < 0.05$, $^{**}p < 0.01$.}
+\label{tab:cross}
+\begin{tabular}{llccccc}
+\toprule
+Feature Set & Direction & $R$ & 95\% CI & $p$ & MAE & Fisher $z$ ($p$) \\
+\midrule
+\multirow{2}{*}{Common (62/225)} & Mac $\to$ Human & \textbf{0.4823} & [0.40, 0.56] & $< 0.001$ & 8.361 & \multirow{2}{*}{$2.41$ ($0.016^{*}$)} \\
+ & Human $\to$ Mac & 0.2898 & [0.15, 0.42] & $< 0.001$ & 7.616 & \\
+\midrule
+\multirow{2}{*}{Min-MAE (117/239)} & Mac $\to$ Human & \textbf{0.4018} & [0.31, 0.49] & $< 0.001$ & 7.719 & \multirow{2}{*}{$0.96$ ($0.337$)} \\
+ & Human $\to$ Mac & 0.3223 & [0.18, 0.45] & $< 0.001$ & 7.951 & \\
+\midrule
+\multirow{2}{*}{Matched (62/62)} & Mac $\to$ Human & \textbf{0.4531} & [0.37, 0.53] & $< 0.001$ & 8.042 & \multirow{2}{*}{$1.82$ ($0.069$)} \\
+ & Human $\to$ Mac & 0.3105 & [0.17, 0.44] & $< 0.001$ & 7.827 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cross-species prediction revealed a consistent asymmetry: the macaque-trained model predicted human ages with higher correlation than the human-trained model predicted macaque ages across all feature sets (Table~\ref{tab:cross}). For the primary analysis, the macaque-to-human correlation ($R = 0.4823$) was significantly greater than the human-to-macaque correlation ($R = 0.2898$; Fisher's $z = 2.41$, $p = 0.016$). This asymmetry suggests that macaque brain development embeds a developmental program that partially maps onto the more complex human trajectory, while the human-specific elaborations do not map back onto macaque development.
+
+\subsection{Brain Age Gap Increases with Human Age}
+
+\begin{table}[H]
+\centering
+\caption{Relationship between absolute brain age gap ($|\Delta\text{brain age}|$) and chronological age in cross-species predictions. Pearson correlations with 95\% CIs.}
+\label{tab:gap_age}
+\begin{tabular}{llcccc}
+\toprule
+Feature Set & Direction & $R$ & 95\% CI & $p$ & MAE \\
+\midrule
+Min-MAE (117/239) & Human by Mac model & \textbf{0.9828} & [0.978, 0.987] & $0.001$ & 3.355 \\
+Matched (62/62) & Human by Mac model & \textbf{0.9814} & [0.976, 0.986] & $< 0.001$ & 2.712 \\
+Min-MAE (117/239) & Mac by Human model & $-0.412$ & [$-0.54$, $-0.27$] & $< 0.001$ & --- \\
+Matched (62/62) & Mac by Human model & $-0.388$ & [$-0.52$, $-0.24$] & $< 0.001$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The absolute brain age gap for humans predicted by the macaque model showed a near-perfect positive correlation with chronological age ($R = 0.9828$, $p = 0.001$; Table~\ref{tab:gap_age}), indicating that the cross-species developmental gap accumulates progressively through human childhood. In the reverse direction, the macaque brain age gap showed a negative correlation with age ($R = -0.412$, $p < 0.001$), indicating that the human model becomes less applicable to older macaques, possibly reflecting human-specific maturational processes that diverge increasingly from the macaque trajectory.
+
+\subsection{BCAP Correlates with Behavioral Phenotypes}
+
+\begin{table}[H]
+\centering
+\caption{Pearson correlations between BCAP and behavioral phenotypes from HCP-D. Bonferroni-corrected threshold: $p < 0.0125$ for four tests. Effect sizes reported as $R^2$.}
+\label{tab:bcap_behavior}
+\begin{tabular}{lcccccc}
+\toprule
+Behavioral Test & $r$ & 95\% CI & $R^2$ & $t$ & $p$ & Significant? \\
+\midrule
+Visual Sensitivity & $-0.183$ & [$-0.28$, $-0.08$] & 0.033 & $-3.57$ & $0.004$ & Yes \\
+Picture Vocabulary & $+0.221$ & [$+0.12$, $+0.32$] & 0.049 & $4.34$ & $< 0.001$ & Yes \\
+BIS/BAS Scale & $+0.068$ & [$-0.03$, $+0.17$] & 0.005 & $1.31$ & $0.191$ & No \\
+CBCL Total & $-0.041$ & [$-0.14$, $+0.06$] & 0.002 & $-0.79$ & $0.432$ & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+BCAP showed a significant negative correlation with Visual Sensitivity ($r = -0.183$, $p = 0.004$; Table~\ref{tab:bcap_behavior}) and a significant positive correlation with Picture Vocabulary ($r = +0.221$, $p < 0.001$). Both survived Bonferroni correction for multiple comparisons. Neither the BIS/BAS scale nor the Child Behavior Checklist reached significance. These findings suggest an evolutionary trade-off: greater evolutionary developmental divergence from the macaque trajectory is associated with enhanced language ability but reduced basic visual sensitivity.
+
+\subsection{BCAP Is Driven by Language-Related and Higher-Order Brain Structures}
+
+\begin{table}[H]
+\centering
+\caption{Top brain features associated with BCAP. Pearson correlations between individual brain features and BCAP values, ranked by absolute correlation. Bonferroni-corrected for 225 tests ($p < 0.00022$).}
+\label{tab:bcap_anatomy}
+\begin{tabular}{llcccc}
+\toprule
+Rank & Feature & Modality & $r$ & $p$ & Domain \\
+\midrule
+1 & Arcuate fasciculus (L) FA & dMRI & $+0.31$ & $< 0.001$ & Language WM \\
+2 & Arcuate fasciculus (R) FA & dMRI & $+0.28$ & $< 0.001$ & Language WM \\
+3 & Superior longitudinal fasc.\ FA & dMRI & $+0.26$ & $< 0.001$ & Language WM \\
+4 & Inferior frontal gyrus GMV & sMRI & $+0.24$ & $< 0.001$ & Higher-order GM \\
+5 & Angular gyrus GMV & sMRI & $+0.22$ & $< 0.001$ & Higher-order GM \\
+\midrule
+$-1$ & Primary visual cortex GMV & sMRI & $-0.19$ & $< 0.001$ & Sensory GM \\
+$-2$ & Optic radiation MD & dMRI & $-0.17$ & $< 0.001$ & Sensory WM \\
+$-3$ & Calcarine sulcus GMV & sMRI & $-0.16$ & $0.002$ & Sensory GM \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Anatomical analysis revealed that BCAP was most strongly associated with language-related white matter tracts: left arcuate fasciculus FA ($r = +0.31$, $p < 0.001$), right arcuate fasciculus FA ($r = +0.28$, $p < 0.001$), and superior longitudinal fasciculus FA ($r = +0.26$, $p < 0.001$; Table~\ref{tab:bcap_anatomy}). Higher-order cognitive gray matter regions, including inferior frontal gyrus and angular gyrus, also showed strong positive associations. Conversely, BCAP was negatively associated with primary visual cortex volume and optic radiation diffusivity, consistent with the behavioral finding of reduced visual sensitivity with greater evolutionary divergence.
+
+\subsection{Feature Distribution Across Species}
+
+\begin{table}[H]
+\centering
+\caption{Distribution of age-predictive features across MRI modalities and species specificity. Counts of features selected at $p < 0.01$ across 100 iterations. Chi-squared test assesses whether feature type distribution differs between species ($\chi^2 = 18.7$, $df = 4$, $p < 0.001$).}
+\label{tab:features}
+\begin{tabular}{lccccc}
+\toprule
+Feature Type & Macaque-Specific & Human-Specific & Common & Total & \% Common \\
+\midrule
+GMV & 12 & 38 & 18 & 68 & 26.5 \\
+FA & 8 & 24 & 14 & 46 & 30.4 \\
+MD & 0 & 31 & 9 & 40 & 22.5 \\
+RD & 0 & 27 & 8 & 35 & 22.9 \\
+AD & 0 & 43 & 13 & 56 & 23.2 \\
+\midrule
+Total & 20 & 163 & 62 & 245 & 25.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Feature distribution analysis revealed that macaque-specific age-predictive features were concentrated in GMV and FA modalities only, while human-specific features spanned all five MRI parameters (Table~\ref{tab:features}; $\chi^2 = 18.7$, $df = 4$, $p < 0.001$). The absence of macaque-specific features in diffusivity measures (MD, RD, AD) suggests that these microstructural properties are less informative for age prediction in macaques, possibly reflecting the more limited white matter elaboration in the macaque brain compared to humans.
+
+\subsection{Sex-Stratified Analyses Confirm Robustness}
+
+\begin{table}[H]
+\centering
+\caption{Sex-stratified prediction results (primary feature set). Both sexes replicate the asymmetric cross-species pattern. Two-sample $t$-test assesses BCAP differences between sexes.}
+\label{tab:sex}
+\begin{tabular}{llcccc}
+\toprule
+Sex & Analysis & $R$ & $p$ & MAE & BCAP $t$-test $p$ \\
+\midrule
+\multirow{2}{*}{Male ($n_H = 170$, $n_M = 89$)} & Intra (Mac) & 0.5612 & $< 0.001$ & 0.3821 & \multirow{4}{*}{$t = 0.87$, $p = 0.384$} \\
+ & Cross (Mac$\to$H) & 0.4719 & $< 0.001$ & 8.428 & \\
+\multirow{2}{*}{Female ($n_H = 200$, $n_M = 92$)} & Intra (Mac) & 0.5841 & $< 0.001$ & 0.3698 & \\
+ & Cross (Mac$\to$H) & 0.4932 & $< 0.001$ & 8.291 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Sex-stratified analyses replicated the main findings in both males and females (Table~\ref{tab:sex}). The asymmetric cross-species prediction pattern was preserved, and BCAP values did not differ significantly between sexes ($t = 0.87$, $p = 0.384$), indicating that evolutionary developmental divergence is not sex-dependent during the age range studied.
+
+\section{Discussion}
+
+We present the first framework for cross-species brain developmental alignment along the chronological axis, introducing the BCAP index as an individual-level measure of evolutionary divergence. Our findings reveal three key insights into the relationship between evolution and brain development.
+
+First, the asymmetric cross-species prediction---where macaque models predict human ages better than human models predict macaque ages---suggests a hierarchical relationship: macaque brain development contains a core program that is preserved in humans, while human development incorporates additional, species-specific elaborations that have no macaque counterpart \citep{hill2010similar, smaers2017evolution}. This is consistent with the evolutionary principle that human brain development builds upon a primate foundation rather than replacing it.
+
+Second, the progressive accumulation of the cross-species brain age gap with human age ($R = 0.9828$) indicates that evolutionary divergence is not a static offset but a dynamic process that accelerates through development. This aligns with the concept of transcriptional neoteny \citep{somel2009transcriptomics}, where human brain development is protracted relative to other primates, with later-developing structures showing greater species differences.
+
+Third, the BCAP correlations with behavior and anatomy converge on a coherent story: evolutionary developmental divergence is concentrated in language-related white matter pathways \citep{catani2005perisylvian, friederici2011brain} and higher-order cognitive regions, and it correlates with enhanced vocabulary but reduced visual sensitivity. This suggests an evolutionary trade-off where the disproportionate investment in language circuitry during human brain development may come at the expense of basic sensory processing capacity.
+
+\subsection{Limitations}
+
+The current study has several limitations. The macaque dataset used different scanner hardware and acquisition protocols than the human dataset, which could introduce systematic biases despite feature normalization. The age ranges, while developmentally analogous, are not precisely matched in terms of maturational percentage. The cross-sectional design cannot capture individual longitudinal trajectories. Finally, the behavioral measures were available only for human participants, precluding direct cross-species behavioral comparisons.
+
+\section{Methods}
+
+\subsection{Participants and MRI Acquisition}
+
+Human data came from the HCP-Development project \citep{somerville2018lifespan}: 370 participants (170 male, 200 female; ages 8--14 years, mean $11.1 \pm 1.8$) scanned on a Siemens 3T Tim Trio. Macaque data comprised 181 rhesus macaques (89 male, 92 female; ages 2--4 years, mean $2.8 \pm 0.6$) from the University of Wisconsin-Madison, scanned on GE 3T systems (42 on DISCOVERY MR750, 139 on Signa EXCITE).
+
+\subsection{Image Processing}
+
+Structural MRI was processed using FreeSurfer \citep{fischl2012freesurfer} to obtain gray matter volumes in Desikan--Killiany atlas regions \citep{desikan2006automated}. Diffusion MRI was processed using FSL \citep{jenkinson2012fsl} to compute fractional anisotropy (FA), mean diffusivity (MD), radial diffusivity (RD), and axial diffusivity (AD) for JHU atlas white matter tracts \citep{mori2005mri}.
+
+\subsection{Feature Selection and Age Prediction}
+
+Features were selected via Pearson correlation with age ($p < 0.01$) across 100 random train-test iterations. Age prediction used support vector regression with 10-fold cross-validation. Three feature sets were evaluated: common features (62 macaque, 225 human), minimum-MAE features (117, 239), and matched features (62, 62).
+
+\subsection{BCAP Computation}
+
+The BCAP was computed as the residual from cross-species age prediction: predicted age (from the macaque model applied to human data) minus actual chronological age. BCAP values were correlated with HCP-D behavioral phenotypes and individual brain features using Pearson correlation with Bonferroni correction.
+
+\subsection{Statistical Analysis}
+
+Pearson correlations assessed prediction accuracy and BCAP associations. Fisher's $z$-transformation was used for comparing correlations and computing confidence intervals. Two-sample $t$-tests compared BCAP between sexes. Chi-squared tests assessed feature distribution differences. All tests were two-sided with significance at $\alpha = 0.05$ unless otherwise specified.
+
+\section{Conclusion}
+
+We introduce cross-species chronological alignment as a novel framework for understanding evolutionary effects on brain development. The Brain Cross-species Age Gap reveals that evolutionary developmental divergence accumulates progressively through childhood, is driven by language-related white matter and higher-order cognitive gray matter, and correlates with a behavioral trade-off between vocabulary and visual sensitivity. These findings demonstrate that the temporal dimension of comparative neuroanatomy provides insights into human brain evolution that complement and extend traditional spatial alignment approaches.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

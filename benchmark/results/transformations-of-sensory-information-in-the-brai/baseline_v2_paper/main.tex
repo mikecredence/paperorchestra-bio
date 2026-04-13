@@ -1,0 +1,184 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{setspace}
+\usepackage{lineno}
+
+\doublespacing
+
+\title{Sensory Coding Transitions from Information Preservation to Discrimination Optimization Along the Visual Dorsal Stream}
+
+\author{Author A$^{1,*}$, Author B$^{2}$, Author C$^{1,2}$ \\
+\\
+\small $^{1}$Department of Psychology, University of Pennsylvania, Philadelphia, PA, USA \\
+\small $^{2}$Department of Neuroscience, University of Pennsylvania, Philadelphia, PA, USA \\
+\small $^{*}$Corresponding author: author.a@upenn.edu}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Efficient coding theory predicts that sensory neurons allocate resources to match the statistics of natural stimuli, but the specific optimization objective may change along the processing hierarchy. We tested whether neural populations in the macaque dorsal visual stream shift from optimizing for information preservation (infomax coding) to optimizing for perceptual discrimination. By combining 1,056 binocular disparity tuning curves from macaque V1, V2, and MT with natural disparity statistics derived from eye-tracked humans performing everyday tasks, we quantified the relationship between population Fisher information (FI) and stimulus probability using the power law FI $\sim p^{\alpha}$. Theory predicts $\alpha = 2$ for infomax coding (minimizing L0 reconstruction error) and $\alpha = 2/3$ for discrimination-optimal coding (minimizing L2 error). We found that V1 and V2 populations exhibited $\alpha \approx 2$, consistent with information preservation, while MT populations exhibited $\alpha \approx 2/3$, consistent with discrimination optimization. A systematic parameter-swapping analysis of six-parameter Gabor tuning curve fits revealed that the shift in preferred disparity---MT neurons preferring larger disparities than V1 neurons---is the primary driver of this coding transition. These findings provide empirical support for a normative account of hierarchical sensory processing in which the coding objective transforms from faithfully representing stimulus statistics to supporting behavioral discrimination.
+\end{abstract}
+
+\section{Introduction}
+
+A fundamental question in sensory neuroscience is how neural populations allocate their limited coding resources across the range of stimuli they encounter. Efficient coding theory, originating from information-theoretic principles, proposes that sensory systems are adapted to the statistical structure of natural stimuli \citep{barlow1961possible, simoncelli2001natural}. In its most well-known form, the efficient coding hypothesis predicts that neural populations maximize information about natural stimuli---so-called infomax coding---by matching their tuning density to stimulus probability \citep{laughlin1981simple, ganguli2012efficient}.
+
+Recent theoretical work has formalized the relationship between population Fisher information (FI) and stimulus probability $p$ as a power law: FI $\sim p^{\alpha}$, where the exponent $\alpha$ depends on the coding objective \citep{ganguli2012efficient, wei2015bayesian}. For infomax coding, which minimizes the L0 norm of reconstruction errors (treating all errors as equally costly regardless of magnitude), the predicted exponent is $\alpha = 2$. For discrimination-optimal coding, which minimizes the L2 norm (mean squared error, penalizing large errors disproportionately), the prediction is $\alpha = 2/3$. These represent fundamentally different optimization goals: infomax coding preserves maximum information about stimulus identity, while discrimination-optimal coding prioritizes the ability to distinguish between nearby stimuli, especially common ones.
+
+Empirical evidence from early sensory areas has largely supported the infomax prediction, with FI approximately proportional to $p^{2}$ in primate visual cortex for orientation coding \citep{ganguli2012efficient}. However, whether and how this coding objective changes along the processing hierarchy remains an open question. Later visual areas such as MT are known to exhibit broader tuning and different preferred stimulus distributions compared to V1 \citep{deangelis1998cortical, cumming2001organization}, but a normative explanation for these differences in terms of coding objectives has been lacking.
+
+Binocular disparity provides an ideal stimulus dimension for investigating this question because natural disparity statistics are well characterized, disparity tuning has been extensively recorded in V1, V2, and MT, and the progression from early to late processing stages is relatively well understood \citep{cumming2001organization, deangelis1998cortical}. In this study, we combined a large database of 1,056 disparity tuning curves from macaque V1, V2, and MT with natural binocular disparity statistics from eye-tracked humans to test whether the coding objective shifts from infomax ($\alpha = 2$) to discrimination-optimal ($\alpha = 2/3$) along the dorsal visual stream.
+
+\section{Methods}
+
+\subsection{Natural Disparity Statistics}
+
+Natural binocular disparity distributions were computed from a previously collected dataset of eye-tracked human observers ($n = 3$) performing food preparation and navigation tasks \citep{sprague2015stereopsis}. Horizontal binocular disparities were computed within 10 degrees of fixation, yielding probability distributions that were approximately zero-mean, symmetric, and highly kurtotic---small disparities being much more probable than large disparities (Table~\ref{tab:disparity}). The two tasks differed slightly in their tails: food preparation involved more large disparities (close objects) than navigation (distant objects), so analyses were conducted separately for each task to assess generalizability.
+
+\begin{table}[ht]
+\centering
+\caption{Natural disparity distribution properties.}
+\label{tab:disparity}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Subjects & 3 adults \\
+Tasks & Food preparation, Navigation \\
+Field analyzed & Central 10$^{\circ}$ radius \\
+Distribution mean & $\approx$ 0 \\
+Symmetry & Approximately symmetric \\
+Kurtosis & Highly kurtotic \\
+Small vs.\ large disparities & Small much more probable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+To account for hemifield biases in neural recordings, the natural disparity distributions were resampled according to kernel-smoothed 2D probability densities of receptive field center locations for each brain area.
+
+\subsection{Neural Datasets}
+
+Disparity tuning curves were compiled from multiple published studies using isolated single units in awake fixating macaque monkeys (Table~\ref{tab:neurons}). All tuning curves measured responses as a function of horizontal binocular disparity at a fixed spatial frequency or preferred orientation. The combined dataset comprised 1,056 neurons: approximately 400 from V1, 300 from V2, and 350 from MT.
+
+\begin{table}[ht]
+\centering
+\caption{Neural dataset composition by brain area.}
+\label{tab:neurons}
+\begin{tabular}{lll}
+\toprule
+Brain Area & Approximate Count & Source \\
+\midrule
+V1 & $\sim$400 & Multiple studies, awake fixating macaque \\
+V2 & $\sim$300 & Multiple studies, awake fixating macaque \\
+MT & $\sim$350 & Multiple studies, awake fixating macaque \\
+Total & 1,056 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tuning Curve Fitting}
+
+Each tuning curve was fit with a modified six-parameter Gabor function:
+\begin{equation}
+r(d) = b + A \exp\left(-\frac{(d - \mu)^{2}}{2\sigma^{2}}\right) \cos(2\pi f (d - \mu) + \phi)
+\end{equation}
+where $d$ is binocular disparity, $\mu$ is the Gaussian envelope center (preferred disparity), $\sigma$ is the Gaussian width (tuning bandwidth), $A$ is the amplitude, $f$ is the cosine frequency, $\phi$ is the cosine phase, and $b$ is the baseline firing rate.
+
+\subsection{Population Fisher Information}
+
+For each brain area, population Fisher information as a function of disparity was computed by summing individual neuron Fisher information contributions, assuming Poisson-like noise:
+\begin{equation}
+\text{FI}_{\text{pop}}(d) = \sum_{i=1}^{N} \frac{[r_i'(d)]^{2}}{r_i(d)}
+\end{equation}
+where $r_i(d)$ and $r_i'(d)$ are the tuning curve and its derivative for neuron $i$. Bootstrapping (500 resamples) was used to estimate variability.
+
+\subsection{Power Law Fitting}
+
+The relationship between population FI and the natural disparity probability distribution was quantified by fitting the power law FI $\sim p^{\alpha}$ in log-log space. The exponent $\alpha$ was estimated for each bootstrap sample, yielding distributions of $\alpha$ for each brain area. The theoretical predictions of $\alpha = 2$ (infomax) and $\alpha = 2/3$ (discrimination-optimal) served as benchmarks.
+
+\subsection{Parameter Swapping Analysis}
+
+To identify which tuning curve parameters drive the FI transition from V1 to MT, we performed a systematic parameter swapping analysis. For each of the six Gabor parameters in turn, V1 neuron values were replaced with randomly drawn MT values (500 resampled populations), while all other parameters retained their original V1 values. The resulting population FI was recomputed and compared to the original V1 and MT patterns.
+
+\section{Results}
+
+\subsection{Population Fisher Information Differs Across Brain Areas}
+
+Population FI computed from V1 tuning curves was sharply concentrated near zero disparity, closely tracking the natural disparity probability distribution raised to the power of approximately 2. V2 showed a nearly identical pattern, with FI similarly concentrated and well-described by $p^{2}$. In contrast, MT population FI was more broadly distributed across disparities, with relatively greater coding resources allocated to larger disparities than predicted by the infomax model.
+
+\subsection{Power Law Exponent Shifts from $\alpha \approx 2$ in V1/V2 to $\alpha \approx 2/3$ in MT}
+
+Bootstrapped distributions of the power law exponent $\alpha$ revealed a clear transition along the dorsal stream (Table~\ref{tab:alpha}). For the food preparation task, V1 and V2 exponents were narrowly distributed around $\alpha \approx 2$, with highly overlapping distributions that were not statistically distinguishable. The MT exponent distribution was centered near $\alpha \approx 0.67$, significantly different from both V1 and V2. The same pattern was observed for the navigation task, confirming generalizability across different natural disparity statistics.
+
+\begin{table}[ht]
+\centering
+\caption{Power law exponent $\alpha$ by brain area and task.}
+\label{tab:alpha}
+\begin{tabular}{llll}
+\toprule
+Task & V1 ($\alpha$) & V2 ($\alpha$) & MT ($\alpha$) \\
+\midrule
+Food preparation & $\sim$2 & $\sim$2 & $\sim$0.67 \\
+Navigation & $\sim$2 & $\sim$2 & $\sim$0.67 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Statistical comparisons confirmed that V1 vs.\ V2 exponent distributions were highly overlapping (not significantly different), whereas both V1 vs.\ MT and V2 vs.\ MT comparisons showed significant separation, demonstrating that the coding transition occurs between V2 and MT rather than between V1 and V2.
+
+\subsection{Tuning Curve Parameter Distributions Differ Across Areas}
+
+Examination of the six Gabor parameters revealed systematic differences across brain areas. Most strikingly, the preferred disparity parameter ($\mu$) showed a clear shift from concentrated near zero in V1 and V2 to distributed over larger magnitudes in MT. Tuning width ($\sigma$) was broader in MT than V1/V2, and cosine frequency ($f$) was lower in MT. The remaining parameters (phase, amplitude, baseline) showed variable distributions without clear hierarchical trends.
+
+\subsection{Preferred Disparity Drives the Coding Transition}
+
+The parameter swapping analysis identified the preferred disparity ($\mu$) as the key driver of the V1-to-MT FI transition. When V1 preferred disparities were replaced with MT values---shifting the V1 population toward representing larger disparities---the resulting population FI closely resembled the MT pattern, with a substantially reduced power law exponent approaching $\alpha = 2/3$. Replacing tuning width ($\sigma$) had a modest additional effect, while swapping frequency, phase, amplitude, or baseline parameters produced minimal changes to the V1 FI pattern.
+
+This finding reveals that the transformation from infomax to discrimination-optimal coding is driven primarily by a redistribution of preferred stimuli across the population: MT neurons are tuned to larger disparities than V1 neurons, spreading coding resources more evenly across the stimulus range rather than concentrating them at the most probable (near-zero) disparities.
+
+\section{Discussion}
+
+Our results provide the first empirical demonstration that the coding objective of neural populations changes along the visual processing hierarchy. V1 and V2 populations code binocular disparity in a manner consistent with information maximization ($\alpha \approx 2$), faithfully representing the statistical structure of natural disparity distributions. By contrast, MT populations exhibit a coding regime consistent with discrimination optimization ($\alpha \approx 2/3$), allocating resources to support perceptual judgments rather than stimulus reconstruction.
+
+\subsection{Normative Account of Hierarchical Processing}
+
+The shift from infomax to discrimination-optimal coding provides a normative explanation for the well-documented differences in tuning properties between early and late dorsal stream areas \citep{deangelis1998cortical, cumming2001organization}. Under the infomax objective, the optimal strategy is to concentrate tuning at the most probable stimuli (near-zero disparities), which is what V1 and V2 neurons do. Under the discrimination objective, resources should be distributed more broadly to minimize perceptual errors, which accounts for the broader preferred disparity distribution in MT.
+
+This framework connects to theoretical proposals that early sensory processing serves as a bottleneck for information preservation, while later processing stages transform representations to support specific behavioral goals \citep{barlow1961possible, simoncelli2001natural, wei2015bayesian}. The L0-to-L2 error norm transition corresponds to a shift from treating all stimuli as equally important to prioritizing common stimuli that must be discriminated with precision.
+
+\subsection{Role of Preferred Disparity}
+
+The identification of preferred disparity as the primary parameter driving the coding transition is notable because it represents a population-level rather than single-neuron property. Individual MT neurons are not fundamentally different in their tuning curve shape from V1 neurons; rather, the population as a whole samples a different region of disparity space. This suggests that the coding transition may be achieved through connectivity patterns that route inputs from V1/V2 neurons with specific preferred disparities to different MT subpopulations, rather than through changes in intrinsic neural computations \citep{movshon1996processing, rust2006signals}.
+
+\subsection{Comparison with V1 and V2}
+
+The highly overlapping FI patterns and exponent distributions in V1 and V2 suggest that these areas implement a similar coding objective for binocular disparity. This is consistent with the view that V2 largely preserves and refines the representations established in V1, at least for disparity coding, before the major transformation occurring at the V2-to-MT transition \citep{cumming2001organization, thomas2002comparison}.
+
+\subsection{Task Generalizability}
+
+The consistency of our findings across food preparation and navigation tasks strengthens the conclusion that the coding transition reflects a stable property of the neural populations rather than a task-specific adaptation. Despite differences in the tails of the disparity distributions between tasks, the power law exponents were remarkably consistent within each brain area. This suggests that the coding regime is determined by the overall statistical structure of natural disparities rather than by specific features of individual task environments.
+
+\subsection{Assumptions and Limitations}
+
+Several assumptions merit discussion. We assumed independent noise across neurons, as noise correlations cannot be estimated from single-unit recordings compiled across studies. While noise correlations can substantially affect population FI \citep{moreno2014information, averbeck2006neural}, they would need to differ systematically between V1/V2 and MT to account for our results. We also assumed comparable resource constraints across areas, supported by our analysis showing similar spike count properties.
+
+The use of tuning curves compiled from multiple studies introduces potential heterogeneity in recording conditions. However, this heterogeneity would tend to add noise to our estimates rather than create the systematic pattern we observe. The broader tuning in MT may partly reflect pooling across orientations due to MT direction selectivity \citep{deangelis1998cortical}, which warrants further investigation.
+
+\section{Conclusion}
+
+We demonstrate that the relationship between population Fisher information and natural stimulus probability transitions from $\alpha \approx 2$ (infomax) in V1/V2 to $\alpha \approx 2/3$ (discrimination-optimal) in MT for binocular disparity coding. This transition is driven primarily by the shift in preferred disparities from near-zero in V1/V2 to larger values in MT. These findings provide a normative account of how sensory coding objectives change along the visual hierarchy, from preserving information about natural stimulus statistics in early areas to optimizing perceptual discrimination in later areas. This framework offers a principled explanation for the progressive transformation of neural representations observed throughout the visual system.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,218 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+\bibliographystyle{plainnat}
+
+\title{Separating Local and Volume-Conducted Contributions to Thalamic Local Field Potentials Using Kernel Current Source Density Analysis in the Rat Somatosensory System}
+
+\author{
+Author A$^{1,*}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1}$ \\
+\\
+\small $^{1}$Laboratory of Neuroinformatics, Nencki Institute of Experimental Biology, Warsaw, Poland \\
+\small $^{2}$Department of Neurophysiology, University of Warsaw, Warsaw, Poland \\
+\small $^{*}$Corresponding author: corresponding@nencki.edu.pl
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Local field potentials (LFP) recorded in the thalamus during whisker stimulation contain contributions from both locally generated currents and passively volume-conducted cortical signals. Using simultaneous multi-probe recordings from the barrel cortex and somatosensory thalamus (VPM/PoM) of 11 urethane-anesthetized Wistar rats, we demonstrate that the negative LFP wave recorded in thalamic nuclei at 7--15 ms post-stimulus has a substantial component volume-conducted from the large-amplitude cortical evoked response. Rolling correlation between thalamic and cortical evoked potentials exceeded 0.5 at 10--12 ms post-stimulus across all animals. Kernel current source density (kCSD) analysis was applied to analytically decompose the recorded signals into local and remote contributions. The thalamic evoked potential reconstructed from local thalamic sources alone was significantly less negative at 10 ms post-stimulus than the raw recorded EP (permutation paired test, $p < 0.05$, $n = 11$), confirming cortical contamination. Critically, we showed that concurrent cortical recordings are not essential for reliable thalamic CSD estimation: thalamic-only recordings with sources assumed only in the thalamus yielded CSD profiles closely matching those from combined cortico-thalamic recordings. Results were replicated across three probe technologies (Neuropixels 384-channel, NeuroNexus 8$\times$8, NeuroNexus 32-channel linear), demonstrating generalizability. These findings have important implications for interpreting thalamic LFP signals and suggest that CSD analysis should be applied before drawing conclusions about local thalamic processing from field potential recordings.
+\end{abstract}
+
+\section{Introduction}
+
+Local field potentials are widely used as a measure of population-level neural activity, reflecting the summed synaptic currents and other transmembrane processes within a volume of brain tissue \citep{buzsaki2012, einevoll2013}. However, because brain tissue is a volume conductor, electric potentials generated at one location propagate passively to remote recording sites. The spatial extent of this volume conduction has been debated, with estimates ranging from 250~$\mu$m to several millimeters \citep{kajikawa2011, linden2011}. This contamination is particularly problematic when a large-amplitude source exists near the recording site, as the volume-conducted component may be comparable in magnitude to locally generated signals.
+
+The rat whisker-barrel system is a key model for studying thalamocortical processing \citep{petersen2007, diamond2008}. Whisker stimulation activates the ventral posteromedial (VPM) and posterior medial (PoM) thalamic nuclei at approximately 3 ms post-stimulus, followed by the barrel cortex at approximately 5 ms \citep{simons1978, swadlow2003}. The barrel cortex generates exceptionally large evoked potentials, with a prominent negative wave peaking around 10 ms post-stimulus in layer 4/5 \citep{mitzdorf1985}. Given the physical proximity of cortex and thalamus and the magnitude of the cortical response, the possibility that thalamic LFP recordings are contaminated by volume-conducted cortical signals is a significant concern.
+
+Current source density (CSD) analysis can recover the local current generators from LFP recordings by computing the spatial second derivative of the potential \citep{nicholson1975, mitzdorf1985}. The kernel CSD (kCSD) method extends classical CSD to arbitrary electrode geometries and provides model-based estimation of current sources and sinks \citep{potworowski2012, wojcik2015}. Critically, kCSD allows selective reconstruction of the field potential contribution from sources within a specified spatial region, enabling analytical separation of local and remote contributions.
+
+In this study, we apply kCSD to simultaneous cortical and thalamic recordings to: (1) quantify the cortical contribution to the thalamic EP at the critical 10 ms time point, (2) recover the genuinely local thalamic signal, and (3) determine whether concurrent cortical recordings are necessary for reliable thalamic CSD estimation.
+
+\section{Results}
+
+\subsection{Temporal Profile of Evoked Responses}
+
+Whisker stimulation evoked responses in both thalamic (VPM/PoM) and cortical (barrel field) recording sites across all 11 rats (Table~\ref{tab:temporal}).
+
+\begin{table}[H]
+\centering
+\caption{Temporal profile of whisker-evoked responses across structures ($n = 11$ rats). Latencies measured from stimulus onset to response feature. Mean $\pm$ SD across animals.}
+\label{tab:temporal}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Response Feature} & \textbf{Latency (ms)} & \textbf{Structure} & \textbf{Amplitude ($\mu$V)} & \textbf{SD ($\mu$V)} \\
+\midrule
+Earliest thalamic MUA & $3.1 \pm 0.4$ & VPM/PoM & --- & --- \\
+Thalamic negative EP peak & $9.8 \pm 1.2$ & VPM/PoM & $-42.3$ & 18.7 \\
+Cortical response onset & $5.2 \pm 0.6$ & Barrel cortex & --- & --- \\
+Cortical negative EP peak & $10.1 \pm 0.8$ & Barrel cortex L4/5 & $-387.4$ & 124.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Thalamic-Cortical EP Correlation}
+
+A rolling 3 ms window correlation between thalamic and cortical EPs revealed strong temporal covariance at 10--12 ms post-stimulus (Table~\ref{tab:correlation}), the time window of the strongest cortical negative wave.
+
+\begin{table}[H]
+\centering
+\caption{Rolling correlation (3 ms window) between thalamic and cortical evoked potentials at selected time points ($n = 11$ rats). One-sample $t$-test against zero.}
+\label{tab:correlation}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Time Window (ms)} & \textbf{Mean $r$} & \textbf{SD} & \textbf{$t$(10)} & \textbf{$p$} \\
+\midrule
+0--3 & 0.08 & 0.12 & 2.21 & 0.051 \\
+3--6 & 0.19 & 0.15 & 4.20 & 0.002 \\
+6--9 & 0.38 & 0.14 & 9.00 & $< 0.001$ \\
+9--12 & 0.57 & 0.11 & 17.18 & $< 0.001$ \\
+12--15 & 0.43 & 0.16 & 8.91 & $< 0.001$ \\
+15--18 & 0.22 & 0.18 & 4.05 & 0.002 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{kCSD Source Decomposition}
+
+The kCSD method was applied to decompose the recorded signals into contributions from cortical and thalamic sources (Table~\ref{tab:decomposition}). Reconstruction from cortical sources alone revealed a continuous negative stripe extending from cortex through the entire subcortical space at 10 ms, confirming widespread volume conduction.
+
+\begin{table}[H]
+\centering
+\caption{Source decomposition at 10 ms post-stimulus. Thalamic EP amplitude reconstructed from different source subsets compared to measured EP. Permutation paired test ($n = 11$ rats, 5000 permutations).}
+\label{tab:decomposition}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Source Subset} & \textbf{Thal.\ EP ($\mu$V, mean $\pm$ SD)} & \textbf{$\Delta$ from measured} & \textbf{Permutation $p$} & \textbf{Cohen's $d$} \\
+\midrule
+Measured (raw) & $-42.3 \pm 18.7$ & --- & --- & --- \\
+All sources (full kCSD) & $-41.8 \pm 17.9$ & $+0.5$ & 0.872 & 0.03 \\
+Cortical sources only & $-28.1 \pm 12.4$ & $+14.2$ & $< 0.001$ & 0.89 \\
+Thalamic sources only & $-14.7 \pm 9.3$ & $+27.6$ & $< 0.001$ & 1.86 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Local Thalamic EP Is Significantly Less Negative}
+
+The thalamic EP reconstructed from local thalamic sources alone was significantly less negative at 10 ms than the raw measured EP across all 11 animals (Table~\ref{tab:local_vs_measured}).
+
+\begin{table}[H]
+\centering
+\caption{Comparison of measured versus locally reconstructed thalamic EP at 10 ms post-stimulus. Permutation paired test (5000 permutations, $n = 11$ rats). Cortical contribution estimated as the difference.}
+\label{tab:local_vs_measured}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Signal} & \textbf{Mean ($\mu$V)} & \textbf{SD} & \textbf{Cortical Fraction (\%)} & \textbf{$W$} & \textbf{$p$} \\
+\midrule
+Measured thalamic EP & $-42.3$ & 18.7 & --- & --- & --- \\
+Local thalamic EP & $-14.7$ & 9.3 & --- & --- & --- \\
+Cortical contribution & $-27.6$ & 14.2 & 65.2 & 0 & $< 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Concurrent Cortical Recordings Are Not Essential}
+
+Three analytical configurations were compared to determine whether concurrent cortical recordings are necessary for reliable thalamic CSD estimation (Table~\ref{tab:configurations}).
+
+\begin{table}[H]
+\centering
+\caption{Comparison of three analytical configurations for thalamic CSD estimation. Similarity quantified as Pearson correlation between CSD profiles from each configuration. One-sample $t$-test against zero ($n = 11$ rats).}
+\label{tab:configurations}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Config.} & \textbf{Recordings} & \textbf{Source Space} & \textbf{$r$ with Config.\ A} & \textbf{$t$(10)} & \textbf{$p$} \\
+\midrule
+A & Thal + Ctx & Thal only & --- & --- & --- \\
+B & Thal only & Thal only & $0.94 \pm 0.04$ & 78.2 & $< 0.001$ \\
+C & Thal + Ctx & Full block & $0.91 \pm 0.06$ & 50.3 & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Configuration B (thalamic recordings only, thalamic source space) yielded CSD profiles with correlation $r = 0.94$ to Configuration A (combined recordings), demonstrating that cortical recordings are not essential for reliable thalamic CSD estimation.
+
+\subsection{Generalization Across Probe Technologies}
+
+Results were replicated across three recording configurations (Table~\ref{tab:probes}).
+
+\begin{table}[H]
+\centering
+\caption{Consistency of kCSD results across probe technologies. Cortical fraction of thalamic EP at 10 ms for each setup. Kruskal-Wallis test for between-setup differences.}
+\label{tab:probes}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Probe Setup} & \textbf{Channels} & \textbf{$n$ (rats)} & \textbf{Cortical Fraction (\%)} & \textbf{SD (\%)} \\
+\midrule
+Neuropixels 1.0 & 384 & 4 & 67.3 & 8.4 \\
+NeuroNexus 8$\times$8 & $2 \times 64$ & 4 & 63.8 & 11.2 \\
+NeuroNexus 32-ch linear & $2 \times 32$ & 3 & 63.1 & 9.7 \\
+\bottomrule
+\multicolumn{5}{l}{\small Kruskal-Wallis: $H(2) = 0.34$, $p = 0.844$.} \\
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our results demonstrate that a substantial fraction (approximately 65\%) of the thalamic evoked potential at 10 ms post-whisker-stimulus is passively volume-conducted from the barrel cortex rather than locally generated. This finding has important implications for the interpretation of thalamic LFP signals in the somatosensory system and potentially in other brain regions where large cortical generators are nearby.
+
+The strong rolling correlation between thalamic and cortical EPs at 10--12 ms ($r > 0.5$) provides a model-free indication of shared signal content during the cortical negative peak. The kCSD decomposition provides the mechanistic explanation: the large-amplitude cortical sink at layer 4/5 generates a field that propagates as a continuous negative stripe through the subcortical space to the thalamic recording sites \citep{buzsaki2012, linden2011}.
+
+Importantly, the earliest thalamic response at approximately 3 ms precedes the cortical activation onset at 5 ms and falls outside the window of cortical contamination. This early thalamic signal is genuinely local and reflects the monosynaptic relay of whisker input through the trigeminal pathway \citep{diamond2008, pierret1999}.
+
+A key practical finding is that concurrent cortical recordings are not necessary for reliable thalamic CSD estimation (Configuration B vs.\ A correlation: $r = 0.94$). This means that researchers performing thalamic recordings without concurrent cortical probes can still apply kCSD to recover local signals, provided they restrict the source space to the thalamic region. This simplifies experimental design requirements.
+
+The generalization across Neuropixels and NeuroNexus probe technologies confirms that the findings are not probe-specific \citep{jun2017, steinmetz2021}. The cortical contamination fraction was consistent (63--67\%) regardless of channel count or electrode geometry.
+
+\subsection{Limitations}
+
+This study was performed under urethane anesthesia, which may alter the relative magnitudes of cortical and thalamic responses. The kCSD method assumes a homogeneous and isotropic conductivity medium, which is an approximation. Future work should extend these analyses to awake, behaving animals and to other sensory modalities where cortical responses are similarly large.
+
+\section{Methods}
+
+\subsection{Animals and Surgery}
+
+Eleven adult male Wistar rats (350--560 g) were anesthetized with urethane (1.5 mg/kg i.p., with 10\% top-ups as needed). Local anesthetic was applied to ears (Emla 2.5\% cream) and scalp (lidocaine 1\%). Body temperature was maintained at 37--38$^{\circ}$C. All procedures were approved by the 1st Warsaw Local Ethics Committee in accordance with EU Directives 86/609/EEC and 2010/63/EU.
+
+\subsection{Whisker Stimulation}
+
+A piezoelectric stimulator delivered 0.1 mm horizontal deflections to large vibrissae of the left mystacial pad (1--2 ms duration, 20V square wave, 100 stimuli at 3--5 s pseudorandom intervals). Stimulation was controlled by Spike2 sequencer software (Cambridge Electronic Design).
+
+\subsection{Electrophysiological Recordings}
+
+Three probe configurations were used: (1) Neuropixels 1.0 (384 channels spanning cortex to thalamus), (2) two NeuroNexus 8$\times$8 multi-shank probes (one in cortex, one in thalamus), and (3) dual NeuroNexus 32-channel linear probes. Cortical probes were tilted $\sim$30$^{\circ}$ from vertical for perpendicular cortical entry; thalamic probes were inserted vertically. Reference electrode was Ag/AgCl under neck skin.
+
+\subsection{Kernel CSD Analysis}
+
+The kCSD method \citep{potworowski2012} was applied to averaged evoked potential profiles (100 stimulus repetitions). CSD was estimated with configurable source spaces: (A) thalamic + cortical recordings with sources in thalamus only, (B) thalamic recordings only with thalamic sources, and (C) full recordings with sources spanning the entire tissue block. Field potentials were selectively reconstructed from cortical-only or thalamic-only source subsets to quantify each structure's contribution.
+
+\subsection{Statistical Analysis}
+
+Measured thalamic EPs were compared to locally reconstructed EPs at 10 ms post-stimulus using permutation paired tests (5000 permutations). Rolling correlations used 3 ms windows with one-sample $t$-tests against zero. Between-setup comparisons used the Kruskal-Wallis test. All tests used $\alpha = 0.05$.
+
+\subsection{Histological Verification}
+
+Electrode positions were verified in 50 $\mu$m coronal sections stained with cytochrome oxidase and Nissl methods. Atlas overlays were created using GIMP v2.10 and Inkscape v1.0.1.
+
+\section{Conclusion}
+
+The thalamic evoked potential recorded during whisker stimulation contains a dominant volume-conducted component from the barrel cortex, accounting for approximately 65\% of the signal at 10 ms post-stimulus. Kernel CSD analysis can analytically separate local from remote contributions, and importantly, this analysis does not require concurrent cortical recordings. These findings indicate that caution is needed when interpreting thalamic LFP signals, and that CSD analysis should be applied as a standard decontamination step before drawing conclusions about local thalamic processing from field potential data.
+
+\bibliography{references}
+
+\end{document}

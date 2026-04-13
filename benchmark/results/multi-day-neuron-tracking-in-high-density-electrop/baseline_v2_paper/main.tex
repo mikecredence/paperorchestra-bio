@@ -1,0 +1,160 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Multi-Day Neuron Tracking in High-Density Electrophysiology Recordings Using Earth Mover's Distance}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Tracking the same neurons across multiple recording sessions is essential for studying learning, adaptation, and long-term neural dynamics, yet no robust automated method exists for high-density extracellular electrophysiology probes. Here we present an algorithm based on the Earth Mover's Distance (EMD) that matches neurons across days using only their physical location and waveform shape, independent of firing statistics or functional response properties that may change over the timescales of interest. Applied to chronic Neuropixels 2.0 recordings from mouse visual cortex spanning up to 48 days, the method achieves an average recovery rate of 84\% across all dataset pairs, with approximately 90\% recovery for sessions up to one week apart and 78\% for sessions five to seven weeks apart. Using a 10~$\mu$m z-distance threshold, matching accuracy reaches 99\% at one week and 95\% at five to seven weeks, validated against visual receptive field similarity as ground truth. The algorithm retrieves 552 tracked neurons with partial or no receptive field information, demonstrating generalization beyond visually responsive units. A two-stage procedure first estimates and corrects for rigid between-session tissue drift, then performs final unit assignments, with the EMD cost metric additionally serving as a detector for anomalous drift events.
+\end{abstract}
+
+\section{Introduction}
+
+The ability to track individual neurons across multiple recording sessions is fundamental to understanding how neural circuits change over time. Longitudinal tracking enables the study of learning-related plasticity, motor adaptation, memory consolidation, and the stability of neural representations in the face of ongoing experience \citep{chestek2007single, dhawale2017automated}. While calcium imaging provides spatial cues that facilitate cross-session neuron matching \citep{sheintuch2017tracking}, extracellular electrophysiology offers superior temporal resolution and the ability to record from deep brain structures, making it the modality of choice for many applications.
+
+The development of high-density probes such as Neuropixels 2.0 \citep{steinmetz2021neuropixels} has dramatically increased the number of simultaneously recorded neurons and the feasibility of chronic implantation, but matching neurons across sessions remains a largely unsolved problem. Spike sorting algorithms such as Kilosort \citep{pachitariu2016kilosort} are optimized for single sessions and produce cluster labels that are inconsistent across sessions due to stochastic initialization. Brain tissue drifts relative to the chronically implanted probe between recording days, introducing non-rigid positional shifts that cause neurons to appear, disappear, or change apparent location across sessions.
+
+Existing approaches to multi-day neuron tracking typically rely on firing statistics (e.g., firing rate, inter-spike interval distributions) or functional tuning properties (e.g., receptive field location, direction selectivity) to match units \citep{tolias2007recording}. However, these features can change over the very timescales that longitudinal tracking is designed to study. A neuron that shifts its tuning during learning, for instance, would be misidentified as a different unit by a matcher that relies on functional stability.
+
+Here we develop a tracking algorithm based on the Earth Mover's Distance (EMD) \citep{rubner2000earth}, which finds the optimal assignment between two populations of units by minimizing the total transport cost. Our distance metric combines physical location and waveform shape, both of which are intrinsic to the recorded unit and independent of its firing behavior. The method operates on the output of standard spike sorting (Kilosort 2.5) without manual curation and uses a two-stage procedure: first estimating and correcting rigid between-session drift, then producing final unit-to-unit assignments. We validate the method on chronic 4-shank Neuropixels 2.0 recordings from mouse V1 across three animals spanning up to 48 days \citep{siegle2021survey}.
+
+\section{Methods}
+
+\subsection{Animals and Recordings}
+
+Recordings were obtained from three mice (AL031, AL032, AL036) implanted with 4-shank Neuropixels 2.0 probes in visual cortex area V1 (Table~\ref{tab:animals}). Each shank provided 96 recording sites spanning 720~$\mu$m. Multiple recording sessions were conducted over spans of up to approximately 48 days, with inter-session gaps ranging from 2 to 25 days. Spike sorting was performed independently on each session using Kilosort 2.5, followed by the ecephys spike sorting pipeline. No manual curation was performed to avoid introducing subjective bias. Only units labeled as ``good'' by Kilosort (KSgood) were retained.
+
+\begin{table}[ht]
+\centering
+\caption{Recording datasets and pairwise comparison counts.}
+\label{tab:animals}
+\begin{tabular}{lcccl}
+\toprule
+Animal & Probe & Region & Pairs & Notes \\
+\midrule
+AL031 & 4-shank NP 2.0 & V1 & 6 & After outlier removal \\
+AL032 & 4-shank NP 2.0 & V1 & 24 & -- \\
+AL036 & 4-shank NP 2.0 & V1 & 60 & Datasets 1--2 excluded (large drift) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{EMD Algorithm}
+
+The core algorithm uses the Earth Mover's Distance optimization to match units between sessions. The distance between unit $i$ in session 1 and unit $k$ in session 2 is defined as:
+\begin{equation}
+d_{ik} = d_{\text{loc}} + \omega \cdot d_{\text{wf}}
+\label{eq:dist}
+\end{equation}
+where $d_{\text{loc}}$ is the 3D physical distance between estimated unit positions (determined from peak-to-peak amplitudes on 10 adjacent electrodes), $d_{\text{wf}}$ is a waveform dissimilarity score, and $\omega$ is a weight parameter tuned to maximize reference unit recovery rate.
+
+The tracking procedure has two stages. In Stage~1, the EMD is applied to the full KSgood population to estimate the rigid (homogeneous vertical) drift between sessions. This drift estimate is subtracted from all unit positions. In Stage~2, the EMD is applied again on drift-corrected units to produce final unit-to-unit assignments. A post hoc z-distance threshold of 10~$\mu$m is applied to select physically plausible matches and reject false positives.
+
+\subsection{Validation}
+
+Reference units were defined as KSgood units with strong, distinguishable visual responses in both sessions of a pair. Visual receptive field similarity was quantified as the sum of peri-stimulus time histogram (PSTH) correlation and visual fingerprint (vfp) correlation. The recovery rate was defined as the percentage of reference units correctly matched by the EMD algorithm. Accuracy was defined as the percentage of correctly matched reference units that pass the z-distance threshold.
+
+Two tracking strategies were evaluated: anchor-based matching (all sessions matched to a single reference session) and consecutive-pair matching (each session matched to the next, with units traced through chains spanning three or more sessions).
+
+\subsection{Weight Parameter Optimization}
+
+The weight parameter $\omega$ in Equation~\ref{eq:dist} controls the relative contribution of waveform dissimilarity versus physical distance to the total matching cost. This parameter was tuned via grid search to maximize the recovery rate of reference units. The optimal value balances both features: relying exclusively on physical distance would fail to distinguish spatially adjacent but waveform-distinct units, while relying exclusively on waveform similarity would fail when waveforms change subtly due to electrode drift or sorting variability. The grid search revealed a broad optimum, indicating that the method is relatively robust to the exact choice of $\omega$ within a reasonable range.
+
+\subsection{Reference Unit Limitations and Similarity Metrics}
+
+The visual receptive field similarity score, computed as the sum of PSTH correlation and visual fingerprint correlation, provides the ground truth for validation. However, this metric has known limitations. The similarity score is driven primarily by PSTH timing rather than visual fingerprint selectivity, meaning that a single neuron can correlate above threshold with 20 or more other neurons. In one example from AL032 shank 2, one day-1 neuron had 22 highly correlated day-2 neurons, 4 of which were within 30~$\mu$m. Furthermore, 33 out of 106 trackable neurons that were not classified as reference units still had similarity scores exceeding 1, comprising 5 putative and 28 mixed neurons. These observations highlight that the reference unit framework provides a conservative lower bound on tracking accuracy rather than a comprehensive assessment.
+
+\section{Results}
+
+\subsection{Overall Performance}
+
+Across all 90 pairwise comparisons from three animals, the EMD-based tracking algorithm achieved an average recovery rate of 84\% (Table~\ref{tab:performance}). Performance degraded gracefully with increasing inter-session time gaps: sessions up to one week apart showed approximately 90\% recovery with 99\% accuracy at the 10~$\mu$m threshold, while sessions five to seven weeks apart still achieved approximately 78\% recovery with 95\% accuracy.
+
+\begin{table}[ht]
+\centering
+\caption{Tracking performance by time separation.}
+\label{tab:performance}
+\begin{tabular}{lcc}
+\toprule
+Time Gap & Recovery Rate & Accuracy (10~$\mu$m) \\
+\midrule
+Up to 1 week & $\sim$90\% & 99\% \\
+1--2 weeks & Intermediate & Intermediate \\
+2--4 weeks & Lower & $\sim$96--97\% \\
+5--7 weeks & $\sim$78\% & 95\% \\
+\midrule
+All pairs (1--47 days) & 84\% & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{ROC Analysis and Threshold Selection}
+
+The average z-distance across all correctly matched reference pairs was 6.96~$\mu$m. At this distance threshold, accuracy was near ceiling. The 10~$\mu$m threshold was selected as a practical compromise that maintains very high accuracy (above 95\%) while including substantially more matched units than tighter thresholds. The false positive rate for KSgood units at the 10~$\mu$m threshold was 27\%, reflecting the inclusion of some units that match by proximity alone without confirmable visual responses.
+
+\subsection{Drift Correction}
+
+Stage~1 drift correction consistently improved recovery rates across all three animals, with the magnitude of improvement proportional to the magnitude of between-session drift. Animal AL036 showed the most dramatic improvement, consistent with larger tissue drift in this animal. However, datasets 1 and 2 from AL036 were excluded from all analyses due to extreme drift that precluded reliable matching even after correction.
+
+The EMD cost metric provided an effective flag for anomalous drift events. In AL036, a large decrease in reference unit count after dataset 2 correlated with an anomalous increase in EMD cost, enabling automated detection of recording quality issues.
+
+\subsection{Tracked Unit Chains}
+
+Units tracked across three or more consecutive sessions (chains) showed loss rates that were roughly consistent across chain types (reference, putative, and mixed) within the same animal (Table~\ref{tab:chains}). A total of 552 tracked neurons had partial or no receptive field information (approximately 12 per dataset pair on average), demonstrating that the method generalizes beyond visually responsive units.
+
+\begin{table}[ht]
+\centering
+\caption{Tracked unit chain properties.}
+\label{tab:chains}
+\begin{tabular}{lll}
+\toprule
+Chain Type & Description & Loss Pattern \\
+\midrule
+Reference & Strong visual responses in all pairs & Similar within subject \\
+Putative & No visual response match in any pair & Similar within subject \\
+Mixed & Reference in some pairs, putative in others & Similar within subject \\
+\midrule
+\multicolumn{2}{l}{Total tracked without full RF info} & 552 \\
+\multicolumn{2}{l}{Average putative per dataset pair} & $\sim$12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{EMD Cost as Quality Metric}
+
+Normalized EMD cost, z-distance, physical distance, and waveform distance all showed negative correlations with recovery rate across pairwise comparisons. Higher cost metrics consistently corresponded to lower and more variable recovery rates. This relationship enables the EMD cost to serve as a prospective indicator of tracking reliability for a given dataset pair, allowing researchers to assess confidence in tracked units without requiring ground truth.
+
+\section{Discussion}
+
+We have developed an EMD-based algorithm for tracking neurons across multiple days in high-density electrophysiology recordings. The method achieves high recovery rates and accuracy over timescales spanning weeks, using only physical location and waveform shape---features that are intrinsic to the recorded neuron and independent of its firing statistics or functional properties \citep{williamson2016tracking, peters2021striatal}.
+
+The independence from functional properties is a critical advantage. Many neuroscience questions that motivate longitudinal recording involve changes in neural activity, whether through learning, adaptation, or disease progression. A tracking method that assumes functional stability would be fundamentally unsuited to these applications, potentially confusing genuine changes in neural coding with the disappearance and appearance of different neurons. By relying exclusively on the physical footprint and waveform morphology of each unit, our approach avoids this circularity.
+
+The two-stage procedure---first correcting rigid drift, then matching drift-corrected units---is essential because brain tissue moves relative to the chronically implanted probe between sessions. Without drift correction, spatial misalignment would systematically degrade matching accuracy. The rigid (homogeneous vertical) correction captures the dominant mode of between-session movement, though non-rigid local deformations undoubtedly contribute to residual matching errors. The EMD optimization naturally accommodates non-rigid movements in the matching stage, as each unit pair is assigned independently based on its own distance metric.
+
+The 10~$\mu$m z-distance threshold balances accuracy against coverage. Tighter thresholds would increase accuracy at the cost of excluding many correctly matched units, while looser thresholds would include more false positives. The 27\% false positive rate at 10~$\mu$m for the full KSgood population reflects units that are spatially close but lack confirmable visual responses, making it impossible to determine whether they are true matches. This rate could be reduced by applying additional quality filters, such as minimum waveform similarity thresholds.
+
+The ability to track neurons without relying on their functional properties opens important methodological possibilities. In learning studies, neural tuning curves shift over days as animals acquire new skills. In motor stability studies, population dynamics evolve even when behavior appears stable. In disease models, neural responses may change as pathology progresses. In all of these cases, traditional tracking methods that rely on functional response similarity would either fail to track genuinely changing neurons or produce biased samples enriched for functionally stable units. The EMD-based approach avoids this bias entirely, enabling unbiased longitudinal analysis of neural population dynamics across behavioral and pathological time scales.
+
+The consecutive-pair tracking strategy, which traces units through chains of matched sessions, provides an important complement to anchor-based tracking. When tissue drift is cumulative and progressive, sessions far from the anchor may be too displaced for reliable direct matching, but consecutive sessions remain close enough for accurate pairwise assignment. By chaining consecutive matches, units can be tracked across durations that would be impossible with anchor-based matching alone. The finding that loss rates are similar across reference, putative, and mixed chains within the same animal provides confidence that the tracking reliability is not driven by functional response strength, supporting the generalizability of the method beyond visually responsive neurons.
+
+Several limitations should be noted. First, the method relies on Kilosort 2.5 spike sorting quality, which varies across sessions and can introduce both over-splitting and over-merging artifacts. Second, the reference unit validation framework depends on visual receptive field similarity, which is driven primarily by PSTH timing rather than spatial selectivity, limiting the specificity of the ground truth. Third, the method has been validated only in mouse V1; generalization to other brain regions and species remains to be demonstrated. Fourth, the optimal weight parameter $\omega$ may need recalibration for different probe types or brain regions.
+
+\section{Conclusion}
+
+The EMD-based neuron tracking algorithm provides a reliable, automated method for matching neurons across recording sessions spanning up to seven weeks in high-density electrophysiology data. By relying on physical position and waveform shape rather than firing statistics or functional properties, the method is suited to the longitudinal studies of neural plasticity and adaptation that motivate chronic recording in the first place. The algorithm's cost metric additionally serves as a quality indicator for detecting anomalous drift and assessing tracking reliability.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

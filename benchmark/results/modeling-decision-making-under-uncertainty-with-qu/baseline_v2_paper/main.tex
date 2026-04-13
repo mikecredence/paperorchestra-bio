@@ -1,0 +1,229 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Extracting Quantitative Subjective Values from Qualitative Decision Outcomes Using Hierarchical Bayesian Modeling of Risk and Ambiguity Attitudes}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Many consequential real-world decisions involve outcomes that are qualitative rather than quantitative in nature, yet computational models of decision-making under uncertainty have been developed almost exclusively for monetary or otherwise numerically specified outcomes. Here we introduce the Estimated Value model, a hierarchical Bayesian framework that extracts individualized quantitative subjective values from choices involving qualitative outcomes such as medical treatment improvements. In an in-person sample of 66 cognitively screened adults and an independent online replication sample of 332 participants, we show that the Estimated Value model outperforms both a classical utility model and a no-subjective-parameters baseline, even in the monetary domain where objective values are known. The model reveals that participants assign monotonically increasing but marginally diminishing subjective values to progressively better medical outcomes, with substantial individual heterogeneity. Ambiguity aversion, estimated separately for monetary and medical domains, shows a positive cross-domain association in both samples, indicating that tolerance for ambiguity is a trait-like characteristic that generalizes across decision contexts. Our framework provides a principled method for characterizing decision-making in domains where outcomes resist straightforward quantification, with implications for medical decision-making and patient-centered care.
+\end{abstract}
+
+\section{Introduction}
+
+Decision-making under uncertainty is a fundamental aspect of human cognition that has been studied extensively using economic paradigms involving monetary gambles \citep{kahneman1979prospect, tversky1992advances}. In these settings, outcomes are naturally quantitative: participants choose between lotteries offering specific dollar amounts at known or unknown probabilities. This framework has yielded powerful computational models of risk attitudes, including prospect theory's value function and probability weighting schemes, as well as models of ambiguity aversion that capture how individuals respond to situations where outcome probabilities are partially or wholly unknown \citep{ellsberg1961risk, gilboa1989maxmin}.
+
+However, many of the most important decisions people face in daily life involve outcomes that are inherently qualitative. Medical decisions, for instance, often require patients to choose between treatment options described in terms such as ``slight improvement,'' ``moderate improvement,'' or ``complete recovery'' without any natural numeric scale. Educational, career, and relationship decisions similarly involve outcomes that are described verbally rather than numerically. The absence of a natural metric for such outcomes presents a fundamental challenge: how can we characterize an individual's risk and ambiguity attitudes when the outcomes of their choices cannot be placed on an objective numerical scale?
+
+Previous approaches to this problem have generally followed one of two strategies. The first imposes a quantitative metric on the outcome, for example by describing medical outcomes in terms of months of additional lifespan or milligrams of medication dosage \citep{wakker2010prospect}. While this enables the application of standard utility models, it replaces the qualitative nature of the decision with an imposed numerical frame, potentially altering the psychological process under study. The second approach treats qualitative categories as having fixed, equally spaced values, essentially assigning the numbers 1, 2, 3, and 4 to four levels of improvement. This assumption of equal spacing is almost certainly violated in practice, as the subjective difference between ``no change'' and ``slight improvement'' need not equal the difference between ``moderate improvement'' and ``major improvement.''
+
+Here we develop the Estimated Value model, a hierarchical Bayesian framework that addresses these limitations by treating the subjective value of each qualitative outcome category as a free parameter estimated from the data. Rather than imposing numeric values on qualitative outcomes or assuming equal spacing between categories, the model extracts individualized quantitative values that best explain each participant's pattern of choices. This approach leverages the power of hierarchical Bayesian estimation \citep{gelman2013bayesian, kruschke2018bayesian}, which allows individual-level parameters to be informed by group-level regularities while preserving meaningful individual differences.
+
+We validate this approach using a decision-making task in which participants choose between certain and uncertain options in both monetary and medical domains, with risk and ambiguity manipulated orthogonally. The monetary domain provides a critical benchmark: because objective dollar amounts are known, we can directly compare the Estimated Value model against a classical utility function that has access to these known values \citep{levy2010neural, tymula2012ambiguity}. If the Estimated Value model outperforms the classical utility model even when objective values are available, this would provide strong evidence that subjective value estimation captures meaningful individual variation beyond what standard approaches can accommodate.
+
+We also examine whether ambiguity attitudes---the tendency to prefer known over unknown probabilities---show consistency across the monetary and medical domains \citep{hsu2005neural}. Cross-domain consistency would suggest that ambiguity aversion reflects a stable individual trait rather than a domain-specific response, with important implications for predicting patient behavior in medical settings based on more easily measured economic preferences. All findings are validated in an independent online replication sample to assess generalizability.
+
+\section{Methods}
+
+\subsection{Participants}
+
+Two independent samples were collected. The in-person sample consisted of 101 adults recruited through community advertising. Participants underwent an initial phone screen to exclude major medical and psychiatric conditions. Of the 101 screened, 10 did not complete the study (4 due to task failure and 6 who did not return for subsequent sessions), leaving 91 completers. All participants completed the Montreal Cognitive Assessment \citep[MoCA;][]{nasreddine2005montreal}, and 25 individuals scoring below the standard cutoff of 26 were excluded, yielding 71 cognitively healthy participants (32 female; age range 18--88 years, mean 49.68, SD 22.3). An additional 5 participants were excluded based on task-level quality criteria, resulting in a final analyzed sample of 66 participants (Table~\ref{tab:demographics}).
+
+The online sample consisted of 332 participants who completed the same decision-making task via an online platform, with attention check trials serving in place of the cognitive screen. This sample served as an independent replication.
+
+\begin{table}[ht]
+\centering
+\caption{Participant demographics and screening pipeline.}
+\label{tab:demographics}
+\begin{tabular}{lcc}
+\toprule
+Characteristic & In-Person Sample & Online Sample \\
+\midrule
+Initial screened & 101 & -- \\
+Did not complete & 10 & -- \\
+Completed & 91 & 332 \\
+MoCA $<$ 26 excluded & 25 & -- \\
+Cognitively healthy & 71 & -- \\
+Task-level exclusions & 5 & -- \\
+Final analyzed N & 66 & 332 \\
+Sex (\% female) & $\sim$45\% & Reported \\
+Age range (years) & 18--89 & 18--89 \\
+Age mean (SD) & 49.68 (22.3) & Reported \\
+Screening method & MoCA $\geq$ 26 & Attention checks \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Task Design}
+
+Participants completed a computerized decision-making task with four blocks: risky monetary, ambiguous monetary, risky medical, and ambiguous medical. In each trial, participants chose between a certain outcome and a lottery offering a potentially better outcome.
+
+\subsubsection{Monetary Domain}
+
+In monetary blocks, the certain option was always \$5. Lottery amounts were \$5, \$8, \$12, or \$25. For risky trials, the probability of winning the lottery was known (25\%, 50\%, or 75\%), visually represented as bags containing red and blue chips with the proportion shown as a colored rectangle. For ambiguous trials, ambiguity was introduced by occluding a portion of the chip distribution (24\%, 50\%, or 74\% occluded). Each amount-by-probability (or amount-by-ambiguity) combination was repeated four times, yielding 48 risky and 48 ambiguous monetary trials, plus 12 catch trials for a total of 84 monetary trials per participant (Table~\ref{tab:taskdesign}).
+
+\subsubsection{Medical Domain}
+
+In medical blocks, the certain option was ``no change'' in a hypothetical medical condition. Lottery outcomes described levels of improvement: slight improvement, moderate improvement, major improvement (risky) or significant improvement (ambiguous), and complete recovery. The risk and ambiguity structures were identical to the monetary domain. Visual presentation used the same chip-bag format with medical outcome labels replacing dollar amounts.
+
+\begin{table}[ht]
+\centering
+\caption{Task design parameters for monetary and medical domains.}
+\label{tab:taskdesign}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Monetary & Medical \\
+\midrule
+Certain option & \$5 & No change \\
+Lottery levels & \$5, \$8, \$12, \$25 & Slight, moderate, major/significant, recovery \\
+Risk levels & 25\%, 50\%, 75\% & 25\%, 50\%, 75\% \\
+Ambiguity levels & 24\%, 50\%, 74\% & 24\%, 50\%, 74\% \\
+Reps per combination & 4 & 4 \\
+Risky trials & 48 & 48 \\
+Ambiguous trials & 48 & 48 \\
+Catch trials & 12 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Models}
+
+We compared four modeling approaches. The Classical Utility model (Equation~\ref{eq:utility}) applies a power-law transformation to objective monetary amounts:
+\begin{equation}
+U(x) = x^{\alpha}
+\label{eq:utility}
+\end{equation}
+where $\alpha$ is the risk aversion parameter. This model is applicable only to the monetary domain where objective values $x$ are known.
+
+The Estimated Value model (Equation~\ref{eq:ev}) bypasses the need for objective values by estimating the subjective value of each outcome level as a free parameter:
+\begin{equation}
+V_i = v_i, \quad i = 1, \ldots, K
+\label{eq:ev}
+\end{equation}
+where $v_i$ are estimated subjective values for each of the $K$ outcome levels, treated as participant-level parameters within a hierarchical structure.
+
+The No-Subjective Parameters model (Equation~\ref{eq:nsp}) uses raw category distances as values, effectively assuming equal spacing:
+\begin{equation}
+V_i = i, \quad i = 1, \ldots, K
+\label{eq:nsp}
+\end{equation}
+
+For ambiguous trials, the choice model incorporates an ambiguity aversion parameter $\beta$ that modulates the decision weight according to the level of ambiguity:
+\begin{equation}
+w(p, A) = p - \frac{\beta \cdot A}{2}
+\label{eq:ambiguity}
+\end{equation}
+where $p$ is the estimated probability, $A$ is the ambiguity level, and $\beta > 0$ indicates ambiguity aversion.
+
+\subsection{Estimation Approach}
+
+All models were estimated using hierarchical Bayesian methods. Individual-level parameters were drawn from group-level distributions, allowing the estimation procedure to borrow strength across participants while preserving individual heterogeneity \citep{gelman2013bayesian}. Posterior distributions were summarized using 89\% highest density posterior intervals (HDPi), following recommendations for Bayesian inference \citep{kruschke2018bayesian}. Model comparison used the Watanabe--Akaike Information Criterion (WAIC) and leave-one-out cross-validation \citep[LOO-CV;][]{vehtari2017practical}. Cross-domain associations between ambiguity attitudes were tested using robust regression with 89\% HDPi for the slope parameter.
+
+\section{Results}
+
+\subsection{Model Comparison}
+
+The Estimated Value model consistently outperformed all alternative models across both domains and both samples (Table~\ref{tab:modelcomp}). In the medical domain, where no objective numeric values exist, the Estimated Value model provided a substantially better fit than the No-Subjective Parameters model in both the in-person and online samples. Critically, in the monetary domain, the Estimated Value model also outperformed the Classical Utility model despite the latter having access to the actual dollar amounts. This result indicates that allowing subjective values to be freely estimated captures meaningful individual variation in how participants value known monetary amounts, variation that a power-law transformation of objective value cannot accommodate. Hybrid models combining elements of the utility and estimated value approaches did not consistently outperform the pure Estimated Value model.
+
+\begin{table}[ht]
+\centering
+\caption{Model comparison results across domains and samples. The winning model is indicated for each comparison.}
+\label{tab:modelcomp}
+\begin{tabular}{llll}
+\toprule
+Comparison & Domain & Sample & Winner \\
+\midrule
+EV vs. No-Subj. Params. & Medical & In-person & Estimated Value \\
+EV vs. No-Subj. Params. & Medical & Online & Estimated Value \\
+EV vs. Classical Utility & Monetary & In-person & Estimated Value \\
+EV vs. Classical Utility & Monetary & Online & Estimated Value \\
+EV vs. No-Subj. Params. & Monetary & In-person & Estimated Value \\
+EV vs. Hybrid models & Monetary & Both & EV superior or equivalent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Extracted Subjective Values: Medical Domain}
+
+The Estimated Value model extracted individualized subjective values for each medical outcome category. In the in-person sample, subjective values increased monotonically from the reference point of ``no change,'' with diminishing marginal increments at the highest category (Table~\ref{tab:medvalues}). The increment from ``no change'' to ``slight improvement'' was 6.93 (SD = 1.79), the additional increment to ``moderate improvement'' was 9.00 (SD = 2.62), the increment to ``major improvement'' was 7.04 (SD = 2.89), and the final increment to ``complete recovery'' was 4.18 (SD = 2.41). This pattern of diminishing marginal value at the top is analogous to the concave value function observed in the monetary domain, but emerges here without any imposed metric structure.
+
+The online sample replicated the monotonic increase with diminishing returns at the highest level: slight improvement 8.63 (SD = 2.54), moderate improvement increment 12.62 (SD = 4.25), significant improvement increment 4.66 (SD = 2.56), and complete recovery increment 2.37 (SD = 1.61). While the distribution of value across levels differed somewhat between samples---with the online sample assigning more value to moderate improvement and less to the highest categories---the qualitative pattern was consistent.
+
+\begin{table}[ht]
+\centering
+\caption{Extracted subjective values for medical outcome categories.}
+\label{tab:medvalues}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{In-Person (n=66)} & \multicolumn{2}{c}{Online (n=332)} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+Category & Mean Increment & SD & Mean Increment & SD \\
+\midrule
+No change (reference) & 0 & -- & 0 & -- \\
+Slight improvement & 6.93 & 1.79 & 8.63 & 2.54 \\
+Moderate improvement & +9.00 & 2.62 & +12.62 & 4.25 \\
+Major/significant improvement & +7.04 & 2.89 & +4.66 & 2.56 \\
+Complete recovery & +4.18 & 2.41 & +2.37 & 1.61 \\
+\midrule
+Cumulative (recovery) & 27.15 & -- & 28.28 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Substantial individual variability was observed in both samples. Individual participant values spanned a wide range at every category level, confirming that a one-size-fits-all spacing assumption would poorly characterize the population. In the in-person sample, individual dots per participant were distributed broadly around the group means, with some participants assigning nearly equal increments across all categories and others showing steep early increases followed by near-saturation at higher levels.
+
+\subsection{Extracted Subjective Values: Monetary Domain}
+
+In the monetary domain, the Estimated Value model extracted subjective values that tracked objective dollar amounts but captured meaningful individual variation beyond what a power-law transformation could accommodate. The estimated values for the \$5 reference, \$8, \$12, and \$25 lottery amounts generally preserved the ordinal ranking of objective values, but the spacing between estimated values differed across individuals. Some participants showed near-linear subjective values, while others exhibited pronounced concavity or convexity in their value functions. The superior fit of the Estimated Value model over the Classical Utility model confirms that this individual variation is behaviorally meaningful and not merely noise.
+
+\subsection{Cross-Domain Ambiguity Attitudes}
+
+Ambiguity aversion parameters ($\beta$) were estimated separately for the monetary and medical domains. In both the in-person and online samples, robust regression revealed a significant positive association between monetary and medical ambiguity aversion, with the 89\% HDPi for the regression slope excluding zero (Table~\ref{tab:ambiguity}). This cross-domain consistency indicates that individuals who are more ambiguity-averse in monetary gambles also tend to be more ambiguity-averse in medical decisions, suggesting that ambiguity attitudes reflect a stable individual trait that generalizes across decision contexts.
+
+\begin{table}[ht]
+\centering
+\caption{Cross-domain ambiguity attitude associations.}
+\label{tab:ambiguity}
+\begin{tabular}{llccc}
+\toprule
+Sample & Regression & Slope Direction & 89\% HDPi & Interpretation \\
+\midrule
+In-person & Med. $\beta$ vs. Mon. $\beta$ & Positive & Excludes zero & Consistent \\
+Online & Med. $\beta$ vs. Mon. $\beta$ & Positive & Excludes zero & Replicated \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Replication Summary}
+
+All primary findings were replicated across the in-person and online samples. The Estimated Value model provided the best fit in both domains in both samples. Medical subjective values increased monotonically with diminishing marginal increments at the highest category. Individual variability was substantial in both samples. The positive cross-domain ambiguity attitude association was observed in both the in-person and online data.
+
+\section{Discussion}
+
+We developed a hierarchical Bayesian framework for extracting quantitative subjective values from choices involving qualitative outcomes. The Estimated Value model addresses a fundamental gap in the decision-making literature: the inability of standard approaches to characterize risk and ambiguity attitudes when outcomes cannot be placed on a natural numeric scale. Our results demonstrate that this model not only handles qualitative medical outcomes effectively but actually outperforms the classical utility model even in the monetary domain where objective values are available. This finding underscores the importance of allowing subjective values to be freely estimated rather than derived from objective quantities through a fixed transformation.
+
+The pattern of extracted medical values---monotonically increasing with diminishing marginal returns at the highest category---has important implications for understanding how people value health improvements. The finding that ``complete recovery'' adds relatively less subjective value than intermediate improvements suggests a form of ceiling effect in health valuation, where the perceived distance between already-substantial improvements and the best possible outcome is psychologically compressed. This pattern is consistent with the concave value function observed in prospect theory for monetary outcomes \citep{kahneman1979prospect, tversky1992advances}, suggesting that diminishing marginal sensitivity may be a general property of subjective valuation across outcome domains.
+
+The substantial individual heterogeneity in estimated values highlights the limitations of approaches that impose fixed category distances. Any policy or clinical decision-support tool that treats medical outcome categories as equally spaced would systematically mischaracterize a large fraction of the population. The hierarchical Bayesian framework naturally accommodates this heterogeneity while maintaining the statistical benefits of partial pooling across individuals \citep{gelman2013bayesian}.
+
+The positive cross-domain association in ambiguity attitudes has practical significance. If ambiguity aversion in the medical domain can be predicted from more easily measured monetary ambiguity aversion, then economic preference elicitation could serve as a screening tool for identifying patients who may struggle with the inherent ambiguity of medical decisions. This could inform the design of decision aids and communication strategies tailored to individual tolerance for uncertainty \citep{hsu2005neural}.
+
+Several limitations should be noted. First, risk attitudes in the Estimated Value model are embedded in the estimated values rather than separately quantified, which precludes direct cross-domain comparison of risk attitudes. Second, the wide age range of the in-person sample (18--89 years) introduces potential age-related confounds. Third, the medical scenarios were hypothetical rather than based on actual patient conditions, which may limit ecological validity. Fourth, the online sample showed somewhat different distributions of value across medical categories compared to the in-person sample, suggesting that mode of administration may influence valuations. Fifth, cross-domain comparison is restricted to ambiguity attitudes because comparing risk attitudes requires equating outcomes across domains, which the qualitative framing deliberately avoids.
+
+\section{Conclusion}
+
+The Estimated Value model provides a principled, flexible framework for studying decision-making with qualitative outcomes. By treating subjective values as free parameters within a hierarchical Bayesian structure, the model avoids imposing arbitrary metrics on qualitative outcomes while still extracting meaningful quantitative characterizations of individual preferences. The cross-domain consistency of ambiguity attitudes suggests that tolerance for uncertainty is a general trait with implications for predicting behavior across decision contexts. These findings open new avenues for studying medical decision-making, patient risk communication, and the development of individualized decision-support tools that respect the qualitative nature of health outcomes.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

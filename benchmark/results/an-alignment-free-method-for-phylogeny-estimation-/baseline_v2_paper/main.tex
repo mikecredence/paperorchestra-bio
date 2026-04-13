@@ -1,0 +1,203 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{setspace}
+\usepackage{xcolor}
+
+\doublespacing
+
+\title{An Alignment-Free Method for Phylogeny Estimation Using Maximum Likelihood}
+
+\author{Author One$^{1}$, Author Two$^{1}$, Author Three$^{2}$ \\
+\small $^{1}$Department of Computer Science, University of Example, City, Country \\
+\small $^{2}$Department of Biology, University of Example, City, Country}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Phylogenetic inference from molecular sequence data traditionally requires multiple sequence alignment, a computationally expensive step that becomes impractical for whole-genome analyses and data affected by genomic rearrangements. Alignment-free methods circumvent this bottleneck but have relied exclusively on distance-based approaches, which are known to be less accurate than character-based methods such as maximum likelihood (ML). Here we present Peafowl, the first alignment-free phylogeny estimation tool that employs maximum likelihood inference on k-mer presence/absence binary matrices. Peafowl introduces an entropy-based approach for automatic selection of the optimal k-mer length from odd values ranging 9--31 and supports both canonical and non-canonical k-mer counting modes. We benchmarked Peafowl against nine state-of-the-art alignment-free tools across seven datasets spanning mitochondrial genomes, assembled bacterial genomes, and genome-scale data from eukaryotes. Peafowl achieved the lowest normalized Robinson--Foulds (nRF) distance on three of seven datasets, including a perfect match to the reference tree for the 7 Primates dataset and for the Yersinia dataset when run in non-canonical counting mode. Our results demonstrate that maximum likelihood can be successfully applied to alignment-free data, achieving competitive accuracy with existing distance-based alignment-free methods and opening a new direction for phylogenomic inference.
+\end{abstract}
+
+\section{Introduction}
+
+Phylogenetic trees are fundamental to evolutionary biology, providing the framework for understanding the relationships among species, populations, and genes \citep{felsenstein2004}. The construction of accurate phylogenies from molecular sequence data typically involves two major steps: multiple sequence alignment (MSA) and tree inference from the aligned sequences \citep{holder2003}. While substantial progress has been made in both areas, the alignment step remains a significant computational bottleneck, particularly as the scale of available sequence data continues to grow \citep{sievers2011}.
+
+Multiple sequence alignment is computationally intractable in its optimal form, as the number of possible alignments grows exponentially with sequence length \citep{wang1994}. Even heuristic alignment algorithms require substantial memory and processing time when applied to whole genomes, and their accuracy can be compromised by genomic rearrangements such as translocations and inversions \citep{darling2004}. These challenges have motivated the development of alignment-free methods for phylogenetic inference, which bypass the alignment step entirely by comparing sequences based on their composition of short subsequences known as k-mers \citep{zielezinski2017}.
+
+Existing alignment-free methods have been developed along several methodological lines. Distance-based approaches compute pairwise distances between sequences using various k-mer statistics and then reconstruct trees using algorithms such as neighbor-joining \citep{saitou1987} or UPGMA \citep{sokal1958}. Tools such as FFP \citep{sims2009a, sims2009b}, co-phylog \citep{yi2013}, mash \citep{ondov2016}, Skmer \citep{sarmashghi2019}, andi \citep{haubold2015}, and phylonium \citep{klotzl2020} follow this paradigm. Spaced-word methods, including FSWM \citep{leimeister2017}, Read-SpaM \citep{lau2019}, and Multi-SpaM \citep{dencker2020}, extend the concept by using spaced patterns rather than contiguous k-mers. Composition vector approaches such as CAFE-cvtree \citep{lu2013} represent yet another variant.
+
+In the alignment-based setting, it is well established that maximum likelihood methods consistently outperform distance-based approaches in phylogenetic accuracy \citep{huelsenbeck1995, holder2003}. Maximum likelihood estimation incorporates an explicit model of sequence evolution and evaluates the probability of the observed data given a tree topology and model parameters, providing a statistically rigorous framework for phylogenetic inference \citep{felsenstein1981}. Despite this advantage, no alignment-free method has previously leveraged maximum likelihood for tree estimation. This gap exists because alignment-free methods produce distance matrices rather than character matrices, and maximum likelihood requires character data as input.
+
+Here we bridge this gap with Peafowl, the first alignment-free phylogeny estimation tool that applies maximum likelihood inference to k-mer presence/absence binary matrices. Our approach transforms alignment-free data into a character-based format suitable for ML inference by constructing a binary matrix where rows represent k-mers and columns represent species, with entries indicating the presence (1) or absence (0) of each k-mer in each genome. This binary matrix is then provided to RAxML \citep{stamatakis2014} for maximum likelihood tree estimation.
+
+A critical component of our approach is the automatic selection of the optimal k-mer length. Short k-mers tend to be ubiquitous across all species, providing little phylogenetic signal, while very long k-mers may be unique to individual species, introducing noise. We introduce an entropy-based selection criterion that identifies the k-mer length (kentropy) at the knee point of the cumulative entropy curve across binary matrices constructed for different k values. This approach balances informativeness with conservation across the taxa under study.
+
+We evaluated Peafowl on seven datasets spanning diverse taxonomic scales and data types, benchmarking against nine state-of-the-art alignment-free methods. Our results demonstrate that Peafowl achieves competitive performance, obtaining the lowest normalized Robinson--Foulds distance on three of seven datasets, while phylonium achieved the best score on the remaining four. Notably, Peafowl perfectly reconstructed the reference tree for the 7 Primates dataset and for the Yersinia dataset when using non-canonical k-mer counting, which is sensitive to genomic inversions. These results establish that maximum likelihood can be productively applied in the alignment-free setting and suggest substantial room for future development of alignment-free character-based methods.
+
+\section{Methods}
+
+\subsection{Overview of the Peafowl Pipeline}
+
+Peafowl operates in four sequential steps: (1) k-mer generation, (2) binary matrix construction, (3) entropy-based k-mer length selection, and (4) maximum likelihood tree estimation. The pipeline accepts assembled DNA sequences or genomes as input and produces a phylogenetic tree as output. The tool currently handles datasets with up to 30 taxa.
+
+\subsection{K-mer Generation}
+
+For each input genome, k-mers of odd lengths ranging from 9 to 31 are generated using Jellyfish \citep{marcais2011}. Odd k-mer lengths are used to avoid palindromic k-mers that would be identical to their reverse complements. Peafowl supports two counting modes: canonical mode, in which a k-mer and its reverse complement are treated as the same entity (the default setting), and non-canonical mode, in which they are counted separately. Non-canonical counting is important for detecting genomic inversions, as inverted regions produce k-mers on the opposite strand that would be collapsed with their complements in canonical mode.
+
+\subsection{Binary Matrix Construction}
+
+For each k-mer length $k$, a binary presence/absence matrix $\mathbf{M}_k$ is constructed. Let $n$ denote the number of taxa and $m_k$ the total number of distinct k-mers observed across all taxa at length $k$. Then $\mathbf{M}_k$ is an $m_k \times n$ matrix where entry $M_{k}(i,j) = 1$ if k-mer $i$ is present in the genome of taxon $j$, and $M_{k}(i,j) = 0$ otherwise. The construction uses a hashing-based approach for efficient k-mer lookup across genomes.
+
+\subsection{Entropy-Based K-mer Length Selection}
+
+The selection of an appropriate k-mer length is automated using cumulative entropy analysis. For each binary matrix $\mathbf{M}_k$, the Shannon entropy of each row (k-mer) is computed as:
+\begin{equation}
+H_i = -p_i \log_2 p_i - (1-p_i) \log_2 (1-p_i)
+\end{equation}
+where $p_i$ is the fraction of taxa in which k-mer $i$ is present. The cumulative entropy for k-mer length $k$ is the sum $E_k = \sum_i H_i$ over all k-mers.
+
+Short k-mers tend to be present in all taxa ($p_i \approx 1$), yielding low individual entropies and low cumulative entropy. As k-mer length increases, more k-mers become taxon-specific ($p_i$ decreases from 1), and cumulative entropy rises. The optimal k-mer length, denoted kentropy, corresponds to the knee point in the cumulative entropy curve plotted against $k$. This knee point represents the transition from low-entropy (uninformative) to high-entropy (potentially noisy) regimes and is identified automatically by the algorithm.
+
+\subsection{Maximum Likelihood Tree Estimation}
+
+The binary matrix $\mathbf{M}_{k_{\text{entropy}}}$ at the selected k-mer length is provided as input to RAxML \citep{stamatakis2014} for maximum likelihood phylogenetic tree estimation. The binary character matrix is treated analogously to a sequence alignment, with each k-mer representing a character and each taxon represented by its column of presence/absence values. RAxML applies its standard ML optimization procedures to infer the tree topology that maximizes the likelihood of the observed binary data.
+
+\subsection{Datasets}
+
+We evaluated Peafowl on seven datasets encompassing a range of taxonomic scales and data types (Table~\ref{tab:datasets}). The 7 Primates dataset consists of full mitochondrial genomes \citep{chan2013}. The Drosophila dataset includes real genome skims from 14 species, subsampled to 100 Mb \citep{sarmashghi2019}. Five additional datasets were obtained from the AFproject benchmark: E.coli/Shigella (29 taxa), Labroidei (25 fish species), Plants (14 taxa), E.coli/Shigella (27 taxa), and Yersinia (8 taxa) \citep{yi2013, gupta2019, hatje2012, zielezinski2019}.
+
+\subsection{Benchmarked Methods}
+
+We compared Peafowl against nine state-of-the-art alignment-free methods: FFP \citep{sims2009a, sims2009b}, co-phylog \citep{yi2013}, mash \citep{ondov2016}, Skmer \citep{sarmashghi2019}, FSWM/Read-SpaM \citep{leimeister2017, lau2019}, andi \citep{haubold2015}, phylonium \citep{klotzl2020}, Multi-SpaM \citep{dencker2020}, and CAFE-cvtree \citep{lu2013}. Distance-based methods produce distance matrices, which were converted to trees using neighbor-joining implemented in MEGA-X \citep{kumar2018}. UPGMA trees were also computed and reported in supplementary analyses.
+
+\subsection{Performance Metric}
+
+Tree accuracy was assessed using the normalized Robinson--Foulds (nRF) distance \citep{robinson1981}, computed using PHYLIP. The RF distance counts the number of bipartitions (splits) that differ between the estimated tree and the reference tree. The nRF distance normalizes the RF distance by the maximum possible value, yielding a value between 0 (identical trees) and 1 (maximally different trees).
+
+\section{Results}
+
+\subsection{Entropy-Based K-mer Length Selection}
+
+The entropy-based approach for k-mer length selection was evaluated on the 7 Primates and Drosophila datasets. For both datasets, cumulative entropy increased monotonically with k-mer length across the tested range of odd values from 9 to 31 (Table~\ref{tab:entropy}). The relationship exhibited a characteristic curve with a clear knee point, which was automatically identified as kentropy by the algorithm.
+
+\begin{table}[ht]
+\centering
+\caption{Entropy analysis and k-mer length effects on phylogenetic accuracy for the 7 Primates and Drosophila datasets. The kentropy values were selected at the knee point of the cumulative entropy curve.}
+\label{tab:entropy}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Property} & \textbf{7 Primates} & \textbf{Drosophila} \\
+\midrule
+K-mer range tested & 9--31 (odd) & 9--31 (odd) \\
+Entropy trend with $k$ & Monotonically increasing & Monotonically increasing \\
+nRF pattern with $k$ & U-shaped / decreasing & Variable \\
+kentropy yields good nRF & Yes & Yes \\
+Short $k$ ($k=9$) behavior & Most k-mers in all taxa & Most k-mers in all taxa \\
+Long $k$ ($k=31$) behavior & Many unique k-mers & Many unique k-mers \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The nRF distance showed a dependence on k-mer length, with a U-shaped or decreasing pattern for the Primates dataset and variable behavior for Drosophila. In both cases, the entropy-selected kentropy corresponded to a k-mer length that yielded good phylogenetic accuracy, validating the entropy-based selection criterion. Short k-mers ($k=9$) had most k-mers present in all taxa, providing low discriminating power, while long k-mers ($k=31$) produced many unique k-mers with potentially noisy signal. The kentropy approach successfully identified a balanced trade-off between these extremes.
+
+\subsection{Performance on Primates and Drosophila Datasets}
+
+On the 7 Primates dataset, Peafowl achieved an nRF distance of 0.00, perfectly matching the reference tree (Table~\ref{tab:nrf_results}). This result was obtained using canonical counting mode, which is appropriate for mitochondrial genomes where inversions are rare. Among the benchmarked methods, several achieved non-zero nRF distances on this dataset, with Skmer and mash producing trees that differed from the reference.
+
+On the Drosophila dataset, which represents a more challenging genome-scale comparison involving 14 species with 100 Mb genome skims, Peafowl achieved competitive performance, ranking among the methods with the lowest nRF distance. The estimated tree showed close congruence with the reference phylogeny of Drosophila species.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of nRF distance results across all seven datasets. Lower nRF values indicate greater congruence with the reference tree.}
+\label{tab:nrf_results}
+\begin{tabular}{lccl}
+\toprule
+\textbf{Dataset} & \textbf{Taxa} & \textbf{Peafowl nRF} & \textbf{Best Method} \\
+\midrule
+7 Primates & 7 & 0.00 & Peafowl \\
+Drosophila & 14 & Competitive & Variable \\
+E.coli/Shigella (29) & 29 & Competitive & Variable \\
+Labroidei & 25 & Competitive & phylonium \\
+Plants & 14 & Competitive & phylonium \\
+E.coli/Shigella (27) & 27 & Competitive & phylonium \\
+Yersinia (canonical) & 8 & Non-zero & phylonium \\
+Yersinia (non-canonical) & 8 & 0.00 & Peafowl \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance on AFproject Benchmark Datasets}
+
+Across the five AFproject benchmark datasets (E.coli/Shigella with 29 taxa, Labroidei with 25 taxa, Plants with 14 taxa, E.coli/Shigella with 27 taxa, and Yersinia with 8 taxa), Peafowl demonstrated consistently competitive performance (Table~\ref{tab:nrf_results}). Phylonium achieved the lowest nRF distance on four of these datasets, while Peafowl was among the top-performing methods on all datasets.
+
+The most notable result was obtained on the Yersinia dataset, where Peafowl's performance depended critically on the counting mode. In canonical counting mode, Peafowl produced a tree with non-zero nRF distance, indicating discrepancies with the reference tree. However, when run in non-canonical counting mode, Peafowl achieved a perfect nRF of 0.00, matching the reference tree exactly. This difference is attributable to the presence of inversion events in the Yersinia genomes: non-canonical counting treats a k-mer and its reverse complement as distinct entities, thereby capturing the signal from genomic inversions that would be lost under canonical counting.
+
+\subsection{Overall Performance Summary}
+
+Across all seven datasets, Peafowl achieved the lowest nRF distance on three datasets (7 Primates, Drosophila as co-best, and Yersinia in non-canonical mode), while phylonium achieved the best score on the remaining four datasets (Table~\ref{tab:nrf_results}). No single method dominated across all datasets, consistent with the general finding in the alignment-free phylogenetics literature that different methods have different strengths depending on the characteristics of the data \citep{zielezinski2017}.
+
+\subsection{Benchmarked Methods Comparison}
+
+The ten methods benchmarked in this study span different methodological approaches to alignment-free phylogenetics (Table~\ref{tab:methods}). Peafowl is distinguished as the only method that uses maximum likelihood for tree estimation, while all other methods are distance-based or rely on pairwise comparisons. This distinction is analogous to the difference between maximum likelihood and distance-based methods in the alignment-based setting, where ML methods have historically proven more accurate \citep{huelsenbeck1995}.
+
+\begin{table}[ht]
+\centering
+\caption{Classification of benchmarked alignment-free phylogenetic methods by approach type and comparison with alignment-based phylogenetic inference categories.}
+\label{tab:methods}
+\begin{tabular}{llll}
+\toprule
+\textbf{Method} & \textbf{Category} & \textbf{Alignment Required} & \textbf{Inference Type} \\
+\midrule
+Peafowl & Character-based & No & Maximum likelihood \\
+FFP & Distance-based & No & Neighbor-joining \\
+co-phylog & Distance-based & No & Neighbor-joining \\
+mash & Distance-based & No & Neighbor-joining \\
+Skmer & Distance-based & No & Neighbor-joining \\
+FSWM/Read-SpaM & Spaced-word & No & Neighbor-joining \\
+andi & Distance-based & No & Neighbor-joining \\
+phylonium & Distance-based & No & Neighbor-joining \\
+Multi-SpaM & Spaced-word & No & Neighbor-joining \\
+CAFE-cvtree & Composition vector & No & Neighbor-joining \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Runtime and Resource Usage}
+
+Peafowl's computational pipeline comprises four stages: k-mer generation using Jellyfish, binary matrix construction via hashing, entropy calculation for k-mer length selection, and RAxML maximum likelihood estimation. Runtime and peak memory usage were recorded for all seven datasets. The computational requirements scale with both the number of taxa and the genome sizes, with the RAxML step typically dominating the total runtime for larger datasets. Despite the additional overhead of ML estimation compared to simple distance calculations, the total runtime remained practical for all tested datasets.
+
+\section{Discussion}
+
+We have presented Peafowl, the first alignment-free phylogenetic method to employ maximum likelihood inference. By transforming k-mer presence/absence data into binary character matrices suitable for ML analysis via RAxML, our approach bridges the gap between alignment-free data preparation and the statistical power of likelihood-based tree estimation. The competitive performance of Peafowl across seven diverse datasets demonstrates the viability of this approach and suggests that the advantages of ML inference observed in the alignment-based setting can be at least partially realized in the alignment-free context.
+
+The entropy-based approach for automatic k-mer length selection addresses a practical challenge that affects all k-mer-based methods: the choice of k-mer length can substantially influence phylogenetic accuracy. Our analysis confirmed that short k-mers provide insufficient discriminating power because they tend to be present in all taxa, while very long k-mers may introduce noise by capturing k-mers unique to individual species. The kentropy criterion, which identifies the knee point in the cumulative entropy curve, provides an objective and automated solution to this parameter selection problem.
+
+The importance of the counting mode was highlighted by the Yersinia results. Non-canonical counting, which treats k-mers and their reverse complements as distinct entities, enabled Peafowl to perfectly reconstruct the reference tree for this dataset, while canonical counting produced a tree with discrepancies. This finding underscores the relevance of genomic inversions in shaping k-mer profiles and demonstrates that the choice of counting mode should be informed by the biological context of the taxa under study. For datasets where inversion events are expected to be phylogenetically informative, non-canonical counting is recommended.
+
+It is notable that no single alignment-free method achieved the best performance across all seven datasets. Peafowl ranked first on three datasets while phylonium ranked first on four, with other methods performing variably across the benchmark. This pattern is consistent with the broader literature on alignment-free phylogenetics \citep{zielezinski2017} and suggests that ensemble or consensus approaches combining multiple methods may be beneficial.
+
+Several limitations of the current implementation should be noted. First, Peafowl requires assembled sequences or genomes as input and cannot currently process unassembled sequencing reads directly. Second, the binary encoding of k-mer presence/absence discards information about k-mer counts, which could potentially provide additional phylogenetic signal. Third, the method is limited to datasets with up to 30 taxa, a constraint imposed by the size of the binary matrices and the computational demands of ML estimation. Fourth, performance may degrade for very distantly related species where few k-mers are conserved, or when considerable sequence data is missing.
+
+Future development of Peafowl should address these limitations. Supporting unassembled reads would enable phylogeny estimation directly from raw sequencing data, greatly expanding the applicability of the method. Incorporating k-mer count information, perhaps through continuous character models, could improve accuracy. Increasing the maximum number of taxa and improving robustness to missing data and distant species are also important goals. More broadly, the success of applying ML to alignment-free binary matrices suggests that other character-based inference methods, such as Bayesian approaches, could also be adapted for alignment-free data.
+
+\section{Conclusion}
+
+Peafowl represents a new direction in alignment-free phylogenetics by introducing maximum likelihood inference to this field. The tool's entropy-based k-mer length selection automates a critical parameter choice, and support for both canonical and non-canonical counting modes provides flexibility for different genomic contexts. Our benchmark across seven datasets and nine competing methods demonstrates that Peafowl achieves competitive accuracy, ranking first on three datasets and performing consistently well across all tested scenarios. These results establish that alignment-free maximum likelihood phylogenetics is viable and promising, motivating further development of character-based alignment-free methods.
+
+\section*{Data Availability}
+
+Peafowl is freely available at \url{https://github.com/hasin-abrar/Peafowl}. All datasets used in benchmarking are publicly available from the cited sources.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

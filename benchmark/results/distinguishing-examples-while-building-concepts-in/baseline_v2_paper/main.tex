@@ -1,0 +1,155 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{Distinguishing Examples While Building Concepts in Hippocampal and Artificial Networks}
+\author{Author A,$^{1}$ Author B,$^{2}$ Author C,$^{1,*}$\\
+\small $^{1}$Department of Neuroscience, University of Science\\
+\small $^{2}$Department of Computer Science, University of Science\\
+\small $^{*}$Corresponding author: authorc@university.edu}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The hippocampal CA3 region receives two complementary encodings of the same sensory information: sparse, decorrelated inputs via the mossy fiber (MF) pathway from the dentate gyrus, and dense, correlated inputs via the perforant path (PP) from the entorhinal cortex. The computational purpose of this dual-pathway architecture has remained unclear. Here we develop a Hopfield-like model of CA3 showing that these complementary encodings enable simultaneous maintenance of distinct episodic memories (examples) and formation of generalizable category representations (concepts). As memory load increases, dense PP encodings merge along shared features to form concept attractors, while sparse MF encodings remain distinct as example attractors. An oscillating inhibitory threshold---mimicking the theta rhythm---switches the network between example and concept retrieval. We validate this framework against CA3 place cell recordings from rats, demonstrating that sparser theta phases encode finer spatial positions and more detailed task features (turn direction in a W-maze), while denser phases encode coarser, concept-like spatial regions. Finally, we generalize the framework to feedforward neural networks, introducing a novel correlation-based loss term that promotes hybrid correlated/decorrelated encoding and improves multitask learning performance on combined digit classification and set identification tasks. These results provide a unified computational account of how complementary hippocampal encodings support both episodic memory and concept formation, with direct implications for artificial intelligence.
+\end{abstract}
+
+\section{Introduction}
+
+The hippocampal CA3 region occupies a unique position in the brain's memory architecture. It receives two anatomically and functionally distinct inputs carrying representations of the same sensory information \citep{treves1992computational}. The perforant path (PP) delivers dense, correlated projections directly from the entorhinal cortex (EC), while the mossy fiber (MF) pathway routes information through the dentate gyrus (DG), which dramatically sparsifies and decorrelates the representation before relaying it to CA3 via powerful but sparse synapses \citep{henze2002single, leutgeb2007pattern}.
+
+The computational purpose of this dual-pathway architecture has been debated for decades \citep{marr1971simple, treves1992computational}. The prevailing view holds that MF inputs serve primarily for pattern separation---ensuring that similar experiences are stored as distinct memory traces---while PP inputs support pattern completion and associative retrieval. However, this framework does not explain why CA3 needs both encodings simultaneously, or how the network might switch between utilizing one versus the other.
+
+A separate body of work has established that the hippocampus supports not only episodic memory for specific experiences but also the formation of generalizable concepts and categories \citep{kumaran2012generalization}. How the same circuit can maintain individual examples while simultaneously extracting their shared structure to form concepts is a fundamental open question.
+
+Theta oscillations (6--10~Hz) are a prominent feature of hippocampal activity during active behavior and REM sleep \citep{buzsaki2002theta}. Theta modulates the excitability of hippocampal neurons in a phase-dependent manner and has been linked to alternating encoding and retrieval states \citep{hasselmo2002proposed, colgin2009frequency}. Theta phase precession---the systematic shift of place cell firing to earlier theta phases as an animal traverses a place field---compresses temporal sequences and may support sequence learning \citep{skaggs1996theta}. However, whether theta phase also modulates the type of information encoded (example-specific versus concept-level) has not been examined.
+
+Here we develop a unified computational framework that explains how complementary MF and PP encodings enable CA3 to simultaneously maintain examples and build concepts, with theta-like oscillations switching between these modes. We validate predictions from this model against real neural data and extend the framework to improve multitask learning in artificial neural networks.
+
+\section{Methods}
+
+\subsection{Hippocampal Circuit Model}
+
+The model encodes FashionMNIST images (sneakers, trousers, coats; 256 examples per concept) through a binary autoencoder into sparse EC representations ($N_{EC} = 1024$ neurons, 10\% density). From EC, two pathways generate CA3 inputs (Table~\ref{tab:params}).
+
+\begin{table}[ht]
+\centering
+\caption{Model Architecture Parameters}
+\label{tab:params}
+\begin{tabular}{lccccl}
+\toprule
+\textbf{Region} & \textbf{$N$} & \textbf{$a$} & \textbf{$l$} & \textbf{$\rho$} & \textbf{Source} \\
+\midrule
+EC & 1024 & 0.10 & -- & 0.15 & Input \\
+DG & 8192 & 0.005 & 205 (from EC) & 0.02 & EC $\to$ DG \\
+CA3 (MF) & 2048 & 0.02 & 8 (from DG) & 0.01 & DG $\to$ CA3 \\
+CA3 (PP) & 2048 & 0.20 & 205 (from EC) & 0.09 & EC $\to$ CA3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The PP pathway uses random binary connectivity from EC to CA3, yielding dense, correlated patterns ($a_{PP} = 0.2$, $\rho \approx 0.09$). The MF pathway routes through DG ($N_{DG} = 8192$, $a_{DG} = 0.005$) to produce very sparse, decorrelated patterns ($a_{MF} = 0.02$, $\rho \approx 0.01$). CA3 ($N_{CA3} = 2048$) stores linear combinations of MF and PP encodings in a Hopfield-like network \citep{hopfield1982neural}, with MF inputs weighted more heavily. A winners-take-all rule converts postsynaptic inputs to binary activity at specified density.
+
+\subsection{Sparsification and Decorrelation Theory}
+
+The theoretical relationship between pre- and postsynaptic correlation predicts that enforcing sparser postsynaptic activity promotes decorrelation, independent of the number of synapses per neuron ($l$). This prediction was verified using 8 random connectivity matrices with EC patterns as presynaptic inputs (Table~\ref{tab:decorrelation}).
+
+\begin{table}[ht]
+\centering
+\caption{Decorrelation by Sparsification}
+\label{tab:decorrelation}
+\begin{tabular}{ccccc}
+\toprule
+\textbf{$\rho_{pre}$} & \textbf{$a_{post} = 0.005$} & \textbf{$a_{post} = 0.02$} & \textbf{$a_{post} = 0.20$} \\
+\midrule
+0.15 & $\sim$0.02 & $\sim$0.01 & $\sim$0.09 \\
+0.10 & $\sim$0.01 & $\sim$0.008 & $\sim$0.06 \\
+0.05 & $\sim$0.005 & $\sim$0.004 & $\sim$0.03 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Retrieval Under Different Inhibitory Thresholds}
+
+Retrieval was initiated from corrupted stored patterns using asynchronous updates. At high inhibitory threshold ($\theta = 0.6$), the network retrieved sparse, MF-like example patterns. At low threshold ($\theta = 0.2$), the network retrieved dense, PP-like concept patterns. An oscillating threshold simulated the theta cycle, causing the network to alternate between example and concept regimes.
+
+\subsection{Neural Data Analysis}
+
+Publicly available CA3 place cell recordings from rats on linear tracks and W-mazes were analyzed. Spikes were partitioned into theta phase bins. Spatial information per spike (bits/spike) was computed at each phase, and population sparsity (fraction of active neurons) was measured. The model predicted that sparser phases should carry more precise spatial tuning (example-like) while denser phases should carry coarser spatial information (concept-like).
+
+\subsection{Machine Learning Extension}
+
+A multilayer perceptron (two hidden layers of 50 neurons each, ReLU activation) was trained on an augmented MNIST task requiring both digit classification (concept task, tested on held-out images) and set identification (example task, tested on training images). A novel correlation-based loss term was introduced to encourage both correlated and decorrelated representations in the hidden layers \citep{ruder2017overview}.
+
+\section{Results}
+
+\subsection{Sparsification Decorrelates Representations Along the Hippocampal Pathway}
+
+Binary autoencoder-encoded FashionMNIST images produced EC representations with 10\% density and correlation $\rho \approx 0.15$. Projection through the DG pathway dramatically reduced both density (to 0.5\%) and correlation (to $\sim$0.02), while the PP pathway maintained higher density (20\%) and correlation ($\sim$0.09). Decoded images from MF encodings remained visually distinct across examples within the same concept, while decoded images from PP encodings blurred together, reflecting the loss of example-specific detail in the dense, correlated representation.
+
+\subsection{Complementary Encodings Enable Simultaneous Example and Concept Storage}
+
+In the Hopfield-like CA3 network, both MF and PP encodings were stored as linear combinations with MF inputs weighted more heavily. At high inhibitory threshold (sparse retrieval), the network successfully completed corrupted patterns to recover individual MF examples. At low threshold (dense retrieval), individual PP patterns merged along shared concept features, forming concept attractors (Table~\ref{tab:retrieval}).
+
+\begin{table}[ht]
+\centering
+\caption{Retrieval Performance Under Different Thresholds}
+\label{tab:retrieval}
+\begin{tabular}{lcccl}
+\toprule
+\textbf{Threshold} & \textbf{Encoding} & \textbf{Character} & \textbf{Concept Merging} \\
+\midrule
+High (0.6) & MF-like (sparse) & Example-specific & No \\
+Low (0.2) & PP-like (dense) & Concept-level & Yes \\
+Intermediate & Mixed & Transitional & Partial \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+As memory load increased, dense PP-based attractor basins progressively merged along shared features, forming stable concept representations, while sparse MF-based attractors remained separated across all loads tested. This demonstrates that the dual-pathway architecture naturally supports both functions: MF preserves example identity through sparsity-induced separation, while PP enables concept formation through correlation-driven merging.
+
+\subsection{Oscillating Threshold Mimics Theta-Driven Switching}
+
+An oscillating threshold alternating between 0.6 and 0.2 caused the network to alternate between MF example retrieval and PP concept retrieval within each cycle. Four conditions were tested (abrupt threshold changes, sinusoidal oscillation, shifted thresholds, sustained MF cue), and all showed successful alternation between example and concept representations. The cleanest transitions occurred with abrupt threshold changes and initial-only MF cues.
+
+\subsection{Sparser Theta Phases Encode Finer Spatial Positions}
+
+Analysis of CA3 place cells on a linear track confirmed the model's predictions. Population sparsity varied systematically across theta phases, and spatial information per spike was higher during sparser phases---neurons conveyed more precise position information when fewer neurons were simultaneously active. Place fields were narrower during sparser phases and broader during denser phases, consistent with the model's prediction that sparse regimes support example-like (fine-grained) encoding.
+
+\subsection{Denser Theta Phases Encode Coarser Spatial Regions}
+
+Complementarily, when spatial positions were grouped into coarser regions (concepts), information per spike about these coarse regions was higher during denser theta phases. This bidirectional pattern---fine positions better encoded during sparse phases, coarse regions better encoded during dense phases---directly parallels the model's example versus concept distinction.
+
+\subsection{Turn Direction Encoding in the W-Maze}
+
+In W-maze recordings, sparser theta phases encoded not only finer spatial positions but also additional task features (turn direction during the central arm). During dense phases, turn direction information was reduced and the population encoded position alone, generalizing over turns---exactly as the model predicts for concept-level encoding that extracts shared features while discarding example-specific details.
+
+\subsection{Correlation Loss Improves Multitask Learning}
+
+The novel correlation-based loss term, when added to the multitask learning objective for the augmented MNIST task, improved performance on both digit classification (concept task) and set identification (example task) compared to standard multitask training. The loss term promoted hybrid representations containing both correlated components (for concept generalization) and decorrelated components (for example discrimination), directly implementing the complementary encoding principle discovered in the hippocampal model.
+
+\section{Discussion}
+
+Our work provides a unified computational framework explaining how the dual-pathway architecture of hippocampal CA3 enables the simultaneous maintenance of distinct episodic memories and the formation of generalizable concepts. The key insight is that sparse, decorrelated MF encodings naturally resist merging under pattern completion dynamics, preserving example specificity, while dense, correlated PP encodings naturally merge along shared features, building concept representations \citep{marr1971simple, treves1992computational}. By modulating the inhibitory threshold---which we propose corresponds to theta-phase-dependent changes in inhibitory tone \citep{buzsaki2002theta, hasselmo2002proposed}---the network can alternate between these two modes within each theta cycle.
+
+The validation against real CA3 place cell data provides compelling support for this framework. The finding that sparser theta phases encode finer positions and more detailed task features, while denser phases encode coarser regions, is a direct prediction of the model and was not previously recognized in the experimental literature. This adds a new dimension to the understanding of theta-phase coding, beyond the established phenomena of phase precession \citep{skaggs1996theta} and phase-dependent gamma coupling \citep{colgin2009frequency}.
+
+The extension to artificial neural networks demonstrates that the complementary encoding principle generalizes beyond hippocampal-specific architectures. The novel correlation loss term provides a principled approach to multitask learning that is directly inspired by the biological architecture \citep{ruder2017overview}, and achieves improvements on both example discrimination and concept classification.
+
+Limitations include the simplified nature of the Hopfield network model, the use of anesthetized rather than awake recording data for some analyses, and the relatively simple multitask learning benchmark. Future work should explore more realistic spiking network implementations, awake behaving recordings with simultaneous MF and PP manipulations, and application to more complex multitask learning problems.
+
+\section{Conclusion}
+
+We demonstrate that the dual-pathway input architecture of hippocampal CA3---sparse mossy fiber and dense perforant path encodings---enables simultaneous storage and retrieval of distinct examples and shared concepts through threshold-dependent attractor dynamics. Theta-like oscillations switch between these modes, and real CA3 place cell data confirm that sparser theta phases encode finer, example-like spatial information while denser phases encode coarser, concept-like representations. A novel correlation-based loss term inspired by this principle improves multitask learning in artificial networks. These findings establish complementary encoding as a fundamental computational strategy for balancing specificity and generalization in both biological and artificial systems.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

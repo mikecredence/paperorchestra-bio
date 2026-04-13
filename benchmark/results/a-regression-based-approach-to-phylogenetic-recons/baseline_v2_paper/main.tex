@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+
+\title{fastBE: Scalable Phylogenetic Reconstruction from Multi-Sample Bulk DNA Sequencing via Structured Regression on Clonal Matrices}
+\author{Author A$^{1}$, Author B$^{1}$, Author C$^{1}$ \\
+\small $^{1}$Department of Computer Science, Princeton University, Princeton, NJ, USA}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Intra-tumor heterogeneity poses a major challenge for cancer treatment, and reconstructing the evolutionary history of tumor subclones from multi-sample bulk DNA sequencing data is essential for understanding tumor progression. Existing methods for solving the variant allele frequency factorization problem (VAFFP) do not scale beyond approximately 10 subclones, severely limiting their applicability to modern datasets with hundreds of samples and thousands of mutations. Here we present fastBE, a scalable algorithm that decomposes the VAFFP into a structured L1-regression subproblem for a fixed tree and a deterministic beam search over tree topologies. We derive an $O(mnd)$-time algorithm for the regression subproblem by exploiting the combinatorial structure of clonal matrices, achieving a mean 95.6$\times$ speedup over Gurobi and 105.1$\times$ over CPLEX linear programming solvers. A warm-start capability provides an additional 6.2$\times$ speedup for subtree prune-and-regraft operations. On simulated data with up to 1,000+ clones, fastBE outperforms Pairtree, Orchard, CALDER, and CITUP in reconstruction accuracy (F1-score), sample efficiency, and runtime. On real B-ALL patient data (14 patients) and colorectal cancer models (2 patients), fastBE produces phylogenies with fewer sum-condition violations and better agreement with observed mutational frequencies. fastBE enables phylogenetic reconstruction directly from individual mutations without requiring pre-clustering into clones, and is implemented in C++ and available open-source.
+\end{abstract}
+
+\section{Introduction}
+
+Tumor evolution is driven by the accumulation of somatic mutations that give rise to genetically distinct subpopulations of cancer cells, termed clones \citep{nowell1976clonal, greaves2012clonal}. Understanding the evolutionary relationships among these clones---the tumor phylogeny---is critical for elucidating mechanisms of drug resistance, metastasis, and tumor progression \citep{mcgranahan2017clonal}. Multi-sample bulk DNA sequencing has become a standard approach for characterizing intra-tumor heterogeneity, with studies such as TRACERx revealing up to 15 subclones in non-small-cell lung cancer and noting that 65\% of subclones would be missed without multi-region sequencing \citep{jamal2017tracking}.
+
+The computational problem of reconstructing tumor phylogenies from bulk sequencing data can be formulated as the variant allele frequency factorization problem (VAFFP): given a matrix $F$ of observed variant allele frequencies across $m$ samples and $n$ mutations, find a clonal tree $T$ and a usage matrix $U$ such that $F \approx UB_T$, where $B_T$ is the clonal matrix encoding the genotypes of each clone \citep{elshiekh2015automated}. This problem is NP-complete in general, and existing methods employ various heuristics including MCMC sampling (Pairtree; \citealt{wintersinger2022reconstructing}), enumeration (CITUP; \citealt{malikic2015citup}), and longitudinal constraints (CALDER; \citealt{myers2022calder}).
+
+A major limitation of existing approaches is scalability. Pairtree, CALDER, and CITUP fail to complete within practical time limits for instances with more than approximately 10 clones \citep{wintersinger2022reconstructing}. Orchard \citep{wintersinger2022orchard} partially addresses this limitation through beam search but still faces challenges at large scales. Furthermore, all existing methods except Orchard require pre-clustering of mutations into clones, which may lose phylogenetic signal.
+
+Here we present fastBE, which exploits the unique combinatorial structure of clonal matrices to derive an efficient algorithm for the L1-regression subproblem and combines it with a deterministic greedy beam search over tree topologies. The key insight is that the clonal matrix $B_T$ has a specific binary structure---entry $(i,j) = 1$ if and only if clone $i$ is descended from or equal to clone $j$---that enables an $O(mnd)$-time solution where $d$ is the tree depth, with warm-start updates for subtree prune-and-regraft (SPR) operations.
+
+\section{Methods}
+
+\subsection{Problem Formulation}
+
+We consider the L1 loss formulation of the VAFFP. Given an observed frequency matrix $F \in \mathbb{R}^{m \times n}$ and a clonal tree $T$ with $n$ vertices, the L1-VAFRP seeks a usage matrix $U \in \mathbb{R}^{m \times n}$ that minimizes:
+\begin{equation}
+\min_{U} \|F - UB_T\|_1 \quad \text{subject to} \quad U \geq 0, \quad U\mathbf{1} \leq 1
+\end{equation}
+where $B_T$ is the $n \times n$ clonal matrix, the constraint $U \geq 0$ ensures non-negative clone fractions, and $U\mathbf{1} \leq 1$ ensures clone fractions sum to at most 1 per sample. Table~\ref{tab:formulations} compares the loss functions used by different methods.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of problem formulations across tumor phylogeny methods.}
+\label{tab:formulations}
+\begin{tabular}{lll}
+\toprule
+Method & Loss Function & Key Constraints \\
+\midrule
+CITUP & $\|F - UB\|_2^2$ & $U \geq 0$, $U\mathbf{1} \leq 1$ \\
+Pairtree & Weighted L2 & $U \geq 0$, $U\mathbf{1} \leq 1$, clustering \\
+CALDER & L2 + longitudinal & $U \geq 0$, $U\mathbf{1} \leq 1$, temporal \\
+Orchard & $\|F - UB\|_1$ & $U \geq 0$, $U\mathbf{1} \leq 1$ \\
+fastBE & $\|F - UB\|_1$ & $U \geq 0$, $U\mathbf{1} \leq 1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Efficient Regression Algorithm}
+
+The key algorithmic contribution is an $O(mnd)$-time algorithm for solving the L1-VAFRP by exploiting the combinatorial structure of the clonal matrix $B_T$. Because $B_T$ is a binary matrix where entry $(i,j) = 1$ if and only if clone $i$ is descended from or equal to clone $j$, the matrix has a hierarchical structure that can be traversed efficiently. The algorithm processes each sample independently across the tree structure, computing optimal clone usage fractions in time proportional to the product of sample count, clone count, and tree depth (Table~\ref{tab:complexity}).
+
+\begin{table}[htbp]
+\centering
+\caption{Algorithmic complexity summary for fastBE operations.}
+\label{tab:complexity}
+\begin{tabular}{lll}
+\toprule
+Operation & Time Complexity & Notes \\
+\midrule
+L1-VAFRP solution (Theorem 1) & $O(mnd)$ & $m$=samples, $n$=clones, $d$=depth \\
+SPR warm-start (Corollary 1) & $O(md \cdot \max(d_i, d_j))$ & Recomputation after SPR \\
+Gurobi LP solver & Substantially slower & 95.6$\times$ slower \\
+CPLEX LP solver & Substantially slower & 105.1$\times$ slower \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Warm-Start for SPR Operations}
+
+When the tree topology is modified by a subtree prune-and-regraft operation, only a subset of the clone usage variables are affected. We derive a warm-start procedure (Corollary 1) that recomputes the optimal usage matrix after an SPR operation in $O(md \cdot \max(d(i), d(j)))$ time, where $d(i)$ and $d(j)$ are the depths of the pruned and regrafted subtree roots. This provides a 6.2$\times$ average speedup over cold-start recomputation.
+
+\subsection{Beam Search Algorithm}
+
+The full fastBE algorithm iteratively builds the phylogeny by adding one mutation at a time in a fixed order. For each new mutation, the algorithm evaluates all possible parent vertices and subsets of children to adopt, choosing the placement that minimizes the L1 loss. This beam search approach exploits the efficient regression algorithm for rapid evaluation of candidate placements. The algorithm outputs a single phylogenetic tree without requiring MCMC sampling or pre-clustering of mutations.
+
+\subsection{Implementation}
+
+fastBE is implemented in C++ for computational efficiency and is available open-source at github.com/raphael-group/fastBE. Input consists of multi-sample bulk DNA sequencing read counts, and output is a clonal tree (phylogeny).
+
+\subsection{Evaluation Metrics}
+
+Performance was evaluated using F1-score for pairwise ancestral relationship reconstruction on simulated data, sum-condition violation on real data, and wall-clock runtime across all experiments (Table~\ref{tab:metrics}).
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation metrics used across experiments.}
+\label{tab:metrics}
+\begin{tabular}{lll}
+\toprule
+Metric & Description & Used In \\
+\midrule
+F1-score & Pairwise ancestral accuracy & Simulated data \\
+False positive rate & Incorrect ancestral calls & Simulated (Supp) \\
+False negative rate & Missed ancestral calls & Simulated (Supp) \\
+Normalized L1 error (U) & $\|U - \hat{U}\|_1$ normalized & Simulated (Supp) \\
+Sum condition violation & Total constraint violation & Real data \\
+Wall-clock runtime & Execution time (seconds) & All experiments \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\subsection{Regression Algorithm Achieves Orders-of-Magnitude Speedup}
+
+The structured regression algorithm was compared against Gurobi v9.0.3 and CPLEX v22.1.0 LP solvers on 264 instances with clone counts ranging from 250 to 1,000 and sample counts from 50 to 500. The fastBE regression algorithm achieved a mean 95.6$\times$ speedup over Gurobi and 105.1$\times$ over CPLEX, with consistent advantages across all $(n, m)$ combinations. The speedup was more pronounced at larger problem sizes, where LP solver scaling becomes increasingly unfavorable.
+
+\subsection{Warm Start Provides Additional Speedup}
+
+The warm-start procedure was evaluated on 264 base instances with 25,000 SPR perturbations per instance. Warm-start recomputation achieved a mean 6.2$\times$ speedup over cold-start regression across all problem sizes. This capability is critical for the beam search algorithm, which requires rapid evaluation of many candidate tree modifications at each iteration. LP solvers provide no warm-start capability for this problem structure.
+
+\subsection{Competitive Accuracy on Small Instances}
+
+On 108 simulated instances with 3--10 clones and 5--25 samples at 40$\times$ coverage, fastBE, Pairtree, and Orchard achieved nearly identical F1-scores. At $n = 10$ clones, the mean F1-scores were: fastBE 0.965, Pairtree 0.972, Orchard 0.965, with CALDER and CITUP performing lower. All methods completed at least 98\% of instances.
+
+\subsection{Superior Scalability on Large Instances}
+
+On simulated instances with 100 or more clones, only fastBE and Orchard completed within the 24-hour time limit. Pairtree, CALDER, and CITUP failed to scale beyond approximately 10 clones. fastBE demonstrated superior runtime scaling compared to Orchard on large instances, while also achieving better reconstruction accuracy and sample efficiency. fastBE successfully processed instances with over 1,000 clones and hundreds of samples, representing an order-of-magnitude advance in scalability for tumor phylogeny reconstruction.
+
+\subsection{Real Data: B-ALL Patients}
+
+On 14 B-progenitor acute lymphoblastic leukemia patients, fastBE produced phylogenies with fewer sum-condition violations compared to Pairtree across most patients. The sum-condition violation measures the degree to which inferred clone frequencies violate the biological constraint that clone fractions must sum to at most 1 per sample. Lower violation indicates better agreement with the evolutionary constraints inherent in the problem formulation.
+
+\subsection{Real Data: Colorectal Cancer Models}
+
+On two patient-derived colorectal cancer model datasets (POP66 and CSC28), fastBE again showed fewer per-sample sum-condition violations compared to Pairtree. For patient CSC28, the two methods produced distinct phylogeny topologies leading to different interpretations of intra-tumor heterogeneity. Each vertex in the inferred phylogeny corresponds to a distinct subclone, and the differing topologies suggest different ancestral relationships among the subclonal populations.
+
+\section{Discussion}
+
+\subsection{Structured Regression as a Paradigm for Tumor Phylogeny}
+
+Our approach demonstrates that the combinatorial structure of clonal matrices can be exploited for dramatic computational gains, analogous to the role of structured regression in distance-based species phylogenetics \citep{desper2002fast, price2010fasttree}. The $O(mnd)$ algorithm makes it practical to evaluate millions of candidate tree modifications during the beam search, enabling exploration of the phylogenetic landscape at scales previously inaccessible.
+
+\subsection{Mutation-Level Resolution}
+
+A distinctive advantage of fastBE is its ability to reconstruct phylogenies directly from individual mutations without requiring pre-clustering into clones. This preserves phylogenetic signal that may be lost during clustering and enables detection of complex subclonal structures that violate the assumptions of clustering algorithms. As dataset sizes continue to grow, mutation-level reconstruction will become increasingly important.
+
+\subsection{Limitations and Future Directions}
+
+Several limitations merit consideration. The $O(mnd)$ time complexity, while dramatically faster than LP solvers, is not optimal; whether an $O(mn)$ algorithm exists remains an open theoretical question. fastBE currently handles only single nucleotide variants in copy-neutral regions; extension to copy number heterogeneity is an important direction. The infinite sites assumption precludes modeling mutation loss, and the algorithm provides no uncertainty estimates. Future work could integrate confidence intervals, longitudinal constraints, and support for the Dollo model of mutation loss.
+
+\section{Conclusion}
+
+We have presented fastBE, a scalable algorithm for tumor phylogeny reconstruction that exploits the combinatorial structure of clonal matrices to achieve orders-of-magnitude speedups over existing methods. By decomposing the NP-hard VAFFP into an efficient structured regression subproblem and a deterministic beam search, fastBE enables phylogenetic reconstruction at scales of 1,000+ clones while maintaining competitive accuracy on smaller instances. Application to real cancer datasets demonstrates improved agreement with evolutionary constraints compared to existing approaches. fastBE represents a significant advance in our ability to reconstruct the evolutionary history of tumors from multi-sample bulk sequencing data.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

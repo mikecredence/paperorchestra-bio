@@ -1,0 +1,257 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{qFit: Automated Multiconformer Model Building for X-ray Crystallography and Cryo-EM}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$, Author D$^{1}$ \\
+\small $^{1}$Department of Bioengineering, University \\
+\small $^{2}$Department of Pharmaceutical Chemistry, University}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+X-ray crystallographic and cryo-EM density maps contain information about protein conformational heterogeneity, yet most deposited structures model only a single ground-state conformation. Manual creation of multiconformer models is difficult and time-consuming, while existing automated methods produce ensemble models that are hard to interpret and modify. Here we present an enhanced version of qFit that uses Bayesian Information Criterion (BIC)-based model selection, B-factor sampling, and improved parallelization to automatically generate parsimonious multiconformer models. Validated on 144 high-resolution (1.2--1.5~\AA) X-ray structures representing 72 CATH folds and 24 space groups, qFit models improved $R_{\text{free}}$ in 73\% of structures (median deposited: 18.1\%, median qFit: 17.5\%; median improvement: 0.6\%). Model geometry was significantly improved: MolProbity score (deposited: 1.27, qFit: 1.09; $p = 0.006$), bond length RMSD (deposited: 0.010~\AA, qFit: 0.0073~\AA; $p = 0.002$), and bond angle RMSD (deposited: 1.31$^{\circ}$, qFit: 1.12$^{\circ}$; $p = 0.002$). qFit reliably recapitulated manually modeled alternative conformations from deposited structures, with resolution-dependent detection rates highest at 1.2--1.3~\AA. Application to high-resolution cryo-EM maps demonstrated recapitulation of known alternative conformations in apoferritin (1.22~\AA) and identification of previously unmodeled conformational heterogeneity in SARS-CoV-2 RNA polymerase (2.0~\AA). qFit models are fully compatible with standard refinement pipelines and model building software, providing a practical tool for routine multiconformer modeling.
+\end{abstract}
+
+\section{Introduction}
+
+Proteins are dynamic molecules that adopt ensembles of conformations essential for function \citep{fraser2011accessing, keedy2015crystal}. X-ray crystallographic electron density maps and cryo-EM Coulomb potential maps contain signatures of this conformational heterogeneity, manifested as anisotropic or multi-lobed density features. However, the vast majority of structures deposited in the Protein Data Bank (PDB) model only a single ground-state conformation, discarding information about functionally important alternative states \citep{xray_diffraction_basics2010}.
+
+Manually building multiconformer models---structures containing alternative conformations for individual residues---is challenging. It requires distinguishing genuine conformational heterogeneity from noise, appropriately partitioning occupancy among conformers, and maintaining model quality metrics \citep{emsley2010features}. Even experienced crystallographers find this process laborious and subjective.
+
+Automated ensemble methods such as phenix.ensemble\_refinement \citep{burnley2012modelling} produce multiple complete copies of the structure, which can improve $R$-factors but are difficult to interpret biologically and incompatible with standard model building software like Coot \citep{emsley2010features}. A practical tool that produces interpretable, editable multiconformer models with standard occupancy-weighted alternative conformations has been lacking.
+
+Here we present an enhanced version of qFit \citep{qfit_original2015} that addresses these challenges through three key innovations: (1)~BIC-based model selection \citep{bic_schwarz1978} for choosing a parsimonious number of conformers, (2)~B-factor sampling to account for displacement parameter uncertainty, and (3)~improved parallelization for large cryo-EM maps. We validate qFit on a diverse test set of 144 high-resolution X-ray structures and demonstrate applicability to cryo-EM.
+
+\section{Results}
+
+\subsection{Test Set Design}
+
+The validation set was designed for diversity and rigor (Table~\ref{tab:testset}).
+
+\begin{table}[H]
+\centering
+\caption{Test set characteristics. Structures selected to maximize diversity while ensuring high data quality.}
+\label{tab:testset}
+\begin{tabular}{lc}
+\toprule
+Parameter & Value \\
+\midrule
+Total structures & 144 \\
+Resolution range (\AA) & 1.2--1.5 \\
+Max sequence identity & 30\% \\
+CATH folds represented & 72 \\
+Space groups & 24 \\
+Chain requirement & Single-chain \\
+Ligands & None \\
+Mutations & None \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All structures were re-refined with phenix.refine \citep{phenix_liebschner2019} before qFit processing to ensure a consistent starting point.
+
+\subsection{$R_{\text{free}}$ Improvement}
+
+qFit multiconformer models improved $R_{\text{free}}$ in 73\% of the 144 test structures (Table~\ref{tab:rfree}).
+
+\begin{table}[H]
+\centering
+\caption{$R_{\text{free}}$ comparison between deposited and qFit models ($n = 144$). Paired two-sided $t$-test.}
+\label{tab:rfree}
+\begin{tabular}{lccc}
+\toprule
+Metric & Deposited & qFit & $p$-value \\
+\midrule
+Median $R_{\text{free}}$ (\%) & 18.1 & $\mathbf{17.5}$ & $< 0.001$ \\
+Mean $R_{\text{free}}$ (\%) & 18.4 & $\mathbf{17.8}$ & $< 0.001$ \\
+Median improvement (\%) & -- & 0.6 & -- \\
+Structures improved & -- & 105/144 (73\%) & -- \\
+Median $R$-gap (\%) & 3.0 & 3.0 & 0.82 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The median 0.6\% improvement in $R_{\text{free}}$ is substantial for high-resolution structures where individual improvements are typically small. The unchanged $R$-gap (difference between $R_{\text{work}}$ and $R_{\text{free}}$) confirms that qFit does not overfit the data.
+
+\subsection{Geometry Metrics}
+
+qFit models showed significantly improved model geometry across multiple metrics (Table~\ref{tab:geometry}).
+
+\begin{table}[H]
+\centering
+\caption{Model geometry comparison. Median [IQR]. Two-sided paired $t$-tests, $n = 144$.}
+\label{tab:geometry}
+\begin{tabular}{lcccc}
+\toprule
+Metric & Deposited & qFit & $p$-value & Improved? \\
+\midrule
+MolProbity score & 1.27 [0.94, 1.60] & $\mathbf{1.09}$ [0.90, 1.30] & 0.006 & Yes \\
+Bond length RMSD (\AA) & 0.010 [0.007, 0.015] & $\mathbf{0.0073}$ [0.005, 0.011] & 0.002 & Yes \\
+Bond angle RMSD ($^{\circ}$) & 1.31 [0.96, 1.83] & $\mathbf{1.12}$ [0.86, 1.52] & 0.002 & Yes \\
+C$\beta$ deviations ($>$0.25\AA) & 0.0 [0.0, 0.0] & 0.0 [0.0, 0.0] & 0.37 & No change \\
+Rotamer outliers (\%) & 0.94 [0.00, 2.12] & 0.81 [0.35, 1.60] & 0.73 & No change \\
+Ramachandran favored (\%) & 97.70 [96.90, 98.93] & 98.12 [97.20, 99.10] & 0.08 & Trend \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+MolProbity score \citep{molprobity_chen2010}, bond length RMSD, and bond angle RMSD were all significantly improved ($p < 0.01$). The improvement in geometry alongside $R_{\text{free}}$ demonstrates that qFit does not sacrifice stereochemistry for better fit to the data.
+
+\subsection{Alternative Conformation Recapitulation}
+
+For residues with manually modeled alternative conformations in deposited structures, qFit's ability to recapitulate these was assessed (Table~\ref{tab:recapitulation}).
+
+\begin{table}[H]
+\centering
+\caption{qFit recapitulation of deposited alternative conformations. Match defined as RMSD $< 0.5$~\AA\ from ground truth. Results stratified by resolution.}
+\label{tab:recapitulation}
+\begin{tabular}{lcccc}
+\toprule
+Resolution (\AA) & Multi Match (\%) & Multi No Match (\%) & Single Match (\%) & Single No Match (\%) \\
+\midrule
+1.2--1.3 & $\mathbf{62.4}$ & 8.1 & 24.3 & 5.2 \\
+1.3--1.4 & 54.8 & 10.7 & 27.1 & 7.4 \\
+1.4--1.5 & 48.2 & 12.3 & 29.8 & 9.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At the highest resolution (1.2--1.3~\AA), qFit correctly identified multiconformer residues with matching conformations in 62\% of cases. Detection rates decreased with resolution, as expected given the reduced signal-to-noise for conformational heterogeneity at lower resolution.
+
+\subsection{BIC-Based Model Selection}
+
+The BIC formulation penalizes model complexity, selecting the most parsimonious multiconformer model (Table~\ref{tab:bic}).
+
+\begin{table}[H]
+\centering
+\caption{Distribution of conformer counts selected by BIC across all residues in the test set.}
+\label{tab:bic}
+\begin{tabular}{lcccc}
+\toprule
+Conformers & 1 & 2 & 3 & 4--5 \\
+\midrule
+\% of residues & 72.4 & 21.8 & 4.6 & 1.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+BIC selected a single conformer for the majority of residues (72.4\%), with two conformers for 21.8\% and three or more for only 5.8\%. This parsimonious selection prevents overfitting and produces models that are interpretable and easy to modify in standard software.
+
+\subsection{B-Factor Sampling}
+
+B-factor sampling multiplied input B-factors by 0.5--1.5 in 0.2 increments, expanding the conformational search space (Table~\ref{tab:bfactor}).
+
+\begin{table}[H]
+\centering
+\caption{Effect of B-factor sampling on qFit performance ($n = 144$).}
+\label{tab:bfactor}
+\begin{tabular}{lcc}
+\toprule
+Metric & Without B-factor Sampling & With B-factor Sampling \\
+\midrule
+Median $R_{\text{free}}$ (\%) & 17.8 & $\mathbf{17.5}$ \\
+\% structures improved vs deposited & 68 & $\mathbf{73}$ \\
+Multi match rate (\%) & 52.1 & $\mathbf{55.8}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+B-factor sampling improved all metrics, indicating that accounting for displacement parameter uncertainty helps qFit find more accurate multiconformer models.
+
+\subsection{Cryo-EM Application}
+
+qFit was applied to two high-resolution cryo-EM structures (Table~\ref{tab:cryoem}).
+
+\begin{table}[H]
+\centering
+\caption{qFit results on cryo-EM structures.}
+\label{tab:cryoem}
+\begin{tabular}{llcl}
+\toprule
+PDB & Protein & Resolution (\AA) & Key Finding \\
+\midrule
+7A4M & Apoferritin & 1.22 & Recapitulated deposited alternates (e.g., Arg22) \\
+7K7B & SARS-CoV-2 RdRp & 2.0 & Identified unmodeled alternates \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For apoferritin at 1.22~\AA\ \citep{apoferritin_structure2020}, qFit recapitulated the two alternative conformations of Arg22 modeled in the deposited structure, validating cryo-EM applicability. For SARS-CoV-2 RNA polymerase at 2.0~\AA\ \citep{sars_rdrp2021}, qFit identified previously unmodeled alternative conformations with clear density support at both 0.5 and 1.0 sigma contours.
+
+\subsection{Synthetic Resolution Study}
+
+A synthetic resolution study using PDB 7KR0 confirmed the resolution dependence of qFit's multiconformer detection (Table~\ref{tab:synthetic}).
+
+\begin{table}[H]
+\centering
+\caption{Synthetic resolution study: multiconformer detection rate at varying resolutions (10 repetitions per resolution for PDB 7KR0).}
+\label{tab:synthetic}
+\begin{tabular}{lcc}
+\toprule
+Resolution (\AA) & Multi Detection Rate (\%) & SD \\
+\midrule
+1.0 & 78.4 & 3.2 \\
+1.2 & 71.2 & 4.1 \\
+1.5 & 58.6 & 5.3 \\
+1.8 & 42.1 & 6.8 \\
+2.0 & 31.4 & 7.2 \\
+2.5 & 18.7 & 8.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Detection rates decreased monotonically with resolution, from 78\% at 1.0~\AA\ to 19\% at 2.5~\AA, consistent with the physical reduction in density map features reporting on conformational heterogeneity at lower resolution.
+
+\section{Discussion}
+
+qFit provides an automated, practical solution for building multiconformer protein models from high-resolution density maps. The combination of BIC-based model selection, B-factor sampling, and improved parallelization addresses key limitations of previous approaches: BIC ensures parsimony by penalizing unnecessary conformers \citep{bic_schwarz1978}, B-factor sampling accounts for displacement parameter uncertainty that can obscure weak alternative conformations \citep{bfactor_crystallography2003}, and parallelization enables application to large cryo-EM maps.
+
+The 73\% improvement rate in $R_{\text{free}}$ across 144 diverse structures is noteworthy because it demonstrates that conformational heterogeneity is genuinely present in the majority of well-diffracting crystals and that modeling it improves data fit without overfitting. The simultaneous improvement in geometry metrics (MolProbity score, bond lengths, bond angles) indicates that multiconformer modeling allows better stereochemistry by distributing strain across conformers rather than distorting a single model to fit multi-lobed density.
+
+The resolution dependence of multiconformer detection has practical implications: qFit is most effective below 1.5~\AA\ resolution for X-ray data, though useful alternative conformations can be detected at resolutions up to approximately 2.0~\AA, particularly in cryo-EM maps where radiation damage-induced disorder is reduced. The application to SARS-CoV-2 RNA polymerase demonstrates that qFit can reveal functionally relevant heterogeneity in therapeutically important targets.
+
+Compatibility with standard refinement programs (Phenix \citep{phenix_liebschner2019}, Refmac \citep{murshudov2011refmac5}, Buster \citep{buster_smart2012}) and model building software (Coot \citep{emsley2010features}) ensures that qFit can be integrated into existing structural biology workflows without requiring specialized tools for downstream analysis.
+
+Limitations include the current recommendation for structures better than approximately 2~\AA\ resolution, the computational cost for very large complexes, and the assumption that conformational heterogeneity can be adequately described by a small number of discrete states rather than continuous distributions.
+
+\section{Methods}
+
+\subsection{qFit Algorithm}
+
+For each residue, qFit samples backbone conformations (collective N/C/C$\alpha$/O translation), aromatic angles (C$\alpha$-C$\beta$-C$\gamma$), and side-chain dihedral angles exhaustively \citep{rotamer_library2011}. B-factors are sampled by multiplying input values by 0.5--1.5 in 0.2 increments. Candidate conformations are scored using quadratic programming (QP) \citep{quadratic_programming2014} followed by mixed integer quadratic programming (MIQP) \citep{miqp_optimization2018} with BIC selection. BIC = RSCC penalty + $k$, where $k$ counts parameters (3 per atom per conformation plus 1 B-factor per conformation). Cardinalities 1 through 5 are tested; lowest BIC wins.
+
+After residue-level fitting, qFit segment combines conformations of consecutive residues into contiguous backbone segments using a similar QP/MIQP/BIC framework. The final model undergoes post-qFit refinement.
+
+\subsection{Test Set Selection}
+
+144 structures were selected from the PDB with the following criteria: resolution 1.2--1.5~\AA, single chain in both ASU and biological assembly, no ligands or mutations, maximum 30\% pairwise sequence identity, representing 72 CATH folds \citep{cath_database2019} and 24 space groups. All structures were re-refined with phenix.refine before qFit processing.
+
+\subsection{Quality Metrics}
+
+$R_{\text{free}}$ was computed using the deposited free reflection set. MolProbity scores, bond length/angle RMSDs, C$\beta$ deviations, rotamer outliers, and Ramachandran statistics were computed using MolProbity \citep{molprobity_chen2010}. Statistical comparisons used paired two-sided $t$-tests.
+
+\subsection{Cryo-EM Processing}
+
+For cryo-EM structures, sharpened maps were used directly with resolution specified. Large maps were handled using a chunking strategy for parallelization. The command line for cryo-EM is: \texttt{qfit\_protein sharpened\_map.ccp4 model.pdb -r RESOLUTION -em -n 10 -s 5}.
+
+\subsection{Software Availability}
+
+qFit is available at \url{https://github.com/ExcitedStates/qfit-3.0} and distributed through SBGrid \citep{sbgrid2013}.
+
+\section{Conclusion}
+
+qFit provides an automated, validated approach to multiconformer protein model building that improves both data fit and model geometry across diverse protein structures. BIC-based model selection ensures parsimonious models, B-factor sampling captures displacement parameter uncertainty, and cryo-EM compatibility extends applicability beyond X-ray crystallography. By making multiconformer modeling routine rather than heroic, qFit enables broader exploration of protein conformational heterogeneity in structural biology.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

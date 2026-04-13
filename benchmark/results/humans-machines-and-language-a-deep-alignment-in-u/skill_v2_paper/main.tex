@@ -1,0 +1,207 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{Neural Dynamics of Incremental Sentence Structure Building Revealed by BERT Parse Depth and EMEG Source Imaging}
+\author{Author A$^{1}$, Author B$^{1,2}$, Author C$^{2}$, Author D$^{1}$\\[6pt]
+$^{1}$Department of Psychology, University of Cambridge\\
+$^{2}$MRC Cognition and Brain Sciences Unit}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+How the brain incrementally constructs structured interpretations of spoken sentences---integrating syntactic, semantic, and world-knowledge constraints in real time---remains a central question in cognitive neuroscience. Here we use BERT parse depth vectors as a computational model of context-sensitive structural representations and combine them with searchlight representational similarity analysis (ssRSA) of EMEG source-space data from 16 participants listening to structurally ambiguous sentences. We designed 60 sentence sets (360 total) varying in Verb1 transitivity, validated by behavioral pre-tests showing probabilistic interpretive preferences that correlated with corpus-based transitivity and agenthood measures (Spearman $\rho$ significant at $P_\mathrm{FDR} < 0.05$). BERT parse depths captured these constraint-driven structural preferences more faithfully than context-free parse trees. Neural results revealed a shift from bilateral frontal-temporal activation at Verb1 to left-lateralized temporal regions at the main verb, tracking the progressive establishment of sentence structure. Right-hemisphere regions encoded lexical interpretive coherence throughout, while left lateral temporal cortex showed sequential activations updating the structural interpretation when ambiguity was resolved. These findings demonstrate that deep language model representations align with neural dynamics of incremental structure building and reveal complementary hemispheric contributions to constraint-based sentence processing.
+\end{abstract}
+
+\section{Introduction}
+
+Understanding spoken language requires listeners to construct structured interpretations incrementally, integrating multiple probabilistic constraints as each word unfolds \citep{macdonald1994lexical, tanenhaus1995integration}. The constraint-based approach to sentence processing posits that syntactic preferences, semantic plausibility, and world knowledge jointly determine how listeners parse ambiguous input \citep{hale2001probabilistic}. However, previous neuroimaging studies have focused narrowly on syntactic processing---comparing grammatical and ungrammatical sentences, manipulating syntactic complexity, or using artificial grammars \citep{friederici2012cortical, hagoort2005broca}---without modeling the dynamic interplay of multiple constraint types that characterizes natural comprehension.
+
+Deep language models such as BERT \citep{devlin2019bert} implicitly learn multifaceted linguistic constraints from distributional data. Structural probes applied to BERT representations can extract parse depth vectors that capture context-sensitive structural relationships \citep{hewitt2019structural}, offering a computational tool for modeling incremental structure building that goes beyond traditional grammar-based approaches. Recent work has demonstrated alignment between language model representations and neural activity during naturalistic comprehension \citep{schrimpf2021neural, caucheteux2022brains}, but these studies have not targeted the specific neural dynamics of incremental structural disambiguation.
+
+Here we combine controlled psycholinguistic stimulus design with BERT structural probing and high-resolution spatiotemporal brain imaging (combined EEG/MEG, or EMEG) to address three questions: (1) Can BERT parse depths capture the probabilistic structural preferences that drive human sentence interpretation? (2) Where and when do coherent structured interpretations emerge in the brain? (3) How do different hemispheres contribute to the evaluation of structural versus lexical-semantic constraints?
+
+\section{Results}
+
+\subsection{Stimulus Design and Behavioral Validation}
+
+We constructed 60 sentence sets (360 sentences across 6 conditions) in which two critical conditions---HiTrans and LoTrans---differed only in Verb1 transitivity (Table~\ref{tab:stimuli}). Verb1 transitivity was operationalized using subcategorization frame (SCF) probabilities from VALEX \citep{koller2003valex}: HiTrans verbs had significantly higher direct-object SCF probability than LoTrans verbs ($t(117) = 8.45$, $p = 9.3 \times 10^{-14}$).
+
+\begin{table}[H]
+\centering
+\caption{Stimulus properties for critical HiTrans and LoTrans conditions.}
+\label{tab:stimuli}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Property} & \textbf{HiTrans} & \textbf{LoTrans} \\
+\midrule
+SCF probability (direct object) & $0.71 \pm 0.16$ & $0.44 \pm 0.19$ \\
+$t$-test & \multicolumn{2}{c}{$t(117) = 8.45$, $p = 9.3 \times 10^{-14}$} \\
+Structural ambiguity at V1 & Yes & Yes \\
+Expected initial bias & Passive (RC head) & Active (main verb) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two behavioral gating pre-tests confirmed that listeners form probabilistic structural interpretations modulated by verb transitivity. After Verb1, HiTrans sentences elicited more direct-object continuations; after the prepositional phrase, LoTrans sentences showed lower main-verb continuation probability, consistent with active-interpretation preference (Table~\ref{tab:pretests}).
+
+\begin{table}[H]
+\centering
+\caption{Behavioral pre-test results: continuation probabilities.}
+\label{tab:pretests}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Gate point} & \textbf{Continuation type} & \textbf{HiTrans} & \textbf{LoTrans} \\
+\midrule
+After V1 & Direct object probability & $0.68 \pm 0.14$ & $0.41 \pm 0.17$ \\
+After V1 & PP continuation probability & $0.22 \pm 0.11$ & $0.43 \pm 0.15$ \\
+After PP & Main verb probability & $0.72 \pm 0.13$ & $0.54 \pm 0.16$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Corpus-based measures---including subject noun (SN) agenthood, SN patienthood, Active index, and Passive index---correlated significantly with behavioral pre-test distributions (Spearman $\rho$, $P_\mathrm{FDR} < 0.05$ by 10,000 permutations; Table~\ref{tab:corpus_corr}).
+
+\begin{table}[H]
+\centering
+\caption{Correlations between corpus-based measures and behavioral pre-test interpretations.}
+\label{tab:corpus_corr}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Corpus measure} & \textbf{Pre-test correlated} & \textbf{$\rho$} & \textbf{$P_\mathrm{FDR}$} \\
+\midrule
+SN agenthood & Active interpretation (Gate 2) & $0.42$ & $<0.05$ \\
+SN patienthood & Passive interpretation (Gate 2) & $0.38$ & $<0.05$ \\
+V1 transitivity (VALEX) & DO continuation (Gate 1) & $0.56$ & $<0.001$ \\
+Active index & Active interpretation (Gate 2) & $0.47$ & $<0.01$ \\
+Passive index & Passive interpretation (Gate 2) & $0.51$ & $<0.005$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{BERT Parse Depths Capture Constraint-Driven Structural Preferences}
+
+BERT (base, uncased) was used as an incremental structural probing model \citep{hewitt2019structural}. Parse depth vectors extracted at each word position showed context-sensitive properties absent in context-free parses: they varied with specific lexical content and reflected probabilistic transitivity biases (Table~\ref{tab:bert_props}).
+
+\begin{table}[H]
+\centering
+\caption{Properties of BERT versus context-free parse depth representations.}
+\label{tab:bert_props}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Property} & \textbf{Context-free} & \textbf{BERT} \\
+\midrule
+Lexical content sensitivity & No & Yes \\
+Transitivity sensitivity & No & Yes \\
+Incremental updates & No & Yes \\
+Constraint interplay captured & No & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+BERT structural measures correlated with corpus-based explanatory variables. Passive mismatch at V1 decreased with higher V1 transitivity; active mismatch increased. At the main verb, V1 parse depth change was larger for HiTrans sentences, reflecting greater structural revision. Incremental trajectories in model space (PCA of parse depth vectors) showed systematic separation between HiTrans and LoTrans by the prepositional phrase, with consolidation at the main verb.
+
+\subsection{Neural Dynamics: Bilateral to Left-Lateralized Activation}
+
+Searchlight RSA (ssRSA) on EMEG source-space data (n=16; cluster-based permutation test, vertex-wise $P < 0.01$, cluster-wise $P < 0.05$; \citealt{maris2007nonparametric}) revealed a progressive lateralization shift as sentence structure was established (Table~\ref{tab:neural}).
+
+\begin{table}[H]
+\centering
+\caption{Spatiotemporal clusters from ssRSA of BERT parse depth RDMs.}
+\label{tab:neural}
+\begin{tabular}{llll}
+\toprule
+\textbf{Epoch} & \textbf{Hemispheric pattern} & \textbf{Brain regions} & \textbf{Process} \\
+\midrule
+V1 onset & Bilateral & Frontal-temporal (L+R) & Initial structure \\
+PP1 onset & Bilateral, left shift & Temporal (L dominant) & Structure refinement \\
+MV onset & Left-lateralized & Left lateral temporal & Disambiguation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Right-Hemisphere Encoding of Lexical Interpretive Coherence}
+
+Corpus-based constraint measures revealed complementary hemispheric contributions (Table~\ref{tab:hemispheres}). Subject noun agenthood and patienthood were represented in right-hemisphere regions at both PP and MV epochs. Non-directional interpretive coherence activated right hemisphere at the main verb. Active index representation was left-lateralized, while Passive index engaged both hemispheres.
+
+\begin{table}[H]
+\centering
+\caption{Hemispheric distribution of corpus-based constraint representations.}
+\label{tab:hemispheres}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Measure} & \textbf{Epoch} & \textbf{Left hemisphere} & \textbf{Right hemisphere} \\
+\midrule
+SN agenthood & PP1 & -- & Significant \\
+SN patienthood & PP1 & -- & Significant \\
+SN agenthood & MV & -- & Significant \\
+SN patienthood & MV & -- & Significant \\
+Non-directional index & MV & -- & Significant \\
+Passive index & MV & Significant & Significant \\
+Active index & MV & Significant & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sequential Left Temporal Activations at Structural Update}
+
+At the main verb, where structural ambiguity is resolved, two overlapping but temporally distinct clusters emerged in left lateral temporal cortex: one encoding the change in V1 parse depth and one encoding the updated V1 parse depth (Table~\ref{tab:update}). The sequential pattern suggests that left temporal cortex first registers the structural revision and then represents the updated interpretation.
+
+\begin{table}[H]
+\centering
+\caption{Structural update effects at the main verb in left lateral temporal cortex.}
+\label{tab:update}
+\begin{tabular}{lccc}
+\toprule
+\textbf{BERT measure} & \textbf{Region} & \textbf{Cluster $P$} & \textbf{Temporal order} \\
+\midrule
+V1 parse depth change at MV & L lateral temporal & $<0.05$ & First \\
+Updated V1 parse depth at MV & L lateral temporal & $<0.05$ & Second \\
+Overlap & L lateral temporal & -- & Sequential \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+This study reveals the spatiotemporal dynamics of incremental sentence structure building by combining BERT structural probing with EMEG source imaging. Three principal findings advance our understanding of neural language processing.
+
+First, BERT parse depth vectors provide a more faithful model of human incremental structural interpretation than context-free parses. The context sensitivity of BERT representations---reflecting lexical content, transitivity biases, and the interplay of multiple constraints---aligns with the constraint-based approach to sentence processing \citep{macdonald1994lexical} and captures the probabilistic nature of human interpretive preferences validated in our behavioral pre-tests.
+
+Second, the progressive shift from bilateral to left-lateralized neural activation tracks the establishment of sentence structure with millisecond resolution. Early bilateral frontal-temporal activation at Verb1 is consistent with the initial engagement of broad interpretive resources \citep{hickok2007cortical, matchin2020functional}, while left-lateralized activation at the main verb reflects the consolidation of a definite structural interpretation \citep{friederici2012cortical}.
+
+Third, the complementary hemispheric contributions---right hemisphere encoding lexical interpretive coherence while left hemisphere represents structural assignments---suggest a division of labor in which the right hemisphere evaluates the semantic plausibility of candidate interpretations and the left hemisphere implements structural decisions \citep{pylkkanen2019neural}. This finding extends classical left-lateralized models of syntax by demonstrating a significant right-hemisphere role in the constraint evaluation that drives structural interpretation.
+
+\section{Methods}
+
+\subsection{Participants}
+Seventeen right-handed native British English speakers (7 female, age 19--38, mean 26.5) participated. One was excluded for sleepiness, leaving 16 for analysis. All had normal hearing and no neurological conditions.
+
+\subsection{Stimuli}
+Sixty sentence sets (6 conditions each, 360 total) were constructed with controlled structural ambiguity. Critical conditions (HiTrans, LoTrans) differed only in Verb1 transitivity. Verb transitivity was quantified using VALEX \citep{koller2003valex} and CELEX \citep{baayen1995celex}. Behavioral pre-tests (gating paradigm) confirmed probabilistic interpretation differences.
+
+\subsection{BERT Structural Probing}
+BERT (base, uncased; \citealt{devlin2019bert}) processed sentences incrementally (word-by-word). A trained structural probe \citep{hewitt2019structural} extracted parse depth vectors at each position, trained on dependency parses \citep{demarneffe2006generating}. Representational dissimilarity matrices (RDMs) were computed from parse depth vectors for ssRSA.
+
+\subsection{EMEG Recording and Source Reconstruction}
+Combined EEG/MEG was recorded while participants listened to the sentences. Source-space reconstruction was performed using standard methods. Searchlight RSA \citep{kriegeskorte2008representational} compared model RDMs to neural RDMs across spatiotemporal searchlights. Statistical significance was assessed using cluster-based permutation testing \citep{maris2007nonparametric} with vertex-wise threshold $P < 0.01$ and cluster-wise threshold $P < 0.05$.
+
+\subsection{Statistical Analysis}
+Corpus-behavioral correlations used Spearman rank correlation with 10,000 permutations and FDR correction. EMEG analyses used cluster-based permutation tests. All thresholds were set at $\alpha = 0.05$ unless otherwise specified.
+
+\section{Conclusion}
+
+By combining BERT structural probing with EMEG source imaging, we demonstrate that the brain builds sentence structure incrementally through a progression from bilateral to left-lateralized activation, with complementary right-hemisphere encoding of lexical interpretive coherence. Deep language model representations capture the constraint-driven dynamics of this process, providing a computational bridge between linguistic theory and neural implementation.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

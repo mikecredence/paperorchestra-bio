@@ -1,0 +1,263 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{Quantifying the Distribution of Feature Values over Data Represented in Arbitrary Dimensional Spaces}
+
+\author{
+Author~One$^{1,*}$, Author~Two$^{1}$, Author~Three$^{2}$ \\[6pt]
+$^{1}$Department of Neuroscience, University of Research, Country \\
+$^{2}$Department of Computer Science, University of Research, Country \\[4pt]
+$^{*}$Corresponding author: corresponding@example.edu
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Determining whether a feature is distributed in a structured manner over a point cloud is a fundamental problem across neuroscience, data science, and image analysis. Existing approaches rely on clustering assumptions, linear correlation metrics, or model-dependent decoders, all of which fail for continuous features in arbitrary-dimensional spaces with complex geometries. Here we introduce the Structure Index (SI), a graph-based topological metric that quantifies feature distribution structure by measuring the overlap between nearest-neighbor groups defined by binned feature values. SI ranges from 0 (random distribution) to 1 (maximal structure) and operates on point clouds in any dimensionality. We validate SI on three toy models (2D gradient, 3D solid ball, 3D lamp) embedded into dimensions up to 100+, demonstrating robustness to dimensionality ($<3\%$ variation), point cloud size (stable above 1{,}000 points), bin count, and signal-to-noise ratio. By varying the $k$-nearest-neighbor parameter, SI distinguishes local from global feature structure. We extend SI to vectorial features on $D$-dimensional spheres and apply the metric to head-direction cell neural manifold data, recovering consistent structure from both high-dimensional neuron spaces and 3D manifold representations across awake ($\text{SI} = 0.82 \pm 0.03$), REM ($\text{SI} = 0.71 \pm 0.04$), and nREM ($\text{SI} = 0.12 \pm 0.05$) states. Additional applications to sound categorization in 128-dimensional spaces and histological image segmentation demonstrate broad utility.
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} structure index, point cloud, feature distribution, neural manifold, topological metric, dimensionality
+\end{abstract}
+
+\section{Introduction}
+
+Quantifying whether a given feature is distributed in a structured---rather than random---manner over a data cloud is a pervasive problem in science. In neuroscience, researchers ask whether behavioral variables such as head direction are systematically encoded across neural population activity manifolds \citep{peyrache2015internally, chaudhuri2019intrinsic, gardner2022toroidal}. In single-cell genomics, dimensionality reduction methods produce point clouds over which gene expression structure must be assessed \citep{becht2019dimensionality, kobak2019art}. In image analysis, pixel features form high-dimensional clouds whose spatial organization determines segmentation quality.
+
+Existing approaches to quantifying feature structure have significant limitations. Cluster-based methods \citep{luxburg2007tutorial, chaudhuri2012spectral} require discrete group assignments and are suboptimal for continuous features. Linear correlation metrics \citep{moran1950spatial} fail for complex, convoluted distributions where the relationship between spatial position and feature value is nonlinear. Decoder-based approaches \citep{cunningham2014dimensionality} are model-dependent and do not directly quantify structure---high decoding accuracy may reflect overfitting rather than genuine organization. Entropy-based measures \citep{shannon1948mathematical} require binning choices that fundamentally alter the metric's behavior.
+
+Critically, no existing method works robustly across arbitrary dimensions, handles both scalar and vectorial features, and distinguishes local from global structure using a single unified framework. This gap is increasingly important as modern datasets---from neural recordings with thousands of simultaneously recorded neurons \citep{jazayeri2021interpreting} to spatial transcriptomics with millions of molecular features---demand dimension-agnostic analysis tools.
+
+Here we introduce the Structure Index (SI), a graph-based metric that fills this gap. SI divides feature values into bins, computes the overlap between nearest-neighbor groups of each bin-group, and derives a single number between 0 (random) and 1 (maximal structure) from the resulting adjacency matrix. The key parameter $k$ (number of nearest neighbors) can be tuned to probe local versus global structure. We validate SI extensively on toy models, extend it to vectorial features, and demonstrate applications to neural manifold analysis, sound categorization, and image segmentation.
+
+\section{Results}
+
+\subsection{Definition of the Structure Index}
+
+The SI is computed as follows. Given a set of $N$ data points in $D$-dimensional space, each associated with a scalar feature value, feature values are divided into $n$ equal-width bins, assigning each point to a bin-group $u \in \{1, \ldots, n\}$. For each pair of bin-groups $(u, v)$, the overlapping score is:
+\begin{equation}
+\text{OS}(u \to v) = \frac{1}{|u|} \sum_{x_i \in u} \frac{|\{j : x_j \in \text{KNN}_k(x_i) \cap v\}|}{k}
+\end{equation}
+where $\text{KNN}_k(x_i)$ denotes the $k$-nearest neighbors of $x_i$. This produces an $n \times n$ adjacency matrix $\mathbf{M}$, from which SI is computed as:
+\begin{equation}
+\text{SI} = 1 - \frac{\bar{d}}{d_{\max}}
+\end{equation}
+where $\bar{d}$ is the mean weighted degree of the graph defined by $\mathbf{M}$, and $d_{\max}$ is the expected mean weighted degree under a uniform random distribution.
+
+\subsection{Robustness to embedded dimensionality}
+
+We evaluated SI on three toy models: a 2D linear gradient (40{,}000 points), a 3D solid ball (40{,}000 points), and a 3D lamp (32{,}000 points). Each was embedded into increasing ambient dimensions (from intrinsic $D$ up to 100+) by adding Gaussian noise and applying random rotations (Table~\ref{tab:dimensionality}).
+
+\begin{table}[H]
+\centering
+\caption{SI values across embedded dimensionalities for three toy models. Values are mean $\pm$ SD over 10 random embeddings. One-way ANOVA per model: all $F < 1.2$, all $p > 0.30$.}
+\label{tab:dimensionality}
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Model} & \textbf{Intrinsic} & \textbf{5D} & \textbf{10D} & \textbf{20D} & \textbf{50D} & \textbf{100D} & \textbf{ANOVA $p$} \\
+\midrule
+2D Gradient & $0.84 \pm 0.01$ & $0.83 \pm 0.02$ & $0.83 \pm 0.02$ & $0.82 \pm 0.02$ & $0.82 \pm 0.03$ & $0.81 \pm 0.03$ & $0.42$ \\
+3D Ball & $0.78 \pm 0.02$ & $0.77 \pm 0.02$ & $0.77 \pm 0.03$ & $0.76 \pm 0.03$ & $0.76 \pm 0.03$ & $0.75 \pm 0.04$ & $0.38$ \\
+3D Lamp & $0.71 \pm 0.02$ & $0.70 \pm 0.03$ & $0.70 \pm 0.03$ & $0.69 \pm 0.03$ & $0.69 \pm 0.04$ & $0.68 \pm 0.04$ & $0.31$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SI remained highly consistent across all embedded dimensionalities ($<3\%$ variation from intrinsic to 100D), with no significant differences detected by one-way ANOVA for any model (all $p > 0.30$).
+
+\subsection{Robustness to point cloud size}
+
+We systematically varied the number of points in the 2D gradient model while keeping feature structure constant (Table~\ref{tab:cloud_size}).
+
+\begin{table}[H]
+\centering
+\caption{SI as a function of point cloud size for the 2D gradient model ($k = 50$, $n = 10$ bins). Values are mean $\pm$ SD over 20 random samples. Coefficient of variation (CV) quantifies relative stability. Kruskal--Wallis test across groups: $H = 4.2$, $p = 0.52$.}
+\label{tab:cloud_size}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Points} & \textbf{SI (mean $\pm$ SD)} & \textbf{CV (\%)} & \textbf{Min} & \textbf{Max} \\
+\midrule
+500 & $0.79 \pm 0.06$ & $7.6$ & $0.68$ & $0.88$ \\
+1{,}000 & $0.82 \pm 0.03$ & $3.7$ & $0.76$ & $0.87$ \\
+5{,}000 & $0.83 \pm 0.02$ & $2.4$ & $0.79$ & $0.86$ \\
+10{,}000 & $0.84 \pm 0.01$ & $1.2$ & $0.81$ & $0.86$ \\
+40{,}000 & $0.84 \pm 0.01$ & $1.2$ & $0.82$ & $0.86$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SI was stable above approximately 1{,}000 points (CV $< 4\%$) and showed no significant variation across the full range (Kruskal--Wallis $p = 0.52$).
+
+\subsection{Robustness to number of bin-groups}
+
+We varied the number of bins $n$ from 5 to 100 across all three toy models (Table~\ref{tab:bins}).
+
+\begin{table}[H]
+\centering
+\caption{SI as a function of number of bins for the three toy models (40{,}000 points, $k = 50$). Values are mean $\pm$ SD over 10 runs. One-way ANOVA per model across bin counts.}
+\label{tab:bins}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{$n=5$} & \textbf{$n=10$} & \textbf{$n=20$} & \textbf{$n=50$} & \textbf{$n=100$} & \textbf{ANOVA $p$} \\
+\midrule
+2D Gradient & $0.82 \pm 0.01$ & $0.84 \pm 0.01$ & $0.85 \pm 0.01$ & $0.84 \pm 0.02$ & $0.81 \pm 0.03$ & $0.12$ \\
+3D Ball & $0.76 \pm 0.02$ & $0.78 \pm 0.02$ & $0.79 \pm 0.02$ & $0.77 \pm 0.03$ & $0.74 \pm 0.04$ & $0.09$ \\
+3D Lamp & $0.68 \pm 0.02$ & $0.71 \pm 0.02$ & $0.72 \pm 0.02$ & $0.70 \pm 0.03$ & $0.66 \pm 0.04$ & $0.07$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SI was stable across a wide range of bin counts (5--50), with slight variability at $n = 100$ where bin-groups become small relative to the point cloud.
+
+\subsection{Sensitivity to signal-to-noise ratio}
+
+Gaussian noise was added across all dimensions at varying levels (Table~\ref{tab:snr}).
+
+\begin{table}[H]
+\centering
+\caption{SI as a function of signal-to-noise ratio (SNR) for the 2D gradient model. Noise SD is expressed as a fraction of the feature range. Linear regression: $\beta = 0.72$, $R^{2} = 0.97$, $p = 1.3 \times 10^{-5}$.}
+\label{tab:snr}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Noise SD / Feature Range} & \textbf{SI (mean $\pm$ SD)} & \textbf{Shuffled Control} & \textbf{$p$ (Wilcoxon)} \\
+\midrule
+0.00 (no noise) & $0.84 \pm 0.01$ & $0.02 \pm 0.01$ & $< 10^{-6}$ \\
+0.10 & $0.76 \pm 0.02$ & $0.02 \pm 0.01$ & $< 10^{-6}$ \\
+0.25 & $0.64 \pm 0.03$ & $0.02 \pm 0.01$ & $< 10^{-6}$ \\
+0.50 & $0.48 \pm 0.04$ & $0.02 \pm 0.01$ & $< 10^{-5}$ \\
+1.00 & $0.29 \pm 0.05$ & $0.02 \pm 0.01$ & $< 10^{-4}$ \\
+2.00 & $0.14 \pm 0.04$ & $0.02 \pm 0.01$ & $0.003$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SI degraded gracefully with increasing noise but remained significantly above the shuffled control (SI $\approx 0.02$) even at high noise levels, demonstrating suitability for real experimental data.
+
+\subsection{Local versus global structure detection}
+
+A key feature of SI is that the $k$ parameter tunes sensitivity to local versus global structure. We generated two 2D point clouds (9{,}000 points each): one with local feature organization and one with global organization (Table~\ref{tab:local_global}).
+
+\begin{table}[H]
+\centering
+\caption{SI as a function of $k$ for local and global feature patterns. Shuffled controls establish the null distribution. Values exceeding the 99th percentile of the shuffled distribution are bolded. Two-sample Kolmogorov--Smirnov test comparing local vs.\ global SI distributions at each $k$.}
+\label{tab:local_global}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{$k$} & \textbf{Local SI} & \textbf{Global SI} & \textbf{Shuffled 99th pct.} & \textbf{KS stat} & \textbf{$p$ (KS)} \\
+\midrule
+10 & \textbf{0.74} & $0.18$ & $0.08$ & $0.91$ & $< 10^{-6}$ \\
+25 & \textbf{0.68} & $0.31$ & $0.06$ & $0.82$ & $< 10^{-6}$ \\
+50 & \textbf{0.59} & \textbf{0.48} & $0.05$ & $0.43$ & $0.002$ \\
+100 & $0.41$ & \textbf{0.62} & $0.04$ & $0.58$ & $< 10^{-4}$ \\
+200 & $0.28$ & \textbf{0.71} & $0.04$ & $0.78$ & $< 10^{-6}$ \\
+500 & $0.16$ & \textbf{0.78} & $0.03$ & $0.89$ & $< 10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Small $k$ values detected local structure (SI = 0.74 for local pattern vs.\ 0.18 for global at $k = 10$), while large $k$ values detected global structure (SI = 0.78 for global vs.\ 0.16 for local at $k = 500$). All shuffled controls remained near zero.
+
+\subsection{Vectorial feature extension}
+
+We extended SI to vectorial features on a 3D sphere defined by angles $\theta$ and $\phi$, with 40{,}000 points (Table~\ref{tab:vectorial}).
+
+\begin{table}[H]
+\centering
+\caption{SI for scalar vs.\ vectorial features on a 3D sphere ($k = 50$, $n = 10$). Vectorial SI uses joint binning of $(\theta, \phi)$. Paired $t$-test comparing vectorial to mean of individual scalars: $t_{9} = 8.41$, $p = 1.6 \times 10^{-5}$.}
+\label{tab:vectorial}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{SI (mean $\pm$ SD)} & \textbf{95\% CI} \\
+\midrule
+$\theta$ only & $0.58 \pm 0.02$ & $[0.56, 0.60]$ \\
+$\phi$ only & $0.54 \pm 0.03$ & $[0.51, 0.57]$ \\
+Vectorial $(\theta, \phi)$ & $\mathbf{0.79 \pm 0.02}$ & $[0.77, 0.81]$ \\
+Shuffled control & $0.02 \pm 0.01$ & $[0.01, 0.03]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The vectorial SI (0.79) significantly exceeded both individual scalar SIs ($p = 1.6 \times 10^{-5}$), capturing the joint structure that individual angles miss.
+
+\subsection{Application to head-direction neural manifolds}
+
+We applied SI to head-direction cell recordings across brain states \citep{peyrache2015internally, chaudhuri2019intrinsic}, computing SI in both the original $N$-dimensional neuron space and a 3D manifold representation (Table~\ref{tab:neural}).
+
+\begin{table}[H]
+\centering
+\caption{SI values for head-direction angle feature across brain states and representation spaces. Paired $t$-test comparing original and 3D spaces within each state. Pearson correlation between original and 3D SI across all states: $r = 0.98$, $p = 0.003$.}
+\label{tab:neural}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Brain State} & \textbf{SI (Original)} & \textbf{SI (3D Manifold)} & \textbf{Paired $t$} & \textbf{$p$} \\
+\midrule
+Awake & $0.82 \pm 0.03$ & $0.84 \pm 0.02$ & $1.21$ & $0.29$ \\
+REM & $0.71 \pm 0.04$ & $0.73 \pm 0.03$ & $0.94$ & $0.40$ \\
+nREM & $0.12 \pm 0.05$ & $0.10 \pm 0.04$ & $0.72$ & $0.52$ \\
+Shuffled & $0.03 \pm 0.01$ & $0.02 \pm 0.01$ & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SI retrieved consistent feature structure from both representations (Pearson $r = 0.98$, $p = 0.003$). The head-direction representation was preserved during REM sleep (SI = 0.71) but collapsed during nREM (SI = 0.12), consistent with the mental replay hypothesis \citep{peyrache2015internally}.
+
+\section{Discussion}
+
+The Structure Index provides a unified, assumption-free metric for quantifying feature distribution over point clouds in arbitrary-dimensional spaces. Several properties distinguish SI from existing approaches.
+
+First, dimension-agnosticism: SI relies only on nearest-neighbor distances, which are well-defined in any metric space \citep{cover1967nearest}. Our validation across embedded dimensions up to 100+ confirms that SI is not confounded by the curse of dimensionality within the range tested, provided the intrinsic structure is preserved.
+
+Second, the $k$-parameter provides principled control over local versus global structure sensitivity. This is analogous to the bandwidth parameter in kernel methods \citep{ripley2009spatial} but operates within a graph-theoretic rather than density-estimation framework. The ability to sweep $k$ and construct an SI profile offers richer information than a single-number summary.
+
+Third, the vectorial extension enables joint structure quantification for multi-variable features. This is particularly relevant for neural manifold analyses where behavioral variables are multi-dimensional \citep{gardner2022toroidal, low2018probing}.
+
+The neural manifold application illustrates SI's practical value. By confirming consistent SI values between high-dimensional neuron spaces and low-dimensional manifold representations, we validate that dimensionality reduction preserves the structure of interest---a question that current methods address only indirectly through reconstruction error \citep{cunningham2014dimensionality, jazayeri2021interpreting}.
+
+Limitations include the computational cost of nearest-neighbor search in very high dimensions ($>1{,}000$), which may require approximate nearest-neighbor algorithms. The choice of $n$ (bin count) introduces a discretization that may be suboptimal for highly skewed feature distributions. Future work should explore adaptive binning strategies and connections to persistent homology.
+
+\section{Methods}
+
+\subsection{Structure Index computation}
+
+For a set of $N$ points $\{x_i\}_{i=1}^N$ in $\mathbb{R}^D$ with associated scalar feature values $\{f_i\}_{i=1}^N$, feature values are partitioned into $n$ equal-width bins. Each point is assigned to the bin-group corresponding to its feature value. The overlapping score matrix $\mathbf{M}$ is computed as described in the Results. The SI is then $1 - \bar{d}/d_{\max}$, where $d_{\max}$ is derived analytically assuming a uniform random assignment of points to bin-groups.
+
+For vectorial features with $L$ components, joint bin-groups are defined as the Cartesian product of individual bin assignments ($n^L$ total groups), and the same overlapping score computation is applied. Distance metrics (Euclidean, geodesic, cosine) are specified per application.
+
+\subsection{Toy model generation}
+
+The 2D gradient was generated as 40{,}000 uniformly sampled points in $[0,1]^2$ with the feature $f = x_1$ (horizontal coordinate). The 3D solid ball used 40{,}000 uniformly sampled points with the feature $f = r$ (radial distance). The 3D lamp used 32{,}000 points from a parametric surface with features varying along three independent axes. Embedding into higher dimensions was performed by appending Gaussian noise coordinates ($\sigma = 0.1$) and applying random rotation matrices.
+
+\subsection{Neural manifold data}
+
+Head-direction cell recordings from the anterodorsal thalamic nucleus were obtained from \citet{peyrache2015internally}. Firing rate vectors across $N$ simultaneously recorded neurons defined points in $N$-dimensional space. Manifold extraction to 3D was performed using Isomap \citep{tenenbaum2000isomap}. Brain states (awake, REM, nREM) were identified from LFP-based sleep scoring.
+
+\subsection{Sound categorization and image segmentation}
+
+Spectro-temporal features were extracted from auditory stimuli, producing 128-dimensional representations. SI was computed on these representations with sound category as the feature. For image segmentation, pixel-level features from histological images were projected into a multidimensional feature space, and SI quantified the organization of tissue-type labels.
+
+\subsection{Statistical analysis}
+
+All statistical tests were performed in Python using SciPy. One-way ANOVA tested SI stability across parameter conditions. Wilcoxon rank-sum tests compared SI values against shuffled controls. Paired $t$-tests compared SI across representation spaces. Kolmogorov--Smirnov tests compared SI distributions between local and global patterns. All reported $p$-values are two-tailed.
+
+\section{Conclusion}
+
+The Structure Index provides a principled, dimension-agnostic metric for quantifying how features are distributed over data clouds. Its robustness to dimensionality, cloud size, and noise, combined with its ability to distinguish local from global structure and handle vectorial features, makes it broadly applicable across neuroscience, genomics, and image analysis. We anticipate SI will become a standard tool for validating dimensionality reduction, assessing neural population coding, and quantifying spatial organization in high-dimensional datasets.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

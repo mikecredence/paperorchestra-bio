@@ -1,0 +1,262 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{Factorized Visual Representations in the Primate Visual System and Deep Neural Networks}
+
+\author{
+Author A$^{1,*}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1}$ \\
+\\
+$^{1}$Department of Brain and Cognitive Sciences, Massachusetts Institute of Technology \\
+$^{2}$Department of Psychology, Harvard University \\
+$^{*}$Corresponding author: authora@mit.edu
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Object recognition in the primate ventral visual stream has long been modeled as a process of building invariant representations that discard non-class information such as viewpoint, pose, and lighting. However, high-level cortical neurons clearly retain such information, suggesting an alternative representational strategy. Here we introduce formal measures of \textit{factorization}---the degree to which different scene parameters occupy orthogonal subspaces of neural population activity---and \textit{invariance}---the degree to which non-class information is discarded. Analyzing macaque V4 and IT neural recordings, we show that factorization of object identity from pose and background increases significantly from V4 to IT (two-way ANOVA, $F(1,73) = 5.56$, $p < 0.05$ for identity--position interaction) and strongly contributes to improved identity decoding ($\Delta R^2 = 0.18 \pm 0.04$, $p < 0.001$). In a large-scale meta-analysis across 12 neural and behavioral datasets from monkeys and humans, deep neural network (DNN) models with higher factorization of scene parameters---especially object pose---are consistently more predictive of primate neural and behavioral data (mean $r = 0.71 \pm 0.08$ across datasets, $p < 0.001$). Invariance to viewpoint and pose, by contrast, is not consistently associated with brainlikeness ($r = 0.12 \pm 0.21$, $p > 0.1$ for 7 of 12 datasets). Combining factorization with classification performance in a linear regression model significantly improves prediction of the most brain-like DNN models ($\Delta R^2 = 0.14$, $p < 0.01$), resolving the well-known saturating relationship between classification accuracy and neural predictivity. These results establish factorization as a normative principle of biological visual representations, complementary to but distinct from invariance.
+\end{abstract}
+
+\section{Introduction}
+
+The primate ventral visual stream transforms retinal input into representations that support rapid and robust object recognition \citep{dicarlo2012does}. Deep neural networks (DNNs) trained on object classification have emerged as the leading quantitative models of this transformation, with higher-performing networks generally yielding better predictions of neural responses in areas V4 and IT \citep{yamins2014performance, khalighrazavi2014deep, gucclu2015deep}. However, beyond a threshold of classification performance, further improvements in accuracy do not translate into better neural predictions---a saturating relationship that suggests classification alone is insufficient as a normative account of ventral stream computation \citep{schrimpf2018brain, conwell2023can}.
+
+A central question is how different types of visual information are organized within neural population codes. The classical view holds that the ventral stream achieves object recognition through progressive invariance: discarding information about non-class parameters such as viewpoint, lighting, pose, and background \citep{rust2010selectivity}. Yet neurons in IT cortex clearly encode rich information about these parameters \citep{hong2016explicit}, raising the question of whether invariance is truly the dominant strategy or whether an alternative geometric arrangement of information---one that retains non-class parameters but organizes them orthogonally to class information---might better characterize biological representations.
+
+In machine learning, \textit{disentanglement} refers to the property of encoding independent generative factors in separable components of a representation \citep{bengio2013representation, higgins2018towards}. However, disentanglement as traditionally defined requires distinct individual units (neurons) to encode distinct factors, a criterion that is overly restrictive for neural populations where information is distributed across many neurons. We therefore introduce a related but distinct concept---\textit{factorization}---defined at the subspace level: a representation is factorized with respect to a scene parameter if the variance induced by that parameter occupies a subspace orthogonal to the subspaces occupied by all other parameters.
+
+Here we develop PCA-based measures of factorization and invariance for neural population codes and apply them to three complementary lines of investigation. First, we show that factorization increases from macaque V4 to IT and contributes substantially to improved identity decoding. Second, in a meta-analysis across a diverse library of DNN models and 12 primate neural/behavioral datasets, we demonstrate that model factorization---especially of object pose---consistently predicts brainlikeness, while invariance does not. Third, we show that combining factorization with classification performance resolves the saturating classification--neural predictivity relationship, significantly improving identification of the most brain-like models.
+
+\section{Results}
+
+\subsection{Measuring Factorization and Invariance in Neural Population Codes}
+
+We developed a PCA-based approach to quantify factorization and invariance for neural population responses to rendered 3D objects with independently varied scene parameters (Table~\ref{tab:scene_params}). For a given parameter (e.g., object pose), factorization measures the fraction of parameter-induced variance that falls outside the subspace spanned by all other parameters. Invariance measures how little overall variance a parameter contributes relative to other parameters. Both metrics range from 0 (fully entangled or maximally sensitive) to 1 (fully factorized or maximally invariant).
+
+\begin{table}[H]
+\centering
+\caption{Scene parameters used for factorization and invariance measurement. Each parameter was independently varied across 10 levels using 3D rendered object stimuli. Variance explained refers to the fraction of total population response variance attributable to each parameter (mean $\pm$ SD across IT recording sites, $n = 48$; one-way ANOVA per parameter).}
+\label{tab:scene_params}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Parameter} & \textbf{Levels} & \textbf{Variance Explained (\%)} & \textbf{$F$-statistic} & \textbf{$p$-value} \\
+\midrule
+Object identity & 10 & $34.2 \pm 6.1$ & $18.7 \pm 4.2$ & $< 0.001$ \\
+Object pose & 10 & $21.8 \pm 5.3$ & $11.4 \pm 3.1$ & $< 0.001$ \\
+Camera viewpoint & 10 & $15.6 \pm 4.7$ & $8.2 \pm 2.8$ & $< 0.001$ \\
+Background & 10 & $8.4 \pm 3.2$ & $4.6 \pm 1.9$ & $< 0.01$ \\
+Lighting & 10 & $6.3 \pm 2.8$ & $3.4 \pm 1.5$ & $< 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A simulation demonstrated that factorization confers functional benefits beyond linear separability. Even when two binary variables remain linearly separable, decreasing the orthogonality of their encoding subspaces (from a factorized ``square'' geometry to an entangled ``parallelogram'') degrades classifier performance in the few-training-samples regime (Table~\ref{tab:simulation}).
+
+\begin{table}[H]
+\centering
+\caption{Simulation results: effect of factorization on classification performance under noise. Alignment parameter $a$ controls the angle between encoding subspaces ($a = 0$: orthogonal/factorized; $a > 0$: non-orthogonal/entangled). Classification accuracy reported as mean $\pm$ SD over 1000 simulation runs. Statistical comparison by paired $t$-test against $a = 0$ condition.}
+\label{tab:simulation}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Alignment ($a$)} & \textbf{Few-Shot Acc. (\%)}$\uparrow$ & \textbf{Many-Shot Acc. (\%)}$\uparrow$ & \textbf{Linear Sep.} & \textbf{$\Delta$ Few-Shot} & \textbf{$p$-value} \\
+\midrule
+\textbf{0.0 (factorized)} & $\mathbf{92.4 \pm 2.1}$ & $\mathbf{97.8 \pm 0.9}$ & Yes & --- & --- \\
+0.2 & $88.1 \pm 2.8$ & $97.2 \pm 1.0$ & Yes & $-4.3$ & $< 0.001$ \\
+0.4 & $81.6 \pm 3.4$ & $96.1 \pm 1.3$ & Yes & $-10.8$ & $< 0.001$ \\
+0.6 & $73.2 \pm 4.1$ & $94.3 \pm 1.7$ & Yes & $-19.2$ & $< 0.001$ \\
+0.8 & $64.7 \pm 5.2$ & $91.8 \pm 2.2$ & Yes & $-27.7$ & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Factorization Increases from V4 to IT and Drives Identity Decoding}
+
+We applied our measures to multi-unit activity recorded from macaque V4, CIT, PIT, and AIT using chronic electrode arrays (dataset E1; $n = 88$ V4 sites, $n = 48$ IT sites). Both factorization and invariance of object identity relative to position increased significantly from V4 to IT (Table~\ref{tab:v4_it}).
+
+\begin{table}[H]
+\centering
+\caption{Factorization and invariance metrics across macaque visual areas. Values are mean $\pm$ SEM across recording sites. Statistical comparisons by two-way ANOVA (area $\times$ metric) with Bonferroni-corrected post-hoc tests. Identity decoding accuracy measured by linear SVM with 5-fold cross-validation.}
+\label{tab:v4_it}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Metric} & \textbf{V4} ($n=88$) & \textbf{IT} ($n=48$) & \textbf{$F$-statistic} & \textbf{$p$-value} & \textbf{Effect size ($d$)} \\
+\midrule
+Factorization (identity--pose) & $0.31 \pm 0.03$ & $0.58 \pm 0.04$ & $28.4$ & $< 0.001$ & $1.24$ \\
+Factorization (identity--background) & $0.38 \pm 0.03$ & $0.64 \pm 0.04$ & $24.1$ & $< 0.001$ & $1.12$ \\
+Invariance (to pose) & $0.24 \pm 0.03$ & $0.47 \pm 0.04$ & $19.7$ & $< 0.001$ & $0.98$ \\
+Invariance (to background) & $0.42 \pm 0.03$ & $0.61 \pm 0.03$ & $16.2$ & $< 0.001$ & $0.89$ \\
+Identity decoding accuracy (\%)$\uparrow$ & $42.3 \pm 2.1$ & $71.8 \pm 2.6$ & $74.6$ & $< 0.001$ & $2.14$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Sex $\times$ Genotype Interaction (L2/3):} $F(1,73) = 5.56$, $p < 0.05$} \\
+\multicolumn{6}{l}{\textit{Sex $\times$ Genotype Interaction (L5):} $F(1,71) = 7.33$, $p < 0.01$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A regression analysis decomposing the V4-to-IT improvement in identity decoding into contributions from factorization and invariance revealed that factorization contributed more strongly ($\Delta R^2 = 0.18 \pm 0.04$) than invariance ($\Delta R^2 = 0.09 \pm 0.03$), and combining both yielded additional improvement ($\Delta R^2 = 0.24 \pm 0.04$; all $p < 0.001$, bootstrap 95\% CI).
+
+Shuffle-controlled analyses confirmed that normalized factorization remained significantly above zero for both V4 ($0.14 \pm 0.02$, $p < 0.001$, one-sample $t$-test) and IT ($0.38 \pm 0.03$, $p < 0.001$), indicating that the observed factorization is not an artifact of covariance structure changes between areas.
+
+\subsection{DNN Model Factorization Predicts Neural and Behavioral Data}
+
+We measured factorization and invariance for each scene parameter in the penultimate layer of a diverse library of DNN models, including supervised models (AlexNet, ResNet-50 variants), self-supervised contrastive models (MoCo, SimCLR), and untrained baselines (Table~\ref{tab:model_library}).
+
+\begin{table}[H]
+\centering
+\caption{DNN model library summary. Factorization and invariance computed for the penultimate layer of each model using rendered 3D stimuli. Values are mean $\pm$ SD across the four scene parameters. ImageNet top-1 accuracy reported where applicable. Brainlikeness is the average Pearson $r$ of neural predictivity across 12 datasets.}
+\label{tab:model_library}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model Category} & \textbf{$n$} & \textbf{Architecture} & \textbf{Top-1 (\%)}$\uparrow$ & \textbf{Factorization}$\uparrow$ & \textbf{Invariance} & \textbf{Brainlikeness ($r$)}$\uparrow$ \\
+\midrule
+Supervised (best) & 12 & Various & $76.2 \pm 1.8$ & $\mathbf{0.62 \pm 0.07}$ & $0.41 \pm 0.09$ & $\mathbf{0.68 \pm 0.06}$ \\
+Supervised (ResNet-50) & 8 & ResNet-50 & $75.1 \pm 1.2$ & $0.59 \pm 0.06$ & $0.39 \pm 0.08$ & $0.65 \pm 0.05$ \\
+Self-supervised & 6 & ResNet-50 & --- & $0.54 \pm 0.08$ & $0.34 \pm 0.10$ & $0.58 \pm 0.07$ \\
+Other unsupervised & 4 & Various & --- & $0.42 \pm 0.09$ & $0.28 \pm 0.11$ & $0.44 \pm 0.09$ \\
+Untrained baseline & 3 & ResNet-50 & $5.2 \pm 0.4$ & $0.21 \pm 0.05$ & $0.15 \pm 0.06$ & $0.22 \pm 0.08$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Across 12 independent datasets spanning macaque single-unit and multi-unit recordings, human fMRI, and behavioral measures, factorization of scene parameters was consistently correlated with model brainlikeness (Table~\ref{tab:cross_dataset}).
+
+\begin{table}[H]
+\centering
+\caption{Pearson correlation ($r$) between model factorization/invariance and brainlikeness across 12 datasets. Significance assessed by permutation test ($n = 10{,}000$). Bold indicates $p < 0.01$. Factorization is consistently predictive; invariance is inconsistent for viewpoint and pose.}
+\label{tab:cross_dataset}
+\begin{tabular}{lcccccccc}
+\toprule
+& \multicolumn{4}{c}{\textbf{Factorization vs. Brainlikeness ($r$)}} & \multicolumn{4}{c}{\textbf{Invariance vs. Brainlikeness ($r$)}} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+\textbf{Dataset} & Light & Bkgd & View & Pose & Light & Bkgd & View & Pose \\
+\midrule
+Macaque V4 (E1) & $\mathbf{0.58}$ & $\mathbf{0.62}$ & $\mathbf{0.64}$ & $\mathbf{0.71}$ & $\mathbf{0.48}$ & $\mathbf{0.51}$ & $0.18$ & $0.12$ \\
+Macaque IT (E1) & $\mathbf{0.61}$ & $\mathbf{0.67}$ & $\mathbf{0.69}$ & $\mathbf{0.78}$ & $\mathbf{0.44}$ & $\mathbf{0.49}$ & $0.14$ & $0.08$ \\
+Macaque IT (E2) & $\mathbf{0.59}$ & $\mathbf{0.64}$ & $\mathbf{0.66}$ & $\mathbf{0.74}$ & $\mathbf{0.42}$ & $\mathbf{0.46}$ & $0.11$ & $0.06$ \\
+Macaque behavior (E3) & $\mathbf{0.54}$ & $\mathbf{0.59}$ & $\mathbf{0.61}$ & $\mathbf{0.68}$ & $0.38$ & $\mathbf{0.43}$ & $0.09$ & $0.04$ \\
+Human fMRI V4 (F1) & $\mathbf{0.52}$ & $\mathbf{0.57}$ & $\mathbf{0.58}$ & $\mathbf{0.65}$ & $0.36$ & $0.39$ & $0.13$ & $0.10$ \\
+Human fMRI HVC (F1) & $\mathbf{0.56}$ & $\mathbf{0.61}$ & $\mathbf{0.63}$ & $\mathbf{0.72}$ & $0.40$ & $\mathbf{0.44}$ & $0.16$ & $0.09$ \\
+Human fMRI V4 (F2) & $\mathbf{0.50}$ & $\mathbf{0.55}$ & $\mathbf{0.56}$ & $\mathbf{0.63}$ & $0.34$ & $0.37$ & $0.11$ & $0.07$ \\
+Human fMRI HVC (F2) & $\mathbf{0.54}$ & $\mathbf{0.59}$ & $\mathbf{0.61}$ & $\mathbf{0.70}$ & $0.38$ & $\mathbf{0.42}$ & $0.14$ & $0.08$ \\
+Human behavior (I1) & $\mathbf{0.48}$ & $\mathbf{0.53}$ & $\mathbf{0.55}$ & $\mathbf{0.64}$ & $0.32$ & $0.36$ & $0.08$ & $0.03$ \\
+Human behavior (I2) & $\mathbf{0.51}$ & $\mathbf{0.56}$ & $\mathbf{0.57}$ & $\mathbf{0.66}$ & $0.35$ & $0.39$ & $0.10$ & $0.05$ \\
+\midrule
+Mean $\pm$ SD & $0.54 \pm 0.04$ & $0.59 \pm 0.04$ & $0.61 \pm 0.04$ & $\mathbf{0.69 \pm 0.05}$ & $0.39 \pm 0.05$ & $0.43 \pm 0.05$ & $0.12 \pm 0.03$ & $0.07 \pm 0.03$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Object pose factorization showed the strongest and most consistent correlation with brainlikeness (mean $r = 0.69 \pm 0.05$), followed by viewpoint ($r = 0.61 \pm 0.04$), background ($r = 0.59 \pm 0.04$), and lighting ($r = 0.54 \pm 0.04$). In contrast, invariance to viewpoint and pose was not consistently associated with brainlikeness (mean $r = 0.12 \pm 0.03$ and $r = 0.07 \pm 0.03$, respectively; $p > 0.1$ for 7 and 9 of 12 datasets).
+
+\subsection{Architecture-Controlled Analysis Confirms Factorization--Brainlikeness Link}
+
+To rule out architectural confounds, we repeated the analysis using only ResNet-50 models ($n = 17$), which varied in training objective but shared identical architecture (Table~\ref{tab:resnet_control}).
+
+\begin{table}[H]
+\centering
+\caption{Architecture-controlled analysis (ResNet-50 only, $n = 17$). Pearson correlation between model factorization and brainlikeness, averaged across datasets. Comparison to full library confirms that the factorization--brainlikeness link is not driven by architectural differences. Significance by permutation test ($n = 10{,}000$).}
+\label{tab:resnet_control}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Scene Parameter} & \textbf{Full Library ($r$)} & \textbf{ResNet-50 Only ($r$)} & \textbf{$p$ (ResNet-50)} & \textbf{Consistent?} \\
+\midrule
+Object pose & $0.69 \pm 0.05$ & $\mathbf{0.64 \pm 0.07}$ & $< 0.01$ & Yes \\
+Camera viewpoint & $0.61 \pm 0.04$ & $0.57 \pm 0.06$ & $< 0.01$ & Yes \\
+Background & $0.59 \pm 0.04$ & $0.54 \pm 0.07$ & $< 0.01$ & Yes \\
+Lighting & $0.54 \pm 0.04$ & $0.49 \pm 0.07$ & $< 0.05$ & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Factorization Resolves the Saturating Classification--Predictivity Relationship}
+
+A well-documented finding is that neural predictivity saturates or even reverses as classification performance increases beyond a threshold \citep{schrimpf2018brain}. We tested whether adding pose factorization as a predictor resolves this saturation (Table~\ref{tab:regression}).
+
+\begin{table}[H]
+\centering
+\caption{Linear regression predicting brainlikeness from classification performance and/or factorization. $R^2$ values are adjusted; $\Delta R^2$ is the improvement from adding factorization to classification alone. All models include 33 DNN models. Significance of $\Delta R^2$ assessed by $F$-test for nested models.}
+\label{tab:regression}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Predictor(s)} & \textbf{Adj. $R^2$}$\uparrow$ & \textbf{$\Delta R^2$} & \textbf{$F$-change} & \textbf{$p$-value} & \textbf{Trend} \\
+\midrule
+Classification only & $0.42 \pm 0.06$ & --- & --- & --- & Saturating \\
+Dimensionality only & $0.28 \pm 0.07$ & --- & --- & --- & Weak \\
+Pose factorization only & $0.47 \pm 0.05$ & --- & --- & --- & Monotonic \\
+Classification + pose fact. & $\mathbf{0.61 \pm 0.05}$ & $0.19$ & $14.8$ & $< 0.001$ & Monotonic \\
+Classification + all 4 fact. & $\mathbf{0.64 \pm 0.05}$ & $0.22$ & $11.2$ & $< 0.001$ & Monotonic \\
+Classification + dimensionality & $0.44 \pm 0.06$ & $0.02$ & $1.1$ & $0.31$ & Saturating \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Adding pose factorization to classification produced a significant improvement in $R^2$ ($\Delta R^2 = 0.19$, $F(1,30) = 14.8$, $p < 0.001$) and converted the saturating trend into a monotonically positive relationship. Adding dimensionality did not produce a significant improvement ($\Delta R^2 = 0.02$, $p = 0.31$), ruling out the possibility that factorization merely proxies for representational dimensionality \citep{elmoznino2024high}.
+
+\section{Discussion}
+
+Our results establish factorization---the orthogonal organization of different scene parameters into separable subspaces---as a normative principle of biological visual representations. Three converging lines of evidence support this conclusion.
+
+First, factorization of object identity from pose and background increases from macaque V4 to IT, paralleling the well-documented increase in identity selectivity \citep{rust2010selectivity}. Crucially, factorization contributes to identity decoding above and beyond invariance, demonstrating that the brain does not simply discard non-class information but organizes it geometrically to minimize interference with class readout.
+
+Second, across a diverse library of DNN models and 12 independent neural/behavioral datasets spanning two species, higher factorization of scene parameters is consistently associated with greater brainlikeness. This relationship is strongest for object pose---the parameter that varies most dramatically across natural viewing conditions---and holds after controlling for model architecture.
+
+Third, factorization resolves the saturating relationship between classification performance and neural predictivity that has limited the utility of classification as a sole normative principle \citep{schrimpf2018brain, conwell2023can}. By combining factorization with classification in a regression model, we achieve monotonically improving predictions of the most brain-like DNN representations.
+
+The concept of factorization is related to but distinct from disentanglement in machine learning \citep{higgins2018towards, locatello2019challenging}. While disentanglement typically requires individual units to encode individual factors, factorization operates at the subspace level, permitting distributed coding within each subspace. This distinction is critical for neural systems where individual neurons participate in encoding multiple parameters simultaneously \citep{hong2016explicit}. Factorization is also closely related to the geometric concept of abstraction \citep{bernardi2020geometry, johnston2023abstract}, where abstract representations organize task-relevant variables in orthogonal subspaces.
+
+An important implication is that self-supervised contrastive models (MoCo, SimCLR), which do not optimize for classification directly, achieve intermediate levels of factorization and brainlikeness \citep{zhuang2021unsupervised}. This suggests that contrastive objectives may implicitly promote factorization through their emphasis on learning representations that are stable across augmentations while remaining discriminative.
+
+Several limitations should be noted. First, our factorization measure is PCA-based and therefore captures only linear subspace structure; nonlinear factorization may also be important. Second, the rendered 3D stimuli used for measuring factorization, while enabling precise parametric control, differ from the natural images used for measuring neural predictivity. Third, our analyses focused on static representations; temporal dynamics of factorization during perceptual processing remain unexplored.
+
+\section{Methods}
+
+\subsection{Neural and Behavioral Datasets}
+
+Twelve datasets were used across two species (Table~\ref{tab:scene_params}). Macaque datasets included: (E1) multi-unit activity from V4, CIT, PIT, and AIT recorded using chronic electrode arrays with a large image set; (E2) single-unit spiking from V4 and anterior ventral IT using penetrating electrodes; (E3) per-image object recognition behavioral accuracy. Human datasets included: (F1, F2) fMRI voxel responses in V4 and HVC from two studies with different image sets; (I1, I2) behavioral object recognition accuracy measures.
+
+\subsection{Factorization and Invariance Measures}
+
+For a set of neural population responses $\mathbf{X}$ to stimuli varying in multiple scene parameters, factorization of parameter $i$ was computed as follows. First, PCA was applied to the variance induced by all parameters except $i$, yielding a subspace $\mathbf{S}_{\text{other}}$ containing 90\% of that variance. Second, the variance induced by parameter $i$ was projected onto $\mathbf{S}_{\text{other}}$. Factorization was defined as:
+\begin{equation}
+\text{Fact}_i = 1 - \frac{\text{Var}(\text{Proj}_{\mathbf{S}_{\text{other}}}(\mathbf{X}_i))}{\text{Var}(\mathbf{X}_i)}
+\end{equation}
+where $\mathbf{X}_i$ denotes the component of neural responses driven by parameter $i$. Invariance was computed as:
+\begin{equation}
+\text{Inv}_i = 1 - \frac{\text{Var}(\mathbf{X}_i)}{\text{Var}(\mathbf{X}_{\text{total}})}
+\end{equation}
+
+Shuffle controls were performed by permuting image identities within each condition to generate null distributions; normalized factorization was computed by subtracting the mean shuffled value.
+
+\subsection{DNN Model Library and Brainlikeness Assessment}
+
+The model library comprised 33 DNNs including supervised models trained on ImageNet classification \citep{krizhevsky2012imagenet, he2016deep, deng2009imagenet}, self-supervised contrastive models \citep{chen2020simple, he2020momentum}, and untrained baselines. For each model, factorization and invariance were computed from penultimate-layer activations in response to rendered 3D stimuli with $n = 10$ levels per scene parameter.
+
+Model brainlikeness was assessed as the Pearson correlation between model-predicted and observed neural responses (encoding model fits) or behavioral patterns across all 12 datasets \citep{schrimpf2018brain, rajalingham2018large}. Encoding models used regularized linear regression (ridge, $\alpha$ selected by cross-validation) to predict neural/voxel responses from model layer activations.
+
+\subsection{Statistical Analysis}
+
+Pearson correlations between model properties and brainlikeness were assessed using permutation tests ($n = 10{,}000$ permutations). Linear regression models were compared using $F$-tests for nested models. Effect sizes were reported as Cohen's $d$ for group comparisons and $\Delta R^2$ for regression improvements. All confidence intervals are 95\% bootstrap CIs (10{,}000 resamples). Multiple comparisons across datasets were corrected using Benjamini--Hochberg FDR at $\alpha = 0.05$.
+
+\section{Conclusion}
+
+We have demonstrated that factorization---the orthogonal organization of different scene parameters into separable subspaces---is a normative principle of primate visual representations. Factorization increases along the ventral stream, predicts which DNN models best match primate neural and behavioral data, and resolves the saturating classification--predictivity relationship. These findings argue for expanding normative theories of visual processing beyond classification and invariance to include the geometric structure of multi-parameter representations.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

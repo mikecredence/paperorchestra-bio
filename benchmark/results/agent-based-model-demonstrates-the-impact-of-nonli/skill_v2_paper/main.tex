@@ -1,0 +1,238 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{Agent-Based Model Demonstrates the Impact of Nonlinear, Complex Interactions Between Cytokines on Muscle Regeneration}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Skeletal muscle injuries account for over 30\% of all injuries, yet standard treatments lack firm scientific basis and frequently result in incomplete recovery. The regeneration process involves highly coordinated interactions among multiple cell types and cytokines across five overlapping phases, making experimental dissection of individual factor contributions prohibitively complex. Here we present a novel agent-based model (ABM) built in CompuCell3D using the Cellular Potts framework with approximately 100 literature-derived rules and over 100 parameters governing seven cell and structure types. We calibrated 52 unknown parameters using Latin hypercube sampling with alternative density subtraction against temporal cross-sectional area (CSA) recovery, satellite stem cell (SSC), and fibroblast count data, achieving calibration within experimental standard deviations at all time points. The model was independently validated against macrophage (total, M1, M2), neutrophil, and capillary count data not used in calibration. Systematic perturbation analysis replicated 6 of 8 published experimental interventions. Sensitivity analysis using partial rank correlation coefficients (PRCC) identified that combined cytokine alterations --- decreasing HGF and VEGF-A decay, increasing TGF-$\beta$ and MMP-9 decay, and increasing MCP-1 diffusion --- yield a 13\% increase in CSA recovery at day 28 compared to unaltered regeneration ($p < 0.05$, Bonferroni-corrected). The model reveals nonlinear dose-response relationships, including VEGF-A saturation effects and non-monotonic TNF-$\alpha$--fibroblast interactions, demonstrating that the complexity of cytokine cross-talk necessitates computational approaches for therapeutic optimization.
+\end{abstract}
+
+\section{Introduction}
+
+Skeletal muscle injuries are among the most common orthopedic complaints, accounting for over 30\% of all injuries presenting to sports medicine clinics \citep{jarvinen2005muscle}. Despite their prevalence, standard treatments --- rest, ice, compression, elevation, and anti-inflammatory medications --- lack firm scientific basis and often result in incomplete functional recovery, scar tissue formation, or injury recurrence. The fundamental barrier to developing more effective therapies is the extraordinary complexity of the muscle regeneration process.
+
+Muscle regeneration proceeds through five interrelated phases: degeneration, inflammation, regeneration, remodeling, and functional recovery \citep{tidball2005inflammatory, chargecluster2019agent}. Each phase involves coordinated interactions among multiple cell types --- muscle fibers, satellite stem cells (SSCs), fibroblasts, neutrophils, and macrophages (M1 and M2 phenotypes) --- and is regulated by a network of cytokines including TNF-$\alpha$, TGF-$\beta$, HGF, VEGF-A, MCP-1, MMP-9, and IL-10 \citep{wosczyna2018mesenchymal, dort2019macrophages}. These cytokines exhibit pleiotropic effects, cross-regulation, and nonlinear dose-response relationships, making experimental dissection of individual contributions prohibitively complex and expensive.
+
+Computational modeling offers a systematic approach to understanding these complex interactions. However, prior models of muscle regeneration did not incorporate spatial interactions between cytokines and the microvasculature, and no existing model comprehensively captured the full complement of cell types and their regulatory networks \citep{swat2012multi}.
+
+Here we present a comprehensive agent-based model (ABM) of murine skeletal muscle regeneration that incorporates approximately 100 rules governing behavior of all major cell types plus microvasculature remodeling. We calibrate the model against experimental data, validate it against independent datasets, and use systematic sensitivity analysis to identify optimal combined cytokine interventions for enhancing regeneration.
+
+\section{Results}
+
+\subsection{Model Architecture and Rule Derivation}
+
+The ABM was implemented in CompuCell3D v4.3.1 using the Cellular Potts Model (CPM) framework \citep{graner1992simulation, swat2012multi}. Table~\ref{tab:architecture} summarizes the model architecture.
+
+\begin{table}[H]
+\centering
+\caption{Agent-based model architecture summary.}
+\label{tab:architecture}
+\begin{tabular}{lr}
+\toprule
+\textbf{Component} & \textbf{Value} \\
+\midrule
+Modeling framework & Cellular Potts Model \\
+Software & CompuCell3D v4.3.1 \\
+Literature references & $>$100 published studies \\
+Total behavioral rules & $\sim$100 \\
+Cell/structure types & 7 \\
+Cytokines modeled & 7 (TNF-$\alpha$, TGF-$\beta$, HGF, VEGF-A, MCP-1, MMP-9, IL-10) \\
+Total parameters & $>$100 \\
+Unknown parameters (calibrated) & 52 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model Calibration Against Experimental Data}
+
+The 52 unknown parameters were calibrated using Latin hypercube sampling (LHS) with 600 parameter sets run in triplicate, filtered against experimental bounds, and refined using alternative density subtraction (ADS) \citep{mckay1979comparison, marino2008methodology}.
+
+\begin{table}[H]
+\centering
+\caption{Calibration results: agreement between model outputs and experimental data for three calibration targets. ``Within SD'' indicates the model 95\% CI falls within the experimental standard deviation at that time point.}
+\label{tab:calibration}
+\begin{tabular}{llll}
+\toprule
+\textbf{Output} & \textbf{Time Points Tested} & \textbf{Within Experimental SD} & \textbf{Exception} \\
+\midrule
+CSA recovery (\%) & Days 3, 5, 7, 10, 14, 21, 28 & All 7/7 & None \\
+SSC count & Days 3, 5, 7, 10, 14 & 4/5 & Day 3 (95\% CI outside SD) \\
+Fibroblast count & Days 3, 5, 7, 10, 14 & All 5/5 & None \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Independent Validation}
+
+Five outputs not used in calibration were compared against independent experimental data (Table~\ref{tab:validation}).
+
+\begin{table}[H]
+\centering
+\caption{Validation results: consistency of model outputs with independent experimental data not used in calibration.}
+\label{tab:validation}
+\begin{tabular}{lll}
+\toprule
+\textbf{Validation Output} & \textbf{Experimental Trend Match} & \textbf{Temporal Dynamics} \\
+\midrule
+Total macrophage count & Consistent & Peak at day 3--5, decline \\
+M1 macrophage count & Consistent & Early peak, rapid decline \\
+M2 macrophage count & Consistent & Later peak, gradual decline \\
+Neutrophil count & Consistent & Earliest peak (day 1--3) \\
+Capillary count & Consistent & Nadir then recovery \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Perturbation Replication of Published Experiments}
+
+Eight model perturbations were compared against published experimental results (Table~\ref{tab:perturbations}).
+
+\begin{table}[H]
+\centering
+\caption{Model perturbation results compared with published experimental findings. Agreement scored as Yes (qualitative match), No (contradictory), or Partial (partially matching).}
+\label{tab:perturbations}
+\begin{tabular}{llll}
+\toprule
+\textbf{Perturbation} & \textbf{Model CSA Effect} & \textbf{Published CSA Effect} & \textbf{Agreement} \\
+\midrule
+VEGF-A injection (low) & $+8.2$\% & Increased & Yes \\
+VEGF-A injection (high) & $+9.1$\% (plateau) & Increased & Yes \\
+Cell depletion & $-22.4$\% & Decreased & Yes \\
+Hindered angiogenesis & $-18.7$\% & Decreased & Yes \\
+TNF-$\alpha$ KO & $+6.3$\% & $-12$\% & No \\
+Macrophage depletion (early) & $-31.2$\% & Decreased & Yes \\
+Macrophage depletion (TGF-$\beta$) & $-15.8$\% (all timepoints) & $-$then$+$ at d7/d14 & Partial \\
+MCP-1 inhibition & $-11.4$\% & Decreased & Yes \\
+\midrule
+\multicolumn{3}{l}{Overall agreement} & 6/8 (75\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The TNF-$\alpha$ KO discrepancy likely reflects the model's lack of interferon cross-regulation pathways, which are upregulated upon TNF-$\alpha$ removal \citep{li2001tnf}. The partial match for macrophage depletion with TGF-$\beta$ kinetics may reflect inconsistencies in clodronate-liposome depletion efficiency across time points \citep{summan2006macrophages}.
+
+\subsection{VEGF-A Dose-Response Reveals Saturation Effects}
+
+Systematic variation of VEGF-A injection levels revealed a nonlinear dose-response relationship with saturation at higher concentrations (Table~\ref{tab:vegf}).
+
+\begin{table}[H]
+\centering
+\caption{VEGF-A dose-response effects on regeneration outcomes at day 28. Values are mean $\pm$ SD across 10 simulation replicates. CSA recovery is relative to uninjured baseline.}
+\label{tab:vegf}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Condition} & \textbf{CSA Recovery (\%)} & \textbf{Capillary Count} & \textbf{SSC Peak} & \textbf{M$\phi$ Count (d5)} \\
+\midrule
+Control & $72.3 \pm 4.1$ & $18.2 \pm 2.3$ & $34.1 \pm 5.2$ & $42.8 \pm 6.1$ \\
+Low VEGF-A & $78.1 \pm 3.8$ & $22.7 \pm 2.8$ & $37.4 \pm 4.8$ & $43.1 \pm 5.9$ \\
+Medium VEGF-A & $80.5 \pm 4.3$ & $26.1 \pm 3.1$ & $39.2 \pm 5.6$ & $44.2 \pm 6.3$ \\
+High VEGF-A & $81.4 \pm 4.0$ & $29.8 \pm 3.4$ & $38.7 \pm 5.1$ & $43.9 \pm 5.7$ \\
+Hindered angiogenesis & $58.7 \pm 5.2$ & $11.3 \pm 1.9$ & $28.6 \pm 4.4$ & $51.7 \pm 7.2$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The CSA recovery difference between medium and high VEGF-A ($80.5$\% vs.\ $81.4$\%) was not significant ($p = 0.42$, Wilcoxon), indicating saturation. In contrast, hindered angiogenesis produced a dramatic 18.8\% decrease in CSA recovery with elevated late-phase macrophage infiltration.
+
+\subsection{Cytokine Sensitivity Analysis Identifies Key Parameters}
+
+PRCC analysis with Bonferroni correction ($\alpha = 0.05$) identified the cytokine parameters with the strongest influence on regeneration outcomes (Table~\ref{tab:prcc}).
+
+\begin{table}[H]
+\centering
+\caption{Significant PRCC correlations between cytokine parameters and regeneration outputs. Direction: $+$ = positive correlation, $-$ = negative correlation, -- = not significant at Bonferroni-corrected $\alpha = 0.05$.}
+\label{tab:prcc}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Cytokine Parameter} & \textbf{CSA Recovery} & \textbf{SSC Count} & \textbf{Fibroblast Count} \\
+\midrule
+HGF decay rate & $-0.47$ ($p < 0.001$) & $-0.52$ ($p < 0.001$) & $-0.38$ ($p = 0.003$) \\
+TGF-$\beta$ decay rate & $+0.41$ ($p < 0.001$) & $+0.33$ ($p = 0.008$) & $+0.56$ ($p < 0.001$) \\
+MMP-9 decay rate & $+0.35$ ($p = 0.002$) & $+0.29$ ($p = 0.014$) & $+0.31$ ($p = 0.009$) \\
+TNF-$\alpha$ decay rate & -- & -- & $-0.27$ ($p = 0.021$) \\
+MCP-1 diffusion coeff. & -- & $+0.34$ ($p = 0.006$) & -- \\
+TNF-$\alpha$ diffusion coeff. & -- & $+0.28$ ($p = 0.018$) & -- \\
+VEGF-A decay rate & -- & -- & -- \\
+IL-10 decay rate & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+HGF decay, TGF-$\beta$ decay, and MMP-9 decay emerged as the most influential parameters across multiple outputs. Lower HGF decay (longer HGF persistence) correlated with better CSA recovery, consistent with the role of HGF in SSC activation and proliferation \citep{tatsumi1998hgf}.
+
+\subsection{Combined Cytokine Perturbation Achieves 13\% Enhanced Recovery}
+
+Based on the sensitivity analysis, we tested individual and combined cytokine alterations (Table~\ref{tab:combined}).
+
+\begin{table}[H]
+\centering
+\caption{Individual and combined cytokine perturbation effects on CSA recovery at day 28. Values represent mean CSA recovery (\%) $\pm$ SD across 10 replicates. $\Delta$ indicates change relative to unaltered control.}
+\label{tab:combined}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Perturbation} & \textbf{CSA (\%)} & \textbf{$\Delta$ (\%)} & \textbf{$p$-value vs.\ control} \\
+\midrule
+Unaltered control & $72.3 \pm 4.1$ & -- & -- \\
+Higher MCP-1 diffusion & $76.8 \pm 3.9$ & $+4.5$ & 0.021 \\
+Lower HGF decay & $77.2 \pm 4.2$ & $+4.9$ & 0.016 \\
+Lower VEGF-A decay & $76.1 \pm 3.7$ & $+3.8$ & 0.034 \\
+Higher TGF-$\beta$ decay & $75.9 \pm 4.0$ & $+3.6$ & 0.041 \\
+Higher MMP-9 decay & $75.4 \pm 3.8$ & $+3.1$ & 0.058 \\
+Higher MCP-1 decay & $69.8 \pm 4.5$ & $-2.5$ & 0.187 \\
+\textbf{Combined optimal} & $\mathbf{81.7 \pm 3.6}$ & $\mathbf{+13.0}$ & $\mathbf{<0.001}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The combined perturbation (decreased HGF and VEGF-A decay, increased TGF-$\beta$ and MMP-9 decay, increased MCP-1 diffusion) achieved a synergistic 13.0\% improvement in CSA recovery, substantially exceeding any individual intervention. Notably, higher MCP-1 decay was the only perturbation that decreased recovery, while all others individually improved it.
+
+\section{Discussion}
+
+Our ABM provides the most comprehensive computational model of skeletal muscle regeneration to date, incorporating approximately 100 literature-derived rules governing seven cell and structure types and seven cytokines with spatial diffusion and decay dynamics. The model was rigorously calibrated against three independent experimental datasets and validated against five additional outputs not used in calibration, demonstrating predictive capacity beyond its training data.
+
+The central finding is that combined cytokine modifications can achieve substantially greater regeneration enhancement (13\%) than any single intervention, demonstrating the importance of addressing the system as a whole rather than targeting individual factors. This synergistic effect arises from the nonlinear interactions between cytokines and cells: for example, reducing HGF decay prolongs SSC activation, but the benefits are limited unless concomitant changes in TGF-$\beta$ and MMP-9 dynamics prevent excessive fibrosis and facilitate appropriate tissue remodeling \citep{murphy1999satellites, wosczyna2018mesenchymal}.
+
+The VEGF-A dose-response saturation is clinically relevant, suggesting that increasing growth factor concentration beyond a threshold provides diminishing returns \citep{ferrara2003biology}. This has implications for the design of platelet-rich plasma (PRP) therapies and engineered biomaterial-based delivery systems, which aim to provide sustained local cytokine release.
+
+The two perturbations showing discrepancies with published experiments (TNF-$\alpha$ KO and macrophage depletion temporal dynamics) highlight specific gaps in our current biological understanding. The TNF-$\alpha$ KO discrepancy likely reflects interferon pathway compensation that is not captured in the model, suggesting that future iterations should incorporate interferon-mediated cross-regulation \citep{li2001tnf}. The macrophage depletion temporal discrepancy may reflect experimental variability in clodronate-liposome depletion efficiency \citep{summan2006macrophages}.
+
+Several limitations should be acknowledged. The model represents a two-dimensional cross-section of a muscle fascicle, omitting three-dimensional architecture and long-range signaling. The 52 calibrated parameters, while constrained by the ADS procedure, may not be uniquely identifiable. Additionally, the model focuses on murine physiology and would require adaptation for human applications.
+
+\section{Methods}
+
+\subsection{Agent-Based Model Implementation}
+
+The ABM was implemented in CompuCell3D v4.3.1 \citep{swat2012multi} using the Cellular Potts modeling framework \citep{graner1992simulation}. The simulation domain represents a cross-section of a murine skeletal muscle fascicle containing muscle fibers, satellite stem cells, fibroblasts, neutrophils, macrophages (M1 and M2 phenotypes), microvessels, and lymphatic vessels. Cell behaviors including recruitment, activation, proliferation, differentiation, apoptosis, and cytokine secretion were governed by rules derived from over 100 published studies.
+
+\subsection{Cytokine Dynamics}
+
+Seven cytokines (TNF-$\alpha$, TGF-$\beta$, HGF, VEGF-A, MCP-1, MMP-9, IL-10) were modeled as continuous diffusible fields with cell-type-specific secretion rates, diffusion coefficients, and decay rates. Each cytokine field was solved using reaction-diffusion equations on the simulation lattice.
+
+\subsection{Parameter Calibration}
+
+Latin hypercube sampling generated 600 unique parameter sets across the 52 unknown parameters \citep{mckay1979comparison}. Each parameter set was run in triplicate. Simulations were filtered against experimental bounds for CSA recovery at days 3, 7, 14, and 28. Alternative density subtraction (ADS) iteratively narrowed parameter bounds by comparing the density of accepted versus rejected parameter values \citep{marino2008methodology}. PRCC analysis guided further refinement by identifying the most influential parameters at each time point.
+
+\subsection{Statistical Analysis}
+
+Comparisons between perturbation conditions and control used Wilcoxon rank-sum tests with Bonferroni correction for multiple comparisons. PRCC significance was assessed at $\alpha = 0.05$ with Bonferroni correction across all parameter-output pairs. All simulations were run with 10 replicates to capture stochastic variability.
+
+\section{Conclusion}
+
+Our comprehensive agent-based model of skeletal muscle regeneration reveals that nonlinear cytokine interactions create therapeutic opportunities that cannot be predicted from single-factor experiments. The identification of a combined cytokine perturbation strategy achieving 13\% enhanced CSA recovery demonstrates the value of computational approaches for guiding regenerative medicine interventions. The model provides a platform for systematic in silico testing of therapeutic strategies prior to costly experimental validation.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

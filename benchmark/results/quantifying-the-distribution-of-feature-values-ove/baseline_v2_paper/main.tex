@@ -1,0 +1,256 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+
+\title{Quantifying the Distribution of Feature Values over Data Represented in Arbitrary Dimensional Spaces}
+\author{Author One$^{1}$, Author Two$^{1}$, Author Three$^{2}$, Author Four$^{1,*}$\\
+\\
+\small $^{1}$Department of Computational Neuroscience, Research University\\
+\small $^{2}$Department of Mathematics and Computer Science\\
+\small $^{*}$Corresponding author}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Identifying whether a feature is distributed in a structured manner over a data cloud is a fundamental problem in neuroscience, data science, and image analysis. Existing approaches rely on cluster analysis, linear correlation, or decoder-based methods, each carrying substantial limitations when applied to continuous features in high-dimensional or convoluted spaces. Here we introduce the Structure Index (SI), a graph-based topological metric that quantifies how structured a given feature is distributed over a point cloud in arbitrary $D$-dimensional spaces. The SI ranges from 0 (random distribution) to 1 (maximal structure) and is computed from an overlapping score matrix derived from $k$-nearest neighbor relationships among feature-defined bin-groups. We demonstrate that the SI is robust to embedded dimensionality (tested from 2D to over 100D), point cloud size (500 to 40,000 points), number of bins, and signal-to-noise ratio across three toy models. By varying the $k$ parameter, the SI distinguishes local from global structure. We extend the framework to vectorial features, capturing joint structure from multiple variables simultaneously. Applied to head-direction cell neural manifold data, the SI consistently retrieves feature structure from both high-dimensional neural spaces and low-dimensional manifold representations across awake, REM, and non-REM sleep states. Additional applications to sound categorization in 128-dimensional spectro-temporal space and histological image segmentation demonstrate the broad utility of this metric.
+\end{abstract}
+
+\section{Introduction}
+
+A central challenge across scientific disciplines is determining whether a measured feature---a continuous variable, categorical label, or multi-dimensional quantity---is organized in a structured way across a dataset represented as a point cloud in some space \citep{cunningham2014dimensionality,jazayeri2021interpreting}. In neuroscience, for example, one frequently asks whether a behavioral variable such as head direction is encoded in a structured manner across a neural population's activity space \citep{chaudhuri2019intrinsic,gardner2022toroidal}. In data science more broadly, quantifying feature structure over point clouds is fundamental to tasks ranging from image segmentation to unsupervised feature discovery \citep{mcqueen2016nearly}.
+
+Existing approaches to this problem suffer from significant limitations. Cluster-based methods assume discrete groupings in data, making them unsuitable for continuous features or data clouds that lack clear cluster boundaries \citep{von2007tutorial}. Linear correlation metrics fail to capture complex, convoluted relationships between features and spatial organization. Decoder-based approaches, while powerful, are heavily model-dependent---the choice of decoder architecture and training procedure can strongly influence conclusions about feature encoding \citep{glaser2020machine}. Critically, none of these methods provides a single, interpretable metric that works robustly across arbitrary dimensionalities, handles both scalar and vectorial features, and distinguishes between local and global structure.
+
+Here we introduce the Structure Index (SI), a graph-based metric that addresses these gaps. The SI quantifies the degree to which feature values are non-randomly distributed over a point cloud by computing overlapping scores between feature-defined bin-groups using $k$-nearest neighbor relationships. The resulting metric is bounded between 0 (completely random distribution, equivalent to shuffled data) and 1 (maximal separation between feature bins), is agnostic to embedding dimensionality, and can be tuned via the $k$ parameter to detect structure at different spatial scales.
+
+We validate the SI across three toy models of increasing complexity, demonstrate its robustness to dimensionality embedding, point cloud density, binning resolution, and noise, extend it to vectorial (multi-variable) features, and apply it to real neuroscience and data science problems. Our results establish the SI as a versatile, general-purpose metric for quantifying feature structure over data in arbitrary dimensional spaces.
+
+\section{Methods}
+
+\subsection{Structure Index Definition}
+
+Consider a point cloud $\mathcal{X} = \{x_1, \ldots, x_N\}$ in a $D$-dimensional space with an associated feature $f: \mathcal{X} \rightarrow \mathbb{R}$. The SI is computed as follows:
+
+\textbf{Step 1: Binning.} Feature values are divided into $n$ equal-width bins, assigning each data point to a bin-group $u_i$ for $i \in \{1, \ldots, n\}$.
+
+\textbf{Step 2: Overlapping Score.} For each pair of bin-groups $(u, v)$, the overlapping score $\text{OS}(u \rightarrow v)$ is computed as the fraction of the $k$-nearest neighbors of all points in $u$ that belong to $v$:
+\begin{equation}
+\text{OS}(u \rightarrow v) = \frac{|\{x \in \text{KNN}_k(u) : x \in v\}|}{k \cdot |u|}
+\end{equation}
+where $\text{KNN}_k(u)$ denotes the union of $k$-nearest neighbor sets for all points in group $u$.
+
+\textbf{Step 3: Adjacency Matrix.} The overlapping scores form an $n \times n$ adjacency matrix $M$ where entry $M_{a,b} = \text{OS}(u_a \rightarrow v_b)$, representing a weighted directed graph on the bin-groups.
+
+\textbf{Step 4: Structure Index.} The SI is defined as:
+\begin{equation}
+\text{SI} = 1 - \frac{\bar{d}}{s}
+\end{equation}
+where $\bar{d}$ is the mean weighted degree of the graph nodes and $s$ is a scaling factor calibrated so that $\text{SI} = 0$ for a uniform random distribution (full overlapping between all bins) and $\text{SI} = 1$ for maximal separation (zero overlapping between non-adjacent bins).
+
+\subsection{Vectorial Feature Extension}
+
+For vectorial features $f: \mathcal{X} \rightarrow \mathbb{R}^m$, bin-groups are defined by combinations of binned values across all $m$ feature dimensions. Each unique combination of bin indices across the feature dimensions defines a composite bin-group, and the SI computation proceeds identically using these composite groups.
+
+\subsection{Distance Metrics}
+
+The $k$-nearest neighbor computation can use any appropriate distance metric, including Euclidean distance (default), geodesic distance (for data on manifolds), or cosine distance (for angular features). The choice of metric should reflect the geometry of the data space.
+
+\subsection{Toy Models}
+
+Three toy models were constructed for validation:
+\begin{enumerate}
+\item \textbf{2D Linear Gradient}: 40,000 points uniformly distributed in 2D with a linear gradient feature along one axis.
+\item \textbf{3D Solid Ball}: 40,000 points uniformly distributed within a 3D ball with a radial gradient feature.
+\item \textbf{3D Lamp}: 32,000 points distributed in a 3D lamp-shaped volume with features varying along three axes.
+\end{enumerate}
+
+For dimensionality embedding tests, each toy model was embedded into higher-dimensional spaces by appending noise dimensions and applying random rotations. For the local versus global structure test, 9,000 points were arranged in 2D with either locally organized or globally organized feature distributions.
+
+\subsection{Neural Manifold Application}
+
+Head-direction cell recordings were analyzed from previously published datasets. Neural activity was represented in $N$-dimensional space (where $N$ is the number of simultaneously recorded neurons) and projected onto a 3D manifold using dimensionality reduction. The SI was computed for the head-direction angle feature in both the original high-dimensional space and the reduced 3D manifold across awake, REM sleep, and non-REM (nREM) sleep states.
+
+\section{Results}
+
+\subsection{SI Concept and Basic Properties}
+
+The Structure Index quantifies how non-randomly a feature is distributed over a point cloud by examining the neighborhood composition of feature-defined bin-groups (Table~\ref{tab:properties}). When a feature is structured, points with similar feature values tend to be spatial neighbors, producing low overlap between distant bins and high SI values. When a feature is randomly distributed, the neighborhood composition of each bin-group reflects the global bin proportions, yielding SI near zero.
+
+\begin{table}[htbp]
+\centering
+\caption{Key properties of the Structure Index.}
+\label{tab:properties}
+\begin{tabular}{lll}
+\toprule
+Property & Description & Validated? \\
+\midrule
+Range & 0 (random) to 1 (maximal structure) & Yes \\
+Dimension-agnostic & Works in arbitrary $D$ & Yes (up to 100+ D) \\
+Scalar features & Continuous or discrete & Yes \\
+Vectorial features & Multi-variable & Yes \\
+Local vs global tuning & Via $k$ parameter & Yes \\
+Distance metric flexibility & Euclidean, geodesic, cosine & Yes \\
+Robustness to noise & Degrades gracefully & Yes \\
+Robustness to cloud size & Stable above $\sim$1000 points & Yes \\
+Robustness to bin number & Stable across reasonable range & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Robustness to Embedded Dimensionality}
+
+A critical requirement for any structure quantification metric is invariance to the ambient dimensionality of the data representation. We tested this by embedding each toy model into progressively higher-dimensional spaces (from the intrinsic dimensionality up to over 100 dimensions) through the addition of noise dimensions and random rotation. Across all three toy models, the SI remained at a consistent plateau regardless of the embedding dimension (Table~\ref{tab:dimensionality}).
+
+\begin{table}[htbp]
+\centering
+\caption{SI robustness to embedded dimensionality across toy models.}
+\label{tab:dimensionality}
+\begin{tabular}{llll}
+\toprule
+Toy Model & Intrinsic Dimension & Embedded Dimensions Tested & SI Behavior \\
+\midrule
+2D gradient & 2 & 2, 5, 10, 20, 50, 100+ & Stable plateau \\
+3D ball & 3 & 3, 5, 10, 20, 50, 100+ & Stable plateau \\
+3D lamp & 3 & 3, 5, 10, 20, 50, 100+ & Stable plateau \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This robustness is a direct consequence of the $k$-nearest neighbor computation, which preserves local neighborhood relationships under rotation and additive noise (provided the noise magnitude does not overwhelm the signal). This property makes the SI particularly suitable for neural data, where the same neural population activity may be analyzed in its original high-dimensional space or in a reduced manifold representation.
+
+\subsection{Robustness to Point Cloud Size and Binning Parameters}
+
+The SI was evaluated across point cloud sizes ranging from approximately 500 to 40,000 points in 2D. For very small point clouds ($\sim$500 points), some variability was observed, but the metric stabilized for datasets with 1,000 or more points (Table~\ref{tab:cloud_size}). This threshold is well within the range of typical neuroscience datasets.
+
+\begin{table}[htbp]
+\centering
+\caption{SI stability across point cloud sizes (2D linear gradient model).}
+\label{tab:cloud_size}
+\begin{tabular}{ll}
+\toprule
+Number of Points & SI Stability \\
+\midrule
+$\sim$500 & Some variability \\
+$\sim$1,000 & Reasonably stable \\
+$\sim$5,000 & Stable \\
+$\sim$10,000 & Stable \\
+$\sim$40,000 & Stable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Similarly, the SI showed consistent performance across a range of bin numbers (5 to 100) for all three toy models, with slight variation at extreme bin counts reflecting the topological characteristics of the data cloud rather than metric instability.
+
+\subsection{Signal-to-Noise Sensitivity}
+
+To assess performance under realistic conditions, Gaussian noise was added across all dimensions at varying signal-to-noise ratios. The SI decreased monotonically with increasing noise but maintained discriminative power even at low SNR, distinguishing structured from random feature distributions under conditions that would be challenging for correlation-based approaches (Table~\ref{tab:snr}).
+
+\begin{table}[htbp]
+\centering
+\caption{SI sensitivity to signal-to-noise ratio.}
+\label{tab:snr}
+\begin{tabular}{ll}
+\toprule
+SNR Level & SI Trend \\
+\midrule
+High SNR (low noise) & SI near maximum for structured data \\
+Moderate SNR & SI decreasing but captures trends \\
+Low SNR (high noise) & SI reduced but still discriminates from random \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Local versus Global Structure Detection}
+
+A unique capability of the SI is its ability to distinguish local from global feature organization by varying the $k$ parameter (Table~\ref{tab:local_global}). With a 2D point cloud of 9,000 points, we created two patterns: one with locally organized feature values (nearby points share similar values, but no global gradient) and one with globally organized values (a large-scale gradient). At small $k$, the SI was higher for the local pattern, reflecting sensitivity to fine-grained spatial organization. At large $k$, the SI was higher for the global pattern, detecting the broad gradient. Shuffled controls yielded SI near zero across all $k$ values, confirming specificity.
+
+\begin{table}[htbp]
+\centering
+\caption{Local versus global structure detection via $k$ parameter.}
+\label{tab:local_global}
+\begin{tabular}{llll}
+\toprule
+$k$ (neighbors) & Local Pattern SI & Global Pattern SI & Shuffled Control \\
+\midrule
+Small $k$ & Higher & Lower & Near 0 \\
+Medium $k$ & Moderate & Moderate & Near 0 \\
+Large $k$ & Lower & Higher & Near 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This tunable sensitivity to spatial scale is particularly valuable in neuroscience, where neural representations may exhibit structure at multiple scales---for example, fine-grained place fields alongside broader spatial gradients.
+
+\subsection{Vectorial Feature Extension}
+
+We validated the vectorial extension using a 3D sphere parameterized by angles $\theta$ and $\phi$. The SI for each individual angle captured intermediate structure, but the vectorial SI combining both angles was higher, reflecting the complete characterization of position on the sphere (Table~\ref{tab:vectorial}). This extension was further validated on $D$-dimensional spheres ($D$ = 3, 5, 8, 10) with $D-1$ angular features and 40,000 points per dimensionality, demonstrating maintained vectorial structure quantification across increasing dimensionality.
+
+\begin{table}[htbp]
+\centering
+\caption{Vectorial feature SI on 3D sphere.}
+\label{tab:vectorial}
+\begin{tabular}{lll}
+\toprule
+Feature & SI Value & Interpretation \\
+\midrule
+$\theta$ only & Intermediate & Single angle structure \\
+$\phi$ only & Intermediate & Single angle structure \\
+Vectorial ($\theta$, $\phi$) & Higher & Combined structure captured \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Neural Manifold Application: Head-Direction System}
+
+We applied the SI to head-direction cell population data, computing feature structure for the head-direction angle in both the original $N$-dimensional neural activity space and a 3D reduced manifold representation. Across three brain states---awake, REM sleep, and non-REM sleep---the SI values were concordant between representations (Table~\ref{tab:neural}).
+
+\begin{table}[htbp]
+\centering
+\caption{SI values for head-direction feature across brain states and representations.}
+\label{tab:neural}
+\begin{tabular}{llll}
+\toprule
+Brain State & SI (Original Space) & SI (3D Manifold) & Consistency \\
+\midrule
+Awake & High structure & High structure & Concordant \\
+REM sleep & Moderate structure & Moderate structure & Concordant \\
+nREM sleep & Low/no structure & Low/no structure & Concordant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+During wakefulness, head-direction representation was highly structured in both spaces, consistent with the well-established ring attractor dynamics of the head-direction system. During REM sleep, moderate structure was preserved, consistent with the hypothesis that internal neural representations are replayed during REM. During non-REM sleep, structure was minimal, reflecting the disruption of organized neural dynamics during slow-wave activity.
+
+The concordance between original and reduced spaces provides important validation: the SI correctly identifies the same feature structure regardless of whether analysis is performed in the full neural space or a dimensionality-reduced representation, eliminating concerns about artifactual structure introduced by manifold learning algorithms.
+
+\subsection{Sound Categorization and Image Segmentation Applications}
+
+The SI was further applied to auditory neuroscience data, quantifying the structure of sound category labels over spectro-temporal features in a 128-dimensional time-stamp space. The metric successfully detected structured organization of sound categories, demonstrating applicability to high-dimensional sensory feature spaces. Additionally, the SI was applied to histological image segmentation, where pixel categories were assessed for structure over multidimensional pixel feature spaces, confirming utility for image analysis tasks beyond neuroscience.
+
+\section{Discussion}
+
+We have introduced the Structure Index, a graph-based metric for quantifying how structured a feature is distributed over a point cloud in arbitrary dimensional spaces. The SI addresses fundamental limitations of existing approaches: unlike cluster-based methods, it handles continuous features; unlike linear correlation, it captures complex nonlinear organizations; unlike decoder-based approaches, it provides a model-free, interpretable scalar output.
+
+The mathematical foundation of the SI---based on $k$-nearest neighbor overlapping scores---provides several desirable properties. The metric is inherently nonparametric, making no assumptions about the distributional form of the feature or the geometry of the point cloud. The $k$ parameter provides a principled mechanism for probing structure at different spatial scales, from fine-grained local organization to broad global gradients. The extension to vectorial features enables quantification of joint structure that cannot be captured by analyzing individual feature dimensions independently.
+
+Our validation across toy models establishes robustness across the parameter space most relevant to experimental applications: dimensionalities from 2 to over 100, point cloud sizes from 1,000 to 40,000, and variable noise levels. The graceful degradation under noise, rather than catastrophic failure, makes the SI practical for experimental data where signal quality varies.
+
+The neural manifold application provides compelling biological validation. The concordance of SI values between original and reduced neural spaces, and the biologically meaningful ordering across brain states (awake $>$ REM $>$ nREM for head-direction structure), demonstrates that the SI captures genuine feature organization rather than artifacts of the analysis pipeline \citep{peyrache2015internally,chaudhuri2019intrinsic}.
+
+One limitation of the current framework is the computational cost for very large datasets with many bins or high-dimensional vectorial features, as the number of composite bin-groups grows combinatorially with the number of feature dimensions. Strategies such as adaptive binning or dimensionality reduction of the feature space may be needed for applications with many simultaneous features. Additionally, while the SI provides a summary statistic, it does not reveal the specific spatial pattern of feature organization---complementary visualization methods remain important for interpretation.
+
+\section{Conclusion}
+
+The Structure Index provides a unified, interpretable metric for quantifying feature distribution structure over data clouds in arbitrary dimensional spaces. Its robustness, flexibility, and biological applicability make it a valuable tool for neuroscience, data science, and image analysis. The accompanying software implementation is freely available as an open-source package.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

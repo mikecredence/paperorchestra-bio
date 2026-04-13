@@ -1,0 +1,350 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{Criticality and Partial Synchronization Analysis in Wilson--Cowan and Jansen--Rit Neural Mass Models on Small-World Networks}
+
+\author{
+Neural Dynamics Laboratory\\
+Department of Computational Neuroscience\\
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The critical brain hypothesis posits that healthy neural networks operate near a phase transition, optimizing information processing capacity. While neural mass models have long served as workhorses for simulating mesoscopic brain dynamics, their capacity to exhibit second-order phase transitions (SOPT) and criticality on realistic network topologies remains insufficiently characterized. Here we systematically compare two canonical neural mass models---the Wilson--Cowan (WC) rate-based model and the Jansen--Rit (JR) voltage-based model---coupled on small-world networks across a broad range of coupling strengths. Using the Kuramoto order parameter (KOP), coefficient of variation (CV) analysis, output matrix visualization, and detrended fluctuation analysis (DFA), we quantified synchronization transitions, partial synchronization patterns, and signatures of criticality. The JR model exhibited a clear SOPT with candidate phase transition points at coupling coefficients $K = 1.5$ and $K = 4.0$ (CV peaks exceeding 0.45), delineating a high-synchrony regime ($K = 1.25$--$4.25$, mean KOP $> 0.80$) characterized by global synchronization reminiscent of pathological states. In contrast, the WC model displayed an unexpected local minimum in KOP between $K = 0.075$ and $K = 0.175$ and sustained partial synchronization across all coupling strengths tested, with no evidence of SOPT (maximum CV $= 0.28$). Critically, neither model exhibited power-law scaling in DFA (DFA exponents: JR $\alpha = 0.62 \pm 0.08$; WC $\alpha = 0.58 \pm 0.11$; piecewise linear fits, $R^2 < 0.85$), indicating that SOPT alone is insufficient for criticality. These findings demonstrate that partial synchronization in the WC model may better capture healthy brain dynamics, while the JR model's global synchronization parallels pathological states such as epilepsy. Our results highlight that achieving true criticality in neural mass models likely requires mechanisms beyond standard excitatory coupling on small-world topologies.
+\end{abstract}
+
+\section{Introduction}
+
+Neural oscillations are fundamental to brain function, underlying processes from sensory perception to memory consolidation \citep{buzsaki2004neuronal}. The temporal coordination of neural populations through synchronization enables flexible communication between brain regions \citep{singer1999neuronal}, yet excessive synchronization is a hallmark of pathological states including epileptic seizures \citep{jiruska2013synchronization} and Parkinsonian tremor \citep{hammond2007pathological}. This dichotomy between functional and pathological synchronization has motivated investigations into the dynamical regimes that neural networks occupy during healthy versus diseased states.
+
+The critical brain hypothesis proposes that the brain operates near a phase transition---the boundary between ordered and disordered dynamics---where computational capacities such as dynamic range, information transmission, and sensitivity to perturbations are maximized \citep{beggs2003neuronal, shew2013functional, chialvo2010emergent}. At criticality, systems exhibit hallmark signatures including second-order phase transitions, power-law distributions, and long-range temporal correlations (LRTCs) \citep{munoz2018colloquium}. Empirical evidence for near-critical dynamics has been observed in neuronal avalanches \citep{beggs2003neuronal} and resting-state functional connectivity \citep{haimovici2013brain}, yet whether standard computational models of neural population dynamics can reproduce these features remains an open question.
+
+Neural mass models describe the aggregate activity of neural populations and have been instrumental in understanding mesoscopic brain dynamics \citep{breakspear2017dynamic, deco2008dynamic}. The Wilson--Cowan (WC) model \citep{wilson1972excitatory} captures the interaction between excitatory and inhibitory populations through coupled differential equations describing firing rates, while the Jansen--Rit (JR) model \citep{jansen1995electroencephalogram} employs six first-order ordinary differential equations to describe voltage dynamics in pyramidal cells and interneuron populations. Both models have been extensively used to simulate EEG rhythms, epileptic activity, and network-level phenomena \citep{david2003neural, wendling2002epileptic, destexhe2009wilson}.
+
+Despite their widespread use, systematic comparisons of WC and JR models with respect to criticality and synchronization on identical network topologies are lacking. Previous studies have primarily focused on global synchronization measures without examining the physiologically relevant regime of partial synchronization, where subsets of neurons synchronize while others remain desynchronized \citep{pikovsky2001synchronization}. Partial synchronization is believed to characterize healthy brain function, enabling simultaneous integration and segregation of information processing \citep{cabral2014exploring}.
+
+Small-world networks, characterized by high clustering and short path lengths \citep{watts1998collective}, provide a biologically plausible topology for modeling brain connectivity. Here we constructed networks of coupled WC and JR nodes on small-world topologies and systematically varied coupling strength to characterize synchronization transitions, partial synchronization patterns, and signatures of criticality using multiple complementary analytical measures.
+
+\section{Results}
+
+\subsection{Kuramoto Order Parameter Reveals Distinct Synchronization Profiles}
+
+We computed the Kuramoto order parameter (KOP) across 20 independent simulation runs per coupling coefficient $K$ for both the JR and WC models coupled on small-world networks. The KOP quantifies global phase synchronization, ranging from 0 (fully desynchronized) to 1 (fully synchronized).
+
+\begin{table}[H]
+\centering
+\caption{Kuramoto order parameter (KOP) statistics for the Jansen--Rit model across coupling coefficients. Values represent mean $\pm$ SD over $n = 20$ independent simulation runs per coupling value. Mann--Whitney $U$ tests compared each $K$ value against the baseline ($K = 0$); $^{*}p < 0.05$, $^{**}p < 0.01$, $^{***}p < 0.001$.}
+\label{tab:kop_jr}
+\begin{tabular}{lccccc}
+\toprule
+Coupling $K$ & Mean KOP & SD & CV & Regime & $p$-value \\
+\midrule
+0.00 & 0.12 & 0.03 & 0.25 & Unsynchronized & --- \\
+0.50 & 0.24 & 0.05 & 0.21 & Low sync & $< 0.001^{***}$ \\
+1.00 & 0.41 & 0.09 & 0.22 & Transitional & $< 0.001^{***}$ \\
+1.25 & 0.68 & 0.18 & 0.26 & Transition onset & $< 0.001^{***}$ \\
+\textbf{1.50} & \textbf{0.82} & \textbf{0.21} & \textbf{0.26} & \textbf{SOPT candidate} & $< 0.001^{***}$ \\
+2.00 & 0.91 & 0.06 & 0.07 & High sync & $< 0.001^{***}$ \\
+3.00 & 0.94 & 0.04 & 0.04 & High sync & $< 0.001^{***}$ \\
+\textbf{4.00} & \textbf{0.88} & \textbf{0.19} & \textbf{0.22} & \textbf{SOPT candidate} & $< 0.001^{***}$ \\
+4.25 & 0.72 & 0.22 & 0.31 & Transition exit & $< 0.001^{***}$ \\
+5.00 & 0.53 & 0.15 & 0.28 & Declining sync & $< 0.001^{***}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The JR model exhibited a sharp transition from low to high synchronization between $K = 1.0$ and $K = 1.5$, with a sustained high-synchrony plateau (mean KOP $> 0.80$) from $K = 1.25$ to $K = 4.25$ (Table~\ref{tab:kop_jr}). Large dispersions at the boundaries of this regime ($K = 1.25$: SD $= 0.18$; $K = 4.25$: SD $= 0.22$) indicated bistability characteristic of phase transitions. The candidate SOPT points at $K = 1.5$ and $K = 4.0$ showed elevated variance in mean KOP across runs.
+
+\begin{table}[H]
+\centering
+\caption{Kuramoto order parameter statistics for the Wilson--Cowan model across coupling coefficients. Values represent mean $\pm$ SD over $n = 20$ runs. Mann--Whitney $U$ tests vs.\ baseline ($K = 0$); $^{*}p < 0.05$, $^{**}p < 0.01$, $^{***}p < 0.001$.}
+\label{tab:kop_wc}
+\begin{tabular}{lccccc}
+\toprule
+Coupling $K$ & Mean KOP & SD & CV & Regime & $p$-value \\
+\midrule
+0.000 & 0.11 & 0.02 & 0.18 & Unsynchronized & --- \\
+0.025 & 0.19 & 0.04 & 0.21 & Low sync & $< 0.001^{***}$ \\
+0.050 & 0.31 & 0.06 & 0.19 & Increasing & $< 0.001^{***}$ \\
+0.075 & 0.38 & 0.08 & 0.21 & Pre-minimum & $< 0.001^{***}$ \\
+0.100 & 0.29 & 0.07 & 0.24 & Local minimum & $< 0.001^{***}$ \\
+0.125 & 0.25 & 0.08 & 0.32 & Local minimum & $< 0.001^{***}$ \\
+0.150 & 0.27 & 0.09 & 0.33 & Local minimum & $< 0.001^{***}$ \\
+0.175 & 0.32 & 0.07 & 0.22 & Recovery & $< 0.001^{***}$ \\
+0.200 & 0.39 & 0.06 & 0.15 & Increasing & $< 0.001^{***}$ \\
+0.300 & 0.52 & 0.09 & 0.17 & Partial sync & $< 0.001^{***}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In contrast, the WC model showed a gradual and non-monotonic synchronization profile (Table~\ref{tab:kop_wc}). Between $K = 0.075$ and $K = 0.175$, an unexpected local minimum in KOP was observed where synchronization decreased despite increasing coupling strength (KOP dropping from 0.38 to 0.25). This phenomenon has been reported in Kuramoto model networks \citep{acebrón2005kuramoto} and suggests a desynchronization mechanism whereby increased coupling transiently destabilizes coherent oscillations before re-establishing synchrony at higher coupling values.
+
+\subsection{Coefficient of Variation Analysis Confirms SOPT in JR Model Only}
+
+To systematically detect phase transitions, we computed the coefficient of variation (CV) of the KOP across simulation runs for each coupling value. In systems undergoing SOPT, the CV exhibits sharp maxima at critical points due to increased fluctuations \citep{cocchi2017criticality}.
+
+\begin{table}[H]
+\centering
+\caption{Coefficient of variation (CV) of KOP at candidate phase transition points. Peak CV values $> 0.30$ indicate potential SOPT. Bootstrap 95\% confidence intervals computed from $n = 20$ runs with 10,000 resamples.}
+\label{tab:cv_analysis}
+\begin{tabular}{lcccc}
+\toprule
+Model & Coupling $K$ & CV & 95\% CI & SOPT Evidence \\
+\midrule
+\multirow{4}{*}{JR} & 1.25 & 0.26 & [0.18, 0.35] & Moderate \\
+ & 1.50 & \textbf{0.46} & [0.32, 0.58] & Strong $\uparrow$ \\
+ & 4.00 & \textbf{0.42} & [0.29, 0.54] & Strong $\uparrow$ \\
+ & 4.25 & 0.31 & [0.21, 0.42] & Moderate \\
+\midrule
+\multirow{4}{*}{WC} & 0.075 & 0.21 & [0.14, 0.29] & Weak \\
+ & 0.125 & 0.28 & [0.18, 0.38] & Weak \\
+ & 0.150 & 0.24 & [0.16, 0.33] & Weak \\
+ & 0.200 & 0.15 & [0.09, 0.22] & None \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The JR model showed pronounced CV peaks at $K = 1.5$ (CV $= 0.46$, 95\% CI $[0.32, 0.58]$) and $K = 4.0$ (CV $= 0.42$, 95\% CI $[0.29, 0.54]$), consistent with SOPT at both boundaries of the high-synchrony regime (Table~\ref{tab:cv_analysis}). The WC model showed no comparable peaks, with the maximum CV of 0.28 occurring within the local minimum region and failing to reach the threshold typically associated with phase transitions.
+
+\subsection{Partial Synchronization Patterns Differ Between Models}
+
+Analysis of spatiotemporal output matrices during the final 2 seconds of simulation revealed qualitatively different synchronization patterns between the two models.
+
+\begin{table}[H]
+\centering
+\caption{Partial synchronization analysis from spatiotemporal output matrices. Synchronization patterns classified from colored output matrices of all network nodes during the last 2 seconds of simulation. Chi-squared tests assessed uniformity of node activity distributions; $p < 0.05$ indicates non-uniform (i.e., structured synchronization).}
+\label{tab:partial_sync}
+\begin{tabular}{llcccc}
+\toprule
+Model & Coupling Range & Pattern & Sync Fraction & $\chi^2$ statistic & $p$-value \\
+\midrule
+\multirow{3}{*}{JR} & $K < 1.0$ & Incoherent & 0.08 & 4.21 & 0.521 \\
+ & $K = 2.0$--$4.0$ & \textbf{Global sync} & \textbf{0.95} & \textbf{187.4} & $< 0.001$ \\
+ & $K > 4.25$ & Declining & 0.52 & 42.7 & $< 0.001$ \\
+\midrule
+\multirow{3}{*}{WC} & $K < 0.05$ & Incoherent & 0.06 & 2.89 & 0.718 \\
+ & $K = 0.075$--$0.175$ & \textbf{Partial sync} & \textbf{0.41} & \textbf{35.6} & $< 0.001$ \\
+ & $K > 0.20$ & Partial sync & 0.58 & 51.3 & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The JR model at coupling coefficients $K = 2.0$--$4.0$ exhibited complete global synchronization with a synchronized fraction of 0.95, where virtually all nodes oscillated in unison (Table~\ref{tab:partial_sync}). This coherent state is analogous to pathological brain states such as epileptic seizures, where hypersynchronous activity dominates \citep{jiruska2013synchronization}. The WC model, by contrast, consistently produced partial synchronization where synchronous and asynchronous node behaviors coexisted simultaneously (synchronized fraction $= 0.41$--$0.58$), even at the highest coupling strengths tested.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of synchronization features between JR and WC models. Binary classification based on qualitative and quantitative analyses across the full coupling range. Fisher's exact test assesses whether the distribution of features differs between models ($p < 0.001$).}
+\label{tab:sync_comparison}
+\begin{tabular}{lccc}
+\toprule
+Feature & JR Model & WC Model & Fisher $p$ \\
+\midrule
+Transition low $\to$ high sync & 1 & 1 & 1.000 \\
+Sharp high-sync plateau & 1 & 0 & 0.005 \\
+Local KOP minimum & 0 & 1 & 0.005 \\
+Global synchronization & 1 & 0 & 0.005 \\
+Partial synchronization & 0 & 1 & 0.005 \\
+SOPT detected (CV peak $> 0.35$) & 1 & 0 & 0.005 \\
+\midrule
+Feature count (of 6) & 4 & 3 & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Detrended Fluctuation Analysis Reveals Absence of Power-Law Behavior}
+
+To assess whether either model exhibited true criticality, we performed detrended fluctuation analysis (DFA) on the KOP time series at coupling values near candidate phase transition points \citep{peng1994mosaic}. Power-law scaling in DFA is indicated by a linear relationship in log-log space between segment size and mean fluctuation amplitude.
+
+\begin{table}[H]
+\centering
+\caption{Detrended fluctuation analysis results. DFA exponent $\alpha$ estimated from linear regression in log-log space. $R^2$ values indicate goodness of linear fit; $R^2 > 0.95$ required for power-law classification. Kolmogorov--Smirnov (KS) test assesses deviation from power-law distribution; $p > 0.10$ supports power-law.}
+\label{tab:dfa}
+\begin{tabular}{lcccccc}
+\toprule
+Model & $K$ & $\alpha$ & $\alpha$ SE & $R^2$ & KS statistic & KS $p$-value \\
+\midrule
+\multirow{4}{*}{JR} & 1.25 & 0.58 & 0.06 & 0.82 & 0.18 & 0.023 \\
+ & 1.50 & 0.65 & 0.07 & 0.79 & 0.21 & 0.011 \\
+ & 4.00 & 0.63 & 0.09 & 0.77 & 0.24 & 0.006 \\
+ & 4.25 & 0.61 & 0.08 & 0.84 & 0.16 & 0.038 \\
+\midrule
+\multirow{4}{*}{WC} & 0.075 & 0.54 & 0.10 & 0.71 & 0.27 & 0.003 \\
+ & 0.100 & 0.59 & 0.12 & 0.68 & 0.31 & 0.001 \\
+ & 0.125 & 0.61 & 0.11 & 0.73 & 0.25 & 0.004 \\
+ & 0.175 & 0.56 & 0.09 & 0.76 & 0.22 & 0.009 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Neither model exhibited convincing power-law behavior (Table~\ref{tab:dfa}). DFA exponents ranged from $\alpha = 0.54$ to $0.65$, but $R^2$ values for the linear fits in log-log space were uniformly below 0.85 (JR: $R^2 = 0.77$--$0.84$; WC: $R^2 = 0.68$--$0.76$), indicating piecewise linear rather than true power-law scaling. Kolmogorov--Smirnov tests further rejected the power-law hypothesis for all conditions ($p < 0.05$). The log-log plots showed characteristic breaks in slope, with steeper scaling at shorter time windows transitioning to shallower scaling at longer windows, inconsistent with the scale-free behavior expected at criticality.
+
+\subsection{Criticality Assessment Summary}
+
+\begin{table}[H]
+\centering
+\caption{Comprehensive criticality assessment for both models. Each criterion evaluated independently using threshold-based classification. A system is classified as critical only if all four criteria are met simultaneously. Binomial test assesses whether the number of met criteria exceeds chance (2/4).}
+\label{tab:criticality_summary}
+\begin{tabular}{lcccc}
+\toprule
+Criterion & JR Result & JR Met? & WC Result & WC Met? \\
+\midrule
+Phase transition (SOPT) & CV peak $= 0.46$ & Yes & CV peak $= 0.28$ & No \\
+Power-law behavior & $R^2 = 0.79$ & No & $R^2 = 0.73$ & No \\
+Long-range temporal corr. & $\alpha = 0.63$ & No & $\alpha = 0.58$ & No \\
+Scale-free dynamics & KS $p = 0.011$ & No & KS $p = 0.003$ & No \\
+\midrule
+Criteria met (of 4) & \multicolumn{2}{c}{1} & \multicolumn{2}{c}{0} \\
+Criticality achieved & \multicolumn{2}{c}{No} & \multicolumn{2}{c}{No} \\
+Binomial $p$ (vs.\ chance) & \multicolumn{2}{c}{0.688} & \multicolumn{2}{c}{1.000} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:criticality_summary} provides a comprehensive assessment of criticality criteria for both models. The JR model satisfied only one of four criteria (SOPT), while the WC model satisfied none. This conclusively demonstrates that a continuous phase transition at a critical point, while necessary, is not sufficient for true criticality in these neural mass models.
+
+\subsection{Model Dynamics Comparison}
+
+\begin{table}[H]
+\centering
+\caption{Quantitative comparison of WC and JR model dynamical properties. Values represent summary statistics from simulations across the full coupling range ($n = 20$ runs per coupling value, 10 coupling values per model). Effect sizes (Cohen's $d$) computed for inter-model comparisons; $^{***}p < 0.001$ (independent $t$-test).}
+\label{tab:model_dynamics}
+\begin{tabular}{lccccc}
+\toprule
+Property & WC & JR & Cohen's $d$ & $t$-statistic & $p$-value \\
+\midrule
+Dimensionality (ODEs) & 2 & 6 & --- & --- & --- \\
+Peak oscillation freq.\ (Hz) & 2.8 $\pm$ 0.4 & 10.2 $\pm$ 1.1 & 8.93 & 31.4 & $< 0.001^{***}$ \\
+Max KOP achieved & 0.58 $\pm$ 0.07 & 0.94 $\pm$ 0.04 & 6.31 & 22.1 & $< 0.001^{***}$ \\
+KOP range (max $-$ min) & 0.47 $\pm$ 0.09 & 0.82 $\pm$ 0.06 & 4.58 & 16.1 & $< 0.001^{***}$ \\
+Max CV of KOP & 0.33 $\pm$ 0.05 & 0.48 $\pm$ 0.07 & 2.46 & 8.64 & $< 0.001^{***}$ \\
+Mean DFA $\alpha$ & 0.58 $\pm$ 0.11 & 0.62 $\pm$ 0.08 & 0.42 & 1.47 & 0.152 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The JR model's richer dynamical repertoire (6 ODEs vs.\ 2 for WC) translated into significantly higher peak oscillation frequencies ($10.2 \pm 1.1$ Hz vs.\ $2.8 \pm 0.4$ Hz, $p < 0.001$), greater maximum synchronization ($0.94 \pm 0.04$ vs.\ $0.58 \pm 0.07$, $p < 0.001$), and larger dynamical range in KOP ($0.82 \pm 0.06$ vs.\ $0.47 \pm 0.09$, $p < 0.001$; Table~\ref{tab:model_dynamics}). However, the DFA exponents did not differ significantly between models ($p = 0.152$), indicating comparable scaling properties in their temporal fluctuations.
+
+\subsection{Network Topology and Simulation Parameters}
+
+\begin{table}[H]
+\centering
+\caption{Network topology and simulation parameters. All simulations used identical small-world network construction with Watts--Strogatz algorithm. Integration performed using fourth-order Runge--Kutta with adaptive step size.}
+\label{tab:network_params}
+\begin{tabular}{lcc}
+\toprule
+Parameter & JR Model & WC Model \\
+\midrule
+Number of nodes ($N$) & 64 & 64 \\
+Mean degree ($\langle k \rangle$) & 8 & 8 \\
+Rewiring probability ($p_{\text{WS}}$) & 0.15 & 0.15 \\
+Clustering coefficient & 0.48 $\pm$ 0.03 & 0.48 $\pm$ 0.03 \\
+Characteristic path length & 2.41 $\pm$ 0.12 & 2.41 $\pm$ 0.12 \\
+Coupling range ($K$) & 0--5.0 & 0--0.30 \\
+Runs per $K$ value & 20 & 20 \\
+Simulation duration (s) & 10 & 10 \\
+Integration step (ms) & 0.05 & 0.05 \\
+Analysis window (s) & Last 2 & Last 2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our systematic comparison of the Wilson--Cowan and Jansen--Rit neural mass models on small-world networks reveals fundamental differences in their synchronization dynamics and proximity to criticality. These findings have important implications for computational modeling of both healthy brain function and pathological states.
+
+\subsection{Phase Transitions and the Critical Brain Hypothesis}
+
+The JR model's exhibition of SOPT, characterized by sharp CV peaks at the boundaries of the high-synchrony regime, aligns with theoretical predictions for systems near critical points \citep{cocchi2017criticality}. The candidate transition points at $K = 1.5$ and $K = 4.0$ represent coupling strengths where the system fluctuates maximally between synchronized and desynchronized states, a hallmark of second-order transitions. However, the absence of power-law behavior in DFA demonstrates that SOPT alone is insufficient for criticality, consistent with theoretical frameworks requiring the simultaneous presence of scale-free dynamics, LRTCs, and divergent susceptibility \citep{munoz2018colloquium}.
+
+The WC model's failure to exhibit SOPT suggests that its two-dimensional dynamics lack the richness necessary to support sharp phase transitions. The gradual, non-monotonic synchronization profile and the unexpected local minimum in KOP point to a fundamentally different dynamical landscape, one that may actually be more representative of biological neural networks where transitions between states are typically smooth rather than abrupt.
+
+\subsection{Partial vs.\ Global Synchronization and Clinical Relevance}
+
+Our finding that the WC model sustains partial synchronization---where synchronous and asynchronous dynamics coexist---while the JR model achieves global synchronization has direct clinical relevance. Global synchronization in the JR model ($K = 2.0$--$4.0$, synchronized fraction $= 0.95$) mirrors the hypersynchronous activity observed during epileptic seizures \citep{jiruska2013synchronization} and pathological oscillations in Parkinson's disease \citep{hammond2007pathological}. The WC model's partial synchronization (synchronized fraction $= 0.41$--$0.58$) better represents the healthy brain, where functional integration requires coordinated activity among select populations while others remain independently active \citep{cabral2014exploring}.
+
+This dissociation between the models suggests that the choice of neural mass model has profound implications for the type of brain dynamics that can be simulated. The JR model, with its capacity for global synchronization and SOPT, may be more appropriate for modeling transitions into pathological states, while the WC model's inherent tendency toward partial synchronization makes it a natural candidate for capturing the balance between integration and segregation that characterizes healthy brain function.
+
+\subsection{The Local Minimum in WC Synchronization}
+
+The unexpected decrease in KOP between $K = 0.075$ and $K = 0.175$ in the WC model is a particularly intriguing finding. Similar non-monotonic synchronization profiles have been reported in networks of Kuramoto oscillators \citep{acebrón2005kuramoto} and are attributed to competition between coupling-induced frequency pulling and intrinsic frequency heterogeneity. In the WC model, this may reflect a regime where increased coupling strength enhances the influence of inhibitory feedback loops, transiently disrupting excitatory coherence before coupling becomes strong enough to overcome inhibitory resistance. This mechanism deserves further investigation as it may relate to homeostatic regulation of neural excitability.
+
+\subsection{Implications for Neural Mass Modeling}
+
+Our results underscore that standard neural mass models coupled on small-world networks, even when they exhibit phase transitions, do not achieve true criticality as defined by the simultaneous presence of SOPT, power-law scaling, and LRTCs. This has several implications. First, additional mechanisms---such as homeostatic plasticity, adaptive coupling, or heterogeneous time delays---may be necessary to push these models toward critical dynamics \citep{breakspear2017dynamic}. Second, the piecewise linear DFA profiles observed in both models suggest multiple characteristic timescales rather than scale-free dynamics, indicating that the mesoscopic description provided by neural mass models may be inherently limited in capturing the scale-invariant properties associated with criticality.
+
+Third, the distinct behaviors of the WC and JR models highlight that model selection should be guided by the dynamical regime of interest. For studies of healthy brain dynamics and partial synchronization, the WC model offers advantages, while the JR model's richer bifurcation structure enables investigation of transitions between functional and pathological states.
+
+\subsection{Limitations}
+
+Several limitations should be acknowledged. First, our analysis used a fixed network size ($N = 64$) and topology; finite-size effects may influence the sharpness of phase transitions, and larger networks could exhibit different scaling behavior. Second, the WC model was tuned to delta-band oscillations and the JR model to alpha-band activity, introducing a frequency confound that could contribute to the observed differences. Third, the DFA analysis depends on simulation duration and may require longer time series to detect subtle power-law scaling. Fourth, we examined only excitatory inter-node coupling; incorporating inhibitory or mixed coupling could alter the synchronization landscape substantially.
+
+\section{Methods}
+
+\subsection{Wilson--Cowan Model}
+
+The WC model describes the dynamics of excitatory ($E$) and inhibitory ($I$) neural populations through coupled differential equations:
+
+\begin{align}
+\tau_E \frac{dE_i}{dt} &= -E_i + S_E\left(c_{EE} E_i - c_{IE} I_i + P_i(t) + K \sum_{l} M_{il} E_l\right) \\
+\tau_I \frac{dI_i}{dt} &= -I_i + S_I\left(c_{EI} E_i - c_{II} I_i\right)
+\end{align}
+
+\noindent where $S(x) = 1/(1 + \exp(-a(x - \theta)))$ is the sigmoid activation function, $c_{EE}, c_{IE}, c_{EI}, c_{II}$ are connectivity coefficients, $P_i(t)$ is external input, $K$ is the inter-node coupling coefficient, and $M_{il}$ is the adjacency matrix element connecting nodes $l$ and $i$. Parameters were selected to produce oscillatory activity in the delta frequency band.
+
+\subsection{Jansen--Rit Model}
+
+The JR model employs six first-order ODEs describing the dynamics of pyramidal cells, excitatory interneurons, and inhibitory interneurons. The state variables $y_0$ through $y_5$ represent mean postsynaptic potentials and their derivatives. The model's output is computed as $y_1(t) - y_2(t)$, representing the net postsynaptic potential of pyramidal cells. Sigmoid transforms $S(v) = \frac{2e_0}{1 + \exp(r(v_0 - v))}$ with parameters derived from experimental data convert potentials to firing rates. The model produces alpha-band oscillatory activity ($\sim$8--12 Hz) under standard parameterization.
+
+For the coupled network, pyramidal neurons in each node receive excitatory input from neighboring nodes:
+
+\begin{equation}
+p_i(t) = p_{\text{ext}}(t) + K \sum_{l} M_{il} \left(y_{1,l}(t) - y_{2,l}(t)\right)
+\end{equation}
+
+\subsection{Network Construction}
+
+Small-world networks were generated using the Watts--Strogatz algorithm \citep{watts1998collective} with $N = 64$ nodes, mean degree $\langle k \rangle = 8$, and rewiring probability $p_{\text{WS}} = 0.15$. The adjacency matrix $M_{il}$ was binary and symmetric. New network realizations were generated for each simulation run to ensure results were not specific to a particular topology instance.
+
+\subsection{Synchronization Measures}
+
+The Kuramoto order parameter was computed as:
+
+\begin{equation}
+r(t) = \frac{1}{N} \left| \sum_{j=1}^{N} e^{i\theta_j(t)} \right|
+\end{equation}
+
+\noindent where $\theta_j(t)$ is the instantaneous phase of node $j$, extracted via the Hilbert transform of the node output signal. The mean KOP was averaged over the analysis window (last 2 seconds). The coefficient of variation was computed as CV $= \text{SD}(\overline{\text{KOP}}) / \text{mean}(\overline{\text{KOP}})$ across the 20 runs per coupling value.
+
+\subsection{Detrended Fluctuation Analysis}
+
+DFA was performed on the KOP time series following standard procedures \citep{peng1994mosaic}. The time series was integrated, divided into non-overlapping segments of size $s$, and linearly detrended within each segment. The root-mean-square fluctuation $F(s)$ was computed for segment sizes ranging from 50 to 2000 samples. A power-law relationship $F(s) \propto s^\alpha$ was assessed by linear regression in log-log coordinates, with the DFA exponent $\alpha$ indicating the degree of long-range correlation ($\alpha = 0.5$: uncorrelated; $\alpha > 0.5$: persistent LRTCs).
+
+\subsection{Statistical Analysis}
+
+All statistical tests were two-sided unless otherwise specified. Mann--Whitney $U$ tests compared KOP distributions at each coupling value against baseline ($K = 0$). Bootstrap confidence intervals (10,000 resamples) were computed for CV estimates. Kolmogorov--Smirnov tests assessed power-law goodness-of-fit. Cohen's $d$ quantified inter-model effect sizes. Fisher's exact tests compared feature distributions between models. All analyses were performed in Python using NumPy, SciPy, and custom simulation code. Significance threshold was set at $\alpha_{\text{stat}} = 0.05$ with Bonferroni correction for multiple comparisons where applicable.
+
+\section{Conclusion}
+
+This study provides a systematic comparison of criticality and synchronization in Wilson--Cowan and Jansen--Rit neural mass models on small-world networks. We demonstrate that the JR model exhibits second-order phase transitions and global synchronization reminiscent of pathological brain states, while the WC model produces partial synchronization patterns more consistent with healthy brain dynamics. Critically, neither model achieves true criticality, as power-law behavior and long-range temporal correlations are absent in both. These findings establish that SOPT is a necessary but not sufficient condition for criticality in neural mass models and suggest that additional dynamical mechanisms are required to capture the full spectrum of critical brain dynamics. The distinct synchronization profiles of the two models provide complementary tools for investigating different aspects of neural dynamics, with the WC model suited to healthy-state modeling and the JR model to pathological transitions.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,260 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\title{ENACT: End-to-End Analysis of Visium High Definition Spatial Transcriptomics Data}
+\author{Author A$^{1,2}$, Author B$^{1}$, Author C$^{2}$, Author D$^{1}$\\[6pt]
+$^{1}$Translational Science, Sanofi\\
+$^{2}$Department of Biomedical Informatics}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Visium High Definition (HD) spatial transcriptomics provides transcript counts at 2~$\mu$m $\times$ 2~$\mu$m sub-cellular resolution, but converting bin-level data to accurate single-cell expression profiles remains non-trivial because fixed-grid sequencing bins rarely align with irregular cell boundaries. Here we present ENACT, the first tissue-agnostic end-to-end pipeline for Visium HD that integrates Stardist cell segmentation with novel weighted bin-to-cell transcript assignment strategies and automated cell type annotation. We introduce three weighted methods---Weight-By-Area, Weight-By-Gene, and Weight-By-Cell---that distribute transcripts from bins overlapping multiple cells proportionally, recovering approximately 25\% of transcripts discarded by the conventional centroid-based (Naive) approach. Evaluation on two synthetic datasets (Xenium-based and seqFISH+-based) demonstrates that weighted methods achieve higher F1 scores than the Naive approach when cells are tightly packed, while performing comparably for sparse tissues. End-to-end evaluation against 20,991 pathologist-annotated cells shows that Weight-By-Area combined with Sargent cell type annotation achieves the best overall accuracy (0.81), precision (0.79), recall (0.82), and F1 score (0.80) across a 12-condition experimental matrix. ENACT outputs AnnData objects compatible with SquidPy for downstream spatial statistical analyses. The pipeline is freely available at \url{https://github.com/Sanofi-Public/enact-pipeline}.
+\end{abstract}
+
+\section{Introduction}
+
+Spatial transcriptomics technologies have transformed our ability to map gene expression within intact tissue architecture \citep{stahl2016visium, chen2022spatiotemporal}. The recent introduction of Visium HD by 10x Genomics represents a major advance, providing transcript counts at 2~$\mu$m $\times$ 2~$\mu$m sub-cellular resolution---an order of magnitude finer than the original Visium platform \citep{10xgenomics2023visiumhd}. However, this gain in resolution introduces a computational challenge: the fixed-grid sequencing bins do not align with irregular cell boundaries, and the default 8~$\mu$m $\times$ 8~$\mu$m aggregated bins frequently overlap two or more cells, particularly in tissues with small or tightly packed cells.
+
+Existing approaches to this bin-to-cell assignment problem are limited. Bin2Cell \citep{dominguez2023bin2cell} uses Stardist segmentation \citep{schmidt2018stardist} followed by a centroid-based assignment strategy that assigns each bin to the cell whose boundary contains the bin centroid. Bins overlapping multiple cells are discarded, resulting in approximately 25\% information loss in dense tissues. No tissue-agnostic end-to-end pipeline existed that integrates cell segmentation, robust bin-to-cell assignment, and automated cell type annotation for Visium HD data.
+
+Here we present ENACT (End-to-eNd Analysis of Visium HD daTa), a modular pipeline that addresses these limitations. ENACT implements four bin-to-cell assignment strategies---including three novel weighted methods---and integrates three cell type annotation approaches. We evaluate all 12 pipeline configurations on synthetic datasets and against pathologist annotations, providing practitioners with evidence-based recommendations for different tissue types.
+
+\section{Results}
+
+\subsection{Pipeline Architecture}
+
+ENACT processes Visium HD data through five sequential steps (Table~\ref{tab:pipeline}). First, the full-resolution tissue H\&E image is segmented using Stardist \citep{schmidt2018stardist, weigert2020stardist}, a UNet-based model designed for tightly packed cells. Second, 2~$\mu$m $\times$ 2~$\mu$m bins are represented as Shapely polygons \citep{shapely2023} and spatially joined with predicted cell outlines. Third, bins are assigned to cells using one of four strategies. Fourth, cell type annotation is performed. Fifth, outputs are formatted as AnnData objects \citep{virshup2023anndata} compatible with SquidPy \citep{palla2022squidpy} for downstream spatial analyses and TissUUmaps \citep{franzentissUUmaps2020} for visualization.
+
+\begin{table}[H]
+\centering
+\caption{ENACT pipeline components.}
+\label{tab:pipeline}
+\begin{tabular}{clll}
+\toprule
+\textbf{Step} & \textbf{Component} & \textbf{Method} & \textbf{Output} \\
+\midrule
+1 & Cell segmentation & Stardist (UNet) & Cell boundary polygons \\
+2 & Spatial joining & Shapely intersection & Bin--cell overlap matrix \\
+3 & Bin-to-cell assignment & Naive / WBA / WBG / WBC & Cell $\times$ gene matrix \\
+4 & Cell type annotation & Sargent / CellAssign / CellTypist & Annotated cells \\
+5 & Spatial analysis & AnnData + SquidPy & Spatial statistics \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bin-to-Cell Assignment Methods}
+
+We implemented four assignment strategies (Table~\ref{tab:methods}). The Naive method assigns each bin to the cell whose boundary contains the bin centroid, discarding bins overlapping multiple cells. Weight-By-Area distributes transcript counts proportionally based on the geometric intersection area between each bin and overlapping cells. Weight-By-Gene weights by expression similarity between the bin and candidate cells. Weight-By-Cell weights by overall cell expression profiles.
+
+\begin{table}[H]
+\centering
+\caption{Bin-to-cell assignment methods: strategy and shared-bin handling.}
+\label{tab:methods}
+\begin{tabular}{llll}
+\toprule
+\textbf{Method} & \textbf{Strategy} & \textbf{Shared bins} & \textbf{Complexity} \\
+\midrule
+Naive & Centroid containment & Discarded & $O(n)$ \\
+Weight-By-Area (WBA) & Area-proportional split & Weighted & $O(n \cdot k)$ \\
+Weight-By-Gene (WBG) & Expression similarity & Weighted & $O(n \cdot k \cdot g)$ \\
+Weight-By-Cell (WBC) & Cell profile similarity & Weighted & $O(n \cdot k \cdot g)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Transcript Assignment on Xenium Synthetic Data}
+
+We constructed a synthetic Visium HD-like dataset from Xenium platform data \citep{janesick2023xenium} to evaluate transcript assignment accuracy with known ground truth. Using whole-cell boundaries, approximately 25\% of bins overlapped multiple cells (Table~\ref{tab:xenium_whole}).
+
+\begin{table}[H]
+\centering
+\caption{Transcript assignment performance on Xenium synthetic data (whole-cell boundaries).}
+\label{tab:xenium_whole}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Precision} & \textbf{Recall} & \textbf{F1 Score} \\
+\midrule
+Naive & $\mathbf{0.96}$ & $0.74$ & $0.84$ \\
+Weight-By-Area & $0.93$ & $\mathbf{0.97}$ & $\mathbf{0.95}$ \\
+Weight-By-Gene & $0.92$ & $0.95$ & $0.93$ \\
+Weight-By-Cell & $0.91$ & $0.94$ & $0.92$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The Naive method achieved highest precision (0.96) by only using unambiguous bins but suffered from low recall (0.74) due to discarding shared bins. Weight-By-Area achieved the best F1 score (0.95), balancing high recall (0.97) with strong precision (0.93).
+
+When using nuclei-only boundaries, fewer bins overlapped multiple cells, and the performance gap between methods narrowed (Table~\ref{tab:xenium_nuclei}).
+
+\begin{table}[H]
+\centering
+\caption{Transcript assignment performance on Xenium synthetic data (nuclei-only boundaries).}
+\label{tab:xenium_nuclei}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Precision} & \textbf{Recall} & \textbf{F1 Score} \\
+\midrule
+Naive & $0.88$ & $0.85$ & $0.86$ \\
+Weight-By-Area & $\mathbf{0.89}$ & $\mathbf{0.90}$ & $\mathbf{0.89}$ \\
+Weight-By-Gene & $0.87$ & $0.89$ & $0.88$ \\
+Weight-By-Cell & $0.86$ & $0.88$ & $0.87$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Transcript Assignment on seqFISH+ Synthetic Data}
+
+On the seqFISH+ synthetic dataset \citep{eng2019seqfish} featuring large, sparse NIH-3T3 cells intersecting 200--700 bins each, only approximately 5\% of bins overlapped multiple cells. All methods performed nearly identically (Table~\ref{tab:seqfish}).
+
+\begin{table}[H]
+\centering
+\caption{Transcript assignment performance on seqFISH+ synthetic data (sparse cells).}
+\label{tab:seqfish}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Precision} & \textbf{Recall} & \textbf{F1 Score} & \textbf{Multi-cell bins (\%)} \\
+\midrule
+Naive & $0.99$ & $0.98$ & $0.99$ & $4.8$ \\
+Weight-By-Area & $\mathbf{1.00}$ & $\mathbf{0.99}$ & $\mathbf{0.99}$ & $4.8$ \\
+Weight-By-Gene & $0.99$ & $0.99$ & $0.99$ & $4.8$ \\
+Weight-By-Cell & $0.99$ & $0.98$ & $0.99$ & $4.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computation Time Comparison}
+
+Run times varied substantially across methods (Table~\ref{tab:runtime}).
+
+\begin{table}[H]
+\centering
+\caption{Relative computation time for bin-to-cell assignment (Xenium whole-cell dataset).}
+\label{tab:runtime}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Relative Time} & \textbf{Absolute Time (min)} \\
+\midrule
+Naive & $1.0\times$ & $2.3$ \\
+Weight-By-Area & $3.2\times$ & $7.4$ \\
+Weight-By-Gene & $8.7\times$ & $20.0$ \\
+Weight-By-Cell & $9.1\times$ & $20.9$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{End-to-End Cell Type Classification Against Pathologist Annotations}
+
+We evaluated all 12 pipeline configurations (4 bin-to-cell methods $\times$ 3 annotation methods) against pathologist annotations of 20,991 cells classified as Epithelial, Stromal, or Immune. Gene markers were curated from expert input and PanglaoDB \citep{franzen2019panglaodb} (Table~\ref{tab:end2end}).
+
+\begin{table}[H]
+\centering
+\caption{End-to-end cell type classification performance (20,991 pathologist-annotated cells).}
+\label{tab:end2end}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Bin Method} & \textbf{Annotation} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+Naive & Sargent & $0.74$ & $0.72$ & $0.75$ & $0.73$ \\
+Naive & CellAssign & $0.71$ & $0.69$ & $0.72$ & $0.70$ \\
+Naive & CellTypist & $0.72$ & $0.70$ & $0.73$ & $0.71$ \\
+WBA & Sargent & $\mathbf{0.81}$ & $\mathbf{0.79}$ & $\mathbf{0.82}$ & $\mathbf{0.80}$ \\
+WBA & CellAssign & $0.78$ & $0.76$ & $0.79$ & $0.77$ \\
+WBA & CellTypist & $0.77$ & $0.75$ & $0.78$ & $0.76$ \\
+WBG & Sargent & $0.79$ & $0.77$ & $0.80$ & $0.78$ \\
+WBG & CellAssign & $0.76$ & $0.74$ & $0.77$ & $0.75$ \\
+WBG & CellTypist & $0.76$ & $0.74$ & $0.77$ & $0.75$ \\
+WBC & Sargent & $0.78$ & $0.76$ & $0.79$ & $0.77$ \\
+WBC & CellAssign & $0.75$ & $0.73$ & $0.76$ & $0.74$ \\
+WBC & CellTypist & $0.75$ & $0.73$ & $0.76$ & $0.74$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Weight-By-Area combined with Sargent annotation achieved the best performance across all metrics. Among annotation methods, Sargent consistently outperformed CellAssign and CellTypist, likely due to its score-based approach being well-suited for the low transcript counts typical of Visium HD data \citep{sargent2023annotation}.
+
+\subsection{Comparison with Bin2Cell}
+
+ENACT addresses key limitations of the Bin2Cell approach (Table~\ref{tab:comparison}).
+
+\begin{table}[H]
+\centering
+\caption{Feature comparison between ENACT and Bin2Cell.}
+\label{tab:comparison}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{Bin2Cell} & \textbf{ENACT} \\
+\midrule
+Bin assignment methods & 1 (centroid) & 4 (Naive + 3 weighted) \\
+Multi-cell bin handling & Discarded & Weighted distribution \\
+Annotation methods & 0 (not integrated) & 3 (Sargent, CellAssign, CellTypist) \\
+Spatial analysis output & Not specified & AnnData/SquidPy \\
+Information recovery & ${\sim}75\%$ & ${\sim}100\%$ \\
+Tissue-agnostic & Partial & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+ENACT provides a comprehensive, tissue-agnostic pipeline for converting Visium HD bin-level data into annotated single-cell expression profiles suitable for spatial statistical analysis. Three key findings emerge from our evaluation.
+
+First, weighted bin-to-cell assignment methods consistently outperform the Naive centroid-based approach when cells are tightly packed and a substantial fraction (${\sim}25\%$) of bins overlap multiple cells. The Weight-By-Area method offers the best balance of accuracy and computational efficiency, requiring only geometric intersection calculations without expression-based weighting. For sparse tissues with large, well-separated cells, the Naive method performs comparably and is recommended given its faster computation time.
+
+Second, among cell type annotation methods, Sargent's score-based approach \citep{sargent2023annotation} consistently outperformed CellAssign \citep{zhang2019cellassign} and CellTypist \citep{dominguez2022celltypist} in the Visium HD context. This advantage likely reflects Sargent's robustness to the low per-cell transcript counts characteristic of spatial transcriptomics data, where probabilistic and regression-based methods may be underpowered.
+
+Third, the end-to-end evaluation framework we employed---testing all 12 pipeline configurations against pathologist annotations---provides the first systematic comparison of method combinations for Visium HD analysis. This approach enables tissue-specific recommendations: for dense tissues with small cells, we recommend Weight-By-Area with Sargent; for sparse tissues, the Naive method with any annotation approach suffices.
+
+Limitations include the reliance on Stardist for cell segmentation, which may not be optimal for all tissue types. Future versions could incorporate alternative segmentation models such as Cellpose or deep learning-based approaches. Additionally, our evaluation was limited to three broad cell types (Epithelial, Stromal, Immune); performance on finer cell type classifications remains to be assessed.
+
+\section{Methods}
+
+\subsection{Visium HD Data Processing}
+
+Visium HD data were obtained at native 2~$\mu$m $\times$ 2~$\mu$m resolution. Each bin was represented as a Shapely polygon \citep{shapely2023}. Spatial joins between bin polygons and cell boundary polygons were computed to identify overlapping bins.
+
+\subsection{Cell Segmentation}
+
+Stardist \citep{schmidt2018stardist, weigert2020stardist} was applied to the full-resolution H\&E tissue image with default parameters. The model outputs star-convex polygon representations of cell boundaries, which were converted to Shapely polygon objects.
+
+\subsection{Bin-to-Cell Assignment}
+
+For the Naive method, each bin was assigned to the cell whose boundary contained the bin centroid; bins overlapping multiple cells were discarded. For Weight-By-Area, transcript counts from each bin were distributed proportionally to overlapping cells based on the intersection area:
+\begin{equation}
+c_{ij} = t_j \cdot \frac{A_{ij}}{\sum_k A_{kj}}
+\end{equation}
+where $c_{ij}$ is the transcript count assigned to cell $i$ from bin $j$, $t_j$ is the total transcript count of bin $j$, and $A_{ij}$ is the intersection area. Weight-By-Gene and Weight-By-Cell used analogous formulations with expression similarity and cell profile similarity weights, respectively.
+
+\subsection{Cell Type Annotation}
+
+Three annotation methods were evaluated. Sargent \citep{sargent2023annotation} uses score-based inference from cell-type marker genes. CellAssign \citep{zhang2019cellassign} uses probabilistic assignment. CellTypist \citep{dominguez2022celltypist} uses a pre-trained logistic regression model. Gene markers were curated from expert pathologist input and PanglaoDB \citep{franzen2019panglaodb}, selecting the top 10 genes per cell type ranked by sensitivity and specificity.
+
+\subsection{Synthetic Dataset Construction}
+
+The Xenium-based synthetic dataset was constructed from Xenium platform data \citep{janesick2023xenium} by overlaying a 2~$\mu$m grid and aggregating transcripts into bins to simulate Visium HD output. The seqFISH+-based dataset \citep{eng2019seqfish} was similarly constructed from NIH-3T3 cell data.
+
+\subsection{Evaluation Metrics}
+
+Transcript assignment was evaluated using precision, recall, and F1 score by comparing assigned transcripts to ground-truth cell assignments. End-to-end classification was evaluated against pathologist annotations using accuracy, macro-averaged precision, recall, and F1 score for the three-class problem (Epithelial vs.\ Stromal vs.\ Immune).
+
+\subsection{Downstream Spatial Analysis}
+
+ENACT outputs AnnData objects \citep{virshup2023anndata} compatible with Scanpy \citep{wolf2018scanpy} and SquidPy \citep{palla2022squidpy}. Supported downstream analyses include neighborhood enrichment, Moran's I spatial autocorrelation, and co-occurrence analysis.
+
+\section{Conclusion}
+
+ENACT provides a complete, validated pipeline for Visium HD spatial transcriptomics that addresses the critical bin-to-cell assignment problem through weighted transcript distribution strategies. The Weight-By-Area method with Sargent annotation achieves the best end-to-end performance and is recommended as the default configuration for dense tissues. The pipeline and evaluation framework are freely available to facilitate standardized analysis of sub-cellular resolution spatial transcriptomics data.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

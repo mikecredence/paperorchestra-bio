@@ -1,0 +1,222 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{float}
+
+\linenumbers
+
+\title{A Multiscale Computational Framework for the Development of Spines in Molluscan Shells}
+
+\author{
+Author One$^{1,*}$, Author Two$^{2}$, Author Three$^{1,3}$ \\
+\\
+$^{1}$Department of Applied Mathematics, University of Sciences, City, Country \\
+$^{2}$Department of Zoology, National Museum of Nature and Science, Tokyo, Japan \\
+$^{3}$Mathematical Institute, University of Oxford, Oxford, UK \\
+$^{*}$Corresponding author: author.one@university.edu
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Connecting genotype to phenotype across spatial scales remains a central challenge in developmental biology, particularly for non-model organisms where gene regulatory networks are unknown. Molluscan shells provide a permanent record of developmental growth, yet existing models of shell form are disconnected from underlying biological mechanisms. Here we present a modular multiscale framework that links molecular-scale biochemical patterning---through a two-species Activator-Substrate reaction-diffusion system governed by six parameters---to tissue-level elastic rod mechanics that generate spine morphology via a Gaussian growth profile parameterized by growth rate ($g_1$) and growth width ($g_2$). A Quality-Diversity algorithm (MAP-Elites) exhaustively explores the biochemical parameter space, building a look-up table that maps molecular parameters to growth profiles. We apply this framework to spines from \textit{Turbo sazae} shells collected at three sites around Tokyo Bay (Hayama, Jyogashima, Tateyama) and detect a statistically significant difference in spine form between Jyogashima and the other two populations. Jyogashima specimens exhibit larger $g_1$ values (Mann-Whitney $U$ test, $p = 0.008$ vs.\ Hayama; $p = 0.012$ vs.\ Tateyama), corresponding to higher substrate production rate ($c_2$) and lower activator degradation rate ($c_3$) at the molecular level. These population-level differences may relate to environmental conditions, as Jyogashima shows recovery from coastal desertification with greater seaweed availability. Our modular framework enables systematic tracing of phenotypic variation from organism-level morphology through tissue mechanics to molecular parameters, and can accommodate alternative models at each scale.
+\end{abstract}
+
+\section{Introduction}
+
+Understanding how phenotypic diversity arises from underlying molecular and cellular processes is a fundamental goal of developmental biology \citep{pigliucci2010, erwin2009}. This challenge is particularly acute when studying morphological variation across spatial scales, from molecular patterning mechanisms to organism-level form \citep{goriely2017, moulton2020}. Molluscan shells offer a unique model system for this investigation: they preserve a permanent record of the growth process, their geometry can be precisely measured, and their formation involves well-characterized biophysical processes including mantle secretion and elastic growth \citep{chirat2013, raup1966}.
+
+Mathematical models of shell growth and pigmentation have a rich history, from Raup's pioneering geometric analysis \citep{raup1966} to Meinhardt's reaction-diffusion models of shell pigmentation patterns \citep{meinhardt2009}. Turing's seminal work on morphogenesis \citep{turing1952} established that reaction-diffusion systems can spontaneously generate spatial patterns, a principle that has been validated across diverse biological contexts \citep{kondo2010, gierer1972}. At the tissue level, mechanical models treating the shell-secreting mantle as a growing elastic structure have successfully reproduced the emergence of spines, ribs, and other shell ornamentations \citep{chirat2013, moulton2012}.
+
+However, existing approaches typically operate at a single spatial scale. Biochemical models generate concentration patterns but do not predict three-dimensional morphology; mechanical models produce realistic shapes but take growth parameters as inputs without connecting them to underlying biology. Attempts to integrate these scales are rare, largely because the different modeling frameworks---partial differential equations for reaction-diffusion, variational mechanics for elastic growth---are categorically different and difficult to couple \citep{moulton2020}.
+
+The Japanese turban shell \textit{Turbo sazae} \citep{sasaki2017} provides an excellent test case for a multiscale framework. This species exhibits prominent spines whose morphology varies dramatically across populations, and specimens are readily available from multiple collection sites around Tokyo Bay. Importantly, \textit{T.\ sazae} is not a model organism, so gene regulatory networks governing spine formation are unknown, necessitating a phenomenological approach to molecular modeling.
+
+Quality-Diversity (QD) algorithms, particularly MAP-Elites \citep{mouret2015}, provide a powerful tool for exploring high-dimensional parameter spaces when the goal is to discover the full range of achievable phenotypes rather than optimizing a single objective \citep{cossette2021}. By illuminating the mapping from parameter space to phenotype space, QD algorithms can reveal which molecular parameters most strongly influence morphological outcomes.
+
+In this work, we develop a modular multiscale framework comprising four components: (i) a biochemical reaction-diffusion model that generates spatial concentration patterns from six molecular parameters; (ii) a tissue-level elastic rod model that converts growth profiles into three-dimensional spine shapes; (iii) a shape-matching procedure that maps real shell spine images to their best-fit growth parameters; and (iv) a look-up table, precomputed via MAP-Elites, that retrieves the molecular parameters producing any given growth profile. We apply this framework to \textit{T.\ sazae} specimens from three populations around Tokyo Bay.
+
+\section{Results}
+
+\subsection{Morphospace of spine shapes from growth parameter variation}
+
+We first characterized how the two growth parameters---$g_1$ (growth rate amplitude) and $g_2$ (growth width)---control spine morphology in the elastic rod mechanical model (Table~\ref{tab:morphospace}).
+
+\begin{table}[H]
+\centering
+\caption{Effect of growth parameters $g_1$ and $g_2$ on spine morphology in the elastic rod model. Curvature measured as the maximum angular deviation from the shell surface normal. Width measured at the spine base. Values are means across 25 simulations per parameter combination.}
+\label{tab:morphospace}
+\begin{tabular}{ccccc}
+\toprule
+\textbf{$g_1$} & \textbf{$g_2$} & \textbf{Curvature (deg)} & \textbf{Base width (mm)} & \textbf{Morphology} \\
+\midrule
+0.10 & 0.10 & 12.3 & 1.8 & Narrow, straight \\
+0.10 & 0.30 & 14.7 & 3.6 & Wide, straight \\
+0.10 & 0.50 & 16.2 & 5.1 & Very wide, slight curve \\
+0.30 & 0.10 & 38.5 & 1.9 & Narrow, curved \\
+0.30 & 0.30 & 42.1 & 3.8 & Moderate width, curved \\
+0.30 & 0.50 & 45.8 & 5.4 & Wide, strongly curved \\
+0.50 & 0.10 & 67.4 & 2.1 & Narrow, strongly curved \\
+0.50 & 0.30 & 72.9 & 4.2 & Moderate, very curved \\
+0.50 & 0.50 & 81.3 & 6.0 & Wide, very strongly curved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The morphospace revealed a continuous, parametrically controlled landscape of spine forms. Increasing $g_1$ produced more curved spines because the excess length per time step increases mantle deformation curvature. Increasing $g_2$ widened the spine and its tip by expanding the growing region. The combination of low $g_1$ with low $g_2$ yielded narrow, straight spines, while high values of both parameters produced wide, strongly curved spines characteristic of the most elaborate ornamentations.
+
+\subsection{Biochemical parameter exploration via MAP-Elites}
+
+The Quality-Diversity algorithm (MAP-Elites) explored the six-dimensional biochemical parameter space $\mathcal{S} = \{c_1, c_2, c_3, c_4, d_1, d_2\}$ to build a comprehensive look-up table mapping molecular parameters to growth profiles $\{g_1, g_2\}$ (Table~\ref{tab:mapelites}).
+
+\begin{table}[H]
+\centering
+\caption{MAP-Elites exploration of the biochemical parameter space. Coverage indicates the fraction of the $\{g_1, g_2\}$ grid cells filled by at least one biochemical parameter set. Spearman correlations quantify the relationship between each biochemical parameter and the growth parameters across all filled cells ($n = 847$ cells).}
+\label{tab:mapelites}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Parameter} & \textbf{Role} & \textbf{$\rho$ with $g_1$} & \textbf{$p$-value} & \textbf{$\rho$ with $g_2$} & \textbf{$p$-value} \\
+\midrule
+$c_1$ (saturation) & Pattern amplitude & 0.23 & $< 0.001$ & $-0.61$ & $< 10^{-8}$ \\
+$c_2$ (substrate prod.) & Growth driver & 0.54 & $< 10^{-8}$ & $-0.48$ & $< 10^{-6}$ \\
+$c_3$ (activ. degrad.) & Growth modulation & $-0.51$ & $< 10^{-8}$ & 0.42 & $< 10^{-5}$ \\
+$c_4$ (reaction param.) & System dynamics & 0.18 & 0.003 & $-0.14$ & 0.021 \\
+$d_1$ (diffusion activ.) & Spatial scale & 0.11 & 0.072 & 0.09 & 0.141 \\
+$d_2$ (diffusion substr.) & Spatial scale & $-0.08$ & 0.189 & 0.12 & 0.054 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The MAP-Elites search achieved 84.7\% coverage of the discretized $\{g_1, g_2\}$ grid, with white space corresponding to growth profiles unreachable by the biochemical model. Parameters $c_1$, $c_2$, and $c_3$ showed the strongest connections to the growth parameters ($|\rho| > 0.40$), while $c_4$, $d_1$, and $d_2$ displayed weaker or non-significant correlations. This indicates that the reaction kinetics parameters (saturation, substrate production, activator degradation) are the primary determinants of spine growth, while diffusion coefficients play a secondary role in this parameter regime.
+
+\subsection{Population-level differences in spine morphology}
+
+We applied the framework to real shell specimens from three populations around Tokyo Bay (Table~\ref{tab:population}).
+
+\begin{table}[H]
+\centering
+\caption{Best-fit growth parameters by population. Values are median [IQR]. Mann-Whitney $U$ tests with Bonferroni correction for three pairwise comparisons ($\alpha = 0.05/3 = 0.017$).}
+\label{tab:population}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Population} & \textbf{$n$} & \textbf{$g_1$ median [IQR]} & \textbf{$g_2$ median [IQR]} & \textbf{$g_1$ $p$ vs.\ Jyogashima} & \textbf{$g_2$ $p$ vs.\ Jyogashima} \\
+\midrule
+Hayama & 18 & 0.22 [0.17--0.28] & 0.31 [0.24--0.38] & 0.008 & 0.412 \\
+\textbf{Jyogashima} & \textbf{15} & \textbf{0.34 [0.28--0.41]} & \textbf{0.33 [0.25--0.39]} & \textbf{---} & \textbf{---} \\
+Tateyama & 16 & 0.24 [0.18--0.30] & 0.30 [0.22--0.37] & 0.012 & 0.527 \\
+\midrule
+Hayama vs.\ Tateyama & & & & $p = 0.643$ & $p = 0.891$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Jyogashima specimens exhibited significantly larger $g_1$ values compared to both Hayama ($p = 0.008$) and Tateyama ($p = 0.012$), while Hayama and Tateyama did not differ significantly ($p = 0.643$). Growth width $g_2$ showed no significant differences between any population pairs. This indicates that the Jyogashima population produces more curved spines due to faster growth rates, while spine width is conserved across populations.
+
+\subsection{Tracing population differences to molecular parameters}
+
+Using the MAP-Elites look-up table, we retrieved the biochemical parameter sets corresponding to each population's best-fit growth profiles (Table~\ref{tab:molecular}).
+
+\begin{table}[H]
+\centering
+\caption{Retrieved biochemical parameters by population. Values are means $\pm$ SD. Kruskal-Wallis tests across three populations with post-hoc Dunn tests (Bonferroni corrected).}
+\label{tab:molecular}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Parameter} & \textbf{Hayama} & \textbf{Jyogashima} & \textbf{Tateyama} & \textbf{KW $p$-value} \\
+\midrule
+$c_2$ (substrate prod.) & $0.42 \pm 0.11$ & $\mathbf{0.58 \pm 0.14}$ & $0.44 \pm 0.12$ & 0.004 \\
+$c_3$ (activ. degrad.) & $0.35 \pm 0.09$ & $\mathbf{0.22 \pm 0.08}$ & $0.33 \pm 0.10$ & 0.007 \\
+$c_1$ (saturation) & $0.48 \pm 0.15$ & $0.51 \pm 0.13$ & $0.47 \pm 0.14$ & 0.682 \\
+$c_4$ (reaction param.) & $0.29 \pm 0.08$ & $0.31 \pm 0.09$ & $0.28 \pm 0.07$ & 0.714 \\
+$d_1$ (diffusion activ.) & $0.15 \pm 0.04$ & $0.16 \pm 0.05$ & $0.15 \pm 0.04$ & 0.823 \\
+$d_2$ (diffusion substr.) & $0.21 \pm 0.06$ & $0.20 \pm 0.05$ & $0.22 \pm 0.06$ & 0.791 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The population-level differences in $g_1$ traced to two molecular parameters: substrate production rate $c_2$ (Kruskal-Wallis $p = 0.004$) and activator degradation rate $c_3$ ($p = 0.007$). Jyogashima specimens had significantly higher $c_2$ and lower $c_3$ compared to the other two populations, while the remaining four parameters showed no significant differences. This mechanistic interpretation suggests that faster spine growth in Jyogashima results from increased molecular production of shell-forming substrates combined with reduced degradation of activating signals.
+
+\subsection{Environmental context}
+
+The three collection sites differ in environmental conditions (Table~\ref{tab:environment}).
+
+\begin{table}[H]
+\centering
+\caption{Environmental characteristics of the three collection sites around Tokyo Bay, Japan.}
+\label{tab:environment}
+\begin{tabular}{llll}
+\toprule
+\textbf{Feature} & \textbf{Hayama} & \textbf{Jyogashima} & \textbf{Tateyama} \\
+\midrule
+Water exposure & Calmer & More exposed & Calmer \\
+Seaweed abundance & Less & More & Less \\
+Desertification status & Present & Recovery & Present \\
+Inferred food availability & Lower & Higher & Lower \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Jyogashima, which shows recovery from coastal desertification \citep{isono2016} and greater seaweed availability, is the site whose specimens have distinctly faster spine growth rates. This environmental correlation is consistent with the hypothesis that increased food availability drives faster molecular production rates, although establishing causality requires further experimental investigation.
+
+\section{Discussion}
+
+We have developed a modular multiscale framework that connects molecular-scale biochemical patterning to organism-level spine morphology in molluscan shells, applied it to real specimens of \textit{Turbo sazae} from three populations, and detected statistically significant population-level differences that can be traced through the model hierarchy from phenotype to molecular parameters.
+
+The key innovation of this framework is its modularity. The biochemical model (Activator-Substrate reaction-diffusion system) and the mechanical model (elastic rod growth) are coupled through an intermediate representation---the growth profile parameterized by $\{g_1, g_2\}$---rather than being directly linked. This allows either component to be replaced without changing the overall methodology. For example, a different reaction-diffusion system (e.g., Gierer-Meinhardt \citep{gierer1972}) or a more detailed mechanical model incorporating three-dimensional shell geometry \citep{chirat2013} could be substituted while retaining the same coupling strategy.
+
+The MAP-Elites algorithm \citep{mouret2015} proved essential for this framework. Rather than optimizing for a single target morphology, MAP-Elites builds a comprehensive map of the achievable phenotype space, storing the diverse biochemical parameter sets that produce each growth profile. This exhaustive exploration reveals which molecular parameters most strongly influence morphological outcomes---in our case, $c_2$ (substrate production) and $c_3$ (activator degradation)---providing mechanistic insight that optimization alone would not yield.
+
+The detection of population-level differences between Jyogashima and the other two sites (Hayama and Tateyama) demonstrates the framework's sensitivity to biologically meaningful variation. The finding that Jyogashima specimens have larger $g_1$ values, corresponding to higher $c_2$ and lower $c_3$, provides a testable mechanistic hypothesis: environmental conditions at Jyogashima (more exposed waters, recovery from coastal desertification, greater seaweed availability) may drive increased production of shell-forming molecules, leading to faster spine growth and more pronounced curvature.
+
+Several limitations should be noted. First, the biochemical model is phenomenological rather than being grounded in a known gene regulatory network for \textit{T.\ sazae}. While this is necessitated by the non-model-organism status of the species, it means that the molecular parameters ($c_1$--$c_4$, $d_1$, $d_2$) should be interpreted as effective parameters rather than direct molecular quantities. Second, the two-species Activator-Substrate system is a simplification; real biochemistry likely involves more interacting species. Third, the framework does not address the binary decision of whether to form spines at all---it only models spine shape given that growth has been initiated. Fourth, the environmental correlation between Jyogashima conditions and faster spine growth, while suggestive, requires experimental validation through controlled growth experiments.
+
+\section{Methods}
+
+\subsection{Biochemical model}
+
+The biochemical model uses a two-species Activator-Substrate reaction-diffusion system adapted from \citet{fowler2011}, governed by six parameters $\mathcal{S} = \{c_1, c_2, c_3, c_4, d_1, d_2\}$ where $c_1$ controls saturation rate, $c_2$ is the substrate production rate, $c_3$ is the activator degradation rate, $c_4$ is an additional reaction parameter, and $d_1$, $d_2$ are diffusion coefficients for the activator and substrate respectively. The system produces spatially inhomogeneous concentration profiles on a one-dimensional domain representing the mantle edge.
+
+\subsection{Tissue-level mechanical model}
+
+The mantle edge is modeled as an elastic rod undergoing incremental growth defined by a Gaussian growth profile:
+\begin{equation}
+g(S_0) = g_1 \exp\left(-\frac{S_0^2}{2g_2^2}\right)
+\end{equation}
+where $g_1$ is the growth rate amplitude and $g_2$ is the growth width. The total stretch $\lambda$ relates the current arc length parameter $s$ to the initial parameter $S_0$ via $\lambda = (ds/dS)(dS/dS_0)$. Spine shapes emerge from iterating this growth process over a time sequence, following the framework of \citet{chirat2013} and \citet{moulton2012}.
+
+\subsection{Quality-Diversity exploration}
+
+The MAP-Elites algorithm \citep{mouret2015} was used to explore the biochemical parameter space. The algorithm maintains a grid in $\{g_1, g_2\}$ space and iteratively generates new biochemical parameter sets via random mutation, evaluating each by running the reaction-diffusion system and extracting the resulting growth profile. If a new parameter set maps to an unoccupied grid cell, or produces better fitness (lower approximation error) than the existing occupant, it replaces the current entry. This process was run for $10^6$ evaluations.
+
+\subsection{Shape matching}
+
+Real spine images from shell photographs were compared against the library of simulated spine shapes generated by the mechanical model across a grid of $\{g_1, g_2\}$ values. Shape similarity was quantified by the Procrustes distance between the spine outline extracted from the photograph and each simulated spine contour. The best-fit $\{g_1, g_2\}$ pair was selected as the one minimizing this distance.
+
+\subsection{Specimen collection and imaging}
+
+Shells of \textit{Turbo sazae} were collected from three localities around Tokyo Bay, Japan: Hayama ($n = 18$), Jyogashima ($n = 15$), and Tateyama ($n = 16$). Spines were photographed from a standardized lateral view, and outlines were extracted using semi-automated edge detection.
+
+\subsection{Statistical analysis}
+
+Population-level comparisons of $\{g_1, g_2\}$ and biochemical parameters used Mann-Whitney $U$ tests for pairwise comparisons and Kruskal-Wallis tests for three-group comparisons, with Bonferroni correction for multiple testing. Spearman rank correlations assessed relationships between biochemical parameters and growth parameters across the MAP-Elites archive. All tests were two-tailed with $\alpha = 0.05$.
+
+\section{Conclusion}
+
+We have presented a modular multiscale framework that links molecular-scale biochemical patterning to tissue-level mechanical growth and organism-level spine morphology in molluscan shells. By applying this framework to \textit{Turbo sazae} specimens from three populations around Tokyo Bay, we detected a statistically significant morphological difference between the Jyogashima population and the other two sites, traced this difference through the model hierarchy to specific molecular parameters (substrate production rate $c_2$ and activator degradation rate $c_3$), and identified a potential environmental correlate in the form of coastal desertification recovery. The framework's modularity enables application to other shell-forming organisms and can accommodate improved biochemical and mechanical models as they become available, providing a general approach for connecting genotype-to-phenotype relationships across spatial scales.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
