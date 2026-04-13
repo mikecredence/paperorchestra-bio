@@ -139,6 +139,21 @@ Baseline 2 & 80.1 & 67.8 & 11.2 & 74.5 & 61.3 & 14.1 \\
 - Use `\resizebox{\columnwidth}{!}{...}` if the table is too wide
 - Include the number of parameters or FLOPs if relevant for fairness
 - Add standard deviations (±) if the user provides them
+- **Every data cell must be numeric.** Never use qualitative words ("High",
+  "Low", "Enriched", "Improved", "Competitive", "Detected") as cell values.
+  If numeric data is unavailable, use "N/A" with a table footnote, or
+  restructure the table to omit that column.
+- If the outline's visualization plan flags a table as `"at_risk": true` or
+  lists `"data_gaps"`, resolve those gaps before generating the table
+  (restructure or use N/A).
+- Table captions must specify: (a) the evaluation metric(s) and their
+  direction ($\uparrow$/$\downarrow$), (b) the dataset(s) or experimental
+  conditions, (c) sample size ($n$ per group), and (d) the statistical test
+  used if significance markers (* or bold) appear. Example suffix:
+  "Statistical significance by paired $t$-test ($p < 0.05$). $n = 12$ per
+  group."
+- When reporting means, always include $\pm$ standard deviation or 95\% CI
+  if the experimental log contains replicate or cross-validation data
 
 ## Output Checklist
 

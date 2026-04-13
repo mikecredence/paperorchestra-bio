@@ -71,6 +71,28 @@ alongside web search for broader coverage:
 Use **multiple discovery channels in parallel** for maximum coverage. For each query
 in the literature search strategy (from the outline):
 
+**Channel 0 — User-provided reference list (check FIRST, highest priority):**
+
+Before running any search queries, check whether the user's inputs contain an
+explicit reference list, bibliography, or cited works. This is common in
+structured inputs and takes these forms:
+- A "References" or "Bibliography" section in the idea summary or experimental log
+- Inline citations like "[1] Smith et al. 2023" or "(Smith, 2023)"
+- A `must_cite` list in the outline's `literature_strategy`
+- Any `.bib` file provided directly
+
+For each reference found:
+1. Extract: title, authors (if available), year (if available)
+2. Add to the candidate pool immediately with source tagged as "user_provided"
+3. These skip discovery — go directly to Phase 2 (Verification)
+4. User-provided references have the highest retention priority: only discard
+   if verification conclusively shows the paper does not exist
+5. After verifying, use them as **seeds for citation graph expansion** (Channel 5)
+   to discover related papers the user may have missed
+
+This channel typically yields 5-20 pre-vetted citations and closes the gap
+on specialized domain references that keyword search misses.
+
 **Channel 1 — Web search (always):**
 
 *Macro queries* (for Introduction context):
@@ -109,7 +131,9 @@ in the literature search strategy (from the outline):
 
 **Channel 5 — Citation graph expansion (PubMed + Semantic Scholar):**
 After collecting an initial set of 20-30 papers, identify the 5-10 most relevant
-ones and expand the citation graph:
+ones and expand the citation graph. **Prioritize user-provided references
+(Channel 0) as expansion seeds** — these are the papers the user considers most
+relevant and their citation neighborhoods are high-value:
 - Use PubMed `find_related_articles` with the PMIDs of top papers — this uses
   PubMed's word-weighted similarity algorithm to find related work
 - Search for papers that cite them or that they cite via web search

@@ -137,6 +137,41 @@ method.
 **Analysis**: Qualitative examples, failure cases, computational cost comparison,
 or any other supporting analysis from the experimental log.
 
+### Table Data Quality Rules
+
+**CRITICAL — enforced in every results/comparison table:**
+
+Every cell in a results or comparison table must be **numeric** or a well-defined
+symbol. The following words are NEVER acceptable as standalone table cell values:
+"High", "Low", "Enriched", "Improved", "Better", "Worse", "Enhanced", "Moderate",
+"Strong", "Weak", "Good", "Poor", "Comparable", "Competitive", "Significant",
+"Increased", "Decreased", "Detected", "Above chance", "Near 1:1".
+
+Rules:
+1. **All results cells must be numbers.** If the experimental log provides a
+   qualitative description (e.g., "enriched in pathway X"), either:
+   (a) Find the corresponding numeric value (p-value, fold-change, enrichment
+       score) from the log, or
+   (b) Replace with "N/A" and add a table footnote explaining the data gap, or
+   (c) Restructure the table to avoid that cell entirely.
+2. **Name specific statistical tests.** Never write "statistical test" or
+   "appropriate non-parametric test." Name the exact test: Wilcoxon rank-sum,
+   Mann-Whitney U, paired t-test, Fisher's exact test, one-way ANOVA, etc.
+3. **Report uncertainty.** Include standard deviations ($\pm$), 95\% confidence
+   intervals, or interquartile ranges wherever the experimental log provides
+   replicate data or variance information.
+4. **Report p-values** for all claimed significant differences. Use standard
+   notation: $p < 0.05$, $p < 0.01$, or exact values like $p = 0.003$.
+5. **Report effect sizes** alongside p-values where applicable (Cohen's d,
+   $\eta^2$, odds ratio, fold-change, $R^2$).
+6. **Report sample sizes** in every table caption or as a column (e.g., $n = 12$
+   per group).
+
+Self-check before finalizing: scan every `\begin{table}` block and verify each
+data cell contains a number, "N/A", or a formally defined categorical label
+(e.g., a method name in a row header). If any cell contains an adjective or
+comparative word, fix it.
+
 ### Conclusion
 
 3-4 paragraphs:

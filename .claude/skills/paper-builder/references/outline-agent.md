@@ -151,3 +151,25 @@ Produce a JSON file with this structure:
   method mentioned in the user's materials
 - Keep the outline actionable: each section description should be specific enough
   that a separate agent could write it without further context
+
+## Data Availability Validation
+
+After generating the visualization plan, validate that each planned table can
+be populated with **numeric data**:
+
+For each entry in `visualization_plan` where `type` is `"table"`:
+1. Cross-reference the `data_source` against the experimental log.
+2. Verify the log contains **numeric values** for every cell the table needs:
+   actual metric scores, counts, p-values, fold-changes, percentages — not
+   just qualitative descriptions.
+3. If the experimental log only has qualitative descriptions for some cells
+   (e.g., "pathway X is enriched" without a fold-change or p-value):
+   - Add `"data_gaps": [...]` listing the missing numeric data
+   - Add `"fallback"` suggesting: `"restructure"` (redesign table to avoid
+     columns needing missing data) or `"mark_na"` (use N/A with footnotes)
+4. Flag any table where >30% of cells would lack numeric data as
+   `"at_risk": true`. The Writing Agent will consider alternative
+   presentations (e.g., prose description instead of a table).
+
+This prevents the Writing Agent from being forced to fill table cells with
+qualitative descriptors like "High", "Low", or "Enriched".

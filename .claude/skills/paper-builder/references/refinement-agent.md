@@ -59,12 +59,23 @@ Score each axis on a 0-100 scale (not 1-5) for finer-grained delta tracking:
 - Consistent terminology throughout
 - Score guide: 90+ = polished prose, 70-89 = minor edits, <70 = significant rewriting
 
-### 5. Presentation (weight: medium)
+### 5. Presentation (weight: HIGH)
 - Figure quality and placement
 - Table formatting (booktabs, bold best, arrows for direction)
+- **Table data quality**: every cell in results tables must be numeric — no
+  qualitative descriptors ("High", "Low", "Enriched", "Improved",
+  "Competitive", "Significant", "Detected", "Above chance", etc.)
+- **Statistical reporting**: all claimed differences must cite a named test
+  (not "statistical test" or "appropriate test"), with p-values, effect sizes,
+  and confidence intervals where data permits
+- **Sample sizes**: every table caption or header must include n per group
 - Consistent formatting of citations, equations, references
 - Adherence to venue page limits and style
-- Score guide: 90+ = submission-ready formatting, 70-89 = minor fixes, <70 = formatting overhaul
+- Score guide: 90+ = submission-ready with fully quantitative tables,
+  80-89 = minor fixes, <80 = qualitative table cells or missing stats present,
+  <70 = formatting overhaul needed
+- **Automatic cap**: If ANY results table cell contains a qualitative
+  descriptor instead of a number, cap this axis at 75 maximum
 
 ### 6. Citation Quality (weight: high)
 - Are all citations verified and formatted correctly?
@@ -146,6 +157,33 @@ For each round, produce a structured review:
 1. [Page X]: Typo / formatting issue
 2. ...
 ```
+
+## Pre-Scoring Table Audit
+
+Before assigning scores each round, perform this mandatory audit:
+
+1. **Scan every `\begin{table}` ... `\end{table}` environment** in the LaTeX.
+2. For each table, check every data cell (excluding row/column headers) for
+   banned qualitative words: High, Low, Enriched, Improved, Better, Worse,
+   Enhanced, Moderate, Strong, Weak, Comparable, Good, Poor, Competitive,
+   Significant (alone without p-value), Detected, Increased, Decreased,
+   Above chance, Near, Yes/No (in results tables).
+3. **If any qualitative cell is found**:
+   - Log it as a **Critical Issue**
+   - Cap the Presentation score at 75
+   - Cap the Technical Rigor score at 80
+   - The fix: replace with the actual number from the experimental log, or
+     use "N/A" with a footnote, or restructure the table
+4. **Check for unnamed statistical tests**: search for "statistical test",
+   "appropriate test", "non-parametric test" without a specific test name.
+   Flag as Critical Issue.
+5. **Check for missing uncertainty**: if results tables report means without
+   standard deviations or confidence intervals and the experimental log has
+   replicate data, flag as Improvement.
+6. **Check for missing sample sizes**: if no table caption includes n per
+   group, flag as Improvement.
+
+Record results under `### Table Audit` in the review output before Critical Issues.
 
 ## Anti-Gaming Safeguards
 
