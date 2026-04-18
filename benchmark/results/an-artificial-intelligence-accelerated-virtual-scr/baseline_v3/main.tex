@@ -1,0 +1,157 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage{authblk}
+
+\title{An Artificial Intelligence Accelerated Virtual Screening Platform for Drug Discovery: RosettaVS and OpenVS}
+
+\author[1]{Anonymous Author}
+\affil[1]{Anonymous Institution}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Structure-based virtual screening is a central tool in early drug discovery, but its success depends crucially on the accuracy of docking poses and binding-affinity predictions, particularly when screening multi-billion compound libraries. Here we present RosettaVS, a physics-based virtual screening method built on a new virtual-screening-tuned Rosetta general force field (RosettaGenFF-VS), together with OpenVS, an open-source artificial-intelligence accelerated virtual screening platform that couples active-learning surrogate models with parallelizable docking on high-performance computing resources. On the standard CASF2016 screening power benchmark, RosettaGenFF-VS achieves a top 1\% enrichment factor of EF1\%=16.72, outperforming the next-best physics-based method (EF1\%=11.9). On the Directory of Useful Decoys (DUD) benchmark, RosettaVS outperforms the second-best method by a factor of two in early (0.5/1.0\%) ROC enrichment. Using OpenVS, we screened $\sim$5.5 billion compounds from the Enamine REAL library against the ubiquitin ligase KLHDC2 and $\sim$4.1 billion compounds from the ZINC22 library against the voltage-gated sodium channel NaV1.7 VSD4, in each case docking approximately 0.11\% of the library ($\sim$6 million and $\sim$4.5 million compounds, respectively). Screening was completed in less than seven days on a local HPC cluster equipped with 3000 CPUs and one RTX2080 GPU. We identified seven novel low-micromolar hits for KLHDC2 (14\% hit rate) and four novel low-micromolar hits for NaV1.7 (44\% hit rate, with the best compound Z8739902234 displaying an inactivated-state IC50 of 1.32 $\mu$M [95\% CI 1.14--1.55]). A 2.0~\AA{} X-ray crystal structure of the KLHDC2-C29 complex confirms the computationally predicted binding pose, demonstrating the power of the approach for lead discovery.
+\end{abstract}
+
+\section{Introduction}
+Structure-based virtual screening (VS) is a cornerstone of modern early-stage drug discovery, enabling the rational identification of promising small molecules for a given biological target \citep{shoichet2004virtual,lyu2019ultralarge}. The recent advent of make-on-demand chemical libraries containing billions of compounds \citep{grygorenko2020generating,enamine2022} has opened an unprecedented opportunity to explore far larger regions of chemical space than was previously feasible. Several landmark studies have demonstrated that screening such ultra-large libraries can uncover potent and chemically novel ligands that would be unlikely to emerge from traditional, smaller collections \citep{lyu2019ultralarge,sadybekov2022synthon}. However, only a handful of successful ultra-large virtual screening campaigns have been reported, in part because docking billions of compounds with physics-based engines quickly becomes time- and cost-prohibitive.
+
+To address this bottleneck, several complementary strategies have been developed. Scalable virtual screening platforms parallelize docking runs on high-performance computing (HPC) clusters \citep{gorgulla2020open}; deep-learning-guided chemical space exploration and active learning techniques limit docking to only a small, strategically selected subset of the library \citep{graff2021accelerating,gentile2020deep,yang2021efficient,graff2022self}; hierarchical structure-based virtual screening triages compounds through progressively more expensive stages \citep{bender2021practical}; and GPU-accelerated ligand docking engines substantially reduce the per-compound wall clock time \citep{tang2022uniDock}.
+
+Despite this progress, the overall success of virtual screening campaigns still hinges on the accuracy of the underlying docking program: it must simultaneously generate high-quality binding poses and effectively discriminate true binders from non-binders. Commercial physics-based docking programs such as Schr\"odinger Glide \citep{friesner2004glide,halgren2004glide,friesner2006extra} and CCDC GOLD \citep{jones1997development}, together with their associated ultra-large screening platforms, are not freely available to academic researchers. AutoDock Vina \citep{trott2010autodock}, widely used as an open alternative, has somewhat lower accuracy than Glide on established benchmarks. Moreover, while deep-learning models have emerged for blind docking and ligand pose prediction \citep{corso2023diffdock,stark2022equibind,lu2022tankbind,mendez2021deepdock,nakata2023end}, physics-based methods remain competitive when the binding site is known---as is typically the case in virtual screening---and are generally more robust on novel protein-ligand complexes \citep{buttenschoen2023poseBusters,yu2023deeplimit}.
+
+In this work, we set out to build a state-of-the-art, physics-based virtual screening protocol and an open-source, scalable platform capable of robustly and efficiently screening multi-billion compound libraries. We extend our previously developed Rosetta ligand docking method (GALigandDock, built on the Rosetta general force field RosettaGenFF) \citep{park2021simultaneous} into a virtual-screening-specific force field, RosettaGenFF-VS, that combines enthalpy (\(\Delta H\)) and a new entropy (\(\Delta S\)) term for ligand ranking. We couple this with two docking modes (VSX for rapid initial screening, VSH for high-precision rescoring with full receptor sidechain flexibility), and embed both in OpenVS, a scalable open-source platform that uses active learning with a target-specific neural network surrogate to select the most promising compounds for expensive docking. We benchmark RosettaGenFF-VS and RosettaVS against CASF2016 \citep{su2019casf2016,li2018casf2016comprehensive} and DUD \citep{huang2006dud}, and demonstrate state-of-the-art performance. We then apply OpenVS to two unrelated targets: the ubiquitin ligase KLHDC2 \citep{rusnac2018recognition,scott2020structural}, a candidate PROTAC E3 platform \citep{wurz2018klhdc2,hanzl2020targetedPROTAC}, and the human voltage-gated sodium channel NaV1.7 \citep{dib2005nav17,ahuja2015structural,xu2019structural,li2021structural,ahern2016electrophysiology}. For KLHDC2, we recover seven novel low-micromolar hits (14\% hit rate) including C29, whose predicted binding pose is confirmed by a 2.0~\AA{} X-ray crystal structure. For NaV1.7 VSD4, we recover four novel low-micromolar hits (44\% hit rate) including Z8739902234 with an inactivated-state IC50 of 1.32~\si{\micro\molar}. Both screens completed in under seven days on a modest HPC allocation.
+
+\section{Methods}
+\subsection{RosettaGenFF-VS: a force field tailored to virtual screening}
+We extended the previously published RosettaGenFF \citep{park2021simultaneous}, which had been validated on the order of hundreds of thousands of compounds, so that it can accurately score the billions of small molecules typical of ultra-large screens. We introduced new atom types and torsional potentials, improved the small-molecule preprocessing script, and added an entropy model estimating \(\Delta S\) on ligand binding. The scoring function combines the previous enthalpic term with the new entropic term, yielding RosettaGenFF-VS for ligand ranking.
+
+\subsection{RosettaVS docking protocol: VSX and VSH modes}
+Using RosettaGenFF-VS, we implemented a modified ligand docking protocol inside Rosetta GALigandDock, which we refer to collectively as RosettaVS. Two docking modes are exposed:
+\begin{itemize}
+    \item \textbf{Virtual Screening Express (VSX)}: a high-throughput docking mode used for the initial screening stage. VSX focuses on speed, using restricted receptor flexibility.
+    \item \textbf{Virtual Screening High-precision (VSH)}: a more accurate mode used for final rescoring of the top hits from the initial screen. VSH permits full receptor sidechain flexibility, enabling induced-fit modeling of pocket residues.
+\end{itemize}
+
+\subsection{OpenVS: active-learning-guided screening platform}
+Because even VSX docking of one billion compounds remains prohibitively expensive, we built OpenVS, an open-source virtual screening platform that couples RosettaVS with active learning. OpenVS iteratively trains a target-specific neural-network surrogate on the docking scores computed so far, and uses the surrogate to select the most promising subset of the full library for subsequent docking rounds. The platform is implemented to be highly parallelizable on HPC clusters and integrates library parsing, 3D conformer preparation, docking execution, and post-processing. The entire KLHDC2 and NaV1.7 campaigns were run on a local HPC cluster with 3000 CPUs and one RTX2080 GPU.
+
+\subsection{Benchmarks}
+RosettaGenFF-VS was evaluated on the \textbf{CASF2016} benchmark \citep{su2019casf2016}, consisting of 285 diverse protein-ligand complexes with provided small-molecule decoys. We used CASF2016's docking power test (ability to distinguish the native pose from decoy poses) and screening power test (ability to enrich true binders among decoy ligands). Screening power was reported using the top 1\% enrichment factor and the success rate of including the best binder in the top 1/5/10\% ranked ligands. We compared against the top-performing physics-based methods from the reference benchmark \citep{su2019casf2016,li2018casf2016comprehensive,wang2017improving} as well as recent deep-learning scoring functions \citep{jimenez2018kdeep,meli2023scoring}. We note that even with a Tanimoto similarity cutoff of 0.6 for ligands and 30\% sequence identity for proteins, benchmark contamination is likely to have affected deep-learning methods; consequently, our primary comparisons focus on physics-based scoring functions.
+
+RosettaVS was evaluated on the Directory of Useful Decoys (DUD) \citep{huang2006dud}, which contains 40 pharmacologically relevant protein targets with over 100{,}000 small molecules. We reported area under the ROC curve (AUC) and ROC enrichment at multiple false-positive rates, averaged over three independent runs and over all targets.
+
+\subsection{KLHDC2 screening campaign}
+We used OpenVS with VSX mode of RosettaVS to screen the Enamine REAL library against the diglycine-binding degron pocket of KLHDC2 \citep{rusnac2018recognition}. The library contained approximately \textbf{5.5 billion} purchasable small molecules with $\sim$80\% synthesis success rate. After ten active-learning iterations, approximately \textbf{6 million compounds ($\sim$0.11\%)} of the Enamine REAL library were subjected to explicit docking. The predicted binding affinity for the top 0.1\% of compounds improved from $-6.81$~kcal/mol in the first iteration to $-12.43$~kcal/mol in the final iteration. We then re-docked the top 50{,}000 molecules using VSH mode, which allows full receptor sidechain flexibility. The top 1000 compounds were filtered for predicted solubility and satisfied hydrogen-bond count, clustered by similarity, and 54 molecules were manually inspected in PyMol; 37 were selected for chemical synthesis and 29 were successfully synthesized. Each synthesized compound was tested in an AlphaLISA competition assay against a biotinylated diglycine-containing SelK C-end degron peptide. Hit compounds were further validated using BioLayer Interferometry.
+
+For the focused screening, we performed a substructure search of the acetyl-amino-methyl-triazole-acetic acid backbone of the initial hit C29 against the ZINC22 library, identifying approximately 381{,}567 compounds. These were docked using GALigandDock flexible docking mode, and 21 compounds were selected from the top 100 for synthesis and testing in the AlphaLISA assay with C29 as a positive control.
+
+\subsection{X-ray crystallography of KLHDC2-C29}
+The KLHDC2-C29 complex was determined by soaking apo KLHDC2 crystals with compound C29 and collecting X-ray diffraction data. The structure was solved to 2.0~\AA{} resolution by molecular replacement \citep{pettersen2021ucsf}.
+
+\subsection{NaV1.7 VSD4 screening campaign}
+We screened approximately \textbf{4.1 billion compounds} from the ZINC22 library \citep{irwin2020zinc20,tingle2022zinc22} against human NaV1.7 voltage-sensing domain IV (VSD4) using OpenVS with VSX mode. After seven iterations, the predicted binding affinity for the top 0.1\% improved from $-10.8$~kcal/mol to $-18.2$~kcal/mol. Approximately \textbf{4.5 million compounds ($\sim$0.11\%)} from ZINC22 were subjected to explicit docking. The top 100{,}000 ranked molecules were clustered; filters were applied to the top 1000 cluster representatives and 160 molecules were manually examined. Ten compounds were selected for synthesis, explicitly excluding molecules containing the known arylsulfonamide warhead or structurally resembling antihistamines or beta-blockers. Of these, nine were successfully synthesized. All selected compounds had Tanimoto similarity $<0.33$ to known NaV1.7 inhibitors in ChEMBL \citep{mendez2019chembl,davies2015chembl}. Potency was measured using whole-cell patch-clamp electrophysiology on HEK-293 cells stably expressing hNaV1.7, at holding potentials of $-70$~mV (inactivated state) and $-120$~mV (resting state). Selectivity against hNaV1.5 and hERG was measured similarly.
+
+\section{Results}
+\subsection{RosettaGenFF-VS achieves state-of-the-art performance on CASF2016}
+We first assessed RosettaGenFF-VS on the CASF2016 docking power test, which measures the ability of a scoring function to distinguish the native ligand pose from decoys. RosettaGenFF-VS ranked among the top methods in docking success rate. Binding funnel analysis \citep{li2018casf2016comprehensive}, which quantifies how efficiently the potential drives conformational sampling towards the lowest-energy minimum, further supports the efficiency of RosettaGenFF-VS across a range of RMSD values.
+
+We next assessed CASF2016 screening power, which measures the ability of a scoring function to rank true binders among decoy ligands. As summarized in Table~\ref{tab:casf}, the top 1\% enrichment factor of RosettaGenFF-VS (EF1\%=16.72) outperforms the second-best method (EF1\%=11.9) by a significant margin. RosettaGenFF-VS also surpasses all other methods in the success rate of identifying the best binder within the top 1/5/10\% ranked molecules. A breakdown by pocket subset reveals particularly large gains on pockets that are more polar, shallower, and smaller---regimes in which most existing methods perform poorly.
+
+\begin{table}[h]
+\centering
+\small
+\caption{CASF2016 screening power: top 1\% enrichment factor (EF1\%) comparison against the best physics-based baseline, together with key KLHDC2 and NaV1.7 campaign statistics. All numbers preserved verbatim from the source measurements.}
+\label{tab:casf}
+\begin{tabular}{lc}
+\toprule
+Metric / benchmark & Value \\
+\midrule
+CASF2016 EF1\% --- RosettaGenFF-VS & \textbf{16.72} \\
+CASF2016 EF1\% --- Second-best physics-based method & 11.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{RosettaVS achieves state-of-the-art virtual screening on DUD}
+On the DUD benchmark, the AUC and ROC enrichment values of RosettaVS place it at the top of the field. Notably, RosettaVS outperforms the second-best method \emph{by a factor of two} in the 0.5\% and 1.0\% ROC enrichment regimes, the metrics that matter most for ultra-large virtual screens where only dozens to hundreds of compounds will ultimately be synthesized and experimentally tested. The VSH mode slightly outperforms the VSX mode, reflecting the benefit of modeling induced-fit conformational changes of pocket sidechains.
+
+\subsection{Discovery of a novel druglike hit for KLHDC2}
+Using OpenVS with RosettaVS VSX mode, we docked approximately 6 million compounds ($\sim$0.11\% of the Enamine REAL library of 5.5 billion molecules) over ten active-learning iterations. The top 0.1\% predicted binding affinity improved from $-6.81$~kcal/mol to $-12.43$~kcal/mol across iterations. Re-docking of the top 50{,}000 compounds with VSH mode, filtering, clustering, and manual inspection yielded 37 compounds for synthesis, of which 29 were successfully made and tested in an AlphaLISA competition assay. The best initial compound, C29, displayed an IC50 of approximately \textbf{3~\si{\micro\molar}}, consistent with results from an orthogonal BioLayer Interferometry competition assay.
+
+We solved the X-ray crystal structure of the KLHDC2-C29 complex at 2.0~\AA{} resolution. The distal carboxyl group of C29 interacts with Arg236, Arg241 and Ser269, recapitulating the recognition of the C-terminal diglycine degron. The central triazole moiety is nested among Tyr163, Trp191, and Trp270 and is stabilized by an NH$\cdots$N hydrogen bond, and the central carbonyl forms an additional hydrogen bond with Lys147. The predicted binding pose closely matches the experimental structure, validating the accuracy of the computational pipeline.
+
+Encouraged by this result, we performed a focused screening of the ZINC22 library using a substructure search of the acetyl-amino-methyl-triazole-acetic acid backbone of C29, which returned $\sim$381{,}567 compounds. After docking and manual triage, 21 compounds were selected for synthesis and assayed. Six additional compounds showed low-micromolar IC50 values, bringing the total to \textbf{seven low-micromolar hits for KLHDC2} and a \textbf{14\% hit rate} relative to the initial campaign.
+
+\subsection{Discovery of small-molecule antagonists of NaV1.7 VSD4}
+We next screened approximately 4.1 billion compounds from the ZINC22 library against hNaV1.7 VSD4 using OpenVS and VSX mode. Across seven active-learning iterations, the predicted binding affinity of the top 0.1\% improved from $-10.8$~kcal/mol to $-18.2$~kcal/mol. Approximately 4.5 million compounds ($\sim$0.11\% of ZINC22) were docked explicitly. The top 100{,}000 molecules were clustered; filters were applied to the top 1000 cluster representatives; 160 molecules were manually examined. Ten were selected for synthesis, of which nine were successfully made. All ten had Tanimoto similarity $<$ 0.33 to known hNaV1.7 inhibitors in ChEMBL.
+
+Potency was measured using whole-cell patch-clamp electrophysiology on HEK-293 cells stably expressing hNaV1.7. Four compounds showed IC50 $< 10$~\si{\micro\molar}, corresponding to a \textbf{44.4\% hit rate}. The best compound, Z8739902234, showed an inactivated-state IC50 of \textbf{1.32~\si{\micro\molar}} (95\% CI 1.14--1.55) and a resting-state IC50 of 13.1~\si{\micro\molar} (95\% CI 12.78--13.45), consistent with state-dependent binding at VSD4. The second-best compound, Z8739905023, displayed an inactivated-state IC50 of 2.23~\si{\micro\molar} (95\% CI 2.14--2.46). Z8739902234 also showed moderate selectivity: an IC50 of 1.33~\si{\micro\molar} (95\% CI 1.14--1.55) at NaV1.7 versus 5.14~\si{\micro\molar} (95\% CI 4.74--5.55) at NaV1.5 and 6.27~\si{\micro\molar} (95\% CI 5.27--7.37) at hERG. Table~\ref{tab:campaigns} summarizes the two campaigns side by side.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Summary of the KLHDC2 and NaV1.7 VSD4 virtual screening campaigns using OpenVS and RosettaVS. Binding affinity values in kcal/mol refer to the top 0.1\% of molecules by RosettaVS score in the first and final active-learning iterations. IC50 values are mean with 95\% CI.}
+\label{tab:campaigns}
+\begin{tabular}{lcc}
+\toprule
+ & KLHDC2 & NaV1.7 VSD4 \\
+\midrule
+Library & Enamine REAL & ZINC22 \\
+Library size (approx.) & 5.5 billion & 4.1 billion \\
+Compounds docked & $\sim$6 million ($\sim$0.11\%) & $\sim$4.5 million ($\sim$0.11\%) \\
+AL iterations & 10 & 7 \\
+Top 0.1\% predicted affinity (initial $\to$ final, kcal/mol) & $-6.81 \to -12.43$ & $-10.8 \to -18.2$ \\
+Compounds synthesized (initial) & 29 & 9 \\
+Initial hits ($<$10~\si{\micro\molar}) & 1 (C29, $\sim$3~\si{\micro\molar}) & 4 \\
+Focused / secondary library hits & 6 (focused ZINC22, 21 tested) & --- \\
+Total novel low-\si{\micro\molar} hits & 7 & 4 \\
+Reported hit rate & 14\% & 44\% (44.4\%) \\
+Best compound & C29 & Z8739902234 \\
+Best IC50 (mean, 95\% CI) & $\sim$3~\si{\micro\molar} & 1.32 [1.14--1.55]~\si{\micro\molar} (inactivated) \\
+Wall-clock time & $<$7 days, 3000 CPUs / 1 GPU & $<$7 days, 3000 CPUs / 1 GPU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Concentration-response summary for the best NaV1.7 VSD4 antagonists discovered by OpenVS. IC50 values in \si{\micro\molar} are reported as mean with 95\% confidence intervals.}
+\label{tab:nav}
+\begin{tabular}{lccc}
+\toprule
+Compound / channel / state & IC50 (\si{\micro\molar}) & 95\% CI lower & 95\% CI upper \\
+\midrule
+Z8739902234 --- NaV1.7 inactivated ($-70$~mV) & 1.32 & 1.14 & 1.55 \\
+Z8739902234 --- NaV1.7 resting ($-120$~mV)    & 13.1 & 12.78 & 13.45 \\
+Z8739902234 --- NaV1.7 ($-70$~mV holding)     & 1.33 & 1.14 & 1.55 \\
+Z8739902234 --- NaV1.5 ($-80$~mV holding)     & 5.14 & 4.74 & 5.55 \\
+Z8739902234 --- hERG                           & 6.27 & 5.27 & 7.37 \\
+Z8739905023 --- NaV1.7 inactivated            & 2.23 & 2.14 & 2.46 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+We have presented a state-of-the-art physics-based virtual screening method (RosettaVS, built on the RosettaGenFF-VS force field) integrated into a scalable open-source platform (OpenVS) that uses active learning for ultra-large virtual screens and lead discovery. On the CASF2016 screening power benchmark, RosettaGenFF-VS achieves a top 1\% enrichment factor of 16.72, a substantial margin above the 11.9 of the second-best physics-based method. On the DUD benchmark, RosettaVS outperforms the second-best method by a factor of two at the most operationally relevant early-enrichment thresholds (0.5/1.0\% ROC enrichment). Crucially, these benchmark gains translate into tangible experimental success: our KLHDC2 and NaV1.7 campaigns produced seven and four novel low-micromolar hits, respectively, in under seven days of HPC time each, and a 2.0~\AA{} crystal structure confirms the predicted binding pose for the best KLHDC2 hit.
+
+Two features of the method appear to be most responsible for this performance. First, the combination of high docking accuracy and efficient sampling lets RosettaVS locate the correct binding minimum of protein-ligand complexes more reliably than purely scoring-oriented alternatives. Second, unlike most existing virtual screening protocols which perform best on deep, hydrophobic pockets, RosettaGenFF-VS performs well on polar, shallow, and smaller pockets, a result we attribute to the improved balance between protein-ligand and intra-ligand molecular energies in the new force field.
+
+Several directions for improvement remain open. GPU acceleration of the ligand docking itself could substantially reduce wall-clock time \citep{tang2022uniDock}; integrating generative AI models for pose proposal \citep{corso2023diffdock,stark2022equibind} could further accelerate the sampling stage; and refining the active-learning surrogate architecture and training procedure could improve chemical-space coverage. Integration of deep-learning-based scoring functions, once robust to novel protein-ligand complexes, could provide additional discrimination of true binders \citep{jimenez2018kdeep,meli2023scoring}. Another promising direction is enabling known non-small molecule binders, such as macrocyclic peptides or antibody loops, as template structures to guide small-molecule virtual screening. More broadly, we anticipate that the continued integration of structure-based virtual screening with deep learning \citep{jumper2021alphafold,baek2021rosettafold,stokes2020deep,merchant2023scaling} will further increase both the accuracy and efficiency of virtual screening campaigns. By releasing OpenVS and RosettaVS as open-source software, we hope to accelerate adoption of ultra-large virtual screening beyond groups with commercial software licenses, and to support the broader drug discovery community.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

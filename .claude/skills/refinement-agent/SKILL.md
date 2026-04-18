@@ -66,19 +66,36 @@ Write `snapshots/round_N/review.json`:
 ```
 
 ### Revise
-Apply the identified fixes to `main.tex`. Common improvements:
+Apply the identified fixes to `main.tex`. **Prioritize writing quality fixes
+first** — this is where the pipeline most often underperforms a single-agent
+baseline.
+
+**Writing quality improvements (HIGH PRIORITY):**
+- Expand thin paragraphs (< 3 sentences) into full developed paragraphs
+- Add topic sentences to paragraphs that jump straight into numbers
+- Add transition sentences between sections and subsections
+- Ensure each results subsection follows Context → Approach → Finding →
+  Interpretation structure (not just "Table X shows Y")
+- Check that the Introduction and Discussion have smooth narrative flow
+- Verify unified voice — the intro should sound like the same author as the
+  results (watch for \input{} seams)
+- Expand the Discussion if it has fewer than 5 substantive paragraphs
+- Check total word count — if under 3000 words, the paper is too thin and
+  needs expansion in underdeveloped sections
+
+**Rigor and completeness improvements:**
 - Add missing numerical detail from the experimental log
 - Strengthen method descriptions with parameter values
 - Add missing citations where claims are unsupported
 - Improve table formatting (booktabs, consistent precision)
 - Fix numerical inconsistencies against the experimental log
-- Improve section transitions
 
 **DO NOT**:
 - Add fabricated experiments or baselines
 - Add content not in the experimental log
 - Defensively list limitations to game the "rigor" score
 - Introduce numbers not verified against `experimental_log.md`
+- Pad the paper with generic filler — all added prose must be substantive
 
 ### Re-score
 Read the revised `main.tex` and score again on all 7 axes. Write to

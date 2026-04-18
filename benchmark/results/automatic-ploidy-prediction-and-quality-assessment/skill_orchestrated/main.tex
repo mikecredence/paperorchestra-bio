@@ -1,0 +1,340 @@
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{microtype}
+
+\title{BELA: A Fully Automated Blastocyst Evaluation Learning Algorithm for
+Ploidy Prediction from Time-Lapse Imaging}
+\author{[Authors removed for anonymous review]}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Assessing fertilized human embryos is central to the success of in vitro
+fertilization (IVF). Existing deep-learning models for ploidy prediction either
+rely on subjective embryologist-derived scores or consume entire time-lapse
+videos, which limits generalization and clinical deployment. We present BELA
+(Blastocyst Evaluation Learning Algorithm), a fully automated two-step model
+that predicts embryo ploidy from day-5 time-lapse frames (96--112 hours post
+insemination) and maternal age. BELA first extracts 512-dimensional features
+from each frame with a pre-trained VGG16 network and feeds these to a multitask
+bidirectional LSTM that jointly predicts inner cell mass, trophectoderm,
+expansion, and blastocyst score. The resulting model-derived blastocyst score
+(MDBS) is then combined with maternal age in a logistic regression to classify
+embryos as euploid (EUP) versus aneuploid (ANU) or euploid versus complex
+aneuploid (CxA). On the Weill Cornell WCM-Embryoscope test set, BELA achieves
+AUCs of $0.76 \pm 0.002$ for EUP vs ANU and $0.826 \pm 0.004$ for EUP vs CxA
+when maternal age is included, and an MAE of $1.855 \pm 0.03$ between the
+predicted and embryologist-derived blastocyst score. Across external datasets
+from IVI Valencia (543 embryos) and IVF Florida (869 embryos), BELA
+consistently outperforms a day-5 video baseline ($p < 0.05$). BELA removes the
+need for subjective grading and is deployed through a web-based clinical tool
+(STORK-V) with a per-embryo inference time of $30 \pm 5$ seconds.
+\end{abstract}
+
+\input{intro_relwork}
+
+\input{figures/figures}
+
+\section{Methods}
+
+\subsection{Datasets}
+We used four datasets spanning two imaging instruments and three clinics, as
+summarized in Table~\ref{tab:datasets} and Figure~\ref{fig:datasets}. The
+primary training dataset, WCM-Embryoscope, was collected from the Center for
+Reproductive Medicine at Weill Cornell Medicine and comprises 1{,}998
+Embryoscope\textregistered{} time-lapse sequences (916 EUP, 494 single
+aneuploid [SA], 588 complex aneuploid [CxA]) from 498 patients with an average
+of four biopsied embryos per patient. The second Weill Cornell dataset,
+WCM-Embryoscope+, contains 841 sequences (410 EUP, 170 SA, 261 CxA) captured
+on a newer Embryoscope+\textregistered{} instrument. Two external validation
+datasets were obtained from IVI Valencia, Spain (543 embryos: 234 EUP, 309 ANU)
+and from IVF Florida (869 embryos: 445 EUP, 202 SA, 222 CxA). The WCM and
+Florida datasets include embryologist-derived blastocyst scores (BS); the
+Spain dataset does not. All four datasets include maternal age at the time of
+oocyte retrieval. Ploidy labels were assigned by preimplantation genetic
+testing for aneuploidy (PGT-A) performed with next-generation sequencing at
+the respective clinical sites \citep{garciapascual2020ngs}.
+
+\begin{table}[htbp]
+\centering
+\caption{Characteristics of the four datasets used in this study. EUP:
+euploid; SA: single aneuploid; CxA: complex aneuploid; ANU: aggregate
+aneuploid (Spain only).}
+\label{tab:datasets}
+\begin{tabular}{lllrrrrr}
+\toprule
+Dataset & Instrument & Site & Total & EUP & SA & CxA & ANU \\
+\midrule
+WCM-Embryoscope  & Embryoscope  & Weill Cornell & 1998 & 916 & 494 & 588 & -- \\
+WCM-Embryoscope+ & Embryoscope+ & Weill Cornell &  841 & 410 & 170 & 261 & -- \\
+Spain            & Embryoscope  & IVI Valencia  &  543 & 234 & --  & --  & 309 \\
+Florida          & Embryoscope+ & IVF Florida   &  869 & 445 & 202 & 222 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Temporal and spatial processing}
+Time-lapse sequences varied substantially in length, start and end times, and
+frame rate. To mitigate these biases, we constructed a standardized timeline
+at 30-minute intervals from 0 to 150~hpi, yielding 301 standardized frames per
+embryo. For each embryo, the image taken closest in time to each standardized
+point was assigned to that slot; if no image was available within a 2-hour
+window, the slot was filled with a blank frame. We selected a 2-hour boundary
+because significant embryonic changes were observed to occur on intervals
+longer than 2 hours and because data acquisition rates were typically dense
+enough to capture changes within this window. For video classification, we
+extracted frames using three parameters (start~hr, end~hr, interval); for
+example, a day-2 model uses start~hr~$=24.0$, end~hr~$=48.0$, and
+interval~$=2$~hours, yielding 13 frames. Each frame was resized from
+$800 \times 800$ to $224 \times 224$. A circle Hough Transform was used for
+embryo segmentation to suppress background bias, applied uniformly across all
+four datasets. Data augmentation consisted of random horizontal flipping and
+random rotations to simulate real-world orientation variability.
+
+\subsection{Feature extraction}
+We extracted spatial features from each standardized frame using an ImageNet
+pre-trained VGG16 convolutional network from TensorFlow 2.7. The final layer
+of the pre-trained network performed average pooling, producing a
+512-dimensional feature vector for each frame. We experimented with several
+alternative feature extractors but found VGG16 to perform best in our
+experiments.
+
+\subsection{Multitask BiLSTM for blastocyst score prediction}
+BELA uses a multitask bidirectional LSTM to predict blastocyst score and its
+sub-components (ICM, TE, expansion) jointly from the sequence of 512-dimensional
+VGG16 features. The architecture consists of one bidirectional LSTM layer
+followed by two multi-unit dense layers; each regression target is produced by
+a final 1-unit dense head. The loss function is log-cosh and the optimizer is
+Adam, with equal loss weights for all prediction tasks. Maternal age is
+included as an additional feature in the BiLSTM regression model. Early
+stopping with patience $=5$ was used to monitor validation loss on
+cross-validation folds. We found that attention mechanisms and stacks of
+multiple bidirectional LSTM layers did not significantly improve performance
+across tasks ($p > 0.05$). The rationale for multitasking is that ICM, TE, and
+expansion scores compose the overall blastocyst score, so a joint model can
+share representations across related regression tasks.
+
+\subsection{Ploidy classification}
+The second stage of BELA is a logistic regression that takes the model-derived
+blastocyst score (MDBS), optionally together with maternal age, as input and
+outputs a binary ploidy label. We train logistic regression models for two
+tasks: EUP vs ANU and EUP vs CxA, using cross-entropy loss.
+
+\subsection{Training protocol and evaluation}
+The WCM-Embryoscope dataset was split 70/30 into training and test partitions.
+After applying exclusion criteria (embryo absent from the petri dish,
+less than half-visible, or too dim to discern), the usable set contained 1{,}684
+of the original 1{,}998 embryos. We used four-fold cross-validation on the
+training split to train the BiLSTM regression model and to select
+hyperparameters via validation loss. A logistic regression ploidy classifier
+was trained on top of each of the four cross-validated BiLSTM models, and
+performance metrics were averaged. Evaluation metrics were accuracy,
+area under the receiver operating characteristic curve (AUC), precision, and
+recall. Between-group comparisons used Student's $t$-test, with Bonferroni
+correction applied across tests.
+
+\subsection{Computational resources}
+Model training and inference were conducted on an Apple M1 Mac with
+TensorFlow Metal, with the deployment model retrained on a BioHPC cluster
+using an NVIDIA A40 GPU. Logistic regression models had an average training
+time of $2.5 \pm 1.2$ seconds, while BiLSTM models required $30.3 \pm 11$
+minutes. The BELA model on the STORK-V platform was trained in 5.23 minutes
+on the A40 GPU. Inference for a single embryo on the STORK-V platform took
+$30 \pm 5$ seconds (Table~\ref{tab:timing}).
+
+\begin{table}[htbp]
+\centering
+\caption{Training and inference times for the BELA components.}
+\label{tab:timing}
+\begin{tabular}{ll}
+\toprule
+Component & Time \\
+\midrule
+Logistic regression training        & $2.5 \pm 1.2$ s \\
+BiLSTM training                     & $30.3 \pm 11$ min \\
+STORK-V deployment training (A40)   & 5.23 min \\
+STORK-V single-embryo inference     & $30 \pm 5$ s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\subsection{Training and validation datasets}
+We assembled four datasets totalling 4{,}251 embryos: two internal datasets
+from Weill Cornell Medicine (WCM-Embryoscope with 1{,}998 sequences and
+WCM-Embryoscope+ with 841 sequences) and two external datasets from IVI
+Valencia, Spain (543 embryos) and IVF Florida (869 embryos). Time-lapse
+sequences typically contained 360--420 frames captured at 0.3-hour intervals
+over five days of development. Ground truth ploidy labels were assigned via
+PGT-A. Dataset compositions are shown in Figure~\ref{fig:datasets} and
+Table~\ref{tab:datasets}.
+
+\subsection{Blastocyst score prediction}
+The first stage of BELA predicts the blastocyst score from day-5 time-lapse
+frames. On the WCM-Embryoscope test set, the mean absolute error (MAE)
+between the model-derived blastocyst score (MDBS) and the ground truth
+Embryoscope BS was $1.855 \pm 0.03$. Multitasking improved BS prediction:
+multitask BELA achieved an MAE of $1.855 \pm 0.03$ compared with
+$1.877 \pm 0.027$ for a non-multitask variant trained only on blastocyst
+score, supporting the use of multitask learning
+(Figure~\ref{fig:mae_comparisons}, left). We also observed a moderate
+correlation (Pearson correlation $>0.7$) between MDBS and embryologist
+BS on both training and test partitions of WCM-Embryoscope. Attention
+mechanisms and additional bidirectional LSTM layers were explored but did
+not significantly improve BS prediction ($p > 0.05$ across all tasks).
+
+\subsection{Ploidy classification on Weill Cornell datasets}
+Using the WCM-Embryoscope test set, BELA trained to distinguish EUP from ANU
+attained an AUC of $0.66 \pm 0.008$ without maternal age, rising to
+$0.76 \pm 0.002$ with maternal age. For the EUP vs CxA task, the AUC was
+$0.708 \pm 0.004$ without age and $0.826 \pm 0.004$ with age
+(Table~\ref{tab:auc_wcm}, Figure~\ref{fig:auc_wcm}). In all tested scenarios
+(with or without age, across test sets, and across prediction tasks), BELA
+outperformed a day-5 video baseline trained to predict ploidy directly from
+96--112~hpi time-lapse frames ($p < 0.05$). Without maternal age, the
+embryologist-annotated BS model surpassed BELA ($p < 0.05$) in all prediction
+tasks, except for EUP vs ANU on the WCM-Embryoscope test set. When maternal
+age was incorporated, BELA outperformed the embryologist-annotated blastocyst
+score model on the WCM-Embryoscope test set ($p < 0.05$), although it still
+underperformed the embryologist-annotated model on the WCM-Embryoscope+
+dataset.
+
+\begin{table}[htbp]
+\centering
+\caption{BELA AUC on the WCM-Embryoscope test set, with and without maternal
+age, for the two ploidy classification tasks.}
+\label{tab:auc_wcm}
+\begin{tabular}{lcc}
+\toprule
+Task & AUC (no age) & AUC (with age) \\
+\midrule
+EUP vs ANU & $0.66 \pm 0.008$  & $0.76 \pm 0.002$ \\
+EUP vs CxA & $0.708 \pm 0.004$ & $0.826 \pm 0.004$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{External validation: Spain}
+We compared BELA with the day-5 video baseline on 543 embryos from IVI Valencia,
+Spain. Because this dataset provides only EUP/ANU labels, we restricted the
+comparison to the EUP vs ANU task. BELA significantly outperformed the day-5
+video baseline in both scenarios --- with and without the inclusion of maternal
+age ($p < 0.05$). Embryos in the Spain dataset had been artificially hatched on
+day 3, which alters later blastocyst morphology and morphokinetics; these
+embryos also exhibited bleached zona pellucida and lacked the full expansion
+typical of the Weill Cornell training set. To quantify these differences, we
+extracted VGG16 feature encodings for each frame between 96 and 112~hpi of each
+embryo, averaged the encodings across frames, and reduced them with PCA. The
+resulting feature space (Figure~\ref{fig:pca_placeholder}) showed significant
+overlap between the two US-based datasets while the Spanish embryos clustered
+distinctly. Nevertheless, BELA's performance without maternal age on the Spain
+dataset remained comparable to its performance on Weill Cornell, suggesting
+general applicability. Models incorporating maternal age showed decreased
+performance relative to Weill Cornell, likely reflecting demographic differences
+between patient populations.
+
+\subsection{External validation: Florida}
+BELA was further assessed on 869 embryos from IVF Florida. BELA's performance
+on this dataset declined relative to the other test sets, as did the
+performance of logistic regression baselines that use only maternal age and
+embryologist-derived blastocyst score. We attribute this decline to weak
+correlations between blastocyst score, maternal age, and ploidy within the
+Florida dataset. Because maternal age is a strong predictor in all our models,
+any decrease in its correlation with ploidy significantly impacts performance.
+Moreover, embryologist-derived BS in the Florida dataset was predominantly
+centered around a score of 7, reducing the granularity that made BS a strong
+predictor in other datasets. This loss of granularity may reflect differing
+scoring practices: IVF Florida evaluates blastocysts at 115 and 144~hpi, while
+Weill Cornell uses additional earlier time points.
+
+Interestingly, the model-derived blastocyst score from the first BELA module
+showed a stronger correlation with ploidy status ($-0.119$) than the
+embryologist-derived blastocyst score ($-0.101$) on the Florida dataset,
+suggesting that BELA constructs a score mapping that aligns better with
+ploidy status than the original Florida scores. To test this hypothesis, an
+embryologist at Weill Cornell re-graded the 50 Florida embryos whose MDBS
+deviated most from the Florida blastocyst scores. We observed a decrease in
+MAE between the MDBS and the re-graded Weill Cornell BS ($4.16$) compared
+with the MDBS and the original Florida BS ($5.02$), indicating higher
+agreement between the MDBS and the Weill Cornell scoring method
+(Figure~\ref{fig:mae_comparisons}, right). This improved mapping helps explain
+why BELA with maternal age significantly outperforms the logistic regression
+trained on maternal age and embryologist-derived BS on the EUP vs ANU task
+for the Florida dataset ($p < 0.05$).
+
+\subsection{STORK-V clinical deployment}
+To make BELA usable in clinical practice, we developed a web-based application,
+STORK-V, that runs two BELA variants: one trained to distinguish EUP from ANU
+and one trained to distinguish EUP from CxA. The required inputs are day-5
+time-lapse frames (96--112~hpi) and maternal age. The output includes
+probabilities for euploidy, aneuploidy, and complex aneuploidy, along with
+intermediate quality scores for further analysis. Single-embryo inference on
+STORK-V takes $30 \pm 5$ seconds (Table~\ref{tab:timing}), and the deployment
+model was trained in 5.23 minutes on an NVIDIA A40 GPU, demonstrating the
+practicality of running BELA on accessible hardware.
+
+\section{Discussion}
+BELA is a fully automated ploidy prediction model that surpasses traditional
+IVF embryo classification methods relying on late-stage development or
+single-modality (image- or video-only) inputs. By predicting a blastocyst
+score as an intermediate representation and combining it with maternal age,
+BELA achieves performance competitive with logistic regression models trained
+on embryologist-annotated BS and significantly exceeds the performance of
+day-5 video models trained directly on time-lapse inputs. The AUC of
+$0.76 \pm 0.002$ achieved on the WCM-Embryoscope EUP vs ANU task and the
+$0.826 \pm 0.004$ achieved on EUP vs CxA are comparable to, and in the CxA
+case exceed, the accuracy values reported for prior deep-learning models on
+related tasks, such as the 70\% accuracy and 74\% AUC reported for ERICA on
+1{,}231 static images \citep{chavezbadiola2020erica} and the AUC of 0.74
+reported for an end-to-end CNN--BiLSTM on 690 sequences
+\citep{lee2021endtoend}. Remarkably, BELA
+requires only time-lapse frames from 96 to 112~hpi and maternal age to
+predict ploidy, making it straightforward to integrate into existing clinical
+workflows. BELA also offers a degree of explainability: embryologists can
+examine the model-derived blastocyst score and the multitask scores for ICM,
+TE, and expansion to understand the rationale behind a specific classification.
+
+Several limitations warrant discussion. First, video classification models
+demand substantial training data; with approximately 2{,}000 time-lapse
+sequences available, we could not fully explore larger video classification
+architectures such as 3D ConvNets or two-stream inflated convolutional
+networks. Second, despite trying multiple feature extractors, the ImageNet
+pre-trained VGG16 architecture performed best in our setting; alternative
+backbones may extract more information from earlier developmental stages.
+Third, we did not have access to potentially relevant maternal features such
+as hormone levels at oogenesis or broader clinical demographics, which could
+improve ploidy prediction. Fourth, using blastocyst scores as intermediary
+labels introduces dependence on a manually curated signal that is subject to
+intra- and inter-observer variability
+\citep{paternot2009intra,paternot2011multicentre,hammond2020freeze,richardson2015grading};
+nonetheless, we show that BS remains predictive of ploidy and therefore is
+useful as an intermediate proxy. Fifth, differing inclusion and exclusion
+criteria between datasets may partially explain the performance differences
+across test sets. Sixth, we developed BELA to exclude mosaic embryos; mosaic
+embryos with high implantation potential could therefore be misclassified.
+Finally, PGT-A results themselves are subject to variability across
+laboratories and platforms \citep{maxwell2016miscarriage,friedenthal2020ngs},
+and BELA is applicable only to clinics equipped with time-lapse imaging.
+
+Despite these limitations, BELA provides a non-invasive, cost-effective, and
+standardized supplement to PGT-A. By preselecting embryos with a higher
+probability of being euploid, it can reduce the number of unnecessary
+biopsies and associated risks. By de-prioritizing embryos likely to be
+complex aneuploid, it can provide early insight into embryos likely to fail
+implantation --- a particularly important capability for patients with a
+small number of embryos. Future work includes integration of additional
+maternal clinical data, handling of mosaic embryos, and deployment in
+prospective clinical studies.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

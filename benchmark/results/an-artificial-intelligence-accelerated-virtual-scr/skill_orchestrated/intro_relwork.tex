@@ -1,0 +1,167 @@
+\section{Introduction}
+
+Structure-based virtual screening has become a central tool in small-molecule
+lead discovery, offering a route to interrogate chemical space at a scale that
+is impractical with wet-lab assays alone. The explosion of make-on-demand
+ultra-large libraries, which now span billions of purchasable molecules with
+high reported synthesis success rates, has dramatically expanded the pool of
+candidate ligands that can in principle be evaluated against a target
+\citep{lyu2019ultralarge,tingle2023zinc22,irwin2005zinc}. Yet only a handful of
+virtual screening campaigns deployed at this multi-billion scale have
+translated into experimentally validated hits, in part because exhaustive
+physics-based docking of entire libraries is computationally prohibitive
+\citep{gorgulla2020virtualflow,gentile2022deepdocking}.
+
+Several strategies have emerged to address this cost. Parallelized docking
+platforms distribute calculations across high-performance computing clusters
+\citep{gorgulla2020virtualflow,yaacoub2022ddgui}; active-learning and
+Bayesian-optimization approaches train surrogate models to triage libraries so
+that only the most promising fraction must be docked
+\citep{graff2021accelerating,gentile2022deepdocking}; hierarchical pipelines
+apply successively more expensive scoring stages to progressively smaller
+compound pools; and GPU-accelerated docking programs further compress
+wall-clock time. However, the ultimate impact of any of these strategies is
+bounded by the accuracy of the underlying docking program, which must both
+sample a biologically meaningful binding pose and score it in a way that
+distinguishes true binders from decoys.
+
+Leading proprietary docking programs such as Glide \citep{friesner2004glide}
+and the grey-wolf-optimized variants integrated into VirtualFlow
+\citep{gorgulla2020virtualflowgwo} offer strong benchmarked performance but
+are not freely available for unrestricted academic use. AutoDock Vina
+\citep{trott2010vina} is free and widely adopted but tends to trail
+commercial programs on standard benchmarks. Recent deep-learning scoring
+functions report competitive numbers on benchmarks such as CASF-2016
+\citep{su2019casf2016,liu2017pdbbind,scantlebury2023pointvs}, yet their ability
+to generalize to novel compounds and targets is limited, and data-leakage
+between training and evaluation sets remains a concern even when stringent
+similarity cutoffs are applied. When the binding site is known, as is typical
+in virtual screening, physics-based methods continue to be the pragmatic
+choice \citep{chaput2017usc,ebejer2019ligity,li2024cache}. Open-source physics
+based platforms that combine accurate force fields, receptor flexibility, and
+active-learning triage for billion-compound libraries remain scarce.
+
+In this work, we introduce RosettaGenFF-VS and the RosettaVS protocol, built
+on top of the Rosetta GALigandDock framework \citep{leman2020rosetta}. We
+extend the underlying generalized force field with new atom types, new
+torsional potentials, and an entropy model so that it can rank large pools of
+compounds binding to the same target. We expose two docking modes: a fast
+virtual screening express (VSX) mode for initial library triage and a virtual
+screening high-precision (VSH) mode that restores full receptor sidechain
+flexibility for final re-ranking of top candidates. These are wrapped by
+OpenVS, an open-source AI-accelerated virtual screening platform that trains
+a target-specific surrogate model on-the-fly to select promising compounds
+for expensive docking, enabling routine screens of multi-billion compound
+libraries on modest HPC resources. We benchmark the method on CASF-2016
+\citep{su2019casf2016} and the Directory of Useful Decoys
+\citep{mysinger2012dude}, then apply the platform to two unrelated
+drug-discovery problems: a substrate receptor in the CUL2/CRL2 ubiquitin
+ligase family, KLHDC2, which has recently attracted attention as a PROTAC
+platform \citep{slusarz2023klhdc3}, and the voltage-sensing domain IV (VSD4)
+of the human voltage-gated sodium channel NaV1.7, a validated but notoriously
+difficult target for state-dependent small-molecule inhibitors
+\citep{wang2015nav17methyl}. The KLHDC2 co-crystal structure determined for
+the best initial hit validates the predicted binding pose, and the NaV1.7
+leads display state-dependent inhibition with moderate selectivity over
+NaV1.5 and hERG.
+
+The contributions of this work are:
+\begin{itemize}
+  \item \textbf{Force field}: RosettaGenFF-VS extends Rosetta GALigandDock
+  \citep{leman2020rosetta} with new atom types, torsional potentials, and an
+  entropy term for ranking ligands binding to the same target.
+  \item \textbf{Protocol}: RosettaVS supplies paired VSX (fast) and VSH
+  (flexible-receptor, high-precision) docking modes for ultra-large screens.
+  \item \textbf{Platform}: OpenVS is an open-source scalable virtual
+  screening platform that combines these modes with active-learning triage,
+  enabling multi-billion compound screens in under seven days on modest HPC
+  resources.
+  \item \textbf{Benchmarks}: We report leading CASF-2016 docking and
+  screening power (top 1\% enrichment factor of 16.72 versus 11.9 for the
+  second-best method) and DUD ROC enrichment, outperforming the second-best
+  method by a factor of two at 0.5/1.0\% false-positive rates.
+  \item \textbf{Applications}: Parallel KLHDC2 and NaV1.7 campaigns yielded
+  seven low-micromolar KLHDC2 binders (14\% hit rate) and four
+  single-digit-micromolar NaV1.7 antagonists (44.4\% hit rate), the best of
+  which showed state-dependent hNaV1.7 inhibition with IC$_{50}$ = 1.32~\textmu M.
+  \item \textbf{Structural validation}: A 2.0~\AA\ X-ray co-crystal structure
+  of KLHDC2 with compound~29 validates the predicted binding pose of the
+  computationally identified hit.
+\end{itemize}
+
+\section{Background and Related Work}
+
+\paragraph{Ultra-large library docking.}
+Make-on-demand libraries have expanded chemical space from the millions to
+the billions of compounds \citep{lyu2019ultralarge,tingle2023zinc22}. Early
+examples of ultra-large screens demonstrated that hit rates and chemotype
+diversity can improve with increasing library size
+\citep{lyu2019ultralarge,gorgulla2020virtualflow}, motivating the development
+of platforms that can evaluate billions of molecules efficiently.
+VirtualFlow demonstrates distributed ultra-large screening against targets
+such as KEAP1 \citep{gorgulla2020virtualflow}, and later extensions
+incorporate receptor flexibility via grey-wolf optimization
+\citep{gorgulla2020virtualflowgwo}.
+
+\paragraph{Active learning and deep-learning-guided screening.}
+Rather than docking an entire library, active-learning approaches train a
+cheap surrogate on a small fraction of docked compounds and use it to triage
+the rest. Pool-based Bayesian optimization can recover a large share of the
+top-scoring ligands in a 100-million-compound library after docking only a
+few percent of it \citep{graff2021accelerating}. Deep Docking and its
+successors deploy iterative neural-network surrogates to accelerate ligand
+ranking in conjunction with a conventional docker
+\citep{gentile2022deepdocking,yaacoub2022ddgui}. Recent community exercises
+such as CACHE suggest that while such acceleration is reliable, hit rates on
+truly novel pockets remain modest, underscoring the importance of the
+underlying scoring function \citep{li2024cache}.
+
+\paragraph{Docking programs and scoring functions.}
+Glide uses hierarchical conformational search with an empirical-plus-force-
+field scoring function and reports strong redocking accuracy on standard
+benchmarks \citep{friesner2004glide}. AutoDock Vina introduced a smoothed
+empirical scoring function with efficient optimization and multithreading,
+and remains a widely used open-source baseline \citep{trott2010vina}. The
+PDBbind and CASF benchmarks quantify scoring, ranking, docking, and
+screening power of scoring functions on diverse protein-ligand complexes
+\citep{liu2017pdbbind,su2019casf2016}, while the Directory of Useful Decoys
+and its enhanced version evaluate virtual-screening discrimination using
+property-matched decoys \citep{mysinger2012dude}. Consensus docking analyses
+and knowledge-based ligand methods illustrate both the strengths and the
+failure modes of current approaches \citep{chaput2017usc,ebejer2019ligity}.
+
+\paragraph{Machine-learning scoring functions.}
+Neural-network scoring functions have shown competitive CASF numbers, yet
+concerns about train/test leakage persist even when ligand Tanimoto and
+protein sequence-identity cutoffs are applied. Recent work argues that
+careful dataset construction and interpretability testing are needed before
+these methods can be trusted as drop-in replacements for physics-based
+scoring \citep{scantlebury2023pointvs}. Additionally, docking apo protein
+structures typically degrades virtual-screening performance, motivating
+flexible-receptor refinement and holo-like pocket conformation generation
+\citep{guterres2020apo}.
+
+\paragraph{KLHDC2 and NaV1.7 as test targets.}
+KLHDC2 is a substrate receptor of the CUL2/CRL2 E3 ubiquitin ligase complex
+and recognizes C-terminal diglycine degrons with high affinity
+\citep{slusarz2023klhdc3}. Its tractable, pocket-like degron-binding site
+has made it a candidate platform for PROTAC-style targeted protein
+degradation. The human voltage-gated sodium channel NaV1.7, in turn, is a
+well-validated analgesic target for which subtype-selective small-molecule
+inhibitors have been pursued through interactions with the fourth
+voltage-sensing domain (VSD4); subtle chemical modifications of known aryl
+sulfonamide scaffolds can introduce new modes of gating modulation, making
+the domain a rewarding but structurally subtle pocket for virtual screening
+\citep{wang2015nav17methyl}. We chose these two targets to test the
+generality of RosettaVS across protein folds, pocket physicochemistry, and
+assay modalities.
+
+\paragraph{This work.}
+Against this backdrop, RosettaGenFF-VS, RosettaVS, and OpenVS combine an
+open-source, physics-based scoring function with flexible-receptor docking
+and active-learning triage. Unlike deep-learning scoring functions, the
+method does not rely on the distribution of training ligands; unlike
+proprietary commercial pipelines, all components are free and open-source;
+and unlike previous active-learning approaches, receptor flexibility is
+modeled at the final VSH stage. The benchmark and experimental results that
+follow justify each of these choices.

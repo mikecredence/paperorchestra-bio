@@ -37,67 +37,93 @@ Before writing any content, internalize this rule:
 
 ## Task
 
-### Step 1: Assemble the Manuscript
+### Step 1: Read and Integrate All Prior Stage Outputs
 
-Create `{workspace}/main.tex` with this structure:
+Before writing, read all workspace artifacts to build a unified mental model:
+- `outline.json` — section plan with content bullets
+- `references.bib` — verified citation keys and metadata
+- `intro_relwork.tex` — drafted intro + related work (DO NOT use `\input{}`
+  to include this file. Instead, **rewrite its content into the manuscript in
+  your own unified voice**. The literature-agent's draft is a starting point,
+  not final prose. Adapt, expand, and polish it.)
+- `figures/figures.tex` — figure snippets (embed these inline, NOT via
+  `\input{}`)
+- `inputs/idea_summary.md` + `inputs/experimental_log.md` — the ground truth
 
-```latex
-\documentclass[10pt]{article}
-\usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{natbib}
-\usepackage{hyperref}
+### Step 2: Write the Complete Manuscript
 
-\title{<working_title from outline.json>}
-\author{[Authors]}
-\date{}
+Create `{workspace}/main.tex` as a **self-contained LaTeX file** (no `\input{}`
+commands — everything is in one file for consistency of voice and style).
 
-\begin{document}
-\maketitle
+#### Prose Quality Standards
 
-\begin{abstract}
-<Expand abstract_sketch into 150-250 word abstract>
-</abstract>
+**This is the most important section of these instructions.** The generated
+paper must read as polished academic prose written by a single author, not as
+a patchwork of bullet points or a data dump. Follow these principles:
 
-<Insert intro_relwork.tex content for Introduction and Related Work>
+1. **Unified voice throughout.** Every section — abstract through discussion —
+   must sound like the same author wrote it. Do NOT copy-paste the
+   literature-agent's intro verbatim. Rewrite it in the same style as the
+   results and methods.
 
-\section{Methods}
-<Write from experimental_log.md and idea_summary.md>
+2. **Paragraph structure.** Each paragraph should:
+   - Open with a topic sentence stating the paragraph's main point
+   - Develop the point with evidence, numbers, or citations (2-4 sentences)
+   - Close with a transition to the next paragraph or an interpretation
+   - Minimum 3 sentences per paragraph; never a single-sentence paragraph
 
-\section{Results}
-<Write from experimental_log.md, preserving ALL numbers exactly>
-<Include tables from outline.json.table_plan>
+3. **Transitions between sections.** The last sentence of each section should
+   bridge to the next. Between subsections, use transition phrases
+   (e.g., "Having established X, we next examined...", "To test whether...",
+   "These findings motivated us to...", "Building on this observation...").
 
-\section{Discussion}
-<Write from idea_summary.md discussion/limitations>
+4. **Results narrative structure.** Each results subsection should follow:
+   - **Context** (1-2 sentences): Why was this experiment done?
+   - **Approach** (1 sentence): What method/analysis was used?
+   - **Finding** (2-4 sentences): What was observed? Include ALL relevant
+     numbers with proper units and statistical tests.
+   - **Interpretation** (1-2 sentences): What does this mean? How does it
+     connect to the paper's thesis?
+   Aim for **2-3 paragraphs per results subsection**, not one compressed block.
 
-\section{Materials and Methods}
-<Detailed methods from experimental_log.md>
+5. **Discussion depth.** The discussion must:
+   - Open by restating the key finding and its significance (1 paragraph)
+   - Contextualize against prior work from the citations (2-3 paragraphs)
+   - Address limitations honestly (1 paragraph)
+   - End with future directions or broader implications (1 paragraph)
+   Minimum 5 paragraphs in the Discussion section.
 
-\bibliographystyle{plainnat}
-\bibliography{references}
+6. **Minimum length guidance.**
+   - Abstract: 150-250 words
+   - Introduction + Related Work: 600-1000 words
+   - Methods: 500-1000 words (detailed enough to reproduce)
+   - Results: 800-1500 words (2-3 paragraphs per subsection)
+   - Discussion: 500-800 words
+   - Total manuscript: minimum 3000 words
 
-\end{document}
-```
+#### Section-by-Section Instructions
 
-### Step 2: Write Each Section
+**Abstract** — Expand `outline.json.abstract_sketch` into flowing prose. Include
+the key numerical results. Structure: problem (1-2 sentences), gap (1 sentence),
+approach (2-3 sentences), key results with numbers (2-3 sentences), impact
+(1 sentence). Target 200 words.
 
-**Abstract** — expand `outline.json.abstract_sketch` into flowing prose. Include
-key numerical results (e.g., "achieves X% accuracy"). 150-250 words.
+**Introduction** — Rewrite `intro_relwork.tex` content in your own voice.
+Do NOT just paste it. The intro should build motivation, identify the gap,
+and state contributions. End with a paragraph-form contributions list or
+a brief roadmap of the paper.
 
-**Introduction** — use the drafted intro from `intro_relwork.tex`.
-
-**Methods** — describe the approach precisely. Cite foundational methods from
+**Methods** — Describe the approach precisely. Cite foundational methods from
 `references.bib`. Include equations, hyperparameters, architecture details.
+Use subsections for distinct method components.
 
-**Results** — for each subsection in `outline.json.sections`, write the
-corresponding results paragraph. Every number must come directly from
-`experimental_log.md`. Include tables as planned.
+**Results** — For each subsection in `outline.json.sections`, write 2-3
+paragraphs following the Context → Approach → Finding → Interpretation
+structure. Every number must come directly from `experimental_log.md`.
+Include tables and figure references at natural points in the narrative.
 
-**Tables** — for each entry in `outline.json.table_plan`, build a LaTeX table
-with actual numbers from the experimental log. Use `booktabs` format:
+**Tables** — For each entry in `outline.json.table_plan`, build a LaTeX table
+with actual numbers. Use `booktabs` format:
 
 ```latex
 \begin{table}[htbp]
@@ -117,8 +143,14 @@ Row 1 & X & Y & Z \\
 **NEVER put "N/A" or "---" in result cells unless explicitly in the source data.**
 **NEVER use qualitative descriptions ("high", "low") when numbers exist.**
 
-**Discussion** — interpret results, connect to prior work, acknowledge
-limitations. All limitations must be grounded in the inputs.
+**Figures** — Embed figure snippets from `figures/figures.tex` at natural
+points in the narrative. Reference each figure at least once in the prose
+(e.g., "as shown in Figure~\ref{fig:...}"). Place figures near their first
+text reference.
+
+**Discussion** — Interpret results, connect to prior work using citations,
+acknowledge limitations grounded in the inputs, and end with implications.
+Minimum 5 substantive paragraphs.
 
 ### Step 3: Citation Audit (Self-Check)
 

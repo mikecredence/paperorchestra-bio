@@ -1,0 +1,745 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{microtype}
+\bibliographystyle{unsrtnat}
+
+\title{A SUMO E3 ligase promotes long non-coding RNA transcription to
+regulate small RNA-directed DNA elimination}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Small RNAs loaded onto Argonaute proteins silence complementary genomic
+regions by recognising nascent long non-coding RNAs (lncRNAs) at chromatin,
+which creates the apparent paradox that loci destined for silencing must
+first be transcribed. In the ciliate \emph{Tetrahymena thermophila},
+programmed DNA elimination depends on parental macronuclear lncRNAs
+(pMAC-lncRNAs) that base-pair with scan RNAs (scnRNAs) to trigger
+target-directed small RNA degradation (TDSD), yet no factor that licenses
+pMAC-lncRNA transcription has been identified. Here we characterise Ema2
+(TTHERM\_00113330), a conjugation-specific SUMO E3 ligase that carries an
+atypical SP-RING domain in which the first zinc-coordinating cysteine is
+replaced by histidine. Using somatic knockout strains, in vitro GST
+pull-down, mass spectrometry of His-Smt3-conjugated proteins, site-directed
+lysine-to-arginine mutagenesis of the transcription elongation factor Spt6,
+and biochemical fractionation, we show that Ema2 interacts with the SUMO E2
+Ubc9, catalyses SUMOylation of Spt6, and sustains the chromatin association
+of Spt6 and RNA polymerase II (RNAPII) during mid-conjugation.
+\emph{EMA2} knockout cells fail to complete DNA elimination, lose TDSD of
+MDS-complementary scnRNAs, abolish pMAC-lncRNA accumulation and parental-MAC
+dsRNA, and produce no viable sexual progeny; at the biochemical level,
+high-molecular-weight ($>\!200$~kDa) SUMO conjugates are reduced to
+approximately $50\%$ of wild-type levels. A SUMOylation-defective Spt6
+(C-KR) mutant preserves pMAC-lncRNA transcription but still shows a mild
+DNA elimination defect, demonstrating that Spt6 SUMOylation is dispensable
+for lncRNA production yet contributes to later elimination steps. These
+findings place Ema2-directed SUMOylation upstream of lncRNA transcription
+and define a heterochromatin-independent solution to small RNA-directed
+genome communication.
+\end{abstract}
+
+\section{Introduction}
+
+Small RNAs complexed with Argonaute family proteins silence complementary
+genomic regions either by degrading messenger RNAs in the cytoplasm or by
+guiding transcriptional silencing at chromatin
+\citep{holoch2015rna,wilson2013rnai}. Transcriptional silencing presents a
+conceptual puzzle because the Argonaute--small RNA complex must recognise
+its target through a nascent long non-coding RNA (lncRNA), which means
+that a region destined for silencing must simultaneously be transcribed
+by RNA polymerase. Different lineages have evolved different compromises
+with this paradox, but each solution assumes that lncRNA production at the
+silenced locus is somehow licensed. Understanding the factors that license
+that transcription is therefore central to understanding how small RNAs
+communicate with chromatin.
+
+Comparisons across model systems reveal how varied these licensing
+strategies can be. In fission yeast, small interfering RNAs (siRNAs)
+direct the deposition of histone H3 lysine~9 di- and tri-methylation
+(H3K9me2/3) on centromeric repeats, leading to heterochromatin assembly
+by the HP1 protein Swi6 \citep{volpe2002rnai,hall2002heterochromatin};
+mitotic phosphorylation of histone H3 serine~10 transiently evicts Swi6 so
+that RNAPII can re-transcribe the repeats during a narrow cell-cycle
+window. In \emph{Drosophila}, the HP1 paralog Rhino binds H3K9me2/3 at
+piRNA clusters \citep{lethomas2014rhino} and recruits dedicated variants
+of basal transcription factors to sustain lncRNA production from
+heterochromatin \citep{andersen2017heterochromatin}, while the SUMO E3
+ligase Su(var)2-10 couples piRNA target recognition to SetDB1 recruitment
+and reinforces the silenced state \citep{ninova2019suvar}. In plants,
+SHH1 delivers the plant-specific RNA polymerase~IV to H3K9-methylated loci
+to licence siRNA precursor transcription for RNA-directed DNA methylation
+\citep{law2013shh1}. A unifying feature of these systems is that
+heterochromatin is already in place when lncRNA transcription is
+licensed, so the mechanisms that initiate silencing and those that sustain
+it are difficult to separate.
+
+Ciliates circumvent this confound because the source and target of the
+silencing small RNA occupy physically distinct nuclei within a single
+cell \citep{chalker2011ciliate}. Each \emph{T.~thermophila} cell carries a
+diploid germline micronucleus (MIC) and a polyploid somatic macronucleus
+(MAC); during conjugation the MIC undergoes meiosis and fertilisation to
+produce a new MIC and a new MAC, while the parental MAC is destroyed.
+Programmed DNA elimination takes place in the developing new MAC and
+excises roughly $12{,}000$ internal elimination sequences (IESs), reducing
+the approximately $200$~Mb micronuclear genome to the approximately
+$103$~Mb macronuclear genome \citep{cheng2010transposase,dubois2017piggymac}.
+Three classes of lncRNAs orchestrate this rearrangement: bidirectional
+MIC-lncRNAs produced during meiotic prophase
+\citep{mochizuki2004rpb3,chalker2001nongenic} are processed into
+approximately $29$~nt scnRNAs loaded onto the Piwi protein Twi1
+\citep{mochizuki2002twi1,noto2010giw1}; after Twi1--scnRNA complexes enter
+the parental MAC, pMAC-lncRNAs base-pair with them and, via the RNA
+helicase Ema1 \citep{aronica2008ema1}, trigger TDSD so that only
+IES-matching scnRNAs are retained \citep{schoeberl2012biased}; finally,
+nMAC-lncRNAs in the new MAC recruit the Polycomb Repressive Complex~2
+homolog Ezl1, which deposits H3K9me2/3 and H3K27me3 to mark IESs for
+excision by domesticated PiggyBac transposases
+\citep{liu2004h3k9,liu2007rnai,frapporti2019ezl1,cheng2010transposase,dubois2017piggymac}.
+
+Despite the central role of pMAC-lncRNAs in TDSD, no factor that promotes
+their transcription has been described. SUMOylation is a strong candidate
+regulator because it increases sharply during \emph{Tetrahymena}
+conjugation \citep{nasir2015sumo}, because RNAi knockdown of the SUMO
+pathway blocks IES excision in the related ciliate \emph{Paramecium
+tetraurelia} \citep{matsuda2006sumo}, and because SUMO modifications of
+chromatin factors are recurrently associated with small RNA-directed
+silencing in fission yeast \citep{shin2005sumo}, \emph{C.~elegans}
+\citep{kim2021hdac1} and \emph{Drosophila} \citep{ninova2019suvar}.
+The \emph{Tetrahymena} genome encodes a single conjugation-specific SUMO
+E3 ligase of the Siz/PIAS family, Ema2 (TTHERM\_00113330), whose SP-RING
+signature is atypical \citep{hochstrasser2001spring}. Whether Ema2 is a
+bona fide SUMO E3, and whether it acts on the lncRNA pathway rather than
+on a downstream excision step, has not been tested.
+
+In this study we take Ema2 as an entry point into the regulation of
+pMAC-lncRNA transcription. We combine somatic knockouts, immunofluorescence
+and DNA fluorescence in situ hybridisation, northern blotting and small
+RNA sequencing, in vitro GST pull-down with recombinant Ubc9, mass
+spectrometry of His-Smt3 conjugates under denaturing conditions, cell
+fractionation with and without RNase treatment, and site-directed
+lysine-to-arginine mutagenesis of Spt6 to establish that Ema2 catalyses
+conjugation-stage SUMOylation, targets the transcription elongation factor
+Spt6, and sustains chromatin association of Spt6 and RNAPII during
+mid-conjugation. We further show that a SUMOylation-defective Spt6
+(C-KR) mutant preserves pMAC-lncRNA transcription while still displaying
+a mild DNA elimination defect, indicating that Ema2 acts through multiple
+SUMO substrates and that Spt6 SUMOylation itself has a distinct, later
+role in elimination. Together our results identify a SUMO E3 ligase that
+operates upstream of lncRNA transcription and offer a mechanistically
+distinct solution to the silencing paradox, one that does not presuppose
+a heterochromatic template.
+
+\section{Materials and Methods}
+
+\subsection{Strains and culture}
+Wild-type \emph{Tetrahymena thermophila} strains B2086, CU427, CU428,
+B*VI and B*VII were obtained from the Tetrahymena stock center. \emph{EMA2}
+germline knockout strains were those described in Shehzada \& Mochizuki
+(2022). Cells were grown in SPP medium containing 2\% proteose peptone at
+30~\textdegree C. For conjugation, growing cells at $\sim5$--$7\times10^5$
+cells/mL of two mating types were washed, pre-starved for $\sim12$--$24$~h
+and mixed in 10~mM Tris (pH~7.5) at 30~\textdegree C. Time points are
+reported as hours post-mixing (hpm). Mating pairs for viability tests were
+isolated into drops of 1$\times$SPP at 6~hpm and incubated for
+approximately three days, after which sexual progeny were identified by
+6-methylpurine resistance and paromomycin sensitivity as in
+\citet{mochizuki2002twi1}.
+
+\subsection{Antibodies}
+Primary antibodies were: anti-H3K27me3 (Millipore 07-449), anti-HA HA11
+(Covance 6B12), anti-H3K9me3 (Active Motif 39162), anti-GST (BD 554805),
+anti-His (Proteintech 66005-1-Ig), anti-long-dsRNA J2 (Jena Bioscience),
+anti-$\alpha$-tubulin 12G10, anti-Rpb3 (Kataoka \& Mochizuki 2017) and
+anti-Smt3 (kindly provided by James Forney, as used in
+\citealp{nasir2015sumo}).
+
+\subsection{Small RNA analyses}
+For northern hybridisation, 10~\textmu g of total RNA extracted with TRIzol
+from conjugating wild-type or \emph{EMA2} knockout cells was resolved on a
+15\% acrylamide--urea gel and probed with a radiolabelled Mi-9 probe
+\citep{aronica2008ema1}. For small RNA sequencing, 26- to 32-nt reads that
+uniquely matched a MDS or IES tile were counted as reads per kilobase of
+unique sequence per million mapped reads (RPKM).
+
+\subsection{DNA fluorescence in situ hybridisation and IES retention}
+Probes for the Tlr1 locus were generated by nick translation with Cy5
+from the pMBR~4C1, pMBR~2 and Tlr~IntB plasmids and hybridised to fixed
+exconjugants at 36~hpm. Because DNA elimination is completely blocked in
+\emph{TWI1} knockouts, a correction factor of 0.35 was applied so that
+the mean IES retention index of \emph{TWI1} knockout cells equals 1; other
+strains were scored relative to this baseline.
+
+\subsection{GST pull-down assay}
+\emph{E.~coli} codon-optimised synthetic \emph{EMA2} (EMA2-Ec) and
+\emph{UBC9} (UBC9-Ec) genes were cloned into pGEX-4T-1 (BamHI/XhoI) and
+pET28a($+$) (NdeI/BamHI), respectively. His-Ubc9 expression in BL21 was
+induced for $\sim16$~h at 25~\textdegree C with 0.05~mM IPTG; cells were
+lysed in HEPES buffer (50~mM HEPES pH~7.5, 800~mM KCl, 10\% glycerol,
+0.2~mM PMSF, 1$\times$cOmplete EDTA-free) with 10~mM imidazole, bound to
+Ni-NTA for 2~h at 4~\textdegree C, washed with buffer containing 20~mM
+imidazole, eluted with 250~mM imidazole, dialysed into 50~mM Tris pH~7.5,
+150~mM NaCl, 2~mM MgCl$_2$, 1~mM DTT, 50\% glycerol and concentrated
+through a Microcon 10-kDa filter. GST-Ema2 or GST alone was bound to
+Glutathione Sepharose 4B for 90~min at 4~\textdegree C and incubated with
+10~\textmu g of His-Ubc9 in GST pull-down buffer (20~mM Tris--HCl pH~7.5,
+100~mM NaCl, 1\% NP-40, 5~mM MgCl$_2$, 1~mM DTT, 0.2~mM PMSF,
+1$\times$cOmplete EDTA-free) for 90~min at 4~\textdegree C; beads were
+washed four times and eluted with 2$\times$SDS sample buffer.
+
+\subsection{His-Smt3 purification under denaturing conditions}
+Cells expressing His-Smt3 were lysed in Guanidine Lysis Buffer (6~M
+guanidine-HCl, 93.2~mM Na$_2$HPO$_4$, 6.8~mM NaH$_2$PO$_4$, 10~mM Tris-HCl
+pH~8.0) by probe sonication (Omni-Ruptor~250 Ultrasonic Homogenizer;
+$2\times25$~pulses, 20\% power, 60\% pulse). Cleared lysates were
+supplemented with 50~mM imidazole and 5~mM $\beta$-mercaptoethanol,
+incubated with Ni-NTA agarose, washed and eluted with 6~M urea,
+58~mM Na$_2$HPO$_4$, 42~mM NaH$_2$PO$_4$, 10~mM Tris-HCl pH~8.0,
+500~mM imidazole. Eluted proteins were precipitated in 10\% TCA,
+resuspended in 1$\times$SDS buffer and analysed by Western blotting and
+mass spectrometry. For the candidate-SUMO-substrate list, we excluded
+proteins with a log2 LFQ score above 25 or more than six consecutive
+histidine residues to remove common contaminants.
+
+\subsection{HA-Smt3 purification}
+Total proteins were precipitated in 6\% TCA on ice for 10~min and pelleted
+at 13{,}000~rpm for 5~min at 4~\textdegree C. Pellets were dissolved in
+1$\times$SDS, neutralised with 2~M Tris, and heated 5~min at
+95~\textdegree C; $600$~\textmu L of dissolved protein was diluted into
+7.4~mL of 20~mM Tris pH~7.5, 100~mM NaCl, 2~mM MgCl$_2$, 2~mM CaCl$_2$
+and incubated overnight at 4~\textdegree C with Ezview Red anti-HA
+agarose (Sigma). Beads were washed five times with the same buffer
+containing 0.1\% Tween-20, then eluted by heating at 95~\textdegree C for
+5~min in 1$\times$SDS buffer.
+
+\subsection{Cell fractionation}
+Fractionation followed \citet{aronica2008ema1} and earlier descriptions
+(Ali et al., 2018). $1.4\times10^6$ cells were lysed in 1~mL of Lysis
+buffer (50~mM Tris pH~8.0, 100~mM NaCl, 5~mM MgCl$_2$, 1~mM EDTA,
+0.5\% Triton X-100, 1$\times$cOmplete protease inhibitor) on ice for
+30~min and centrifuged at 15{,}000~$g$ for 10~min at 4~\textdegree C.
+Proteins in 500~\textmu L of supernatant (fraction S1) were TCA-precipitated
+and resuspended in 70~\textmu L 1$\times$SDS. The pellet was resuspended in
+2~mL fresh Lysis buffer, sonicated ($5\times20\%$ power, 50\% pulse, five
+pulses with $\geq20$~s intervals) and centrifuged at 20{,}000~$g$ for
+10~min at 4~\textdegree C; 1~mL of the resulting supernatant (solubilised
+chromatin, fraction S2) was TCA-precipitated and resuspended in
+70~\textmu L 1$\times$SDS. For the RNase variant, cells were lysed in the
+same buffer supplemented with 20~\textmu g/mL RNase~A.
+
+\subsection{RT-PCR of pMAC-lncRNAs}
+Total RNA from wild-type and \emph{EMA2} knockout cells at 6~hpm was
+extracted with TRIzol. Nested PCR (95~\textdegree C/20~s,
+50~\textdegree C/30~s, 68~\textdegree C/1~min; 30 cycles per round) was
+performed at the M, L8 and R2 IES--MDS boundary loci using primer pairs
+M5$'$-3/M3$'$-3 (M-1st), M5$'$-4/M5$'$-4 (M-2nd), L8\_5$'$-1/L8\_3$'$-1
+(L8-1st), L8\_5$'$-2/L8\_3$'$-2 (L8-2nd), R2\_5$'$-1/R2\_3$'$-1 (R2-1st)
+and R2\_5$'$-2/R2\_3$'$-2 (R2-2nd), resolved on a 1\% agarose gel. The
+constitutively expressed \emph{RPL21} mRNA amplified with RPL21-FW and
+RPL21-RV served as a loading control.
+
+\subsection{Spt6 mutant constructs}
+Surface lysines in the N, M and C regions of Spt6 were predicted with
+the JASSA SUMOylation consensus tool \citep{ninova2019suvar}, and
+lysine-to-arginine substitutions were introduced by overlap PCR. A
+separate construct targeted every lysine within the N-terminal domain of
+low complexity (DOL-KR). All constructs were selected in 300~\textmu g/mL
+puromycin with 1~\textmu g/mL CdCl$_2$ induction and phenotypically
+assorted up to 1.2~mg/mL puromycin.
+
+\section{Results}
+
+\subsection{Ema2 is expressed only during conjugation and localised
+predominantly to the macronucleus}
+
+We first asked when and where Ema2 acts. Published microarray data
+\citep{miao2009microarray} indicate that \emph{EMA2} mRNA is restricted
+to conjugation, so we generated an HA-tagged Ema2 strain and tracked the
+protein across the life cycle. Ema2-HA was undetectable in vegetatively
+growing cells; the signal first appeared in the parental MAC at 3 and
+6~hpm, relocated to the new MAC at 8~hpm, and faded by 12--14~hpm
+(Figure~\ref{fig:timeline}).
+
+The timing of Ema2 localisation coincides precisely with the mid-conjugation
+window in which scnRNAs enter the parental MAC and engage their genomic
+targets \citep{noto2010giw1,aronica2008ema1}. Because the protein is absent
+before conjugation and rapidly decays in the new MAC after 8~hpm, any
+essential contribution of Ema2 to downstream development must take effect
+during this narrow interval. Table~\ref{tab:tab1} summarises the expression
+and localisation timeline compiled from our imaging and the published
+transcriptome.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig1_ema2_timeline.pdf}
+\caption{Timeline of Ema2 expression and subnuclear localisation during
+conjugation. Ema2-HA is undetectable in vegetatively growing cells (Vg),
+first appears in the parental MAC at 3 and 6~hpm, relocates to the new
+MAC by 8~hpm, and fades by 12 and 14~hpm. Schematic compiled from the
+experimental log narrative of Figures~1A--B.}
+\label{fig:timeline}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Ema2 expression and localisation timeline during conjugation.}
+\label{tab:tab1}
+\begin{tabular}{lccc}
+\toprule
+Stage & Time (hpm) & \emph{EMA2} mRNA & Ema2-HA localisation \\
+\midrule
+Vegetative & -- & Not detected & Not detected \\
+Early conjugation & 3 & Induced & Parental MAC \\
+Mid conjugation & 6 & Induced & Parental MAC \\
+MAC transition & 8 & Induced & New MAC \\
+Late conjugation & 12--14 & Declining & Faded \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\emph{EMA2} is required to complete DNA elimination}
+
+With the localisation timeline in hand, we next asked whether Ema2 is
+functionally required for programmed genome rearrangement. DNA
+fluorescence in situ hybridisation with Tlr1-complementary probes
+\citep{cheng2010transposase} was performed on exconjugants at 36~hpm, a
+time point at which wild-type cells have completed DNA elimination.
+Tlr1 probe signal was confined to the MICs of wild-type exconjugants, but
+in \emph{EMA2} knockout exconjugants strong signal persisted both in the
+MIC and in the new MAC, indicating a failure to excise this IES family.
+
+Quantification of FISH intensity showed that the new-MAC signal in
+\emph{EMA2} knockouts was measurably lower than in \emph{TWI1} knockouts,
+which completely block DNA elimination; applying the previously
+established correction factor of 0.35 made the mean IES retention index
+of \emph{TWI1} knockout cells equal 1, and \emph{EMA2} knockouts fell
+between wild-type and \emph{TWI1} values. The \emph{EMA2} knockout
+therefore represents a partial but substantial block at a step downstream
+of, or parallel to, scnRNA function.
+
+The defect in DNA rearrangement was matched by a complete reproductive
+failure: no \emph{EMA2} knockout mating pair produced viable sexual
+progeny in the 6-methylpurine resistance / paromomycin sensitivity assay
+(Table~\ref{tab:tab2}). Together these observations establish \emph{EMA2}
+as an essential factor for productive conjugation and motivated us to
+ask which step of the scnRNA-directed pathway is compromised.
+
+\subsection{Ema2 is required for target-directed small RNA degradation}
+
+TDSD is the earliest scnRNA-dependent event in the parental MAC, so we
+asked whether \emph{EMA2} loss affects it. Northern blotting with the
+Mi-9 probe, which detects a population of MDS-complementary scnRNAs,
+showed the expected wild-type behaviour: signal was present at 3~hpm,
+reduced at 4.5~hpm and undetectable by 6~hpm. In the \emph{EMA2} knockout
+cross, by contrast, the Mi-9 signal persisted through 6~hpm, matching
+the qualitative schematic in Figure~\ref{fig:tdsd}.
+
+To extend this observation genome-wide we sequenced 26- to 32-nt small
+RNAs from wild-type and \emph{EMA2} knockout crosses at 3 and 8~hpm, and
+counted RPKM values across tiles covering the MAC-destined sequences
+(MDSs) and internal elimination sequences (IESs). MDS-complementary
+scnRNAs fell sharply between 3 and 8~hpm in wild-type samples but were
+only slightly reduced in \emph{EMA2} knockouts; IES-complementary
+scnRNAs were comparable across strains and time points, consistent with
+TDSD specifically pruning the MDS-matching pool.
+
+The residual decrease in MDS scnRNAs that we observe in \emph{EMA2}
+knockouts is milder than the complete TDSD failure seen in \emph{EMA1}
+knockouts \citep{aronica2008ema1}, indicating that Ema1 and Ema2 make
+distinct contributions. Because Ema1 functions as an RNA helicase that
+promotes scnRNA--lncRNA base pairing, the simplest interpretation is
+that Ema2 operates at a different step; the most informative candidate
+is the production of the pMAC-lncRNA template itself.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/fig2_tdsd_schematic.pdf}
+\caption{Categorical representation of Mi-9 probe scnRNA signal across
+conjugation time points for wild-type and \emph{EMA2} KO cells (from the
+narrative of Figure~3A). Wild-type cells show detected, reduced and absent
+signal at 3, 4.5 and 6~hpm respectively, consistent with TDSD. \emph{EMA2}
+KO cells retain detectable signal at all three time points.}
+\label{fig:tdsd}
+\end{figure}
+
+\subsection{Ema2 is a conjugation-specific SUMO E3 ligase}
+
+Sequence analysis of TTHERM\_00113330 revealed an SP-RING domain of the
+Siz/PIAS family \citep{hochstrasser2001spring,yunus2009siz1,duan2009mms21},
+but with an unusual substitution: the first zinc-binding cysteine is
+replaced by histidine, and several accessory residues that stabilise the
+canonical RING--E2 interface are absent. To test whether this divergent
+domain retains E3 activity, we expressed recombinant GST-Ema2 and
+His-Ubc9 in \emph{E.~coli} and performed a pull-down. GST-Ema2 retained
+His-Ubc9 on glutathione beads whereas GST alone did not, demonstrating a
+direct Ema2--Ubc9 interaction consistent with a \emph{bona fide}
+SUMO~E3 \citep{sampson2001sumo,praefcke2012sumo}.
+
+To determine whether this interaction translates into measurable E3
+activity in vivo, we expressed HA-tagged Smt3 in wild-type and
+\emph{EMA2} knockout strains (HA-Smt3 rescued essential \emph{SMT3}
+function; Figure~EV1) and probed total SUMO conjugates by Western blot
+at 4.5 and 6~hpm. High-molecular-weight (mainly $>\!200$~kDa) bands were
+prominent at both time points in the wild-type cross, confirming the
+conjugation-associated wave of SUMOylation described by
+\citet{nasir2015sumo}. In the \emph{EMA2} knockout cross these bands
+were reduced to approximately $50\%$ of the wild-type level
+(Figure~\ref{fig:sumo}).
+
+The magnitude of the defect establishes Ema2 as responsible for roughly
+half of the conjugation-specific SUMO-conjugate signal, and the residual
+half presumably reflects constitutive housekeeping SUMOylation and/or
+other E3 activities. Because the assay captures the global SUMO
+conjugate profile rather than any individual target, we next asked which
+substrate(s) are specifically affected by Ema2 loss, using mass
+spectrometry of His-Smt3 pulldowns.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{figures/fig3_sumo_bar.pdf}
+\caption{Quantification of high-molecular-weight ($>\!200$~kDa) HA-Smt3
+conjugates detected in the WT cross and the \emph{EMA2} KO cross. Signals
+from the WT cross were normalised to 1; the \emph{EMA2} KO cross shows
+approximately 50\% of the wild-type level, as stated in the extraction of
+Figure~4C.}
+\label{fig:sumo}
+\end{figure}
+
+\subsection{Ema2 SUMOylates the transcription elongation factor Spt6}
+
+Having established that Ema2 is a major source of conjugation-stage
+SUMOylation, we set out to identify its substrates. His-Smt3 was
+expressed and purified from wild-type and \emph{EMA2} knockout crosses
+under denaturing conditions (6~M guanidine-HCl) to preserve SUMO
+conjugates through Ni-NTA capture. After filtering the mass-spectrometry
+hit list (excluding proteins with $\log_2$~LFQ score above~25 or more
+than six consecutive histidines to remove common contaminants), the
+transcription elongation factor Spt6 was the most abundant candidate
+substrate in the wild-type cross and was strongly reduced in the
+\emph{EMA2} knockout cross.
+
+Direct Western analysis confirmed this result. Cells expressing HA-Spt6
+in a wild-type background displayed a slower-migrating modified Spt6 band
+at 4.5 and 6~hpm that was largely absent in the \emph{EMA2} knockout
+cross. Anti-HA immunoprecipitation followed by anti-Smt3 blotting
+identified the slower-migrating species as SUMOylated Spt6 and showed
+that Ema2 accounts for the majority of Spt6 SUMOylation during
+mid-conjugation. The Ema2-directed SUMOylation cascade is summarised in
+Figure~\ref{fig:pathway}.
+
+These biochemical observations place Spt6 as a principal in vivo
+substrate of Ema2. Spt6 is a conserved histone chaperone and
+transcription elongation factor whose SUMOylation has been reported in
+other systems, so an attractive hypothesis is that modified Spt6 acts
+within the parental MAC to drive pMAC-lncRNA transcription. Before
+testing that hypothesis directly, we asked whether \emph{EMA2} loss
+affects lncRNA output itself.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig4_pathway_schematic.pdf}
+\caption{Schematic of the Ema2-directed SUMOylation cascade. Ema2
+(SP-RING) binds the SUMO E2 Ubc9, which transfers Smt3 onto Spt6 and
+additional substrates; SUMOylated Spt6 is retained on parental MAC
+chromatin to permit pMAC-lncRNA transcription, which in turn drives TDSD
+and programmed DNA elimination.}
+\label{fig:pathway}
+\end{figure}
+
+\subsection{\emph{EMA2} is required for pMAC-lncRNA accumulation and
+parental-MAC heterochromatin}
+
+The hypothesis that Ema2 acts upstream of TDSD predicts that the
+pMAC-lncRNA template should be absent in \emph{EMA2} knockout cells. To
+test this prediction we performed nested RT-PCR across the MAC M, L8 and
+R2 IES--MDS boundaries at 6~hpm. pMAC-lncRNA products were readily
+detected in wild-type samples at all three loci but were undetectable
+in \emph{EMA2} knockout samples, whereas the constitutively expressed
+\emph{RPL21} mRNA served as a loading control and was present in both.
+Genomic PCR with the same primers confirmed that the MAC loci are
+present in \emph{EMA2} knockout cells (Figure~EV3), ruling out a trivial
+template-loss explanation.
+
+We extended this conclusion to total long double-stranded RNA using the
+J2 antibody, which detects dsRNAs of $>40$~bp by immunofluorescence
+\citep{aronica2008ema1}. Wild-type cells showed the expected wave of
+nuclear dsRNA signal: MIC at 3~hpm (reflecting MIC-lncRNAs), parental
+MAC at 6~hpm (pMAC-lncRNAs), and new MAC at 9~hpm (nMAC-lncRNAs). In
+\emph{EMA2} knockouts the parental-MAC signal at 6~hpm was undetectable,
+while the MIC signal at 3~hpm and the new-MAC signal at 9~hpm were
+preserved. Importantly, \emph{EMA1} knockouts retained parental-MAC
+dsRNA, indicating that Ema1 is required for scnRNA-pMAC-lncRNA
+interaction rather than for pMAC-lncRNA transcription per se.
+
+The failure to produce pMAC-lncRNAs also compromised downstream
+heterochromatin formation in the parental MAC. Immunofluorescence for
+H3K27me3 showed no parental-MAC signal in \emph{EMA2}, \emph{EMA1},
+\emph{TWI1} or \emph{EZL1} knockout cells at 6~hpm, confirming that all
+four factors converge on the same pMAC chromatin output
+\citep{liu2004h3k9,liu2007rnai,frapporti2019ezl1}. This places Ema2
+upstream of the Polycomb-mediated deposition of H3K27me3 in the parental
+MAC, and, by extension, of the normal scnRNA--Twi1--chromatin
+communication that licenses IES selection.
+
+\begin{table}[htbp]
+\centering
+\caption{Phenotypes of \emph{EMA2} knockout compared with related
+knockouts. ``+'' denotes the feature is present or complete, ``$-$''
+denotes absent or defective, ``partial'' denotes an intermediate
+phenotype, and ``n.d.'' denotes features not explicitly measured in that
+strain.}
+\label{tab:tab2}
+\begin{tabular}{lccccc}
+\toprule
+Strain & Tlr1 FISH & MDS scnRNA TDSD & pMAC-lncRNA / dsRNA & pMAC H3K27me3 & Viable progeny \\
+\midrule
+WT & MIC only & + & + & + & + \\
+\emph{EMA2} KO & partial & $-$ & $-$ & $-$ & $-$ \\
+\emph{EMA1} KO & n.d. & $-$ (severe) & + & $-$ & n.d. \\
+\emph{TWI1} KO & complete block & n.d. & n.d. & $-$ & n.d. \\
+\emph{EZL1} KO & n.d. & n.d. & n.d. & $-$ & n.d. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ema2 facilitates chromatin association of Spt6 and
+RNA polymerase~II}
+
+The lncRNA and SUMOylation defects together raised the possibility that
+Ema2 controls a transcription-machinery step in the parental MAC. We
+therefore examined the subnuclear distribution of Spt6 and of the RNAPII
+subunit Rpb3 by immunofluorescence at 4.5~hpm. Spt6-HA and Rpb3 were
+clearly localised to the MAC in both wild-type and \emph{EMA2} knockout
+crosses, indicating that the defect is not a gross mislocalisation of
+the transcription machinery. The cross-strain phenotype comparisons are
+consolidated in Figure~\ref{fig:phenotypes}.
+
+Biochemical fractionation, however, revealed a selective chromatin-association
+defect. $1.4\times10^6$ cells were lysed in 50~mM Tris pH~8.0, 100~mM
+NaCl, 5~mM MgCl$_2$, 1~mM EDTA, 0.5\% Triton X-100 with cOmplete
+protease inhibitor, yielding a soluble fraction (S1) and, after
+sonication of the Triton-insoluble pellet, a solubilised chromatin
+fraction (S2). In the wild-type cross, Spt6-HA and Rpb3 partitioned to
+both S1 and S2, and SUMOylated Spt6 was detected exclusively in the S2
+chromatin fraction. In the \emph{EMA2} knockout cross, Spt6-HA and Rpb3
+in the S2 fraction were greatly reduced, while S1 levels were
+essentially unchanged.
+
+We next asked whether the chromatin retention of Spt6 and RNAPII that
+Ema2 sustains is mediated by nascent RNA or by a direct protein--DNA
+contact. To answer this, we repeated the fractionation in the presence
+of 20~\textmu g/mL RNase~A. Spt6 and RNAPII remained in the chromatin pellet under these
+conditions, whereas Twi1 (which associates with chromatin via its
+scnRNA--pMAC-lncRNA engagement) was released into the supernatant. The
+chromatin association of Spt6 and RNAPII is therefore RNA-independent,
+and Ema2 acts on a protein--chromatin interaction rather than an
+RNA-tethering step. Replicate experiments supporting this conclusion
+are documented in Figures~EV5 and EV6.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig5_phenotype_matrix.pdf}
+\caption{Phenotype summary across knockout strains compiled from the
+experimental log. A plus sign denotes the feature is present or
+complete, minus denotes absent or defective, ``partial'' denotes an
+intermediate phenotype (e.g.\ the DNA elimination defect of \emph{EMA2}
+KO relative to \emph{TWI1} KO), and ``n.d.'' denotes features that are
+not explicitly measured for that strain in the extraction.}
+\label{fig:phenotypes}
+\end{figure}
+
+\subsection{Spt6 SUMOylation is dispensable for pMAC-lncRNA
+transcription but contributes to DNA elimination}
+
+The preceding experiments establish that Ema2 SUMOylates Spt6 and that
+Ema2 loss collapses lncRNA transcription, but they do not yet determine
+whether Spt6 SUMOylation is itself the transcriptional trigger. To
+separate the two possibilities, we used the JASSA consensus algorithm
+to predict surface lysines in the N-terminal, middle and C-terminal
+regions of Spt6 and built lysine-to-arginine mutants in each region
+(HA-SPT6-N-KR, -M-KR, -C-KR), together with a separate construct
+(HA-SPT6-DOL-KR) in which every lysine in the N-terminal domain of
+low complexity was substituted (Figure~\ref{fig:spt6mutants}).
+
+All four constructs rescued vegetative \emph{SPT6} knockout lethality
+(Figure~EV7), but the conjugation phenotypes differed sharply:
+HA-SPT6-N-KR and HA-SPT6-M-KR strains showed severe meiotic and mating
+defects, while HA-SPT6-DOL-KR and HA-SPT6-C-KR cells progressed normally
+through conjugation. Crucially, HA-Spt6-DOL-KR remained SUMOylated at
+wild-type levels, whereas HA-Spt6-C-KR showed no detectable SUMOylation
+by anti-HA immunoprecipitation and anti-Smt3 blotting. The C-KR mutant
+therefore provides a clean loss of Spt6 SUMOylation within an otherwise
+functional protein.
+
+When we examined HA-SPT6-C-KR cells, Spt6 and RNAPII remained in the
+chromatin-bound S2 fraction, the parental MAC accumulated long dsRNAs
+at 6~hpm, and pMAC-lncRNA production was preserved; nevertheless,
+exconjugants displayed a mild DNA elimination defect. Spt6 SUMOylation
+itself is therefore not required for pMAC-lncRNA transcription, yet it
+still contributes to productive DNA elimination, implying that Ema2
+acts through additional SUMO substrates to promote lncRNA synthesis
+while Spt6 SUMOylation plays a distinct, downstream role. The full
+mutant series is summarised in Table~\ref{tab:tab3}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/fig6_spt6_mutants.pdf}
+\caption{Summary of the Spt6 K-to-R mutant series. All constructs rescue
+vegetative \emph{SPT6} KO lethality. HA-SPT6-N-KR and HA-SPT6-M-KR show
+severe defects in meiotic progression and mating initiation,
+respectively; HA-SPT6-DOL-KR is SUMOylated like wild-type Spt6, whereas
+HA-SPT6-C-KR shows no detectable SUMOylation yet still supports
+chromatin association of Spt6 and RNAPII, parental-MAC dsRNA
+accumulation, and only a mild DNA elimination defect.}
+\label{fig:spt6mutants}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Spt6 K-to-R mutant series. Vegetative rescue refers to
+\emph{SPT6} KO complementation; conjugation phenotype summarises
+meiotic and mating observations; SUMOylation is scored by HA IP followed
+by anti-Smt3 blot; pMAC-lncRNA and DNA elimination are scored by J2
+dsRNA immunofluorescence and Tlr1 FISH, respectively.}
+\label{tab:tab3}
+\begin{tabular}{lcccccc}
+\toprule
+Mutant & Substitutions & Veg.\ rescue & Conjugation phenotype &
+SUMOylation & pMAC dsRNA & DNA elimination \\
+\midrule
+HA-SPT6-DOL-KR & DOL lysines & + & normal & + (WT-like) & n.d. & n.d. \\
+HA-SPT6-N-KR & N surface lysines & + & meiotic defect & n.d. & n.d. & n.d. \\
+HA-SPT6-M-KR & M surface lysines & + & mating defect & n.d. & n.d. & n.d. \\
+HA-SPT6-C-KR & C surface lysines & + & progresses & $-$ & + & mild defect \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We have shown that the conjugation-specific SUMO E3 ligase Ema2 is
+required for genome-wide pMAC-lncRNA transcription in
+\emph{T.~thermophila}, and that this activity is a prerequisite for
+scnRNA-directed chromatin communication and for programmed DNA
+elimination. \emph{EMA2} knockout crosses lose MDS-targeted TDSD, fail
+to accumulate pMAC-lncRNAs or parental-MAC dsRNA, lack H3K27me3 in the
+parental MAC, cannot complete DNA elimination at the Tlr1 locus, and
+produce no viable sexual progeny. Biochemically, Ema2 accounts for
+approximately half of the high-molecular-weight ($>\!200$~kDa)
+conjugation-stage SUMO conjugates, interacts directly with the SUMO E2
+Ubc9, and drives the majority of Spt6 SUMOylation at 4.5 and 6~hpm.
+Together these observations identify the first regulator that licenses
+pMAC-lncRNA transcription and place SUMOylation upstream of small RNA
+target engagement in this lineage.
+
+The phenotypic separation between Ema1 and Ema2 clarifies how
+\emph{Tetrahymena} solves the silencing paradox. Ema1 is an RNA helicase
+that promotes base pairing between scnRNAs and pMAC-lncRNAs
+\citep{aronica2008ema1}, so \emph{EMA1} knockouts retain parental-MAC
+dsRNA but fail TDSD, whereas \emph{EMA2} knockouts lack parental-MAC
+dsRNA altogether. This logical ordering makes Ema2 the earliest-acting
+factor in the pMAC arm of the pathway and is consistent with the
+stronger TDSD defect seen in \emph{EMA1} knockouts relative to
+\emph{EMA2} knockouts. The model that emerges is one in which Ema2
+supplies the lncRNA template, Ema1 mediates its base pairing with
+incoming scnRNAs, and TDSD plus subsequent Polycomb-mediated H3K27me3
+deposition \citep{liu2004h3k9,liu2007rnai,frapporti2019ezl1} enforce
+the choice of scnRNAs that will guide IES selection in the new MAC.
+
+Our cell-fractionation data suggest a mechanism for how SUMOylation
+supports lncRNA transcription: Ema2 is required to keep Spt6 and RNAPII
+associated with parental-MAC chromatin. Because the association is
+preserved in the presence of RNase~A but lost in \emph{EMA2}
+knockouts, Ema2 cannot merely stabilise an RNA-bridged complex; rather,
+it must act on a protein--chromatin interaction during a mid-conjugation
+window when the parental-MAC chromatin environment is in flux. Two
+non-exclusive possibilities are that Ema2-dependent SUMOylation
+counteracts a transient destabilising modification or compartmentalises
+excess transcription machinery (which is upregulated during conjugation)
+onto chromatin. Distinguishing these alternatives will require
+time-resolved chromatin-profiling of SUMO substrates, which was beyond
+the scope of the present study.
+
+Our Spt6-C-KR mutant reveals that Spt6 SUMOylation itself is not the
+direct trigger for pMAC-lncRNA transcription, because the C-KR mutant
+loses detectable Spt6 SUMOylation while still retaining chromatin
+association of Spt6 and RNAPII, parental-MAC dsRNA accumulation and
+only a mild DNA elimination phenotype. This dissociation implies that
+Ema2 must operate through additional SUMO substrates to drive lncRNA
+synthesis, and that Spt6 SUMOylation plays a distinct, later role in
+productive DNA elimination, perhaps acting at the nMAC stage or at an
+excision-associated step. Candidate additional substrates that would
+evade our His-Smt3 pulldown include SUMO conjugates that are
+proteasomally degraded or that compete with other lysine modifications
+for the same residue; both scenarios are consistent with the proteomic
+literature on SUMO turnover \citep{praefcke2012sumo}.
+
+In comparative terms, Ema2 represents a distinctive evolutionary
+solution to the small RNA--lncRNA paradox. In fission yeast, Swi6, Chp2
+and Clr4 SUMOylation stabilise heterochromatin that already templates
+centromeric lncRNAs \citep{shin2005sumo}; in \emph{C.~elegans}, HDAC1
+SUMOylation acts downstream of Argonaute targeting
+\citep{kim2021hdac1}; and in \emph{Drosophila}, Su(var)2-10 couples
+piRNA recognition to SetDB1 recruitment and H3K9me3 deposition
+\citep{ninova2019suvar}, all paradigms in which SUMOylation reinforces
+a pre-existing heterochromatin landscape that drives lncRNA production
+\citep{lethomas2014rhino,andersen2017heterochromatin,law2013shh1,volpe2002rnai,hall2002heterochromatin}.
+Ema2 differs in that it acts upstream of lncRNA transcription and does
+not require a pre-formed heterochromatic template: in \emph{Tetrahymena},
+H3K27me3 is established only after pMAC-lncRNAs have been transcribed and
+base-paired with scnRNAs, so heterochromatin is a consequence, not a
+prerequisite, of the transcription step that Ema2 licenses. The
+conservation of SUMO pathway requirements for ciliate DNA elimination,
+evident from RNAi depletion of \emph{UBA2} and \emph{SUMO} in
+\emph{Paramecium tetraurelia} \citep{matsuda2006sumo} and from the
+conjugation-stage SUMOylation wave previously characterised in
+\emph{Tetrahymena} \citep{nasir2015sumo}, suggests that related E3
+activities may prove to play analogous roles in other eukaryotes whose
+small RNA pathways include an initial, heterochromatin-independent
+licensing step.
+
+Several limitations bound the scope of the present study. Our mass
+spectrometry used stringent filters (log2 LFQ $\leq 25$ and runs of
+$\leq 6$ consecutive histidines) to exclude likely contaminants, and
+by design these filters may also exclude genuine Ema2 substrates that
+are rapidly turned over or that contain histidine-rich stretches. Our
+chromatin-association analysis reports on bulk populations of Spt6 and
+Rpb3 in the parental MAC and does not yet resolve which regions of the
+genome are transcribed; high-resolution RNAPII ChIP during conjugation,
+and direct profiling of pMAC-lncRNA start sites, will be needed to
+determine whether Ema2 licenses transcription globally or at specific
+IES-associated loci. Finally, because \emph{EMA2} knockouts fail
+reproductively, all of our experiments stop at the first failed
+conjugation; long-term consequences for macronuclear genome integrity
+over successive generations remain to be addressed in a conditional
+knockdown context.
+
+Looking forward, the demonstration that a SUMO E3 ligase licenses lncRNA
+transcription opens new questions about how the parental-MAC chromatin
+environment is remodelled for scnRNA engagement. Identifying the
+remaining Ema2 substrates will reveal whether a single SUMO-modified
+chromatin factor is responsible, or whether Ema2 modifies multiple
+components of the transcription and chromatin machinery in parallel.
+From a broader evolutionary perspective, small RNA-directed silencing
+systems in other eukaryotes may contain analogous ``upstream''
+SUMOylation steps that have so far been masked by the strong
+heterochromatin-dependent phenotypes seen in later events; the Ema2
+example suggests that such upstream regulators are worth a direct
+search. Our work therefore provides both a specific molecular entry
+point into TDSD and programmed DNA elimination in ciliates and a
+general argument that the earliest licensing steps of small
+RNA--chromatin communication deserve renewed attention.
+
+\bibliography{references}
+
+\end{document}

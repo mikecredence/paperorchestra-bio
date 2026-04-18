@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "working_title": "BELA: A Fully Automated Blastocyst Evaluation Learning Algorithm for Ploidy Prediction from Time-Lapse Imaging",
+    "venue": "Nature Communications",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Accurate assessment of human embryo ploidy status is critical for IVF success, but existing methods rely on invasive PGT-A or subjective embryologist grading.",
+    "gap": "Existing image- and video-based deep learning models for ploidy prediction underutilize time-lapse sequences and often require manual embryologist scores.",
+    "approach": "We developed BELA, a two-step multitask BiLSTM pipeline that predicts blastocyst score from day-5 time-lapse sequences (96-112 hpi) and combines it with maternal age for ploidy classification.",
+    "key_results": "BELA achieves AUC of 0.76 for EUP vs ANU and 0.826 for EUP vs CxA on WCM-Embryoscope, matching embryologist-scored models and outperforming day-5 video baselines across four datasets (2,839 WCM + 543 Spain + 869 Florida embryos).",
+    "impact": "BELA removes the need for subjective embryologist annotation, is deployable via a clinical web-app (STORK-V), and provides interpretable quality scores alongside ploidy probabilities."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "IVF has produced over 8 million births globally; embryo selection hinges on ploidy.",
+        "PGT-A is the current standard but is invasive, costly, and affected by mosaicism.",
+        "Prior automated methods (STORK, ERICA, UBar) rely on single images or limited videos; ERICA reached 70% accuracy and 74% AUC on 1,231 images.",
+        "Time-lapse imaging offers richer developmental signals but training on full sequences is noisy.",
+        "Contribution: BELA is a fully automated multitask model using only day-5 frames and maternal age."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_datasets",
+          "title": "Training and Validation Datasets",
+          "content_bullets": [
+            "WCM-Embryoscope (1,998 embryos: 494 SA, 588 CxA, 916 EUP, 498 patients).",
+            "WCM-Embryoscope+ (841 embryos: 170 SA, 261 CxA, 410 EUP).",
+            "Spain / IVI Valencia (543 embryos: 309 ANU, 234 EUP).",
+            "Florida / IVF Florida (869 embryos: 202 SA, 222 CxA, 445 EUP)."
+          ]
+        },
+        {
+          "id": "results_bs_prediction",
+          "title": "Blastocyst Score Prediction",
+          "content_bullets": [
+            "Multitask BiLSTM predicts BS, ICM, TE, and expansion jointly.",
+            "MAE of 1.855 +/- 0.03 between MDBS and ground truth BS on WCM-Embryoscope.",
+            "Multitasking lowers MAE vs non-multitask BELA (1.877 +/- 0.027)."
+          ]
+        },
+        {
+          "id": "results_ploidy_wcm",
+          "title": "Ploidy Classification on WCM Datasets",
+          "content_bullets": [
+            "BELA EUP vs ANU AUC: 0.66 +/- 0.008 without age; 0.76 +/- 0.002 with age.",
+            "BELA EUP vs CxA AUC: 0.708 +/- 0.004 without age; 0.826 +/- 0.004 with age.",
+            "Outperforms day-5 video baseline in all scenarios (p < 0.05)."
+          ]
+        },
+        {
+          "id": "results_external",
+          "title": "External Validation: Spain and Florida",
+          "content_bullets": [
+            "Spain dataset (543 embryos): BELA beats day-5 video in both with/without age (p < 0.05).",
+            "Florida dataset (869 embryos): MDBS correlates more strongly with ploidy (-0.119) than embryologist BS (-0.101).",
+            "MAE between MDBS and Weill Cornell re-graded BS (4.16) is lower than vs Florida BS (5.02)."
+          ]
+        },
+        {
+          "id": "results_deployment",
+          "title": "STORK-V Clinical Deployment",
+          "content_bullets": [
+            "Web-based STORK-V platform for clinical use.",
+            "Inference for single embryo: 30 +/- 5 seconds.",
+            "Logistic regression training: 2.5 +/- 1.2 s; BiLSTM training: 30.3 +/- 11 min."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "BELA is competitive with embryologist-scored models and surpasses pure video models.",
+        "Limitations: ~2,000 sequences, VGG16 best feature extractor, no hormonal data, no mosaic handling.",
+        "Clinical implications: reduces cost, avoids unnecessary biopsies, supports patient counseling."
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Materials and Methods",
+      "content_bullets": [
+        "Temporal/spatial preprocessing: 0.5 hpi intervals, 301 standardized frames, 2h imputation window.",
+        "Frames resized from 800x800 to 224x224; Hough Transform segmentation.",
+        "VGG16 ImageNet-pretrained extractor -> 512-d feature vectors.",
+        "Multitask BiLSTM: 1 bidirectional LSTM + 2 dense, logcosh loss, Adam optimizer.",
+        "70/30 split (1,684 after exclusion), 4-fold CV.",
+        "Student t-test with Bonferroni correction."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_datasets",
+      "title": "Characteristics of Datasets",
+      "columns": ["Dataset", "Instrument", "Total", "EUP", "SA", "CxA", "ANU"],
+      "data_source": "experimental_log Materials & Methods section",
+      "caption_sketch": "Sample sizes and ploidy class distributions across the four datasets used in this study."
+    },
+    {
+      "table_id": "tab_auc_wcm",
+      "title": "BELA AUC performance on WCM-Embryoscope test set",
+      "columns": ["Task", "AUC without age", "AUC with age"],
+      "data_source": "experimental_log Results section",
+      "caption_sketch": "BELA AUC for EUP vs ANU and EUP vs CxA tasks with and without maternal age."
+    },
+    {
+      "table_id": "tab_timing",
+      "title": "Computational training and inference times",
+      "columns": ["Component", "Time"],
+      "data_source": "experimental_log Computational Resources section",
+      "caption_sketch": "Training and inference times for logistic regression, BiLSTM, and the STORK-V platform."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "in vitro fertilization embryo selection deep learning",
+      "preimplantation genetic testing aneuploidy PGT-A",
+      "time-lapse imaging embryo development"
+    ],
+    "micro_queries": [
+      "blastocyst score morphology grading",
+      "convolutional neural network embryo ploidy prediction",
+      "BiLSTM video classification",
+      "VGG16 transfer learning medical imaging",
+      "multitask learning regression",
+      "STORK embryo morphology prediction",
+      "ERICA deep learning ploidy",
+      "UBar CNN-LSTM embryo",
+      "Campbell blastocyst expansion ploidy",
+      "embryonic mosaicism aneuploidy"
+    ],
+    "must_cite": [
+      "Khosravi STORK embryo quality",
+      "Chavez-Badiola ERICA ploidy",
+      "Silver UBar CNN LSTM embryo",
+      "Lee two-stream inflated 3D embryo",
+      "Campbell blastocyst expansion day 5 ploidy",
+      "Barnes machine learning embryo ploidy single image"
+    ],
+    "citation_target": 25
+  },
+  "figure_plan": [
+    {"figure_id": "fig:pipeline", "type": "schematic", "file": "figures/fig_pipeline.pdf", "caption": "BELA pipeline schematic", "data_source": "Methods architecture description"},
+    {"figure_id": "fig:datasets", "type": "data_grounded", "file": "figures/fig_datasets.pdf", "caption": "Dataset sizes and ploidy class distributions", "data_source": "Materials & Methods dataset counts"},
+    {"figure_id": "fig:auc_wcm", "type": "data_grounded", "file": "figures/fig_auc_wcm.pdf", "caption": "AUC on WCM-Embryoscope test with/without age", "data_source": "Results AUC sentences"},
+    {"figure_id": "fig:mae_comparisons", "type": "data_grounded", "file": "figures/fig_mae_comparisons.pdf", "caption": "Multitask MAE and Florida re-grading MAE", "data_source": "Results MAE sentences"},
+    {"figure_id": "fig:pca_placeholder", "type": "placeholder", "file": "figures/fig_pca_placeholder.pdf", "caption": "PCA feature-space schematic placeholder", "data_source": "Supplemental Figure 3 description (values unavailable)"}
+  ]
+}

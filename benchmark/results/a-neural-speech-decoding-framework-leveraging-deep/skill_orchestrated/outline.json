@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "working_title": "A Neural Speech Decoding Framework Leveraging Deep Learning and a Differentiable Speech Synthesizer for ECoG-Based Brain-Computer Interfaces",
+    "venue": "Nature Machine Intelligence",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Decoding human speech from neural signals is essential for brain-computer interface (BCI) technologies that aim to restore speech to patients with severe neurological deficits.",
+    "gap": "Existing ECoG-to-speech pipelines are limited by data scarcity, rely heavily on non-causal operations that consume auditory feedback, produce non-naturalistic reconstructions, and rarely release open-source code or evaluate the right hemisphere.",
+    "approach": "We present a two-stage framework that pairs an ECoG Decoder (implemented with 3D ResNet, 3D SWIN Transformer, or LSTM backbones) with a novel fully differentiable Speech Synthesizer. A companion speech-to-speech auto-encoder provides reference speech parameters used to guide ECoG Decoder training, circumventing data scarcity.",
+    "key_results": "Across N=48 participants, the causal ResNet decoder achieves PCC=0.798 and SWIN achieves PCC=0.796 against ground-truth spectrograms, with no significant difference from their non-causal counterparts. Right-hemisphere decoding (ResNet PCC=0.790, SWIN PCC=0.781) is statistically indistinguishable from the left, and low-density grids are competitive with hybrid-density grids.",
+    "impact": "The framework delivers reproducible, natural-sounding, causal ECoG-to-speech decoding suitable for real-time BCIs, is the first to establish feasibility of right-hemisphere speech prosthetics, and is released with open-source code to accelerate community progress."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Speech loss due to neurological deficits severely limits social and work life; BCI systems aim to restore communication.",
+        "ECoG recordings from epilepsy surgery patients provide high spatial-temporal cortical data during speech.",
+        "Two key challenges: limited training data and high variability of speech production.",
+        "Prior linear models achieve ~0.6 PCC; deep learning approaches (CNN, RNN) produce non-naturalistic or low-accuracy speech.",
+        "Most prior work uses non-causal models, limiting real-time use; open-source code is rare.",
+        "We propose a two-stage pipeline with a differentiable Speech Synthesizer and low-dimensional speech-parameter latent space.",
+        "We provide multiple ECoG decoder backbones (ResNet, SWIN, LSTM), both causal and non-causal.",
+        "We evaluate on 48 participants and demonstrate right-hemisphere decoding feasibility.",
+        "We release open-source code at https://xc1490.github.io/nsd/."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Linear models for ECoG-to-speech decoding reached roughly 0.6 PCC.",
+        "Deep learning approaches (convolutional, recurrent) with varied latent representations (articulatory kinematics, GAN random vectors, direct spectrograms).",
+        "Naturalistic speech generation using wavenet vocoders, GANs, unit selection.",
+        "Most approaches are non-causal and lack open-source code.",
+        "Prior studies mostly focused on left hemisphere language-dominant cortex."
+      ],
+      "approx_length": "0.5-1 page"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "framework_overview", "title": "ECoG-to-Speech Decoding Framework", "content_bullets": [
+          "Two components: ECoG Decoder and Speech Synthesizer.",
+          "Two-stage training: (1) pretrain Speech Encoder + Speech Synthesizer as auto-encoder on speech-only data; (2) train ECoG Decoder with supervised spectrogram and reference-parameter losses.",
+          "18 speech parameters per time step (pitch f0, voice weight alpha, loudness L, 6 formants f1-f6 with amplitudes, unvoice filter parameters, background noise)."
+        ]},
+        {"id": "speech_synthesizer", "title": "Differentiable Speech Synthesizer", "content_bullets": [
+          "Voice pathway: 6 formant filters applied to harmonic excitation; unvoice pathway: broadband filter applied to white noise; soft mix with voice weight alpha_t.",
+          "N=6 formants (linguistics literature uses N=2 for intelligibility).",
+          "M=80 prototype filter parameters per filter; threshold frequency f_theta, slope a, baseline bandwidth b0 learned during training.",
+          "K bin spectral sampling: 256 for female, 512 for male participants.",
+          "Total learnable parameters: M(N+1)=560 + 21 + K."
+        ]},
+        {"id": "ecog_decoder", "title": "ECoG Decoder Architectures", "content_bullets": [
+          "Three backbones: 3D ResNet, 3D SWIN Transformer, LSTM; each implemented with causal and non-causal variants.",
+          "3D SWIN uses 2x2x2 patches as tokens; patch merging applies 2x2x2 down-sampling per stage.",
+          "ResNet downsamples electrode dimension to 1x1 and temporal to T/16, followed by transposed convolutions."
+        ]},
+        {"id": "data_preproc", "title": "Data Collection and Preprocessing", "content_bullets": [
+          "N=48 native English speakers (26 female, 22 male) with refractory epilepsy at NYU Langone.",
+          "43 low-density (LD) 8x8 64-contact grids (10 mm spacing), 5 hybrid-density (HB) grids with 64 additional 1 mm electrodes at 5 mm spacing.",
+          "Left hemisphere: 32 participants; right hemisphere: 16 participants.",
+          "Five speech tasks (AR, AN, SC, WR/VR, PN); 50 target words; 400 trials/participant; 500 ms average speech duration.",
+          "ECoG sampled at 2048 Hz, down-sampled to 512 Hz; Hilbert transform for high gamma (70-150 Hz) envelope down-sampled to 125 Hz.",
+          "250 ms silent baseline for z-scoring; artifact and interictal electrodes excluded.",
+          "Praat used to estimate pitch and 4 formants as reference parameters; resampled to 125 Hz."
+        ]},
+        {"id": "training_loss", "title": "Training and Loss Functions", "content_bullets": [
+          "Reference loss weights: voice weight lambda_alpha=1.8, loudness lambda_L=1.5, pitch lambda_f0=0.4, formant frequencies lambda_f1=3, lambda_f2=1.8, lambda_f3=1.2, lambda_f4=0.9, lambda_f5=0.6, lambda_f6=0.3; formant amplitudes lambda_a1=4, lambda_a2=2.4, lambda_a3=1.2, lambda_a4=0.9, lambda_a5=0.6, lambda_a6=0.3; broadband filter lambda_fu=10, lambda_au=4, lambda_bu=4.",
+          "Overall ECoG decoder loss weights lambda_1=1.2, lambda_2=0.1, lambda_3=1.",
+          "Adam optimizer, lr=1e-3, beta1=0.9, beta2=0.999.",
+          "Training split: 350 trials train, 50 trials test per participant; word-level cross-validation with 10 held-out unique words, 5 folds."
+        ]},
+        {"id": "eval_metrics", "title": "Evaluation Metrics", "content_bullets": [
+          "Pearson Correlation Coefficient (PCC) between original and decoded spectrograms.",
+          "Short-Time Objective Intelligibility (STOI+) with one-third octave band analysis (15 bands, lowest center 150 Hz, highest ~4.3 kHz, P=16, M=2, N=30).",
+          "Wilcoxon signed-rank test for paired comparisons; Wilcoxon rank-sum test for unpaired comparisons (hemispheres)."
+        ]},
+        {"id": "contribution_analysis", "title": "Occlusion-based Contribution Analysis", "content_bullets": [
+          "Zero out each electrode and measure reduction in decoding PCC on testing data.",
+          "Projected onto MNI anatomical coordinates, averaged across participants, normalized by local grid density."
+        ]}
+      ],
+      "approx_length": "2-3 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_arch", "title": "Model architectures and causality", "content_bullets": [
+          "ResNet non-causal PCC=0.804, causal PCC=0.798.",
+          "SWIN non-causal PCC=0.793, causal PCC=0.796.",
+          "LSTM non-causal PCC=0.757, causal PCC=0.713.",
+          "ResNet non-causal vs causal Wilcoxon p=0.1022; SWIN p=0.2794; LSTM p=0.0007.",
+          "Causal ResNet vs causal SWIN Wilcoxon p=0.1413."
+        ]},
+        {"id": "results_parameters", "title": "Speech parameter reconstruction", "content_bullets": [
+          "Voice weight PCC=0.834.",
+          "Loudness PCC=0.545.",
+          "Pitch f0 PCC=0.907.",
+          "First formant f1 PCC=0.827.",
+          "Second formant f2 PCC=0.895."
+        ]},
+        {"id": "results_hemisphere", "title": "Left vs right hemisphere", "content_bullets": [
+          "Right hemisphere ResNet PCC=0.790, SWIN PCC=0.781.",
+          "No significant PCC difference with left hemisphere: ResNet rank-sum p=0.312; SWIN p=0.325.",
+          "STOI+ tests: ResNet p=0.108; SWIN p=0.092."
+        ]},
+        {"id": "results_density", "title": "Electrode density", "content_bullets": [
+          "Hybrid-density (n=5) vs low-density (n=43) grids: similar PCC; ResNet slightly better on LD grids.",
+          "For 4 of 5 HB participants, using only LD-in-HB subset does not significantly change PCC.",
+          "48% of participants show PCC in 0.80-0.90 range."
+        ]},
+        {"id": "results_contribution", "title": "Cortical contribution analysis", "content_bullets": [
+          "Non-causal models show strong auditory cortex (STG) contribution; causal models rely on frontal regions.",
+          "Right and left causal models show similar ventral sensorimotor contributions."
+        ]}
+      ],
+      "approx_length": "2-3 pages"
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "PCC range 0.52-0.91 across participants; causal ResNet mean 0.798, median 0.81, range 0.64-0.91.",
+        "48% of participants reach 0.80-0.90 decoding PCC.",
+        "Causal models remove auditory feedback over-reliance; important for real-time BCI.",
+        "Speech parameter space preserves participant-specific acoustics unlike kinematic representations.",
+        "Limitations: requires paired speech-ECoG training data, assumes grid electrodes, focuses on word-level decoding.",
+        "Potential for right-hemisphere prostheses in expressive aphasia patients."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusion",
+      "content_bullets": [
+        "Open-source, reproducible, causal ECoG-to-speech pipeline with naturalistic synthesis.",
+        "Evidence that right hemisphere and low-density grids support robust decoding.",
+        "Pipeline with interchangeable decoders supports community comparisons."
+      ],
+      "approx_length": "0.3 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_architectures",
+      "title": "Decoding PCC across architectures and causality",
+      "columns": ["Architecture", "Non-causal PCC", "Causal PCC", "Non-causal vs causal p"],
+      "data_source": "experimental_log stats sentences 3-6",
+      "caption_sketch": "Mean PCC of ResNet, SWIN, LSTM decoders (causal vs non-causal) across 48 participants with Wilcoxon signed-rank p-values."
+    },
+    {
+      "table_id": "tab_params",
+      "title": "Decoded speech parameter reconstruction",
+      "columns": ["Parameter", "Mean PCC across participants"],
+      "data_source": "experimental_log parameter PCCs (voice weight, loudness, pitch, f1, f2)",
+      "caption_sketch": "Pearson correlation between decoded and reference speech parameters (voice weight, loudness, pitch, formants)."
+    },
+    {
+      "table_id": "tab_hemisphere",
+      "title": "Left vs right hemisphere decoding",
+      "columns": ["Model", "Right PCC", "Left vs right p (PCC)", "STOI+ p"],
+      "data_source": "experimental_log right-hemisphere comparisons",
+      "caption_sketch": "Right hemisphere decoding PCC with Wilcoxon rank-sum tests against left hemisphere."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig_pcc_models", "type": "data_grounded", "file": "figures/fig_pcc_models.pdf", "caption": "Decoding PCC across architectures and causality modes.", "data_source": "experimental_log PCC values"},
+    {"figure_id": "fig_params", "type": "data_grounded", "file": "figures/fig_params.pdf", "caption": "Decoded speech parameter PCC.", "data_source": "experimental_log parameter PCCs"},
+    {"figure_id": "fig_hemisphere", "type": "data_grounded", "file": "figures/fig_hemisphere.pdf", "caption": "Right hemisphere decoding performance and statistical tests.", "data_source": "experimental_log right-hemisphere comparisons"},
+    {"figure_id": "fig_architecture", "type": "schematic", "file": "figures/fig_architecture.pdf", "caption": "Two-stage training pipeline schematic.", "data_source": "experimental_log methods and idea summary"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "ECoG speech decoding brain computer interface",
+      "neural prosthesis speech synthesis",
+      "deep learning speech brain computer interface",
+      "electrocorticography speech production cortex",
+      "differentiable speech synthesizer vocoder"
+    ],
+    "micro_queries": [
+      "speech decoding convolutional neural network ECoG",
+      "recurrent neural network speech decoding LSTM",
+      "transformer Swin 3D video",
+      "ResNet 3D deep learning",
+      "LSTM long short term memory",
+      "Adam optimizer",
+      "STOI short-time objective intelligibility speech",
+      "Praat formant pitch estimation",
+      "Pearson correlation speech decoding",
+      "high gamma ECoG speech cortex",
+      "right hemisphere speech aphasia",
+      "expressive aphasia cortical stimulation",
+      "articulatory kinematic speech decoding",
+      "generative adversarial network speech synthesis",
+      "wavenet neural vocoder speech"
+    ],
+    "must_cite": [
+      "Anumanchipalli 2019 articulatory speech decoding",
+      "Moses 2021 paralyzed patient BCI",
+      "Pasley 2012 spectrotemporal receptive field",
+      "Makin 2020 machine translation of cortical activity",
+      "Herff 2015 brain-to-text",
+      "Praat Boersma Weenink",
+      "He 2016 deep residual learning ResNet",
+      "Liu 2021 Swin Transformer",
+      "Hochreiter 1997 LSTM",
+      "Kingma 2014 Adam optimizer",
+      "Taal 2011 STOI"
+    ],
+    "citation_target": 25
+  }
+}

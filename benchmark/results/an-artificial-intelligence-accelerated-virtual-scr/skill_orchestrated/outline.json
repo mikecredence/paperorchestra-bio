@@ -1,0 +1,214 @@
+{
+  "metadata": {
+    "working_title": "An artificial intelligence accelerated virtual screening platform for drug discovery",
+    "venue": "Nature Communications",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Structure-based virtual screening against multi-billion compound libraries is limited by docking accuracy and computational cost, and open-source active-learning platforms with accurate physics-based force fields are lacking.",
+    "gap": "Leading physics-based docking programs are proprietary, free programs trail them in accuracy, deep-learning docking methods generalize poorly, and existing open-source pipelines do not combine active learning with flexible-receptor physics-based docking for ultra-large libraries.",
+    "approach": "We developed RosettaGenFF-VS and the RosettaVS protocol (VSX fast mode, VSH flexible-receptor mode) inside Rosetta GALigandDock, and integrated them into an open-source AI-accelerated virtual screening (OpenVS) platform that uses active learning to triage billions of compounds.",
+    "key_results": "On CASF2016 screening power, RosettaGenFF-VS achieves EF1%=16.72 versus 11.9 for the second-best method; on DUD, RosettaVS outperforms the second-best baseline by a factor of two at 0.5/1.0% ROC enrichment; screening 5.5B Enamine-REAL compounds against KLHDC2 and 4.1B ZINC22 compounds against NaV1.7 each completed in under seven days on a 3000-CPU / 1 RTX2080 GPU HPC cluster, yielding seven novel KLHDC2 binders (14% hit rate) and four novel NaV1.7 binders (44.4% hit rate) with single-digit micromolar affinities; a 2.0 A X-ray structure of KLHDC2 with compound 29 (IC50 ~3 uM) validates the predicted binding pose.",
+    "impact": "Provides an accurate, open-source platform for ultra-large virtual screens that can discover novel chemotypes for challenging targets and supports structure-guided lead optimization."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Structure-based virtual screening drives lead discovery, and multi-billion compound libraries now enable deeper chemical-space exploration.",
+        "Ultra-large library screening is time- and cost-prohibitive for physics-based docking; existing speedups include HPC parallelization, active learning, hierarchical screening, and GPU acceleration.",
+        "Success depends on the accuracy of ligand docking; Glide and GOLD are accurate but proprietary, Autodock Vina is free but less accurate, and deep-learning docking is better for blind docking and generalizes poorly to novel complexes when the binding site is known.",
+        "This work presents RosettaGenFF-VS, the RosettaVS protocol with VSX and VSH modes inside Rosetta GALigandDock, and the OpenVS open-source platform that integrates active learning for scalable screens.",
+        "We validate on CASF2016 and DUD benchmarks and apply the platform to two unrelated targets (KLHDC2 E3 ligase, NaV1.7 VSD4) with experimental validation and X-ray crystallography."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Background and Related Work",
+      "content_bullets": [
+        "Ultra-large compound libraries (Enamine REAL, ZINC22) and scalable docking platforms.",
+        "Active-learning and deep-learning-guided chemical-space exploration for virtual screening.",
+        "Physics-based docking programs (Glide, GOLD, Vina) and the Rosetta GALigandDock / RosettaGenFF force field.",
+        "Deep-learning scoring functions and their generalization limits; benchmark contamination concerns.",
+        "KLHDC2 as a PROTAC E3 platform; NaV1.7 VSD4 pharmacology and fast-inactivation state dependence."
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "RosettaGenFF-VS extends Rosetta GALigandDock with new atom types, new torsional potentials, improved preprocessing, and an entropy (Delta S) model added to the prior enthalpy (Delta H) model.",
+        "RosettaVS protocol provides two modes: VSX (virtual screening express) for fast initial docking and VSH (virtual screening high-precision) with full receptor sidechain flexibility for final re-ranking.",
+        "OpenVS open-source platform combines RosettaVS with an active-learning surrogate neural network trained during docking to select promising compounds, and is designed to scale to HPC clusters.",
+        "Benchmark protocols: CASF2016 (285 complexes) docking power, screening power (EF at X% cutoff, best-binder success rate at 1/5/10%); DUD (40 targets, >100k molecules) AUC and ROC enrichment.",
+        "KLHDC2 campaign: Enamine-REAL (~5.5 billion, 80% synthesis success rate) docked with VSX, top 50,000 re-docked with VSH, top 1000 filtered for solubility, hydrogen-bond completeness, similarity clustering; 54 clustered candidates, 37 selected, 29 synthesized; AlphaLISA displacement assay and BLI confirmation; X-ray crystallography of apo KLHDC2 soaked with C29 to 2.0 A resolution.",
+        "KLHDC2 focused screen: substructure search (acetyl-amino-methyl-triazole-acetic acid backbone) against ZINC22 yielded ~381,567 hits; 21 synthesized and re-tested.",
+        "NaV1.7 VSD4 campaign: ZINC22 (~4.1 billion) VSX screen (stopped after 7 iterations), top 100,000 re-docked with VSH, clustered, top 1000 filtered, 160 manually examined, 10 selected (Tanimoto < 0.33 to known inhibitors), 9 synthesized; whole-cell patch-clamp electrophysiology on hNaV1.7 stably expressed in HEK-293; selectivity tested against hNaV1.5 and hERG."
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_platform",
+          "title": "Development of an AI accelerated virtual screening platform",
+          "content_bullets": [
+            "RosettaGenFF-VS adds an entropy term to GALigandDock's enthalpy force field and extends atom types / torsions.",
+            "RosettaVS provides VSX and VSH modes with VSH adding full sidechain flexibility for final re-ranking.",
+            "OpenVS platform uses active-learning surrogate training to avoid docking the entire library."
+          ]
+        },
+        {
+          "id": "results_benchmark",
+          "title": "RosettaVS achieves state-of-the-art virtual screening benchmark performance",
+          "content_bullets": [
+            "CASF2016 docking power: RosettaGenFF-VS achieves leading success rate in top 1/2/3 decoys with <2 A RMSD.",
+            "CASF2016 screening power: top 1% enrichment factor EF1%=16.72 for RosettaGenFF-VS versus 11.9 for the second-best method.",
+            "CASF2016 screening power subsets: improved performance on polar, shallower and smaller protein pockets.",
+            "DUD: RosettaVS leads on AUC and ROC enrichment; outperforms second-best method by a factor of two at 0.5/1.0% ROC enrichment; VSH marginally outperforms VSX via receptor flexibility."
+          ]
+        },
+        {
+          "id": "results_klhdc2",
+          "title": "Discovery of novel KLHDC2 ubiquitin ligase binders",
+          "content_bullets": [
+            "Active-learning VSX screen against Enamine-REAL (~5.5B compounds); predicted binding affinity of the top 0.1 percentile improved from -6.81 kcal/mol (iteration 1) to -12.43 kcal/mol (iteration 10); screen stopped after iteration 10.",
+            "~6 million compounds (0.11%) were subjected to docking; top 50,000 re-docked with VSH; whole campaign completed within a week on 3000 CPUs + 1 RTX2080 GPU.",
+            "Top 1000 filtered, 54 clustered, 37 chosen for synthesis, 29 successfully synthesized.",
+            "Compound 29 (C29) is best initial hit with IC50 ~3 uM in AlphaLISA displacement assay, confirmed by BLI.",
+            "KLHDC2-C29 co-crystal structure at 2.0 A shows C29 distal carboxyl group contacting Arg236, Arg241 and Ser269; triazole near Tyr163, Trp191, Trp270 with NH...N hydrogen bond; Lys147 hydrogen bond; tert-butylphenyl in auxiliary chamber.",
+            "Focused ZINC22 substructure screen (acetyl-amino-methyl-triazole-acetic acid backbone) returned ~381,567 compounds; 21 synthesized, 6 additional hits with single-digit uM IC50; seven low-micromolar KLHDC2 binders total.",
+            "Hit rate: 7/29 + 6/21 -> 14% overall hit rate for KLHDC2 (as reported)."
+          ]
+        },
+        {
+          "id": "results_nav17",
+          "title": "Discovery of novel NaV1.7 VSD4 antagonists",
+          "content_bullets": [
+            "Active-learning VSX screen against ZINC22 (~4.1B compounds); top 0.1 percentile predicted affinity improved from -10.8 kcal/mol (iteration 1) to -18.2 kcal/mol (final iteration); stopped after iteration 7.",
+            "~4.5 million compounds (0.11%) docked; top 100,000 re-docked with VSH.",
+            "Top 100,000 clustered; top 1000 cluster representatives filtered; 160 manually examined; 10 selected (Tanimoto < 0.33 to known ChEMBL inhibitors), 9 successfully synthesized.",
+            "Whole-cell patch-clamp on hNaV1.7 in HEK-293: four compounds show IC50 < 10 uM (44.4% hit rate).",
+            "Best compound Z8739902234: inactivated-state IC50 = 1.32 uM (95% CI 1.14-1.55), resting-state IC50 = 13.1 uM (12.78-13.45); state-dependent inhibition.",
+            "Selectivity: NaV1.7 IC50 1.33 uM (1.14-1.55), NaV1.5 IC50 5.14 uM (4.74-5.55), hERG IC50 6.27 uM (5.27-7.37).",
+            "Second-best Z8739905023: inactivated-state IC50 = 2.23 uM (2.14-2.46)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "RosettaGenFF-VS / RosettaVS combine high docking accuracy with efficient sampling, driving strong performance on CASF2016 and DUD.",
+        "Unlike many methods, RosettaGenFF-VS improves on polar, shallow and small pockets via better protein-ligand vs intra-ligand energy balance.",
+        "Two parallel campaigns (KLHDC2, NaV1.7) each completed in <7 days on modest HPC resources and yielded multiple novel hits with single-digit uM binding.",
+        "Future work: GPU acceleration of Rosetta docking, generative AI pose generation, improved active-learning surrogates, deep-learning score functions, template-guided screening using macrocycles or antibody loops."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_casf_screening",
+      "title": "CASF2016 screening power (top 1% enrichment factor)",
+      "columns": ["Method", "EF_top1%"],
+      "data_source": "experimental_log line 'EF1%=16.72 ... second-best method (EF1%=11.9)'",
+      "caption_sketch": "RosettaGenFF-VS versus the second-best method on CASF2016 screening power top 1% enrichment factor."
+    },
+    {
+      "table_id": "tab_klhdc2_campaign",
+      "title": "KLHDC2 virtual screening campaign summary",
+      "columns": ["Stage", "Value"],
+      "data_source": "experimental_log KLHDC2 paragraphs",
+      "caption_sketch": "Compound funnel and resource usage for the KLHDC2 Enamine-REAL virtual screening campaign."
+    },
+    {
+      "table_id": "tab_nav17_campaign",
+      "title": "NaV1.7 VSD4 virtual screening campaign summary",
+      "columns": ["Stage", "Value"],
+      "data_source": "experimental_log NaV1.7 paragraphs",
+      "caption_sketch": "Compound funnel and active-learning iteration statistics for the NaV1.7 VSD4 ZINC22 screen."
+    },
+    {
+      "table_id": "tab_nav17_ic50",
+      "title": "hNaV1.7 concentration-response and selectivity for lead compounds",
+      "columns": ["Compound / channel", "IC50 (uM)", "95% CI"],
+      "data_source": "experimental_log lines Z8739902234 and Z8739905023 IC50 values",
+      "caption_sketch": "Inactivated-state and resting-state IC50 values for Z8739902234 and Z8739905023 on hNaV1.7, and selectivity of Z8739902234 against hNaV1.5 and hERG."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "structure based virtual screening ultra-large library",
+      "Enamine REAL virtual screening",
+      "active learning virtual screening billion compounds",
+      "Rosetta GALigandDock force field ligand docking",
+      "deep learning protein ligand docking DiffDock",
+      "PROTAC E3 ligase KLHDC2 degron",
+      "NaV1.7 voltage gated sodium channel small molecule inhibitor"
+    ],
+    "micro_queries": [
+      "CASF2016 scoring function benchmark",
+      "DUD decoys virtual screening benchmark",
+      "AutoDock Vina",
+      "Glide docking Schrodinger",
+      "ROC enrichment virtual screening metric",
+      "voltage sensor domain IV NaV channel inhibitor",
+      "KLHDC2 ubiquitin ligase C-end degron",
+      "whole cell patch clamp sodium channel drug",
+      "ZINC22 library tangible compounds"
+    ],
+    "must_cite": [
+      "Rosetta GALigandDock (RosettaGenFF)",
+      "CASF2016 dataset",
+      "DUD dataset",
+      "Enamine REAL library ultra-large virtual screening",
+      "ZINC22 library",
+      "KLHDC2 structure / C-end degron recognition",
+      "NaV1.7 VSD4 small-molecule antagonists",
+      "AutoDock Vina",
+      "AlphaFold / protein structure prediction"
+    ],
+    "citation_target": 25
+  },
+  "figure_plan": [
+    {
+      "figure_id": "fig:casf_ef1",
+      "type": "data_grounded",
+      "file": "figures/fig_casf_ef1.pdf",
+      "caption": "CASF-2016 screening power: EF1% = 16.72 vs 11.9",
+      "data_source": "experimental_log: EF1%=16.72, second-best EF1%=11.9"
+    },
+    {
+      "figure_id": "fig:active_learning",
+      "type": "data_grounded",
+      "file": "figures/fig_active_learning.pdf",
+      "caption": "Active-learning convergence: KLHDC2 -6.81 to -12.43 kcal/mol; NaV1.7 -10.8 to -18.2 kcal/mol",
+      "data_source": "experimental_log: KLHDC2 iterations, NaV1.7 iterations"
+    },
+    {
+      "figure_id": "fig:hit_rates",
+      "type": "data_grounded",
+      "file": "figures/fig_hit_rates.pdf",
+      "caption": "Hit rates: KLHDC2 14% (7 hits), NaV1.7 44.4% (4 hits)",
+      "data_source": "experimental_log: 7 hits 14%, 4 hits 44.4%"
+    },
+    {
+      "figure_id": "fig:nav17_ic50",
+      "type": "data_grounded",
+      "file": "figures/fig_nav17_ic50.pdf",
+      "caption": "NaV1.7 lead compound IC50 values with 95% CIs",
+      "data_source": "experimental_log: Z8739902234 and Z8739905023 IC50 values"
+    },
+    {
+      "figure_id": "fig:pipeline",
+      "type": "schematic",
+      "file": "figures/fig_pipeline.pdf",
+      "caption": "OpenVS platform pipeline schematic",
+      "data_source": "idea_summary: OpenVS pipeline description"
+    }
+  ]
+}
