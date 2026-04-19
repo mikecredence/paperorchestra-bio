@@ -1,0 +1,156 @@
+{
+  "metadata": {
+    "working_title": "Deep-learning-guided design of 5'UTRs for efficient mRNA-delivered gene editing",
+    "venue": "Nature Biotechnology",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "mRNA therapeutics require efficient translation of the encoded protein, but systematic methods to optimize the 5'UTR for a given application are lacking.",
+    "gap": "Prior massively parallel reporter assay (MPRA) models of the 5'UTR have been trained in a single cell type on fixed-end libraries and have not been validated for guiding the design of therapeutically relevant cargos such as mRNA-encoded gene editors.",
+    "approach": "We perform polysome-profiling MPRA on randomized 5'UTR libraries in three cell types (HEK293T, T cells, HepG2), train convolutional and k-mer models (Optimus 5-Prime, Optimus 5-Prime(25)), and use gradient-based Fast SeqProp and generative Deep Exploration Networks (DENs) to design 50nt and 25nt 5'UTRs de novo.",
+    "key_results": "MRLs are highly correlated across cell lines (r^2 = 0.837-0.870 for HEK293T vs T cells, 0.847-0.871 vs HepG2). Optimus 5-Prime achieves r^2 = 0.937 on held-out HEK293T data. DEN-designed 5'UTRs drive absolute editing efficiencies above 40% for TGFBR2 and above 80% for PDCD1 megaTALs at 2 pmol mRNA; the best DEN design reaches 55.6% on TGFBR2, 18-33% higher than the best natural control LAMA5, while the same sequence behaves differently on PDCD1 (80.8%), where VAT1 performs best (91.4%).",
+    "impact": "Model-guided design of 5'UTRs is a practical route to tuning mRNA therapeutic potency, but cargo- and cell-type-specific effects argue for empirical validation in the deployment context."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "mRNA therapeutics have expanded from vaccines to gene editing, but translation efficiency depends on cis-regulatory elements that remain hand-tuned.",
+        "The 5'UTR is a key determinant of translation and is amenable to synthetic design.",
+        "MPRAs coupled to deep learning have produced predictive models of 5'UTR function (Optimus 5-Prime) but have been limited to one cell type and fixed-end libraries.",
+        "Generative design of 5'UTRs with gradient descent (Fast SeqProp) and generative networks (DENs) is promising but has not been validated for functional mRNA cargos beyond reporters.",
+        "Contributions: (1) cross-cell-line MPRA + models, (2) new random-end libraries and Optimus 5-Prime(25), (3) designed 5'UTRs that drive strong mRNA-delivered megaTAL editing at two loci in two cell lines."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_1_crosscell",
+          "title": "Polysome-profiling MPRA across cell lines reveals correlated 5'UTR activity",
+          "content_bullets": [
+            "Random 50nt 5'UTR library profiled in HEK293T, primary T cells, and HepG2.",
+            "r^2 = 0.837-0.870 (HEK293T vs T cells), 0.847-0.871 (HEK293T vs HepG2); replicate r^2 = 0.938 (HEK293T), 0.814 (T cells).",
+            "Optimus 5-Prime trained on HEK293T achieves r^2 = 0.937 on held-out HEK293T, 0.841 on T cells, 0.840 on HepG2."
+          ]
+        },
+        {
+          "id": "results_2_design50",
+          "title": "Designing high-MRL 50nt 5'UTRs with Fast SeqProp and DENs",
+          "content_bullets": [
+            "Controls: 8 sequences from prior polysome-profiling MPRA, including 4 low/medium and 4 top-0.02% MRL; plus beta-globin-like natural UTRs (top ~20% among ~17,000 short endogenous).",
+            "k-mer validator test set r = 0.5213; designed-sequence predictions within top 1% of the distribution.",
+            "DENs trained to maximize Optimus-predicted MRL while enforcing diversity (Supplementary Figure 7).",
+            "In K562 megaTAL assay, editing increases with dose; several designs exceed 40% for TGFBR2 and 80% for PDCD1 at 2 pmol mRNA."
+          ]
+        },
+        {
+          "id": "results_3_short25",
+          "title": "Predicting and designing 25nt fully-variable 5'UTRs",
+          "content_bullets": [
+            "Random-end 25nt MPRA: inter-replicate r^2 = 0.692 for top-20,000 by coverage (13C,D); 0.844 for top 2,000; lower than fixed-end 50nt (r^2 = 0.938).",
+            "Existing Optimus 5-Prime models fail to transfer: r^2 = 0.564 (50nt), r^2 = 0.600 (25-100nt) on the 25nt data.",
+            "New Optimus 5-Prime(25) trained on random-end 25nt library achieves r^2 = 0.806 on held-out set (Figure 3E).",
+            "Polypyrimidine-tract position (pos 1 vs >=2) correlates with MRL, Mann-Whitney U with Bonferroni; p < 10^-20, p < 10^-100."
+          ]
+        },
+        {
+          "id": "results_4_editing",
+          "title": "Designed 5'UTRs drive strong mRNA-delivered megaTAL editing",
+          "content_bullets": [
+            "Best DEN-designed 50nt 5'UTR improves absolute TGFBR2 editing to 55.6% at 2 pmol mRNA, 18-33% higher than LAMA5 (Figure 4C).",
+            "50% of Fast SeqProp-generated sequences show lower editing despite high predicted MRL.",
+            "Same DEN design yields 80.8% editing on PDCD1 (comparable to Strong Kozak), while VAT1 reaches 91.4% (Figure 4D, Supplementary Figure 23).",
+            "Most designs match or exceed performance of 5'UTRs from the top 0.02% of the random MPRA libraries (Figure 2C, 4B); one design raises TGFBR2 editing up to 50% higher than all controls."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Polysome profiling MPRA in HEK293T, T cells, and HepG2 with random-end 50nt and 25nt libraries assembled by NEBuilder HiFi with primers Bri036_T7_N50_ATG / Bri043_T7_N25_ATG.",
+        "RNA extraction, RT with UMI-containing primer, template switching, qPCR, MiSeq (25% PhiX); reads filtered to top 20,000 / 2,000 by coverage for analysis.",
+        "Optimus 5-Prime CNN architecture (retrained on HEK293T MPRA); Optimus 5-Prime(25) for random-end 25nt library with held-out performance r^2 = 0.806.",
+        "Fast SeqProp: gradient-based one-hot relaxation; optional VAE regularization; k-mer validator with r = 0.5213 (50nt) and r = 0.4094 (25nt).",
+        "Deep Exploration Networks (DENs): 100-d latent -> 50x4 or 25x4 logits; trained to maximize Optimus-predicted MRL and minimize pairwise sequence similarity. Inverse-regression mode with target MRLs 2, 3.5, 5, 6.5.",
+        "VAE training sets: 5,000 train / 1,000 test from top-10,000 by MRL in 50nt (coverage > 2,000 reads) and 25nt (coverage > 500 reads) libraries.",
+        "Environment: Python 3, keras 2.2, tensorflow 1.15.",
+        "megaTAL gene editing: 2 pmol-0.25 pmol mRNA electroporated in duplicate into 100,000 K562 or HepG2 cells via Lonza 4D Nucleofector 96-well; readout by PCR1 (30 cycles, gene-specific primers with Illumina overhangs) then deep sequencing."
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Cross-cell-line consistency of MRL supports model transferability, but cargo- and locus-specific deviations argue against naive MRL-only design.",
+        "DEN-based design outperforms gradient-based Fast SeqProp in functional assays at the best operating point, but ~50% of SeqProp designs under-perform their predictions.",
+        "Transfer from fixed-end 50nt models to 25nt fully-variable UTRs is poor; library-matched models (Optimus 5-Prime(25)) are necessary.",
+        "Limitations: single dose range, two targets, two cell lines; predicted MRL is not a perfect proxy for editing efficiency for all UTR-cargo pairs.",
+        "Implications for mRNA therapeutics: cargo-specific empirical validation should remain part of the design loop."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_cross_cell",
+      "title": "Cross-cell-line MRL correlations from polysome-profiling MPRA",
+      "columns": ["Comparison", "r^2"],
+      "data_source": "experimental_log lines 64, 65",
+      "caption_sketch": "Coefficients of determination between cell lines, between replicates, and between model predictions and held-out HEK293T/T cell/HepG2 MRL."
+    },
+    {
+      "table_id": "tab_model_perf",
+      "title": "Model performance on the random-end 25nt 5'UTR library",
+      "columns": ["Model", "r^2 on top-2000"],
+      "data_source": "experimental_log lines 75, 76, 16 (Figure 3E r^2 = 0.806)",
+      "caption_sketch": "Previously developed Optimus 5-Prime models fail to transfer to 25nt fully-variable UTRs; Optimus 5-Prime(25) achieves r^2 = 0.806."
+    },
+    {
+      "table_id": "tab_editing",
+      "title": "Absolute megaTAL editing efficiency at 2 pmol mRNA in K562",
+      "columns": ["5'UTR", "TGFBR2 (%)", "PDCD1 (%)"],
+      "data_source": "experimental_log lines 82-84",
+      "caption_sketch": "Best DEN-designed 5'UTR for TGFBR2 (55.6%) improves over LAMA5 by 18-33%; same UTR yields 80.8% on PDCD1 while VAT1 reaches 91.4%."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "mRNA therapeutics translation 5'UTR optimization",
+      "deep learning prediction of translation efficiency",
+      "massively parallel reporter assay 5'UTR polysome profiling",
+      "mRNA vaccines lipid nanoparticles delivery",
+      "generative neural networks biological sequence design"
+    ],
+    "micro_queries": [
+      "Optimus 5-Prime 5'UTR CNN MRL Sample 2019",
+      "Deep Exploration Network DEN generative sequence design Linder",
+      "Fast SeqProp activation maximization DNA",
+      "megaTAL homing endonuclease TALE gene editing",
+      "TGFBR2 knockout adoptive T cell therapy",
+      "PDCD1 PD-1 knockout CAR-T",
+      "variational autoencoder regularization sequence design",
+      "5'UTR Kozak sequence translation initiation",
+      "cap-independent translation IRES polypyrimidine tract",
+      "CRISPR mRNA delivery in vivo"
+    ],
+    "must_cite": [
+      "Sample et al., Optimus 5-Prime (Nat Biotechnol 2019)",
+      "Linder et al., Deep Exploration Networks / Fast SeqProp",
+      "Castillo-Hair & Seelig, MPRA review / prior polysome MPRA",
+      "megaTAL / homing endonuclease reference (Boissel/Scharenberg)",
+      "Kozak sequence canonical reference"
+    ],
+    "citation_target": 25
+  },
+  "figure_plan_hints": [
+    {"id": "fig1", "type": "data_grounded", "desc": "Bar/scatter of cross-cell-line r^2 values"},
+    {"id": "fig2", "type": "data_grounded", "desc": "Model r^2 on 25nt library for three Optimus variants"},
+    {"id": "fig3", "type": "data_grounded", "desc": "megaTAL editing efficiency at 2 pmol for TGFBR2 and PDCD1 best design vs controls"},
+    {"id": "fig_schematic", "type": "schematic", "desc": "DEN generator 100-d latent -> NxL logit, plus Optimus 5-Prime CNN flow"}
+  ]
+}

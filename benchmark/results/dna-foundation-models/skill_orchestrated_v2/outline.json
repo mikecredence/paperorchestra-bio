@@ -1,0 +1,176 @@
+{
+  "metadata": {
+    "working_title": "Benchmarking DNA Foundation Models for Genomic and Genetic Tasks",
+    "venue": "Nature Communications",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "DNA foundation language models promise a unified representation for genomic and genetic analysis, but current evaluations are confounded by fine-tuning choices and narrow task scope.",
+    "gap": "No comprehensive zero-shot benchmark exists that controls for pooling strategy, spans diverse species and biological feature types, and jointly evaluates sequence classification, gene expression prediction, variant effect quantification, and chromatin structure.",
+    "approach": "We evaluated five DNA foundation models (DNABERT-2, NT-v2, HyenaDNA, Caduceus-Ph, GROVER) in a zero-shot embedding paradigm on 57 classification datasets, a GTEx v8 whole-blood gene expression panel, paired reference/alternative variant sequences for pathogenic SNPs and four classes of QTLs, a controlled pre-training data experiment, and a TAD attention analysis.",
+    "key_results": "Mean token pooling consistently outperformed summary-token and maximum pooling (AUC gains of 1.4-8.7%); general DNA foundation models outperformed specialized Enformer for pathogenic variant identification (NT-v2 AUC 0.73 vs 0.69), while specialized models dominated QTL tasks (AlphaGenome sQTL AUC 0.80, ipaQTL AUC 0.86); re-pretraining HyenaDNA on 135-species data improved 14/49 datasets; NT-v2 attention showed no evidence of TAD recognition.",
+    "impact": "The benchmark provides quantitative, task-specific guidance for choosing DNA foundation models and establishes mean token pooling as a best-practice default, while exposing current limits of self-supervised DNA models on chromatin structure and QTL prediction."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Motivate DNA foundation models as analogues of NLP foundation models for genomics.",
+        "Summarise five representative models (DNABERT-2, NT-v2, HyenaDNA, Caduceus-Ph, GROVER) spanning BERT-style encoders, Hyena operators and MambaDNA state-space backbones with different tokenisations and pre-training corpora.",
+        "Articulate the evaluation bias problem: fine-tuning confounds, narrow task scope, inconsistent pooling.",
+        "State our contributions: zero-shot benchmark across 57 classification datasets, variant effect and QTL tasks, gene expression prediction, controlled multi-species pre-training study, and attention-based chromatin analysis."
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "NLP foundation models and their transfer to biology.",
+        "DNA language models: DNABERT family, Nucleotide Transformer, HyenaDNA, Caduceus/MambaDNA, GROVER.",
+        "Specialised genomic predictors: Enformer, Sei, AlphaGenome.",
+        "Prior DNA model benchmarks and their limitations (fine-tuning bias, narrow scope, inconsistent pooling)."
+      ],
+      "approx_length": "0.5-1 page"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_pooling", "title": "Mean token pooling consistently improves sequence classification", "content_bullets": [
+          "52 binary classification datasets; mean > summary-token in 35-42/52 datasets per model (DeLong's test, p<0.01).",
+          "Average AUC gains 1.4%-8.7%; HyenaDNA largest (8.7%, IQR 4.6%-12.9%); GROVER smallest (1.4%, IQR 0.7%-1.9%).",
+          "Specific examples: GM12878 promoter DNABERT-2 0.964 to 0.986 (2.3%); B. amyloliquefaciens HyenaDNA 0.689 to 0.864 (25.4%).",
+          "Mean pooling moves min-max average AUC envelope from 0.708-0.799 to 0.795-0.822."
+        ]},
+        {"id": "results_human_genome", "title": "Human genome region classification", "content_bullets": [
+          "All five models AUC > 0.8 on the majority of tasks.",
+          "Caduceus-Ph best overall on human tasks; DNABERT-2 strongest on splice donor (0.906) and acceptor (0.897).",
+          "Four models beat baseline CNN on GM12878 and HUVEC promoter identification."
+        ]},
+        {"id": "results_multispecies", "title": "Multi-species genome region classification", "content_bullets": [
+          "HyenaDNA best on Arabidopsis TATA (0.961) and NonTATA (0.955) promoters despite human-only pre-training.",
+          "Caduceus-Ph 0.992 and GROVER 0.984 on human vs. worm classification.",
+          "DNA foundation models generally underperform baseline CNN on multispecies datasets."
+        ]},
+        {"id": "results_epigenetic", "title": "Epigenetic modification prediction", "content_bullets": [
+          "AUC typically 10-15% below functional-region tasks.",
+          "Human 5mC: NT-v2 0.738, Caduceus-Ph 0.783, GROVER 0.744.",
+          "Eukaryotic 4mC: NT-v2 leads (A. thaliana 0.633, C. elegans 0.649, D. melanogaster 0.652); E. coli 4mC Caduceus-Ph 0.628.",
+          "Multiple foundation models outperform baseline CNN on yeast H3, H3K4me1, H3K79me3 marks."
+        ]},
+        {"id": "results_gene_expression", "title": "Gene expression prediction from sequence", "content_bullets": [
+          "GTEx v8 whole blood, 610 subjects, 21,004 genes (short) and 768 genes (long).",
+          "Random forest significantly outperforms XGBoost (p < 0.001) across all models.",
+          "Average Pearson r 0.114-0.123 for 6 kb inputs.",
+          "HyenaDNA-450K significantly outperforms Enformer (p<0.01); longer inputs help HyenaDNA (p<0.001) but not Caduceus-Ph.",
+          "CUTALP consistently > 0.89 across all five short-sequence models; DDX11, HLA-DRB5 top across long-sequence models."
+        ]},
+        {"id": "results_variants", "title": "Pathogenic variant identification", "content_bullets": [
+          "22,222 pathogenic / 17,374 common SNPs (long); 22,239 / 17,398 (short); 3 chromosome-based nested CV folds.",
+          "NT-v2 AUC 0.73, Cohen's d 0.88; Caduceus-Ph 0.70; outperforming Enformer (0.69, d=0.73) and Sei.",
+          "Short-sequence Caduceus-Ph (0.70) beats long-sequence Caduceus-Ph (0.62)."
+        ]},
+        {"id": "results_qtl", "title": "QTL prediction", "content_bullets": [
+          "1,896 eQTLs, 540 sQTLs, 116 ipaQTLs, 142 paQTLs from GTEx v8 fine-mapped data.",
+          "AlphaGenome dominates: sQTL AUC 0.80, ipaQTL AUC 0.86.",
+          "Enformer eQTL AUC 0.77; Caduceus-Ph 0.65; Sei hidden-state sQTL 0.65 vs output 0.63.",
+          "Several DNA foundation models at or below chance on smaller QTL sets; performance highly sensitive to chromosome holdout."
+        ]},
+        {"id": "results_pretraining", "title": "Controlled pre-training data experiment", "content_bullets": [
+          "Re-pretrained HyenaDNA on DNABERT-2 multi-species corpus (135 species, 6 taxonomic categories).",
+          "Multi-species significantly better on 14/49 datasets (p<0.01); original better on 3/49.",
+          "Human 5mC 0.707 to 0.749; human vs. worm 0.968 to 0.984.",
+          "Original retains edge on human enhancer/open chromatin and yeast epigenetic marks."
+        ]},
+        {"id": "results_tad", "title": "TAD structure is not captured by self-attention alone", "content_bullets": [
+          "1500 TAD-centered vs 1500 background sequences at 6000 bp; attention averaged across layers/heads of NT-v2.",
+          "Attention difference matrix near uniformly zero except diagonal; no TAD-specific pattern.",
+          "Other models excluded for attention-access reasons."
+        ]},
+        {"id": "results_runtime", "title": "Runtime scaling", "content_bullets": [
+          "Single A100, 1000 replications, batch size 1, 64-524,288 nt.",
+          "HyenaDNA-160K stable below 2K nt; HyenaDNA-1M scales well up to ~500K nt.",
+          "NT-v2 highest absolute runtime (~2.5 s/100 reps); GROVER fastest within 2K nt.",
+          "DNABERT-2 competitive near 2K nt ceiling; Caduceus-Ph-131K moderate."
+        ]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Pooling is a first-class design variable: mean pooling should be the default.",
+        "General DNA foundation models can beat specialized predictors on SNP-level pathogenicity yet lose to them on QTL tasks — a capability/data-resolution trade-off.",
+        "Multi-species pre-training helps epigenetic and cross-species tasks but does not uniformly dominate.",
+        "Current models do not learn TAD-scale structure without fine-tuning; architecture with accessible long-range attention is needed.",
+        "Runtime/accuracy trade-offs favor HyenaDNA for long sequences and NT-v2 for quality-critical short tasks.",
+        "Limitations: single tissue (whole blood), limited QTL sample sizes, attention analysis restricted to NT-v2."
+      ],
+      "approx_length": "1.5-2 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "methods_models", "title": "Foundation model checkpoints", "content_bullets": ["Five models, parameters, embedding dim, max length, tokenisation (per Models table)."]},
+        {"id": "methods_pooling", "title": "Embedding pooling and classifiers", "content_bullets": ["Final-layer tokens; summary-token, mean, max; random forest primary, naive Bayes, elastic-net; baseline CNN."]},
+        {"id": "methods_tasks", "title": "Classification tasks", "content_bullets": ["52 binary + 5 multi-class; AUROC; DeLong's test p<0.01; bolding rule."]},
+        {"id": "methods_expression", "title": "Gene expression setup", "content_bullets": ["GTEx v8 whole blood; 610 subjects; TSS +/- 3 kb and +/- 98 kb; residualized expression; RF vs XGBoost."]},
+        {"id": "methods_variant", "title": "Variant effect quantification", "content_bullets": ["Paired ref/alt sequences; pathogenic vs common SNP counts; QTL counts; nested CV by chromosome."]},
+        {"id": "methods_pretraining", "title": "HyenaDNA multi-species re-pretraining", "content_bullets": ["DNABERT-2 multi-species corpus; matched hyperparameters to HyenaDNA-1K."]},
+        {"id": "methods_tad", "title": "TAD attention analysis", "content_bullets": ["Top 5% boundary strength; 1500 TAD vs 1500 background 6 kb sequences; attention averaged across layers/heads."]},
+        {"id": "methods_runtime", "title": "Runtime benchmarking", "content_bullets": ["A100; 1000 replications; batch 1; 64-524,288 nt."]}
+      ]
+    }
+  ],
+  "table_plan": [
+    {"table_id": "tab1", "title": "DNA foundation model characteristics", "columns": ["Model", "Architecture", "Pre-training data", "Parameters", "Embedding dim", "Max input length", "Tokenisation"], "data_source": "experimental_log Models Evaluated table", "caption_sketch": "Architectural and training summary of the five evaluated foundation models."},
+    {"table_id": "tab2", "title": "Pooling method comparison", "columns": ["Model", "Mean>Summary (n/52)", "Mean>Max (n/52)", "Avg AUC gain (%)", "IQR"], "data_source": "experimental_log Experiment 1", "caption_sketch": "Number of datasets with significant mean-token superiority and average AUC gains."},
+    {"table_id": "tab3", "title": "Pathogenic variant identification", "columns": ["Model", "Avg test AUC", "Cohen's d"], "data_source": "experimental_log Experiment 7", "caption_sketch": "Overall performance for pathogenic vs common SNP classification."},
+    {"table_id": "tab4", "title": "QTL prediction", "columns": ["Model", "eQTL", "sQTL", "ipaQTL", "paQTL"], "data_source": "experimental_log Experiment 8", "caption_sketch": "AUC for QTL variant effect quantification across QTL classes."},
+    {"table_id": "tab5", "title": "Pre-training data experiment", "columns": ["Task", "Original HyenaDNA AUC", "Multi-species AUC"], "data_source": "experimental_log Experiment 9", "caption_sketch": "Specific datasets with significant improvements after multi-species re-pretraining."}
+  ],
+  "figure_plan": [
+    {"figure_id": "fig1", "title": "Mean vs summary-token pooling AUC gains by model", "description": "Bar chart of average AUC increase (%) per model with IQR error bars", "data_source": "experimental_log Experiment 1"},
+    {"figure_id": "fig2", "title": "Datasets where mean pooling is significantly better", "description": "Grouped bar chart: number of datasets out of 52 where mean > summary-token and mean > max pooling", "data_source": "experimental_log Experiment 1"},
+    {"figure_id": "fig3", "title": "Pathogenic variant and QTL performance", "description": "Two-panel bar chart: SNP pathogenic AUC and Cohen's d; QTL AUC across tasks", "data_source": "experimental_log Experiments 7 and 8"},
+    {"figure_id": "fig4", "title": "Multi-species re-pretraining gains", "description": "Paired-bar chart comparing original vs multi-species HyenaDNA AUC on highlighted datasets", "data_source": "experimental_log Experiment 9"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "DNA language model foundation genomics",
+      "nucleotide transformer benchmark",
+      "genomic sequence deep learning benchmark",
+      "variant effect prediction deep learning"
+    ],
+    "micro_queries": [
+      "DNABERT-2 multi-species byte pair encoding",
+      "Nucleotide Transformer v2 rotary embeddings",
+      "HyenaDNA long-range single-nucleotide",
+      "Caduceus MambaDNA reverse complement equivariance",
+      "GROVER BPE human genome foundation model",
+      "Enformer gene expression attention",
+      "Sei sequence class chromatin",
+      "AlphaGenome genomic variant",
+      "DeLong test AUC comparison",
+      "TAD topologically associating domain prediction",
+      "GTEx v8 eQTL fine-mapping",
+      "mean token pooling sequence classification"
+    ],
+    "must_cite": [
+      "DNABERT-2 (Zhou et al.)",
+      "Nucleotide Transformer (Dalla-Torre et al.)",
+      "HyenaDNA (Nguyen et al.)",
+      "Caduceus / MambaDNA (Schiff et al.)",
+      "GROVER (Sanabria et al.)",
+      "Enformer (Avsec et al.)",
+      "Sei (Chen et al.)",
+      "AlphaGenome (Google DeepMind)",
+      "GTEx v8 (GTEx Consortium)",
+      "DeLong's test for ROC comparison (DeLong et al.)"
+    ],
+    "citation_target": 30
+  }
+}

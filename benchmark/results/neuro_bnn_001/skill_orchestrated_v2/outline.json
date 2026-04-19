@@ -1,0 +1,238 @@
+{
+  "metadata": {
+    "working_title": "Network Statistics of the Whole-Brain Connectome of Drosophila",
+    "venue": "Nature Machine Intelligence",
+    "format": "single-column",
+    "word_target": 3500
+  },
+  "abstract_sketch": {
+    "problem": "Whole-brain connectomes at synaptic resolution offer an unprecedented opportunity to uncover the organizational principles of neural networks, but large-scale topological analyses across sensory, associative, and motor regions have been limited by dataset size and completeness.",
+    "gap": "Prior microscale connectome analyses were restricted to C. elegans (~300 neurons) or small cortical sub-volumes; mesoscale fly and mammalian studies inferred connectivity indirectly from MRI/MEG and could not resolve single neurons. No prior study has characterized rich-club organization, motif prevalence, and neurotransmitter composition across an entire adult fly brain.",
+    "approach": "Using the FlyWire v630 synapse-resolution connectome of adult Drosophila melanogaster (127,978 neurons and 2,613,129 thresholded connections at 5 synapses per connection), we computed global network statistics, connected-component structure, rich-club coefficients, two- and three-node motif frequencies with neurotransmitter composition, and subnetwork properties within 78 anatomically defined neuropils, benchmarking each metric against Erdos-Renyi, configuration, and spatial null models.",
+    "key_results": "The brain forms a single giant SCC containing 93.3% of neurons and a giant WCC containing 98.8%; it displays a large rich club of 40,218 neurons (approximately 30% of the connectome) with connection probability 0.000870 (5.4x the global 0.000161); reciprocity is 0.138 and clustering coefficient is 0.0463, both higher than in ER, CFG, and spatial null models; feedforward three-node motifs are under-represented while recurrent motifs are over-represented; 676 broadcaster and 638 integrator neurons show distinct neurotransmitter biases (broadcasters 75% cholinergic, integrators 49% cholinergic with enriched dopaminergic fraction); and 1,863 neuropil-specific highly reciprocal neurons are predominantly inhibitory (54% GABA, 10% glutamatergic).",
+    "impact": "The distributed rich-club organization, together with pervasive recurrent motifs that span individual neuropils and the midline, establishes the adult fly brain as a deeply interconnected, non-hierarchical substrate for distributed computation and provides a quantitative baseline for future comparative connectomics across species and individuals."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Motivate connectome-scale network analysis: hubs, motifs, rich-club structure as organizational principles of brains",
+        "Contrast mesoscale (MRI/MEG-based) analyses with microscale (EM) analyses; note that rich-club organization has been reported in Drosophila mesoscale, human, and mammalian work but not at synapse resolution for a whole brain",
+        "Highlight gap: previous microscale analyses limited to C. elegans or cortical sub-volumes; the FlyWire dataset is the first complete adult brain connectome at synapse resolution",
+        "Preview contributions: rich-club organization with approximately 30% of 127,978 neurons; sub-populations of integrators and broadcasters; neuropil-specific reciprocal neurons; quantitative comparison with C. elegans, larval zebrafish, and mouse L2/3",
+        "State scope: 2- and 3-node motifs, neurotransmitter composition, subnetworks across 78 neuropils"
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Mathematical network theory applied to connectomes at multiple scales (mesoscale MRI/MEG; microscale EM)",
+        "Rich-club in C. elegans (11 neurons, ~4% of worm), Drosophila mesoscale, human and mammalian mesoscale",
+        "Motif frameworks: feedforward loops, 3-unicycles, reciprocal motifs studied in C. elegans and rodent cortex",
+        "FlyWire and companion datasets (v630, v783) and hemibrain comparisons",
+        "Neurotransmitter prediction from EM (87% per-synapse accuracy, 94% per-neuron accuracy)"
+      ],
+      "approx_length": "0.75 page"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "methods_dataset", "title": "Dataset and thresholding", "content_bullets": [
+          "FlyWire v630 snapshot: 127,978 neurons, 2,613,129 thresholded connections; central brain fully proofread, optic lobes ~80% complete",
+          "Synapses detected algorithmically; kept only those with confidence >= 50 and both pre/post assigned to a segment; threshold of 5 synapses per connection for all reported analyses unless noted",
+          "Robustness: qualitative observations preserved across threshold choices (Figure S1b-c)"
+        ]},
+        {"id": "methods_neurotransmitter", "title": "Neurotransmitter assignment", "content_bullets": [
+          "CNN per-synapse predictions over 6 transmitters (ach, gaba, glut, da, oct, ser), per-synapse accuracy 87%",
+          "Per-neuron vote by averaging across outgoing synapses, per-neuron accuracy 94%",
+          "Uncertain neurotransmitter when p1 < 0.2 and p1 - p2 < 0.1; ~1600 Kenyon cells manually corrected to acetylcholine"
+        ]},
+        {"id": "methods_metrics", "title": "Graph metrics and null models", "content_bullets": [
+          "In-degree, out-degree, total degree, reciprocal degree definitions",
+          "Connection probability (density), reciprocity, global clustering coefficient formulas",
+          "Directed Erdos-Renyi (ER) and directed configuration (CFG) null models via switch-and-hold algorithm (1000 CFG samples)",
+          "Two-zone spatial null model with p_close (0-50 microns) = 0.00418 and p_distant > 50 microns"
+        ]},
+        {"id": "methods_rich_club", "title": "Rich club, spectral, and information-flow analyses", "content_bullets": [
+          "Rich-club coefficient Phi(k) normalized by 100 CFG samples; threshold Phi_norm > 1.01; resulting total-degree range 37-93",
+          "Broadcaster criterion out-degree >= 5x in-degree; integrator criterion in-degree >= 5x out-degree; intrinsic neurons only",
+          "Spectral analysis via Markov chain on giant SCC (forward and reverse), stationary distributions",
+          "Schlegel et al. 2021 probabilistic information-flow model: 10,000 runs per seed set, 30% acceptance threshold"
+        ]},
+        {"id": "methods_neuropils", "title": "Neuropil subnetworks and inter-neuropil reciprocity", "content_bullets": [
+          "78 anatomically defined neuropils; subnetwork edges are connections whose synapses fall within the neuropil volume",
+          "NSRN criteria: intrinsic + rich club + >=50% incoming and >=50% outgoing connections within a single neuropil",
+          "Winner-take-all assignment of reciprocal pair edges to neuropils"
+        ]}
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_global", "title": "Global connectivity of the adult fly brain", "content_bullets": [
+          "Dataset summary: 127,978 neurons, 2,613,129 thresholded connections, 32 million synapses at threshold 5",
+          "Average in/out-degree 20.5; Pearson R between in- and out-degree 0.76, p < 0.001",
+          "Connection probability 0.000161; >71% of connections occur between neurons within 50 microns while those pairs are <3% of all pairs",
+          "Single giant SCC with 93.3% of neurons (avg. shortest directed path 4.42 hops, max 13); single giant WCC with 98.8% (avg. undirected path 3.91 hops, max 11)",
+          "SCC splits only when neurons of total degree ~50 are removed; hemispheric split at about 60% removal; pruning by smallest degree leaves single giant SCC throughout"
+        ]},
+        {"id": "results_rich_club", "title": "A large rich club in the fly brain", "content_bullets": [
+          "Rich-club regime 37 <= total degree <= 93; 40,218 neurons (~30% of the brain) classified as rich club",
+          "Within-rich-club connection probability 0.000870, 5.4x global probability",
+          "Comparison: C. elegans rich club contains 11 neurons (~4%); no out-degree-only rich club in fly, in-degree threshold 10",
+          "Spectral analysis: forward random walk stationary distribution puts 61.2% of mass on 3% of neurons (attractors, GNG-biased); reverse walk places 42.4% of mass on 3% of neurons (repellers, AL/ME-biased)"
+        ]},
+        {"id": "results_motifs2", "title": "Reciprocal connections and neurotransmitter composition", "content_bullets": [
+          "Whole-brain reciprocity 0.138 exceeds ER, CFG, and spatial null models (Table 2)",
+          "Clustering coefficient 0.0463 (also reported as 0.0477 in one passage) exceeds ER (0.0003), CFG, and spatial null",
+          "77,607 of 127,978 neurons (~2 in 3) participate in at least one reciprocal connection",
+          "On average 23% incoming and 18% outgoing connections per neuron are reciprocal; reciprocal-edge strengths exceed unidirectional-edge strengths",
+          "ach-GABA is the most common reciprocal pairing; ach-glutamate is second; ach-ach pairs are under-represented; E-I pairs are stronger than E-E",
+          "GABAergic neurons dominate high reciprocal-degree tail; most neurons with reciprocal degree > 100 are GABAergic"
+        ]},
+        {"id": "results_motifs3", "title": "Three-node motifs are biased toward recurrence", "content_bullets": [
+          "Feedforward motifs (#1-3) are under-represented vs. ER and CFG nulls; recurrent motifs (#7-13, especially #10, #12, #13) are over-represented",
+          "Edges in three-node motifs are stronger than the average brain edge; recurrent-motif edges stronger than feedforward ones",
+          "Feedforward loops (motif #4): predominantly cholinergic, most common composition is ach-ach-ach (feedforward excitation)",
+          "3-unicycles (motif #7): at least one inhibitory (GABA or glutamate) edge in the three most common compositions",
+          "Small-worldness: average undirected path 3.91 vs. ER 3.57, clustering 0.0463 vs. ER 0.0003; small-world coefficient far exceeds C. elegans (S_Delta 3.21) and approaches the internet (S_Delta 98.1)"
+        ]},
+        {"id": "results_integrators_broadcasters", "title": "Broadcasters, integrators, and sensory proximity", "content_bullets": [
+          "Within the intrinsic rich club: 676 broadcasters (out >= 5x in), 638 integrators (in >= 5x out), 37,093 balanced",
+          "Broadcasters 75% cholinergic; integrators 49% cholinergic with enriched dopaminergic fraction, suggesting learning roles",
+          "Optic-lobe intrinsic neurons under-represented in rich club; central-brain intrinsic neurons over-represented; broadcasters include many Mi1 and Tm3 medulla neurons",
+          "Only 11% of all neurons have bilateral inputs or outputs; rich-club neurons 18% and 17%; integrators 23%; broadcasters 16%",
+          "Probabilistic information-flow ranking: rich-club mean percentile rank 44% across all sensory inputs; integrators 43%; broadcasters 53%; integrators often <10% percentile rank"
+        ]},
+        {"id": "results_neuropils", "title": "Neuropil-specific connectivity, NSRNs, and motif heterogeneity", "content_bullets": [
+          "52% of all connection weights are internal to a single neuropil; internal connections more likely to be inhibitory",
+          "Reciprocity highest in central complex (FB, EB, NO) and antennal lobes; relative reciprocity high in mushroom bodies and medullae",
+          "1,863 neuropil-specific highly reciprocal neurons (NSRNs) identified; 54% GABAergic, 10% glutamatergic",
+          "12.1% of reciprocal pairs are formed by connections across two neuropils; cross-midline pairs common (AL(L)/AL(R), AOTU(L)/AOTU(R), LAL(L)/LAL(R))",
+          "Feedforward loops over-represented in most neuropils but under-represented in FB, EB, NO, MB; 3-unicycles over-represented only in ME and GNG"
+        ]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Summary: fly brain is robustly interconnected with short path lengths, a very large distributed rich club, and pervasive recurrent motifs that span regions",
+        "Implication for whole-brain computation: whole-brain activity patterns observed in fly and other species are consistent with a densely recurrent architecture, not a predominantly feedforward one",
+        "The rich club compensates for anatomical bottlenecks: only 12% cross hemispheres and 6% cross central brain/optic lobe, yet path lengths remain short because rich-club neurons preferentially span these bottlenecks",
+        "Cross-species comparison: reciprocity and clustering coefficient are comparable across fly, C. elegans, larval zebrafish hindbrain, and mouse L2/3, hinting at conserved local architecture despite large sparsity differences",
+        "Limitations: neurotransmitter predictions are 94% accurate per neuron with known systematic errors (Kenyon cells manually corrected); Dale's law assumed; gap junctions and neuropeptidergic signaling not captured; synapse threshold choice affects topology; partial sub-volume datasets bias cross-species comparisons",
+        "Outlook: additional whole-brain connectomes (more flies, VNC, other species) will enable comparative connectomics to distinguish conserved vs. species-specific architecture; rich-club, integrator, and broadcaster neurons are candidate sites for functional experiments and multi-sensory integration studies"
+      ],
+      "approx_length": "1.25 pages"
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusion",
+      "content_bullets": [
+        "The first whole-brain adult Drosophila connectome at synapse resolution is organized around a large, distributed rich club and pervasive recurrent motifs rather than hub-dominant or feedforward structure",
+        "Sub-populations of broadcasters, integrators, and neuropil-specific reciprocal neurons provide a quantitative starting point for circuit-level experiments and modeling",
+        "Network statistics reported here serve as a baseline for future comparisons across individual flies, species, and developmental stages"
+      ],
+      "approx_length": "0.25 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Data products and neuron populations",
+      "columns": ["Product / population", "Count", "Reference figure"],
+      "data_source": "experimental_log Table 1 caption; population counts from Results (40,218 rich club; 676 broadcasters; 638 integrators; 37,093 balanced; 1,863 NSRNs; 77,607 reciprocal participants)",
+      "caption_sketch": "Data products, computed statistics, and neuron populations identified in this work. Counts are extracted verbatim from the experimental log."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Connection probability, reciprocity, and clustering coefficient in the fly brain and comparison networks",
+      "columns": ["Network", "Connection probability", "Reciprocity", "Clustering coefficient"],
+      "data_source": "experimental_log Table 2 caption and Results section (fly: 0.000161, 0.138, 0.0463; null models and comparison species described verbatim)",
+      "caption_sketch": "Connection probability, reciprocity, and clustering coefficient in the fly brain with threshold 5 synapses/connection, compared to ER, CFG, and two-zone spatial null models, and to published values for C. elegans hermaphrodite/male, larval zebrafish hindbrain, and mouse L2/3 visual cortex."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Rich-club, integrator, and broadcaster sub-populations and their properties",
+      "columns": ["Population", "Count / fraction", "% cholinergic", "% bilateral inputs", "Mean sensory percentile rank"],
+      "data_source": "Results sections on rich club (40,218, ~30%), broadcasters (676, 75% ach, 16% bilateral, rank 53%), integrators (638, 49% ach, 23% bilateral, rank 43%), whole rich club (18% bilateral inputs, rank 44%)",
+      "caption_sketch": "Composition of rich-club sub-populations. Counts, neurotransmitter composition, bilateral-connectivity fractions, and mean percentile rank relative to all sensory inputs are reproduced verbatim from the experimental log."
+    }
+  ],
+  "figure_plan": [
+    {
+      "figure_id": "fig1",
+      "title": "Whole-brain network properties",
+      "type": "multi-panel (schematic + bar/line charts)",
+      "data_source": "Results: 127,978 neurons; 93.3% SCC; 98.8% WCC; rich-club Phi_norm vs. degree (range 37-93)",
+      "notes": "Use available statistics from Figure 1 caption. Panels illustrating the 93.3% SCC, 98.8% WCC, rich-club range 37 to 93."
+    },
+    {
+      "figure_id": "fig2",
+      "title": "Rich-club, broadcaster, and integrator populations",
+      "type": "bar chart + scatter",
+      "data_source": "Results on rich-club counts (40,218; 676; 638; 37,093) and neurotransmitter composition (ach 75% broadcasters, 49% integrators; bilateral 18%/17% rich club, 23%/16% integrator/broadcaster)",
+      "notes": "Bar chart of population sizes; stacked bar of ach/GABA/glut/da composition across all intrinsic neurons, rich club, integrators, broadcasters."
+    },
+    {
+      "figure_id": "fig3",
+      "title": "Reciprocity and three-node motif prevalence vs. null models",
+      "type": "grouped bar chart",
+      "data_source": "Results: reciprocity 0.138, clustering 0.0463, small-world vs. ER; motif #1-3 under-representation and #7-13 over-representation (qualitative, no numeric ratios provided)",
+      "notes": "Plot reciprocity and clustering vs. ER (0.0003 clustering) and schematic over/under-representation direction for motifs using +/- labels (no fabricated numbers)."
+    },
+    {
+      "figure_id": "fig4",
+      "title": "Percentile rank of rich-club populations relative to sensory inputs",
+      "type": "bar chart",
+      "data_source": "Results: rich club mean percentile rank 44%, integrators 43%, broadcasters 53%",
+      "notes": "Three bars with the three mean percentile ranks."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "rich club organization brain connectome",
+      "small world network brain C elegans fly mouse",
+      "whole brain connectome Drosophila FlyWire",
+      "network motifs neural circuits feedforward loop",
+      "EM connectomics neurotransmitter prediction"
+    ],
+    "micro_queries": [
+      "C. elegans connectome rich club hub neurons AVA AVB",
+      "hemibrain Drosophila central complex network",
+      "configuration model null network neuroscience",
+      "mouse visual cortex L2/3 connectivity motifs",
+      "larval zebrafish hindbrain oculomotor connectome",
+      "acetylcholine GABA reciprocal connections inhibition",
+      "mushroom body APL neuron feedback inhibition",
+      "antennal lobe local neurons Drosophila",
+      "information flow model sensory input ranking connectome",
+      "central complex ring neurons heading representation",
+      "spatial null model connectome distance dependence"
+    ],
+    "must_cite": [
+      "Dorkenwald et al. 2023 FlyWire whole brain connectome",
+      "Schlegel et al. 2021 / 2024 fly cell typing information flow",
+      "Eckstein et al. neurotransmitter prediction from EM",
+      "Cook et al. 2019 male C. elegans connectome",
+      "Varshney et al. 2011 C. elegans structural properties",
+      "Scheffer et al. 2020 hemibrain connectome",
+      "Shih et al. 2015 mesoscale Drosophila rich club",
+      "van den Heuvel and Sporns human rich club",
+      "Watts Strogatz 1998 small world networks",
+      "Milo et al. 2002 network motifs",
+      "Colizza et al. 2006 detecting rich club",
+      "Song et al. 2005 cortical motifs mouse",
+      "Svara et al. larval zebrafish hindbrain",
+      "Winding et al. larva brain connectome",
+      "Loomba et al. mouse visual cortex connectomics"
+    ],
+    "citation_target": 30
+  }
+}

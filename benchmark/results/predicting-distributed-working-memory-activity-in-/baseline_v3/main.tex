@@ -1,0 +1,115 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\title{Predicting Distributed Working Memory Activity in a Large-Scale Mouse Brain: the Importance of the Cell Type-Specific Connectome}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Recent advances in connectome and neurophysiology make it possible to probe whole-brain mechanisms of cognition. We developed a large-scale model of the mouse multiregional brain for working memory, built on mesoscopic connectome data for inter-areal cortical connections and endowed with a macroscopic gradient of measured parvalbumin-expressing (PV) interneuron density. PV cell fraction is negatively correlated with cortical hierarchy (Pearson $r = -0.35$, $p < 0.05$). Simulating a visual delayed-response task, the delay-period firing rate is positively correlated with cortical hierarchy ($r = 0.91$, $p < 0.05$) and negatively correlated with PV cell fraction ($r = -0.43$, $p < 0.05$); hierarchy predicts the delay-period firing rate ($r = 0.89$, $p < 0.05$) with a smaller correlation for PV fraction ($r = -0.4$, $p < 0.05$). Inputs to somatosensory and auditory primary areas gave analogous results ($r = 0.89$, $p < 0.05$ to hierarchy; $r = -0.4$, $p < 0.05$ to PV fraction). Traditional graph-theory measures (input strength, eigenvector centrality) are uncorrelated with activity patterns ($r = 0.25$, $p = 0.25$; $r = 0.24$, $p = 0.29$), whereas cell type-specific measures predict them well ($r = 0.89$, $p < 0.05$ for cell type-specific input strength; $r = 0.94$, $p < 0.05$ for cell type-specific eigenvector centrality; $r = 0.90$, $p < 0.05$ for ``sign-only'' and no-PV input strength). Inhibiting single or paired core areas reduces network firing by 15\% and 48\%, respectively; inhibiting a single readout area reduces firing by only 3\%. In a thalamocortical network, cortical delay-period firing is correlated with cortex-only models ($r = 0.77$, $p < 0.05$) and with thalamic hierarchy ($r = 0.94$, $p < 0.05$). Within a parameter regime ($\mu_{EE} = 0.04$ nA, $g_{E,\mathrm{self}} = 0.44$ nA), the model supports 143 distinct attractor states.
+\end{abstract}
+
+\section{Introduction}
+Our understanding of local neural computation---orientation selectivity in V1 or grid cells in medial entorhinal cortex---contrasts with comparatively limited knowledge of distributed processes across multiple brain regions \cite{wang2022theory,steinmetz2021neuropixels,stringer2019spontaneous,musall2019singletrial,jun2017fully,steinmetz2019distributed}. Working memory is a core cognitive function requiring temporal maintenance of information without external stimulation \cite{baddeley2012working}. Delay-period persistent activity has been reported across multiple brain regions in monkey \cite{fuster1971neuron,funahashi1989mnemonic,goldmanrakic1995cellular,wang2001synaptic,leavitt2017sustained,christophel2017distributed,dotson2018parallel,suzuki2013distinct,xu2017visual}. Connectome-based models of macaque cortex have found that working memory depends on inter-areal connectivity \cite{murray2017multiple,jaramillo2019nonhomogeneous}, synaptic excitation gradients \cite{wang2020macroscopic,mejias2022mechanisms}, and dopamine modulation \cite{froudistwalsh2021dopamine}.
+
+Mnemonic activity is also distributed in mouse brain \cite{liu2014activation,schmitt2017thalamic,guo2017maintenance,bolkan2017thalamic,gilad2018distributed}. The gradient of dendritic spines per pyramidal cell that supports mouse-monkey differences is absent or weak in the mouse \cite{gilman2017areal,ballesteros2010density}, raising the possibility of fundamentally different distributed working memory mechanisms between species. Here, we built an anatomically constrained mouse-cortex model informed by mesoscopic connectivity data \cite{oh2014mesoscale,gamanut2018mouse,harris2019hierarchical,kim2017brain} and validated it against recent mouse experiments \cite{guo2017maintenance,gilad2018distributed}. We examined whether a decreasing gradient of PV-mediated inhibition \cite{kim2017brain,fulcher2019multimodal,wang2020macroscopic} and long-range excitatory connections shape distributed working memory. We introduce cell type-specific graph-theoretic measures and identify a core subnetwork for memory maintenance through simulated perturbations.
+
+\section{Methods}
+\subsection{Large-scale mouse cortical network}
+Each of the 43 cortical areas is described as a local circuit using a mean-field reduction \cite{wongwang2006} of a spiking network \cite{wang2002probabilistic}. Local populations include an excitatory (E) population with recurrent self-excitation $g_{E,\mathrm{self}}$, and an inhibitory (PV-like) population with connection $g_{EI,0}$. Long-range E-to-E connections have strength parameterized by $\mu_{EE}$. PV cell fraction data come from measurements \cite{kim2017brain,fulcher2019multimodal}. Reference parameter regime: $g_{E,\mathrm{self}} = 0.4$ nA, $g_{EI,0} = 0.192$ nA, $\mu_{EE} = 0.1$ nA. Alternative regimes explored include $g_{E,\mathrm{self}} = 0.6$ nA, $g_{EI,0} = 0.5$ nA, $\mu_{EE} = 0.19$ nA, and attractor analyses in the range $g_{E,\mathrm{self}} = 0.4$--$0.44$ nA and $\mu_{EE} = 0.01$--$0.05$ nA.
+
+\subsection{Task simulation and analyses}
+A 500 ms visual input is applied to area VISp, somatosensory input to SSp-bfd, or auditory input to AUDp, propagating to the rest of the network. Delay-period firing rates were computed across areas. Cell type-specific graph measures were developed that weight interareal connections by the identity (E or I) of their targets. Cortical hierarchy was defined as in \cite{harris2019hierarchical}.
+
+Optogenetic-like inhibition was simulated by silencing single or pairs of areas. Areas were classified as ``core'' (required for persistent activity) or ``readout.'' In thalamocortical analyses, thalamic nuclei were incorporated alongside cortex. To identify attractor states, simulations were repeated from multiple initial conditions; in one parameter regime ($\mu_{EE} = 0.04$ nA, $g_{E,\mathrm{self}} = 0.44$ nA), 143 distinct attractors were enumerated.
+
+\section{Results}
+\subsection{PV gradient and hierarchy shape distributed working memory}
+Across areas, the PV cell fraction is negatively correlated with cortical hierarchy (Pearson $r = -0.35$, $p < 0.05$). Delay-period firing rate is positively correlated with hierarchy ($r = 0.91$, $p < 0.05$) and negatively correlated with PV cell fraction ($r = -0.43$, $p < 0.05$). The delay activity pattern has a stronger correlation with hierarchy ($r = 0.91$) than with PV fraction ($r = -0.43$). Cortical hierarchy predicts the delay-period firing rate of each area well ($r = 0.89$, $p < 0.05$), while the PV cell fraction does so with a smaller correlation coefficient ($r = -0.4$, $p < 0.05$).
+
+Delay-period firing under somatosensory SSp-bfd stimulation is positively correlated with hierarchy ($r = 0.89$, $p < 0.05$) and moderately with PV fraction ($r = -0.4$, $p < 0.05$). Under auditory AUDp stimulation, the same pattern is observed: delay-period firing correlates positively with hierarchy ($r = 0.89$, $p < 0.05$) and moderately with PV fraction ($r = -0.4$, $p < 0.05$).
+
+\begin{table}[h]
+\centering
+\caption{Correlations with delay-period firing rate across stimulation conditions.}
+\begin{tabular}{lll}
+\toprule
+Stimulation & Correlation with hierarchy & Correlation with PV fraction \\
+\midrule
+VISp visual & $r = 0.91$, $p < 0.05$ & $r = -0.43$, $p < 0.05$ \\
+VISp (prediction) & $r = 0.89$, $p < 0.05$ & $r = -0.4$, $p < 0.05$ \\
+SSp-bfd somatosensory & $r = 0.89$, $p < 0.05$ & $r = -0.4$, $p < 0.05$ \\
+AUDp auditory & $r = 0.89$, $p < 0.05$ & $r = -0.4$, $p < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dependence of persistent activity on inhibitory parameters}
+With both CIB (cell-type-specific inhibitory bias) and PV gradient present, delay firing vs PV fraction: $r = -0.42$, $p < 0.05$. Removing the PV gradient but retaining CIB, delay firing vs hierarchy: $r = 0.85$, $p < 0.05$. Removing CIB (retaining PV gradient), delay firing vs PV fraction: $r = -0.74$, $p < 0.05$. In an alternative regime, the analogous values are $r = -0.7$ ($p < 0.05$) with both, $r = 0.95$ ($p < 0.05$) after PV removal, and $r = -0.84$ ($p < 0.05$) after CIB removal. The large-scale model operates in an inhibition-stabilized network (ISN) regime \cite{tsodyks1997paradoxical,sanzeni2020inhibition}.
+
+\subsection{Cell type-specific graph measures predict activity}
+Traditional input strength, which sums all incoming connections, does not correlate with delay firing rate in areas showing persistent activity ($r = 0.25$, $p = 0.25$), and input strength cannot predict which areas show persistent activity (prediction accuracy = 0.51). Eigenvector centrality likewise fails ($r = 0.24$, $p = 0.29$). In contrast, cell type-specific input strength strongly correlates with delay firing ($r = 0.89$, $p < 0.05$); cell type-specific eigenvector centrality also predicts firing rates ($r = 0.94$, $p < 0.05$). Sign-only input strength correlates at $r = 0.90$, $p < 0.05$. No-PV input strength: $r = 0.90$, $p < 0.05$. Loop strengths across different loop lengths are highly correlated (length 3 vs length 2, $r = 0.96$, $p < 0.05$).
+
+\begin{table}[h]
+\centering
+\caption{Predictive value of graph measures for delay-period firing rate in persistent-activity areas.}
+\begin{tabular}{lll}
+\toprule
+Measure & $r$ & $p$ \\
+\midrule
+Input strength & 0.25 & 0.25 \\
+Eigenvector centrality & 0.24 & 0.29 \\
+Cell type-specific input strength & 0.89 & $p < 0.05$ \\
+Cell type-specific eigenvector centrality & 0.94 & $p < 0.05$ \\
+Sign-only input strength & 0.90 & $p < 0.05$ \\
+No-PV input strength & 0.90 & $p < 0.05$ \\
+Loop strength, length 3 vs length 2 & 0.96 & $p < 0.05$ \\
+Persistent-area prediction accuracy (input strength) & -- & 0.51 \\
+High cell type-specific loop $\to$ core prediction accuracy & -- & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Core vs readout areas identified by simulated perturbations}
+Inhibiting single core areas reduced the network-average firing rate by 15\%; inhibiting a single readout area by 3\%; inhibiting pairs of readout areas reduced firing rate by 48\%. High cell type-specific loop measures predict core-area identity with 100\% accuracy.
+
+\subsection{Thalamocortical network and cross-model correspondence}
+In a thalamocortical network, the delay activity pattern across cortical areas has a positive correlation with cortical hierarchy ($r = 0.78$, $p < 0.05$). The correlation with PV cell fraction is $r = -0.26$, $p = 0.09$ (not significant). Within the thalamus, firing rate correlates with thalamic hierarchy at $r = 0.94$, $p < 0.05$. Delay-period firing rates of cortical areas in the thalamocortical network correlate with the cortex-only model firing rates at $r = 0.77$, $p < 0.05$.
+
+\begin{table}[h]
+\centering
+\caption{Thalamocortical network correlations.}
+\begin{tabular}{lll}
+\toprule
+Comparison & $r$ & $p$ \\
+\midrule
+Cortical activity vs cortical hierarchy (thalamocortical) & 0.78 & $p < 0.05$ \\
+Cortical activity vs PV fraction (thalamocortical) & $-0.26$ & 0.09 \\
+Thalamic firing vs thalamic hierarchy & 0.94 & $p < 0.05$ \\
+Cortical firing: thalamocortical vs cortex-only & 0.77 & $p < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Many attractor states coexist}
+Two areas each with two selective persistent states give $2\times2=4$ attractors even without coupling; in the full model under $\mu_{EE} = 0.04$ nA and $g_{E,\mathrm{self}} = 0.44$ nA, 143 distinct attractors were identified. On average, the correlation coefficient between cell type-specific input strength and delay-period firing across attractors exceeded that for plain input strength. In one attractor ($\mu_{EE} = 0.03$ nA, $g_{E,\mathrm{self}} = 0.44$ nA), five areas show persistent activity: VISa, VISam, FRP, MOs, and ACAd.
+
+\section{Discussion}
+We developed the first large-scale connectome-based model of the mouse cortex for working memory, built on mesoscopic connectivity \cite{oh2014mesoscale,gamanut2018mouse,harris2019hierarchical,kim2017brain} and a PV-cell density gradient. Distributed mnemonic representation arises despite the absence of a macroscopic gradient of synaptic excitation characteristic of primate cortex \cite{gilman2017areal,ballesteros2010density,wang2020macroscopic}. Instead, a decreasing PV gradient and long-range excitation shape delay-period firing.
+
+A key result is that traditional graph-theory measures---ignoring cell-type targets---fail to predict which areas maintain persistent activity (input strength $r = 0.25$, $p = 0.25$; eigenvector centrality $r = 0.24$, $p = 0.29$). Cell type-specific measures, which account for whether inter-areal projections target excitatory or inhibitory cells, raise predictive $r$ values to 0.89--0.94. Loop measures calibrated to cell type identify core areas with 100\% accuracy. Pair-wise silencing of readout areas reduces average firing by 48\%, much larger than the 3\% single-area effect, consistent with distributed, redundant encoding.
+
+These findings motivate cell type-specific connectomics \cite{oh2014mesoscale,harris2019hierarchical,kim2017brain} as a prerequisite for predicting emergent multi-region dynamics. The existence of 143 attractor states in a modest parameter regime suggests rich internal-state capacity and connects with mixture-of-attractor frameworks \cite{wang2021synaptic,amit1995model}. Limitations include a deterministic mean-field reduction and a restricted stimulus set; extensions to stimulus-rich and reward-guided tasks remain for future work.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

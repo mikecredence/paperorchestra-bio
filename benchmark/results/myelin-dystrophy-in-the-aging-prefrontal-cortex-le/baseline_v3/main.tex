@@ -1,0 +1,141 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\title{Myelin Dystrophy in the Aging Prefrontal Cortex Leads to Impaired Signal Transmission and Working Memory Decline: a Multiscale Computational Study}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Normal aging leads to myelin alterations in the rhesus monkey dorsolateral prefrontal cortex (dlPFC), positively correlated with cognitive impairment. Remyelination with shorter and thinner myelin sheaths is hypothesized to partially compensate for myelin degradation, but computational modeling has not yet explored these phenomena together systematically. Here, we use a two-pronged modeling approach to determine how age-related myelin changes affect spatial working memory. A multicompartment pyramidal neuron model tuned to rhesus monkey dlPFC data, with an axon that includes paranodes, juxtaparanodes, internodes, and tight junctions, was used to quantify conduction velocity (CV) changes and action potential (AP) failures after demyelination and remyelination. Across a cohort of 50 young (control) neurons, removing 25\% of lamellae had a negligible effect on CV regardless of the number of segments affected, but when all lamellae were removed CV slowed by 38 $\pm$ 10\% with 25\% of segments demyelinated (35 $\pm$ 13\% of APs failed), and by 72 $\pm$ 8\% with 75\% of segments demyelinated (45 $\pm$ 13\% of APs failed). Remyelinating all previously demyelinated segments with even 10\% of lamellae brought AP failure rates down to 14.6 $\pm$ 5.1\%; remyelination with 75\% of lamellae reduced failures to 1.8 $\pm$ 1.1\%. These single-neuron results were incorporated into a 20{,}000-neuron spiking network model (16{,}000 excitatory, 4{,}000 inhibitory) of the oculomotor delayed response task. Memory duration and diffusion significantly correlated with the percentage of normal myelin sheaths (memory duration: r = 0.703, p = 3.86$\times$10$^{-10}$; diffusion constant: r = $-$0.802, p = 1.26$\times$10$^{-14}$) and with the percentage of new myelin sheaths (memory duration: r = $-$0.852, p = 4.92$\times$10$^{-7}$; diffusion constant: r = 0.607, p = 0.003), matching empirical observations of 3--6\% dystrophic sheaths and a 90\% increase in paranodal profiles with aging. Biologically plausible myelin dystrophy, if uncompensated, can account for substantial working memory impairment with aging.
+\end{abstract}
+
+\section{Introduction}
+Normal aging often impairs learning and memory in humans \cite{albert1993neuropsychological,salthouse2003working,fisk2004aging,rhodes2004agerelated,sorel2008aging} and non-human primates \cite{moore2006agerelated,shamy2011nonhuman,moore2017agerelated,comrie2018simple,chang2022dendritic,moore2023agerelated}. In rhesus monkey, age-related working memory decline is accompanied by sublethal structural and functional changes in vasculature, pyramidal neurons, glia, and white matter \cite{hof2004cellular,luebke2010age,peters2012neural,morrison2012ageing}. Cortical pyramidal neurons do not die but undergo morphological and physiological alterations in dlPFC, the critical circuit for working memory, including loss of dendritic spines and synapses \cite{chang2005layer,peters2008loss} and electrophysiological changes in vitro \cite{ibanez2020parallel} and in vivo \cite{wang2011neuronal}.
+
+Extensive myelin dystrophy during normal aging has been observed in gray and white matter \cite{peters2001effect,bowley2010age,peters2007effects}, including dlPFC \cite{peters2002effects,peters2003effects,peters2009effects}. Ultrastructural studies report that 3--6\% of dlPFC myelin sheaths exhibit splitting of the major dense line, balloons, and redundant myelin \cite{peters2002effects}. Remyelination is observed across the adult lifespan, with a 90\% increase in paranodal profiles in aged vs.\ young monkeys, indicating higher numbers of internodal sheaths with aging \cite{peters2003effects}. Many neuronal changes correlate with cognitive impairment \cite{luebke2010age,peters2012neural,shobin2017microglia,dimovasili2022aging}, but the causal contributions of specific changes remain unclear \cite{konar2016age,motley2018selective,cleeland2019agerelated}.
+
+Modeling studies have examined axon-parameter effects on conduction velocity \cite{rushton1951theory,goldman1968computation,brill1977conduction,moore1978simulations,waxman1980determinants,chomiak2009axon}, representations of the axon \cite{blight1985computer,richardson2000modelling,mcintyre2002modeling,gow2008extended,dekker2014conductive}, and demyelination or remyelination in disease \cite{coggan2015imbalance,lasiene2008myelination,powers2012remyelination,scurfield2018diameter}. Prior network models have addressed CV-driven synchrony \cite{pajevic2014role,karimian2019synchronization,noori2020activity,pajevic2023oscillations} but not spiking-network working memory. Our recent model showed that increased AP firing and loss of 30\% of excitatory and inhibitory synapses impair working memory \cite{ibanez2020parallel}, but did not include myelin.
+
+Here we unite a multicompartment model of dlPFC pyramidal neurons with a spiking network model of spatial working memory to investigate how demyelination and remyelination affect signal transmission and working memory precision.
+
+\section{Methods}
+\subsection{Single-neuron model}
+We extended a biophysically detailed Rumbell et al.\ \cite{rumbell2016dimensions} multicompartment model of a rhesus monkey dlPFC Layer 3 pyramidal neuron in NEURON \cite{carnevale2006neuron} (68 compartments for soma and dendrites). We attached an axon with 101 nodes (13 compartments each) alternating with 100 myelinated segments, each flanked by paranodes (5 compartments) and juxtaparanodes (9 and 5 compartments) around an internode, following Gow and Devaux \cite{gow2008extended} and Scurfield and Latimer \cite{scurfield2018diameter}. Tight junctions between innermost lamellae and axolemma were included. Axons included passive membranes with NaF and KDR in nodes; simulations used a 0.025 ms time step. After a holding current to stabilize the soma at $-70$ mV, constant $+380$ pA current steps were applied for 2 seconds.
+
+A cohort of 50 control models was built by Latin Hypercube Sampling \cite{morris1995exploratory} over eight parameters with empirical ranges (axon diameter, node length, myelinated segment length, number of lamellae, lamella thickness, and scale factors for leak, NaF, and KDR conductances). From 1600 sampled points, 138 met criteria (firing 13--16 Hz at $+380$ pA, silent at 0 pA, CV 0.3--0.8 m/s, saltatory conduction), and 50 were randomly selected. The g-ratio was 0.71 $\pm$ 0.02 with total axon lengths of 1.2 $\pm$ 0.1 cm.
+
+\subsection{Simulating myelin alterations}
+Demyelination was simulated by varying two factors: percentage of segments selected for demyelination (10, 25, 50, 75\%) and percentage of lamellae removed (25, 50, 55, 60, 65, 70, 75, 100\%). For each demyelination percentage, we generated 30 randomized lists of segments. Remyelination replaced an affected segment with two shorter segments separated by a new node. Three factors were varied: demyelination percentage (25, 50, 75\%), remyelination percentage (25, 50, 75, 100\%), and lamellae restoration percentage (10, 25, 50, 75\%), under complete (all lamellae removed) or partial (half lamellae removed) demyelination. CV change and AP failures were computed relative to unperturbed models; CV recovery was defined as percent improvement relative to complete-demyelination CV change.
+
+\begin{table}[h]
+\centering
+\caption{Axon parameter ranges used for Latin Hypercube Sampling (Table 1).}
+\begin{tabular}{ll}
+\toprule
+Parameter & Range / Notes \\
+\midrule
+Axon diameter & empirical dlPFC range \\
+Node length & empirical \cite{peters2003effects} \\
+Length of myelinated segments & empirical \cite{waxman1980determinants} \\
+Number of myelin lamellae & empirical \cite{peters2003effects} \\
+Thickness per lamella & empirical \cite{moore1978simulations,peters2003effects} \\
+Scale factor for nodal leak conductance & 0--1 \\
+Scale factor for nodal NaF conductance & 0--1 \\
+Scale factor for nodal KDR conductance & 0--1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Spiking neural network model}
+We adapted the probabilistic ring network of Hansel and Mato \cite{hansel2013shortterm}: $N = 20{,}000$ leaky integrate-and-fire neurons ($N_E = 16{,}000$ excitatory, $N_I = 4{,}000$ inhibitory). Each neuron received $K = 500$ inputs ($K_E = 0.8K$, $K_I = 0.2K$). AMPA, NMDA, and GABA synapses were included; excitatory-to-excitatory synapses had short-term facilitation \cite{markram1998differential,tsodyks1998neural}. The oculomotor delayed response task (DRT) had 2 s fixation, 1 s cue, and 4 s delay periods. Simulations used Brian2 \cite{stimberg2019brian} with 280 trials per network across 10 networks with distinct connectivities.
+
+To implement AP failures in the network, per demyelination/remyelination condition we computed $P_{\mathrm{transmission}} = 1 - P_{\mathrm{failure}}$ for each cohort neuron and assigned probabilities to the corresponding percentages of excitatory neurons. CV slowing was implemented as random synaptic delays uniformly distributed in [0, 100] ms (control) and in [0, 40] or [0, 85] ms (perturbed). Working memory performance was quantified by memory strength, memory duration (time over which memory strength $\geq$ 0.4), bump drift, and diffusion constant, obtained via a population vector decoder.
+
+\subsection{Quantification of normal and new sheaths across model-neuron groups}
+Groups of 50 model neurons with random combinations of intact and demyelinated (or remyelinated) axons were sorted by origin and divided into 0.5 $\mu$m longitudinal sections. We selected 60 groups with $>$80\% normal sheaths for demyelination (40 groups with all lamellae removed, 20 groups with 75\% removed), and 22 groups with $<$45\% new sheaths for remyelination (partial demyelination with 25\% lamellae added back).
+
+\section{Results}
+\subsection{Progressive demyelination causes CV slowing and AP failures}
+Across a cohort of 50 control neurons, myelin alterations caused CV changes and AP failures whose magnitude depended on axon geometry. Removing 25\% of lamellae had a negligible effect on CV regardless of the number of segments affected. However, when all lamellae were removed, CV slowed drastically: by 38 $\pm$ 10\% even with 25\% of segments demyelinated (35 $\pm$ 13\% of APs failed), and by 72 $\pm$ 8\% with 75\% of segments demyelinated (45 $\pm$ 13\% of APs failed). A representative axon demyelinated at 75\% of segments by removing 50\% of lamellae exhibited a 70\% reduction in CV and failure of one AP; subsequent remyelination of all affected segments with 50\% of lamellae recovered the failed AP and 98\% of the CV delay relative to the demyelinated case. Lasso regression identified five of 12 parameters as primary contributors to CV change, with myelinated segment length having the largest negative weight.
+
+\subsection{Remyelination partially restores CV and reduces AP failures}
+When all demyelinated segments were subsequently remyelinated with sufficient lamellae, CV recovered substantially and almost no AP failed. Remyelinating all previously demyelinated segments, even adding just 10\% of lamellae, brought AP failure rates down to 14.6 $\pm$ 5.1\%. Remyelinating all affected segments with 75\% of lamellae nearly eliminated AP failures (1.8 $\pm$ 1.1\%). Incomplete remyelination with bare segments retained high AP failure rates: when one-eighth of segments were remyelinated with the maximal amount of lamellae and one-eighth were left bare, 25.7 $\pm$ 11.5\% of APs failed across the cohort. Under partial demyelination, the analogous paradigm yielded 10.6 $\pm$ 7.6\% AP failures. Applying Lasso regression to CV recovery identified 10 of 12 parameters as significant contributors (only myelin length and axoplasm resistance were omitted).
+
+\begin{table}[h]
+\centering
+\caption{Single-neuron effects of demyelination on CV change and AP failure rate.}
+\begin{tabular}{lll}
+\toprule
+Condition (all lamellae removed) & CV change (mean $\pm$ SEM) & AP failures (mean $\pm$ SEM) \\
+\midrule
+25\% segments demyelinated & $-$38 $\pm$ 10\% & 35 $\pm$ 13\% \\
+75\% segments demyelinated & $-$72 $\pm$ 8\% & 45 $\pm$ 13\% \\
+25\% lamellae removed (any segments) & negligible & negligible \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{AP failures under remyelination conditions.}
+\begin{tabular}{ll}
+\toprule
+Remyelination condition & AP failures (mean $\pm$ SEM) \\
+\midrule
+100\% of previously demyelinated segments, 10\% lamellae & 14.6 $\pm$ 5.1\% \\
+100\% of previously demyelinated segments, 75\% lamellae & 1.8 $\pm$ 1.1\% \\
+1/8 remyelinated + 1/8 bare (complete demyelination) & 25.7 $\pm$ 11.5\% \\
+Same paradigm, partial (50\%) demyelination & 10.6 $\pm$ 7.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{AP failures impair working memory in the network model}
+In 10 young control networks the activity bump encoded a remembered cue and persisted through a 4 s delay; average memory duration was 4 s and average diffusion constant was 0.064. Propagation delays in the range quantified from the single-neuron model had no effect on performance; unrealistically long delays caused a slight decrease. AP failures, in contrast, had a large impact. Memory duration was preserved when removing up to 55\% of lamellae per segment regardless of the percentage of segments altered. Between 55\% and 75\% lamellae removal, memory duration decreased progressively with the percentage of demyelinated segments (10\% to 50\%), with a ceiling above 50--75\%. Memory diffusion increased once between 25\% and 50\% of lamellae were removed. When 100\% of lamellae were removed, memory duration dropped to $\leq$ 1 s regardless of segment percentage.
+
+\subsection{Complete remyelination recovers network function; incomplete remyelination does not}
+Remyelination of 100\% of previously demyelinated segments, regardless of initial demyelination level, recovered memory duration to control levels. Memory precision was only fully recovered when 75\% of lamellae were added back. Incomplete remyelination (25--75\%) of previously completely demyelinated segments left memory duration $\leq$ 1 s; however, partial demyelination followed by 25--75\% remyelination restored both memory duration and diffusion closer to control.
+
+\subsection{Correlations with empirical myelin data}
+Linear regressions across network groups with varying proportions of normal and demyelinated axons showed a significant positive correlation between memory duration and percentage of normal sheaths (r = 0.703, p = 3.86$\times$10$^{-10}$) and a significant negative correlation with diffusion constant (r = $-$0.802, p = 1.26$\times$10$^{-14}$). These bracket the empirical 90--100\% normal-sheath range reported in \cite{peters2002effects}. For groups with intact and partly remyelinated axons, memory duration correlated negatively with percentage of new sheaths (r = $-$0.852, p = 4.92$\times$10$^{-7}$) and diffusion constant correlated positively (r = 0.607, p = 0.003). The empirical paranodal-profile percentages are 5\% in young monkeys and 17\% in aged monkeys \cite{peters2003effects}.
+
+\begin{table}[h]
+\centering
+\caption{Network performance correlations with myelin composition.}
+\begin{tabular}{lll}
+\toprule
+Measure & Correlation with \% normal sheaths & Correlation with \% new sheaths \\
+\midrule
+Memory duration & r = 0.703, p = 3.86$\times$10$^{-10}$ & r = $-$0.852, p = 4.92$\times$10$^{-7}$ \\
+Diffusion constant & r = $-$0.802, p = 1.26$\times$10$^{-14}$ & r = 0.607, p = 0.003 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Alternative working memory mechanisms}
+We implemented an activity-silent working memory network \cite{mongillo2008synaptic,stokes2015activitysilent,barbosa2020interplay} and tested it against AP failures and propagation delays. AP failures produced qualitatively similar working memory errors to the delay-active network; propagation delays had no effect except at unrealistically high values (uniform distribution 0--100 ms).
+
+\section{Discussion}
+This multi-level study showed that age-related myelin degradation and remyelination lead to AP failures which, if uncompensated, can predict working memory decline with aging. Our single-neuron model extends prior work by systematically combining demyelination and remyelination across a 50-neuron cohort spanning biologically plausible axonal morphologies. Past studies examined remyelination alone \cite{scurfield2018diameter} or demyelination alone \cite{stephanova2005compartmental,stephanova2008differences,naud2019linking,lasiene2008myelination,powers2012remyelination}; combining demyelinated and remyelinated segments on the same axon produced substantially higher AP failure rates than previously reported.
+
+Using Lasso regression over the 12-parameter cohort we identified axon diameter, node length, length of myelinated segments, and nodal ion channel densities as principal predictors, consistent with prior modeling \cite{goldman1968computation,moore1978simulations,babbs2013subtle,young2013electrical,schmidt2019knosche}. Better empirical measurements of these parameters in dlPFC would refine these predictions. The multicompartment infrastructure enables future study of dendritic-axonal interactions, pathological node changes \cite{arancibia2014node}, metabolic alterations \cite{gerevich2023metabolic}, or axon collateralization \cite{sengupta2023axon}.
+
+In the spiking network, increasing AP failure probability gradually impaired memory precision and duration, while propagation delays in the empirically plausible range had no effect---the network is asynchronous and governed by firing-rate statistics \cite{vanvreeswijk1996chaos,hansel2013shortterm}. This does not imply CV slowing is irrelevant in vivo: oscillations and synchronization likely also contribute to working memory \cite{gregoriou2009longrange,liebe2012theta,buschman2012synchronous,salazar2012content}. The network additionally predicts an age-related increase in systematic drift biases that could be tested empirically \cite{panichello2019errorcorrecting,bae2021bias,stein2021delaydependent}; future large-scale models can incorporate inter-area interactions \cite{leavitt2017sustained,christophel2017distributed,mejias2022mechanisms}.
+
+Combining neurons with intact and demyelinated axons, our model predicts that myelin dystrophies alone could cause working memory impairment with aging, consistent with Peters and Sethares \cite{peters2002effects}. Combining intact and incompletely remyelinated axons also predicted impaired working memory, matching empirical correlations between cognitive impairment and new myelin sheath proportion \cite{peters2003effects} and reduced oligodendrocyte precursor cell maturation \cite{dimovasili2022aging}. Complete remyelination, with sufficient lamellae and fewer transitions between long and short segments, led to full recovery. Differences in degree of demyelination and remyelination may contribute to cognitive variability among aging individuals \cite{lacreuse2005cognitive,moss2007recognition}.
+
+\section{Conclusions}
+This multiscale modeling extends prior work connecting aging-related changes in dlPFC to working memory \cite{ibanez2020parallel,luebke2010age}, and aligns with the hypothesis that hyperexcitability in aged dlPFC neurons may partially compensate for AP disruptions from dystrophic myelin. Myelin dystrophy also occurs in multiple sclerosis, schizophrenia, bipolar disorder, autism, and after traumatic brain injury \cite{franklin2008remyelination,takahashi2011linking,armstrong2016myelin,gouvea2020brainderived,galvez2020modulation,simkins2021chronic,valdes2022schizophrenia}, conditions in which working memory is often affected \cite{wang2017deficits,hahn2018abnormalities,gold2023working}. Our finding that myelin changes alone can account for working memory impairment positions myelin degradation as a key factor in working memory decline with aging and in neuropathological conditions.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -84,35 +84,27 @@ User Inputs (idea + results + venue)
 - **Stage-isolated execution**: Each sub-skill runs in its own context, communicating only through shared workspace files
 - **BiomedWritingBench**: 143 test cases across 10 biomedical subfields
 
-## Evaluation Results (n=5 papers, LLM-as-judge)
+## Evaluation Results (n=35 papers, LLM-as-judge)
 
-Head-to-head benchmark on 5 diverse biomedical papers — neural speech decoding (Nature Machine Intelligence), blastocyst ploidy prediction (Nature Communications), SUMO E3 ligase / lncRNA (eLife), prefrontal network model (eLife), and AI-accelerated virtual screening (Nature Communications). Each paper has two conditions sharing identical v3 extraction inputs, scored by the same 9-axis rubric.
+Head-to-head benchmark on 35 diverse biomedical papers spanning neuroscience, bioinformatics, cancer genomics, structural biology, drug discovery, reproductive medicine, and more. Each paper has two conditions sharing identical v3 extraction inputs, scored by the same 9-axis rubric. Statistical significance assessed via paired Wilcoxon signed-rank test (one-sided).
 
-### Mean scores across 5 papers
+### Mean scores across 35 papers
 
-| Axis | Single-agent baseline | **Orchestrated skill** | Delta |
-|------|-----------------------|------------------------|-------|
-| Clarity | 88.4 | **92.2** | +3.8 |
-| Rigor | 86.2 | **90.2** | +4.0 |
-| Completeness | 89.4 | **94.0** | +4.6 |
-| Writing | 90.0 | **93.0** | +3.0 |
-| Presentation | 83.6 | **91.2** | +7.6 |
-| Citations | 83.0 | **88.0** | +5.0 |
-| Correctness | 95.2 | **96.4** | +1.2 |
-| Figures | 0 (none by design) | **80.4** | new axis |
-| **Overall** | **88.4** | **91.6** | **+3.2** |
+| Axis | Baseline | **Orchestrated skill** | Delta | p-value | Sig |
+|------|----------|------------------------|-------|---------|-----|
+| Clarity | 82.5 | **86.6** | +4.1 | <0.0001 | *** |
+| Rigor | 83.0 | **85.7** | +2.7 | <0.0001 | *** |
+| Completeness | 79.7 | **88.2** | **+8.4** | <0.0001 | *** |
+| Writing | 81.1 | **87.2** | +6.1 | <0.0001 | *** |
+| Presentation | 80.3 | **85.0** | +4.7 | <0.0001 | *** |
+| Citations | 82.4 | **84.2** | +1.8 | 0.0004 | *** |
+| Correctness | 94.4 | 94.6 | +0.3 | 0.154 | n.s. |
+| Figures | 0 (by design) | **73.6** | new axis | — | — |
+| **Overall** | **83.0** | **86.2** | **+3.2** | **<0.0001** | *** |
 
-### Per-paper overall scores
+### Per-paper wins: **32/35 wins, 2 ties, 1 loss (91% win rate)**
 
-| Paper | Baseline | **Orchestrated** | Delta |
-|-------|----------|------------------|-------|
-| Neural Speech Decoding | 87 | **91** | +4 |
-| Ploidy Prediction | 90 | **92** | +2 |
-| SUMO E3 Ligase | 85 | **90** | +5 |
-| Prefrontal Network | 91 | **93** | +2 |
-| AI Virtual Screening | 89 | **92** | +3 |
-
-**The orchestrated skill beats the single-agent baseline on every axis and every paper.** Correctness stays near-perfect (96.4 vs 95.2) with zero added hallucinations — the stage-isolated pipeline adds structure, figures, and prose depth without sacrificing numerical fidelity.
+**The orchestrated skill significantly outperforms the single-agent baseline on every non-correctness axis (all p<0.001 after paired Wilcoxon).** Correctness is statistically tied at 94.4 vs 94.6 — both conditions faithfully preserve numerical values, with zero hallucinations across 600+ numerical claims spot-checked. The stage-isolated pipeline adds structure, figures, and prose depth without sacrificing numerical fidelity.
 
 Full results and methodology in `benchmark/README.md`.
 

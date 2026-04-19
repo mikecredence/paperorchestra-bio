@@ -1,0 +1,181 @@
+{
+  "title": "Cyclic Homogeneous Oscillation (CHO): Auto-correlation Based Detection of Non-sinusoidal Neural Oscillations in ECoG, EEG, and SEEG",
+  "venue": "Journal of Neuroscience Methods",
+  "format": "single-column",
+  "sections": [
+    {
+      "name": "Abstract",
+      "target_words": 250,
+      "key_points": [
+        "FFT-based methods conflate harmonics of non-sinusoidal oscillations with independent rhythms",
+        "CHO defines three criteria: peaks over 1/f in time and frequency, at least two full cycles, auto-correlation-confirmed periodicity",
+        "Evaluation on synthetic 1/f + non-sinusoidal bursts (2.5 cycles, 1--3 s) and on ECoG (8 subjects), EEG (7 subjects), resting-state ECoG (6 subjects), and SEEG hippocampal recordings (6 subjects)",
+        "At physiological SNR (-7 dB EEG, -6 dB ECoG), CHO detects 50--60% of true oscillations with far higher specificity than FOOOF, OEvent, SPRiNT",
+        "Resting-state: 11 Hz 450 ms auditory, 7 Hz 450 ms motor, 17 Hz Broca's beta, 8 Hz 450 ms hippocampal"
+      ]
+    },
+    {
+      "name": "Introduction",
+      "target_words": 700,
+      "key_points": [
+        "Neural oscillations coordinate inter-regional activity and index brain states",
+        "Three questions: the when (onset/offset), where (spatial generators), what (fundamental frequency)",
+        "Non-sinusoidal oscillations generate FFT harmonics that contaminate peak detection",
+        "Illustrative auditory-cortex example: 1:3 phase-phase coupling confirms 18 Hz is harmonic of 6 Hz",
+        "Phase-phase coupling is computationally prohibitive for real-time/closed-loop use",
+        "CHO combines parametric 1/f-driven bounding boxes (extending OEvent) with auto-correlation periodicity testing",
+        "Three CHO criteria enumerated; comparison planned against FOOOF, OEvent, SPRiNT"
+      ]
+    },
+    {
+      "name": "Related Work",
+      "target_words": 500,
+      "key_points": [
+        "Frequency-domain detection: FFT, FOOOF, specparam -- separate periodic from 1/f aperiodic component",
+        "Time-domain detection: Hughes et al. 2012, Gips et al. 2017 -- but assume sinusoidality",
+        "Time-frequency methods: Chen et al. 2011; SPRiNT (Wilson et al. 2022); OEvent (Neymotin et al. 2022)",
+        "Non-sinusoidal waveform literature: Belluscio 2012, Cole & Voytek 2017/2019, Donoghue 2022",
+        "Gap: no real-time-capable method jointly handles non-sinusoidality, bounding boxes, and periodicity"
+      ]
+    },
+    {
+      "name": "Methods",
+      "target_words": 900,
+      "key_points": [
+        "CHO three-criterion pipeline (1/f thresholding, two-cycle rejection, auto-correlation periodicity)",
+        "Bounding-box merging: overlap >75% in time, neighboring in frequency",
+        "Four windows / 250 ms per 1/f spectrum; accurate detection if |ground truth peak - detected| < 1.5 Hz",
+        "Phase-phase coupling via Belluscio et al. 2012 n:m method",
+        "Subjects: ECoG x1-x8 (8, 4 females, 41+/-14 yr, avg IQ 96+/-18 range 75-120); EEG y1-y7 (7 males, 27+/-3.6 yr); resting-state ECoG ze1-ze8 (N=6); SEEG zs1-zs6 (6, 3 females, 46+/-16.6 yr)",
+        "Acquisition: BCI2000, 8x 16-ch g.USBamp EEG, 256-ch g.HIamp ECoG, Nihon Kohden JE-120A SEEG; sampling 1200 Hz EEG/ECoG, 2000 Hz SEEG; downsample to 400/500 Hz",
+        "Preprocessing: 2nd-order Butterworth HP at 0.05 Hz; common-mode reference excluding >10x MAD 60 Hz channels; polyphase antialiasing resample",
+        "SEEG electrodes: Pt-Ir, 2 mm x 0.8 mm, 3.5--5 mm spacing; ECoG: 4 mm (2.3 mm exposed) Pt-Ir, 10 mm center-to-center",
+        "Task: auditory reaction time to 1 kHz tone; warning tone below 100 ms; pre-stimulus 1.5 s analysis window; ECoG ~400 trials/subject; EEG 200 trials/subject",
+        "Anatomical: CT co-registered with MRI; Coon et al. 2016 for electrode localization; Adamek et al. 2022 VERA for Brodmann assignment; FreeSurfer (Fischl 2012) for cerebral region labeling; EEG 10-10 system"
+      ]
+    },
+    {
+      "name": "Results",
+      "target_words": 900,
+      "key_points": [
+        "Synthetic 1/f bursts: CHO specificity > 0.7 across SNR vs SPRiNT < 0.3",
+        "Physiological SNR EEG -7 dB, ECoG -6 dB: CHO sensitivity comparable to SPRiNT",
+        "CHO higher overall accuracy than FOOOF, OEvent, SPRiNT for peak frequency detection",
+        "Onset/offset: CHO > OEvent specificity",
+        "ECoG pre-stimulus: CHO finds focal beta only in pre-motor; FOOOF finds beta broadly; Wilcoxon p<0.05 Bonferroni in most regions except precentral / pars opercularis / caudal middle frontal",
+        "EEG: CHO alpha entropy 3.82 < FOOOF 4.15 (max 4.16); beta entropy CHO 4.05 < FOOOF 4.15",
+        "Onset/offset auditory cortex: 7 Hz oscillations; offset peak 300 ms post-stimulus (200 ms post-response); onset re-emergence 950 ms post-stimulus; de-synchronized 250 ms / re-synchronized 900 ms post-stimulus on average",
+        "SEEG hippocampus: primarily alpha band; beta band close to alpha (8--14 Hz)",
+        "Resting-state frequencies: auditory (BA 41/42) 11 Hz 450 ms; motor (BA 4) 7 Hz 450 ms with >500 ms beta; Broca's area 17 Hz beta; hippocampus 8 Hz 450 ms, shorter than motor cortex alpha/beta (p<0.05, Wilcoxon rank-sum, N=6)"
+      ]
+    },
+    {
+      "name": "Discussion",
+      "target_words": 1200,
+      "paragraphs": [
+        "High specificity from three criteria (1/f threshold, two-cycle rejection, auto-correlation)",
+        "Focal motor beta and implication that auditory beta in conventional methods are theta/alpha harmonics",
+        "Hippocampal harmonics -- alpha-beta continuum (8-14 Hz) and implications for wide-band analysis",
+        "Onset/offset applications in closed-loop neuromodulation and neurofeedback (battery/power savings, phase-locked stimulation)",
+        "Limitations (sensitivity at low SNR, wavelet alternatives, state-space/EMD extensions) and pathological extensions (Parkinson's beta asymmetry, seizure-onset zone harmonics)"
+      ]
+    },
+    {
+      "name": "Conclusion",
+      "target_words": 150,
+      "key_points": [
+        "CHO resolves when/where/what for non-sinusoidal neural oscillations",
+        "Supports closed-loop BCI, neurofeedback, and biomarker discovery"
+      ]
+    }
+  ],
+  "literature_strategy": {
+    "search_queries": [
+      "FOOOF parameterizing neural power spectra Donoghue 2020",
+      "SPRiNT spectral parameterization time Wilson 2022 eLife",
+      "OEvent oscillation event detection Neymotin 2022",
+      "non-sinusoidal neural oscillations waveform shape Cole Voytek",
+      "Buzsaki Draguhn neuronal oscillations cortical networks Science",
+      "phase-phase coupling theta beta Belluscio 2012",
+      "FreeSurfer cortical reconstruction Fischl 2012 NeuroImage",
+      "BCI2000 Schalk 2004 IEEE Transactions Biomedical Engineering",
+      "auto-correlation waveform analysis Cohen analyzing neural time series",
+      "hippocampal theta rhythm Lega Jacobs 2012",
+      "Parkinson beta oscillation asymmetry Cole 2017",
+      "event-related desynchronization Pfurtscheller Lopes da Silva 1999",
+      "deep brain stimulation phase-locked Cagnan 2017",
+      "empirical mode decomposition neural oscillations Quinn Fabus"
+    ],
+    "must_include_keys": [
+      "donoghue2020parameterizing",
+      "wilson2022sprint",
+      "neymotin2022oevent",
+      "cole2017waveform",
+      "buzsaki2004neuronal",
+      "belluscio2012crossfrequency",
+      "fischl2012freesurfer",
+      "schalk2004bci2000",
+      "pfurtscheller1999eventrelated",
+      "cagnan2017phaselocked"
+    ]
+  },
+  "table_plan": [
+    {
+      "id": "tab:methods_comparison",
+      "caption": "Comparison of oscillation detection methods on synthetic non-sinusoidal bursts at physiological SNR levels (EEG -7 dB, ECoG -6 dB)",
+      "columns": ["Method", "Specificity", "Sensitivity", "Peak-freq accuracy", "Onset/offset"],
+      "data_source": "Figure 4B-D and E-G qualitative ranking"
+    }
+  ],
+  "figure_plan": [
+    {
+      "id": "fig:pipeline",
+      "type": "schematic",
+      "caption": "CHO three-step pipeline: 1/f thresholded bounding boxes, cycle-count filter, auto-correlation periodicity test"
+    },
+    {
+      "id": "fig:resting_frequencies",
+      "type": "bar",
+      "caption": "Predominant fundamental frequencies and durations across cortical regions during resting state",
+      "data": [
+        {"region": "Auditory (BA41/42)", "freq_hz": 11, "duration_ms": 450},
+        {"region": "Motor (BA4)", "freq_hz": 7, "duration_ms": 450},
+        {"region": "Broca's area", "freq_hz": 17, "duration_ms": 500},
+        {"region": "Hippocampus", "freq_hz": 8, "duration_ms": 450}
+      ]
+    },
+    {
+      "id": "fig:entropy",
+      "type": "bar",
+      "caption": "Spatial specificity (entropy across 64 EEG channels, lower = more focal) for alpha and beta bands",
+      "data": [
+        {"method": "CHO", "band": "alpha", "entropy": 3.82},
+        {"method": "FOOOF", "band": "alpha", "entropy": 4.15},
+        {"method": "CHO", "band": "beta", "entropy": 4.05},
+        {"method": "FOOOF", "band": "beta", "entropy": 4.15}
+      ]
+    },
+    {
+      "id": "fig:onset_offset",
+      "type": "schematic",
+      "caption": "Onset/offset of 7 Hz oscillations relative to auditory stimulus in ECoG reaction-time task: desynchronization ~250 ms post-stimulus, resynchronization ~900 ms post-stimulus"
+    }
+  ],
+  "numeric_fidelity_anchors": {
+    "subjects": {"ECoG_task": 8, "EEG_task": 7, "ECoG_rest": 6, "SEEG_rest": 6},
+    "ages": {"ECoG": "41 +/- 14", "EEG": "27 +/- 3.6", "SEEG": "46 +/- 16.6"},
+    "sampling_rate_hz": {"EEG": 1200, "ECoG": 1200, "SEEG": 2000},
+    "downsampled_hz": {"EEG_ECoG": 400, "SEEG": 500},
+    "highpass_hz": 0.05,
+    "overlap_threshold_pct": 75,
+    "frequency_tolerance_hz": 1.5,
+    "window_duration_ms_per_spectrum": 250,
+    "physiological_snr_db": {"EEG": -7, "ECoG": -6},
+    "sensitivity_at_physiological_snr_pct": "50-60",
+    "entropy_alpha": {"CHO": 3.82, "FOOOF": 4.15, "max_64ch": 4.16},
+    "entropy_beta": {"CHO": 4.05, "FOOOF": 4.15},
+    "resting_state_freq_hz": {"auditory": 11, "motor": 7, "brocas_beta": 17, "hippocampus": 8, "motor_beta": [22, 24]},
+    "resting_state_duration_ms": 450,
+    "onset_offset": {"offset_peak_post_stim_ms": 300, "onset_peak_post_stim_ms": 950, "avg_desync_ms": 250, "avg_resync_ms": 900, "button_press_ms": 200}
+  }
+}

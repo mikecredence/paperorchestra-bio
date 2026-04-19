@@ -1,0 +1,255 @@
+{
+  "metadata": {
+    "working_title": "A Fast Approach for Structural and Evolutionary Analysis Based on Energetic Profile Protein Comparison",
+    "venue": "Bioinformatics",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Predicting protein similarity, function, and evolutionary relationships efficiently is a core challenge in structural bioinformatics, with existing tools relying on expensive structural alignment or atomic-distance computation.",
+    "gap": "Structure-based methods (RMSD, TM-Score, GR-Align) are computationally demanding; deep-learning embeddings (TM-Vec) offer speed but lack interpretability and require structural training data that may underrepresent novel folds.",
+    "approach": "We introduce energy profiles derived from a distance-dependent knowledge-based potential. Each protein is represented by a 210-dimensional vector capturing the summation of pairwise amino-acid interaction energies. A Compositional Profile of Energy (CPE) is estimated from sequence alone, while a Structural Profile of Energy (SPE) is computed from 3D coordinates. Manhattan distance between profiles quantifies protein dissimilarity, eliminating the need for alignment.",
+    "key_results": "CPE achieves 100% accuracy on the CATH 251-domain benchmark in 1 second versus 67 seconds for TM-Vec, and discriminates SARS-CoV, SARS-CoV-2, and MERS-CoV spike glycoproteins with ARI = 0.95 at tree cut = 4 (CPE) and ARI = 1 at tree cut = 3 (SPE). Across 4,405 coronavirus protein models spanning 28 families, CPE and SPE approach 100% 1-NN classification accuracy. Energy-profile separation measures correlate significantly with network-based drug-combination scores for 65 antihypertensive drugs.",
+    "impact": "The energy-profile framework provides fast, alignment-free, and physically interpretable protein comparison applicable to hierarchical classification, phylogeny beyond the twilight zone, large-scale proteome screening, and drug-combination prediction."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Protein similarity as gateway to function and evolution; repository growth vs. annotation gap.",
+        "Existing paradigms: sequence alignment (PSI-BLAST) and structural alignment (RMSD, TM-Score, GR-Align) vs. modern ML embeddings (TM-Vec).",
+        "Knowledge-based statistical potentials encode native-state energy; assumption that similar structures share similar total energy motivates our stronger hypothesis: similar proteins possess analogous energy profiles.",
+        "210-dimensional pairwise amino-acid energy vector as a protein descriptor; structural (SPE) and sequence-composition (CPE) variants.",
+        "Applications spanning SCOP hierarchy, twilight-zone phylogeny (ferritin-like superfamily), coronavirus spike classification, bacteriocins, and drug combinations.",
+        "Contributions: alignment-free protein comparison, sequence-derived energy proxy, superior accuracy/time trade-off, scalability to thousands of proteins."
+      ],
+      "approx_length": "1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Knowledge-based potentials: Sippl and successors; distance-dependent, dihedral, and accessible-surface-area potentials.",
+        "Energy landscape theory: Eisenberg energy-profile for sequence-structure compatibility; Wolynes spin-glass Hamiltonians.",
+        "Protein similarity metrics: RMSD, TM-Score, GR-Align graphlet degrees, Yau-Hausdorff distance.",
+        "Deep-learning embeddings: TM-Vec trained on structure pairs with TM-score supervision.",
+        "Structure prediction as enabler: AlphaFold2, OmegaFold, ESMFold.",
+        "Evolutionary networks: NeighborNet, phangorn, SplitTree; manual ferritin-like annotations by Malik and Puente-Lelievre.",
+        "Network-based drug-combination prediction: Cheng et al. separation measure on the human interactome."
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "methods_dataset", "title": "Training dataset and filtering", "content_bullets": [
+          "PISCES non-redundant chains with pairwise identity < 50%, resolution < 1.6 Angstrom, R-factor < 0.25, length 40-1000 residues.",
+          "Removal of proteins overlapping with downstream test sets."
+        ]},
+        {"id": "methods_potential", "title": "Distance-dependent knowledge-based potential", "content_bullets": [
+          "Heavy-atom representation; Delaunay tessellation via Qhull for contact identification.",
+          "30 distance shells of width 0.5 Angstrom starting at 0.75 Angstrom; 167 atom types.",
+          "Boltzmann-like energy E(d) with RT = 0.582 kcal/mole and weight sigma = 0.02.",
+          "Residue-residue energy Delta E(A,B) as sum over contacting atom pairs."
+        ]},
+        {"id": "methods_spe", "title": "Structural Profile of Energy (SPE)", "content_bullets": [
+          "210-dimensional vector indexed by unordered amino acid pairs.",
+          "Each entry is the summed Delta E over residue pairs of the corresponding amino-acid types."
+        ]},
+        {"id": "methods_cpe", "title": "Compositional Profile of Energy (CPE) from sequence", "content_bullets": [
+          "Predictor matrix P mapping amino-acid composition to pairwise energy content.",
+          "Row-wise optimization by least-squares over training set; solved with MATLAB Symbolic Math Toolbox.",
+          "CPE E_ij estimated from composition frequencies alone."
+        ]},
+        {"id": "methods_distance", "title": "Dissimilarity measure", "content_bullets": [
+          "Manhattan distance between 210-dimensional profiles.",
+          "Drug-pair separation measure E_AB combining within-drug and cross-drug Manhattan distances."
+        ]},
+        {"id": "methods_benchmarks", "title": "Benchmark datasets and evaluation", "content_bullets": [
+          "ASTRAL40/ASTRAL95 from SCOPe v2.08 for hierarchical analysis.",
+          "CATH v4.2.0 subset of 251 domains from families 1.10.8.10 and 3.10.28.10 (lengths 44-854, mean 211).",
+          "Five SCOP superfamilies: a.4.5, b.55.1, d.17.4, d.15.1, b.1.1.",
+          "Ferritin-like superfamily a.25.1 with families a.25.1.1 and a.25.1.2.",
+          "CoV3D-derived 143 spike glycoprotein chains (80 SARS-CoV-2, 31 SARS-CoV, 32 MERS-CoV).",
+          "BAGEL 690 bacteriocins with length > 30 aa; Freiberger 4,405 coronavirus models across 28 families.",
+          "Metrics: 1-NN accuracy, F1, Adjusted Rand Index, Spearman correlation, bootstrap with 100 replicates."
+        ]}
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_seq_struct", "title": "Sequence-derived energy matches structural energy",
+          "content_bullets": [
+            "Context: Structural energy requires a 3D model; we test whether sequence alone suffices.",
+            "Approach: Pearson correlation between total SPE and CPE energies on ASTRAL40 and ASTRAL95.",
+            "Finding: Strong correlation in both datasets; p < 10e-16. 96% of the 210 interaction types show |r| < 0.5 between residual and protein length.",
+            "Interpretation: Sequence-based energy is a reliable proxy robust to protein length."
+          ]},
+        {"id": "results_scop", "title": "Energy profiles encode SCOP hierarchy",
+          "content_bullets": [
+            "Context: Does a single 210-dim vector capture class/fold/superfamily/family structure?",
+            "Approach: UMAP projections on ASTRAL40/95 folds a.100, a.104; superfamilies a.29.2, a.29.3; families a.25.1.0, a.25.1.2 with n_neighbors = 30 and min_dist = 0.1.",
+            "Finding: Domains within the same fold/superfamily/family cluster together for both CPE and SPE; intraclass distances are significantly lower than interclass distances.",
+            "Interpretation: Energy profiles compress hierarchical structural information without requiring alignment."
+          ]},
+        {"id": "results_perf", "title": "1-NN classification on CATH and five SCOP superfamilies",
+          "content_bullets": [
+            "Context: Benchmark against RMSD, TM-Score, GR-Align, Yau-Hausdorff, TM-Vec on the 251-domain CATH task and five SCOP superfamilies.",
+            "Approach: 1-NN classifier with each distance metric; hardware 2.4 GHz / 8 GB RAM.",
+            "Finding: CPE and TM-Vec reach 100% accuracy on CATH; CPE completes in 1 second versus 67 seconds for TM-Vec. Baselines range from 59.2% to 81.5%. On five SCOP superfamilies (Table 1), CPE, SPE, and TM-Vec all approach 100%.",
+            "Interpretation: Energy profiles match the best deep-learning embedding in accuracy while offering a 67-fold speed-up."
+          ]},
+        {"id": "results_hemoglobin", "title": "Alpha- and beta-globin discrimination",
+          "content_bullets": [
+            "Context: Close evolutionary relatives with divergent functions test fine-grained resolution.",
+            "Approach: UMAP (n_neighbors = 13, min_dist = 0.1) of CPE, SPE, TM-Vec over 21 mammalian hemoglobins.",
+            "Finding: All three methods separate alpha and beta globins cleanly (Fig. 4C).",
+            "Interpretation: Pairwise energetic signatures recover subfamily-level functional divergence consistent with known energetic frustration patterns."
+          ]},
+        {"id": "results_ferritin", "title": "Phylogeny of the ferritin-like superfamily beyond the twilight zone",
+          "content_bullets": [
+            "Context: Superfamily a.25.1 with two families a.25.1.1 and a.25.1.2; sequence similarity often below 20-35%.",
+            "Approach: NeighborNet networks and neighbor-joining trees from CPE, SPE, and TM-Vec; Spearman correlation against manually curated order (Malik; Puente-Lelievre).",
+            "Finding: All three methods cleanly split the two SCOP families; SPE achieves perfect Spearman correlation on a.25.1.1; TM-Vec shows a negative correlation on a.25.1.2 (Table 2); CPE and SPE outperform TM-Vec overall.",
+            "Interpretation: Energy profiles preserve evolutionary signal in regions where sequence alignment fails."
+          ]},
+        {"id": "results_spike", "title": "Clustering of SARS-CoV, SARS-CoV-2, and MERS-CoV spike glycoproteins",
+          "content_bullets": [
+            "Context: 143 CoV3D spike chains (80 SARS-CoV-2, 31 SARS-CoV, 32 MERS-CoV) with closed RBD.",
+            "Approach: Compare MSA (ClustalW), RMSD, TM-Score, TM-Vec, CPE, SPE on UPGMA dendrograms; evaluate with ARI and 100-replicate bootstrap.",
+            "Finding: CPE reaches ARI = 0.95 at tree cut 4; TM-Vec reaches 0.87 at cut 5; MSA 0.49 at cut 3; SPE reaches ARI = 1 at cut 3; RMSD 0.73 at cut 6; TM-Score 0.56 at cut 4. Running times: CPE 0.9 s, SPE 3 min, TM-Vec 89 s, MSA 72 s, RMSD 70 min, TM-Score 9.7 h.",
+            "Interpretation: Energy profiles recover the SARS-CoV/SARS-CoV-2 versus MERS-CoV dichotomy with both higher accuracy and orders-of-magnitude lower runtime."
+          ]},
+        {"id": "results_bacteriocins", "title": "Bacteriocin classification and scalability",
+          "content_bullets": [
+            "Context: 690 BAGEL bacteriocins spanning RiPPs, class II, and class III with length > 30 aa.",
+            "Approach: UMAP of CPE; compare CPE distances to TM-scores of AlphaFold2, OmegaFold, ESMFold, and TM-Vec; statistical testing via two-tailed t-test with 125,869 cross-class pairs, 111,349 same-class pairs, and 13,431 subclass1 pairs.",
+            "Finding: CPE partitions bacteriocins by BAGEL annotation; all three t-test comparisons give p < 10e-16 (Fig. 7B).",
+            "Interpretation: Predicted-structure TM-scores blur class boundaries while CPE cleanly separates RiPPs from class II/III."
+          ]},
+        {"id": "results_plpro", "title": "Papain-like protease subgenus clustering",
+          "content_bullets": [
+            "Context: PLPro domains across four Betacoronavirus subgenera: Sarbecovirus (n = 31), Nobecovirus (n = 11), Merbecovirus (n = 35), Embecovirus (n = 45).",
+            "Approach: UMAP of CPE, SPE, TM-Vec with n_neighbors = 13, min_dist = 0.5.",
+            "Finding: Each subgenus forms a distinct cluster in all three embeddings (Fig. 7C).",
+            "Interpretation: The 210-dimensional signature resolves genus-level structure within a single protein family."
+          ]},
+        {"id": "results_drug", "title": "Energy-based drug-combination scoring",
+          "content_bullets": [
+            "Context: Cheng et al. defined a network proximity S_AB on the human protein-protein interactome; we define an analogous energy separation E_AB.",
+            "Approach: Compute E_AB over 65 antihypertensive drugs with complementary exposure and correlate with S_AB.",
+            "Finding: Strong Pearson correlation between E_AB and S_AB (Fig. 7D).",
+            "Interpretation: Sequence-only energy profiles recover the signal captured by interactome topology at a fraction of the computational cost."
+          ]},
+        {"id": "results_scale", "title": "Large-scale validation on 4,405 coronavirus models",
+          "content_bullets": [
+            "Context: 28 families spanning 4,405 AlphaFold2 models from Freiberger et al.",
+            "Approach: 1-NN classification with CPE, SPE, and TM-Vec; processing-time-per-amino-acid scalability on ASTRAL95 subsets of 1,000-30,000 proteins.",
+            "Finding: Both CPE and SPE approach 100% accuracy and F1 (Table 3); CPE shows a gentler time-per-residue slope than TM-Vec across all subset sizes (Fig. 7E).",
+            "Interpretation: The method scales near-linearly and is suited to proteome-scale screening."
+          ]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Energy profiles recover hierarchical, evolutionary, and pharmacological structure without structural alignment.",
+        "CPE offers 100% accuracy with 1-second runtime on the CATH benchmark, outperforming the 59.2-81.5% range of classical alignment baselines.",
+        "Limitations: dependence on known structures for training the potential; possible sensitivity to folding heterogeneity beyond length; drug-combination application needs experimental validation.",
+        "Interpretability: pairwise amino-acid dimensions admit biophysical reading in contrast to TM-Vec embeddings.",
+        "Outlook: reweighting profiles for remote homology or drug-target affinity; integration with AlphaFold-scale screening."
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusion",
+      "content_bullets": [
+        "Energy profiles encode structural, functional, and evolutionary information with high fidelity.",
+        "Sequence-derived CPE mirrors structural SPE, enabling alignment-free proteome-scale analysis.",
+        "Future work: application to drug-target interaction prediction and de novo protein design."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "1-NN accuracy and F1 across five SCOP superfamilies",
+      "columns": ["Superfamily", "Method", "Accuracy", "F1"],
+      "data_source": "experimental_log Results section referencing Table 1; five superfamilies a.4.5, b.55.1, d.17.4, d.15.1, b.1.1 with CPE, SPE, TM-Vec approaching 100%",
+      "caption_sketch": "Accuracy and F1 for 1-NN classification on five SCOP superfamilies using CPE, SPE, and TM-Vec."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Spearman correlation of branching order with manual ferritin-like network",
+      "columns": ["Family", "SPE", "TM-Vec", "CPE"],
+      "data_source": "experimental_log Results section referencing Table 2; SPE perfect on a.25.1.1; TM-Vec negative on a.25.1.2",
+      "caption_sketch": "Spearman correlation between predicted and manually curated branching orders across the two ferritin-like families."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Large-scale 1-NN classification across 28 coronavirus families (4,405 proteins)",
+      "columns": ["Method", "Accuracy", "F1", "Time"],
+      "data_source": "experimental_log Results section referencing Table 3; both CPE and SPE approach 100% with CPE faster",
+      "caption_sketch": "Accuracy, F1, and runtime for 1-NN classification on the 4,405-protein Freiberger coronavirus dataset."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig_accuracy_time", "type": "bar", "description": "Accuracy vs runtime on the 251-domain CATH benchmark for GR-Align, RMSD, TM-Score, Yau-Hausdorff, TM-Vec, CPE, SPE.", "data_source": "experimental_log Table 1/Fig. 4 description; CPE 1 s / 100%, TM-Vec 67 s / 100%, baselines 59.2-81.5%"},
+    {"figure_id": "fig_spike_ari", "type": "bar", "description": "Adjusted Rand Index and runtime for CPE, SPE, TM-Vec, MSA, RMSD, TM-Score on 143 spike glycoproteins.", "data_source": "experimental_log Results section: CPE 0.95 at cut 4, TM-Vec 0.87 at cut 5, MSA 0.49 at cut 3, SPE 1 at cut 3, RMSD 0.73 at cut 6, TM-Score 0.56 at cut 4; runtimes 0.9 s, 3 min, 89 s, 72 s, 70 min, 9.7 h"},
+    {"figure_id": "fig_pipeline", "type": "schematic", "description": "Schematic of the knowledge-based potential, predictor matrix, SPE from structure, and CPE from sequence.", "data_source": "Methods section equations 3, 4, 7"},
+    {"figure_id": "fig_scalability", "type": "line", "description": "Processing time per amino acid vs. subset size for CPE and TM-Vec on ASTRAL95 subsets of 1,000-30,000 proteins.", "data_source": "experimental_log Results: subsets at intervals of 5,000; CPE shows gentler slope"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "protein structure similarity alignment-free comparison",
+      "knowledge-based statistical potential protein",
+      "protein phylogeny beyond twilight zone structural alignment",
+      "coronavirus spike glycoprotein structural evolution",
+      "drug combination protein-protein interaction network"
+    ],
+    "micro_queries": [
+      "TM-Vec deep learning protein structure embedding",
+      "TM-score structural alignment Zhang",
+      "GR-Align graphlet degree protein alignment",
+      "AlphaFold2 OmegaFold ESMFold structure prediction",
+      "SCOP CATH hierarchical classification protein",
+      "BAGEL bacteriocin database ribosomally synthesized peptides",
+      "UMAP uniform manifold approximation projection",
+      "ferritin-like superfamily evolution phylogenetic network",
+      "Delaunay tessellation protein contact",
+      "Sippl knowledge-based potential statistics"
+    ],
+    "must_cite": [
+      "Sippl 1990 knowledge-based potential",
+      "Eisenberg 1992 3D profile",
+      "Wolynes energy landscape spin glass",
+      "Zhang TM-Score TM-align",
+      "Malwal GR-Align graphlet",
+      "Hamamsy TM-Vec",
+      "Jumper AlphaFold2",
+      "Wu OmegaFold",
+      "Lin ESMFold",
+      "Cheng drug combination network separation",
+      "Murzin SCOP",
+      "Orengo CATH",
+      "Lundin ferritin-like twilight zone",
+      "Malik ferritin evolutionary network",
+      "Puente-Lelievre ferritin",
+      "BAGEL bacteriocin database van Heel",
+      "CoV3D Gowthaman coronavirus",
+      "McInnes UMAP",
+      "Freiberger hemoglobin frustration",
+      "MAFFT Katoh",
+      "CD-Hit Fu",
+      "phangorn Schliep",
+      "PISCES Wang Dunbrack",
+      "Qhull Barber"
+    ],
+    "citation_target": 28
+  }
+}

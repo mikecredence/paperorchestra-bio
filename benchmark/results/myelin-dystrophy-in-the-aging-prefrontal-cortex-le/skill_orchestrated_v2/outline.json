@@ -1,0 +1,250 @@
+{
+  "metadata": {
+    "working_title": "Myelin dystrophy in the aging prefrontal cortex leads to impaired signal transmission and working memory decline: a multiscale computational study",
+    "venue": "Nature Neuroscience",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Normal aging in rhesus monkey dorsolateral prefrontal cortex (dlPFC) produces myelin dystrophies (splitting of the major dense line, balloons, redundant myelin) affecting 3-6% of sheaths, with a 90% increase in paranodal profiles indicating more and shorter sheaths; these changes correlate with cognitive impairment.",
+    "gap": "Prior computational work has examined either demyelination or remyelination in isolation and has not combined single-neuron axonal modeling with spiking network models of working memory, nor systematically explored mixtures of intact, demyelinated, and remyelinated axons.",
+    "approach": "A two-scale modeling pipeline: (1) a 50-neuron cohort of multicompartment rhesus dlPFC Layer 3 pyramidal neurons with detailed axons (101 nodes, 100 myelinated segments with paranodes/juxtaparanodes/internodes/tight junctions) built via Latin Hypercube Sampling; (2) a 20,000-neuron spiking network (16,000 E / 4,000 I) performing an oculomotor delayed response task, with AP failure probabilities transferred from the single-neuron cohort.",
+    "key_results": "Complete demyelination (100% lamellae removed) of only 25% of segments slowed CV by 38 +/- 10% and caused 35 +/- 13% AP failures; at 75% of segments CV slowed by 72 +/- 8% with 45 +/- 13% failures. Complete remyelination with 75% lamellae nearly eliminated failures (1.8 +/- 1.1%). Memory duration (control 4 s) and diffusion (control 0.064) scaled monotonically with the fraction of normal and new myelin sheaths, matching empirical ranges of 90-100% normal myelin and 5-17% paranodal profiles from Peters and Sethares (2002, 2003); significant correlations with r = 0.703 (p = 3.86e-10), r = -0.802 (p = 1.26e-14), r = -0.852 (p = 4.92e-7), r = 0.607 (p = 0.003).",
+    "impact": "Myelin alterations alone, at empirically observed levels, are sufficient to account for substantial working memory decline in normal aging, with implications for multiple sclerosis, schizophrenia, bipolar disorder, autism spectrum disorder, and traumatic brain injury."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Age-related cognitive decline in humans and rhesus monkeys, with prefrontal working memory especially vulnerable.",
+        "Sublethal structural/physiological changes in dlPFC Layer 3 pyramidal neurons: spine/synapse loss and altered electrophysiology.",
+        "Extensive myelin dystrophy in aged monkey dlPFC: 3-6% of sheaths show splitting of the major dense line, balloons, redundant myelin (Peters and Sethares, 2002); 90% increase in paranodal profiles in aged vs young monkeys indicating more/shorter internodes (Peters and Sethares, 2003).",
+        "Peters (2009) mechanism: oligodendrocyte oxidative stress leads to lamellar inclusions, sheath detachment (bare segments), and subsequent remyelination with shorter/thinner sheaths.",
+        "Prior modeling has addressed axon parameter-CV relationships, demyelination in disease, and remyelination with short/thin segments separately, but not systematically in a cohort or together with AP failures.",
+        "Ibanez et al. (2020) network model showed firing rate and synaptic losses can impair working memory but omitted myelin changes.",
+        "Contribution: unify a 50-neuron multicompartment cohort with detailed axons and a 20,000-neuron spiking network to map myelin perturbations onto CV, AP failures, memory duration, and memory diffusion."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_single_neuron_demyelination",
+          "title": "Progressive demyelination causes CV slowing and AP failures in model neurons",
+          "content_bullets": [
+            "Multicompartment neuron (68 somatodendritic + detailed axon with 101 nodes and 100 myelinated segments) built on Rumbell et al. (2016) and Gow/Devaux (2008) + Scurfield/Latimer (2018).",
+            "Cohort of 50 models selected via LHS from 1600 candidates: g-ratio 0.71 +/- 0.02, axon length 1.2 +/- 0.1 cm, somatic firing 13-16 Hz to +380 pA, CV 0.3-0.8 m/s.",
+            "Removing 25% of lamellae had negligible CV effect regardless of segment fraction affected.",
+            "Removing 100% of lamellae from 25% of segments: CV slowed by 38 +/- 10%; 35 +/- 13% of APs failed.",
+            "Removing 100% of lamellae from 75% of segments: CV slowed by 72 +/- 8%; 45 +/- 13% of APs failed.",
+            "Example trial: demyelinating 75% of segments with 50% of lamellae removed reduced CV by 70% and caused one AP failure.",
+            "Lasso regression: 5 of 12 parameters contributed to CV changes during demyelination; myelinated segment length had the largest negative weight."
+          ]
+        },
+        {
+          "id": "results_remyelination",
+          "title": "Remyelination leads to partial recovery from CV slowing and AP failures",
+          "content_bullets": [
+            "Remyelination modeled by replacing an affected segment with two shorter, thinner segments with a new node in between.",
+            "Complete remyelination with matched 50% lamellae recovered the failed AP and 98% of the CV delay relative to demyelinated case (one of 30 trials).",
+            "Remyelinating all demyelinated segments with just 10% of lamellae brought AP failure rate to 14.6 +/- 5.1%; with 75% of lamellae: 1.8 +/- 1.1%.",
+            "Partial recovery scenarios: remyelinating 1/8 of segments (75% lamellae) while leaving 1/8 bare after complete demyelination: 25.7 +/- 11.5% AP failures.",
+            "Equivalent scenario after partial demyelination (50% lamellae removed initially): 10.6 +/- 7.6% AP failures.",
+            "Lasso regression on CV recovery implicated 10 of 12 parameters (all except myelin length and axoplasm resistance)."
+          ]
+        },
+        {
+          "id": "results_network_single_condition",
+          "title": "AP failures impair performance in a neural network model of working memory",
+          "content_bullets": [
+            "Spiking network adapted from Hansel and Mato (2013): N=20,000 LIF neurons (16,000 E / 4,000 I), K=500 inputs/neuron, AMPA/NMDA/GABA synapses, facilitating recurrent excitation.",
+            "Delayed response task: persistent activity bump encodes a cue at one of 8 locations; performance quantified by memory duration (bump threshold >= 0.4), memory diffusion, memory drift.",
+            "Propagation delays alone (matched to single-neuron CV slowing) had negligible effect; even larger delays only slightly degraded performance.",
+            "AP failure probabilities matched to single-neuron distributions caused bump decay, reduced memory duration, and increased memory diffusion."
+          ]
+        },
+        {
+          "id": "results_network_systematic",
+          "title": "Impact of demyelination and remyelination on working memory",
+          "content_bullets": [
+            "10 control networks averaged across 280 trials each: memory duration 4 s, diffusion constant 0.064.",
+            "Memory duration unaffected until >55% lamellae removed; drops to <=1 s at 100% lamellae removed regardless of segment fraction.",
+            "Memory diffusion begins increasing between 25-50% lamellae removed; ceiling effect beyond 50% of segments affected.",
+            "Remyelinating 100% of previously demyelinated segments restores memory duration; full precision recovery requires 75% lamellae restoration.",
+            "Incomplete remyelination (25-75% of segments) after complete demyelination fails to restore memory duration (<= 1 s); diffusion only partly recovers.",
+            "After partial demyelination, incomplete remyelination (25-75%) restores both duration and diffusion closer to control."
+          ]
+        },
+        {
+          "id": "results_empirical_match",
+          "title": "Simulated heterogeneous myelin alterations match empirical data",
+          "content_bullets": [
+            "60 mixed-axon groups (of 50 model neurons) selected to span 80-100% normal myelin sheaths; performance mapped to %normal myelin.",
+            "Significant positive correlation of memory duration with %normal sheaths (r = 0.703, p = 3.86e-10).",
+            "Significant negative correlation of diffusion with %normal sheaths (r = -0.802, p = 1.26e-14).",
+            "22 mixed-axon groups with <45% new myelin sheaths to mimic empirical paranodal profile range (5-17%); partial remyelination with 25% lamellae restored.",
+            "Significant negative correlation of memory duration with %new sheaths (r = -0.852, p = 4.92e-7) and positive correlation for diffusion (r = 0.607, p = 0.003).",
+            "Networks with up to 45% new sheaths showed memory duration dropping to ~1 s."
+          ]
+        },
+        {
+          "id": "results_alternative_mechanism",
+          "title": "Activity-silent working memory mechanisms",
+          "content_bullets": [
+            "First continuous-location activity-silent model (synaptic-efficacy transient) tested alongside the persistent-activity network.",
+            "AP failures caused qualitatively similar working memory errors in both mechanisms.",
+            "Propagation delays only caused errors at unrealistically high values (uniform 0-100 ms)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Novelty: combined systematic demyelination + remyelination + mixed-axon populations across a biologically constrained cohort linked to a spiking working-memory network.",
+        "Consistent with past findings that demyelination slows CV and causes AP failures (Stephanova et al. 2005; Naud and Longtin 2019) and that short/thin remyelinated segments slow CV (Lasiene 2008; Powers 2012; Scurfield and Latimer 2018).",
+        "Novel findings: AP failures higher than previously reported in mixed-segment axons; CV can increase after remyelination in some models (ion-channel / electrotonic interplay).",
+        "Network dynamics operate in an asynchronous irregular regime: firing-rate statistics dominate, so propagation delays matter less than AP failures for sustained-activity working memory.",
+        "Model predicts delay-dependent bias and spatially localized repulsion of memories when demyelination is regional.",
+        "Links to empirical Peters and Sethares (2002, 2003) cognitive correlations; complements Ibanez et al. (2020) firing-rate/synapse-loss model; consistent with Dimovasili et al. (2022) reduced oligodendrocyte maturation.",
+        "Broader implications: multiple sclerosis, schizophrenia, bipolar disorder, autism spectrum disorder, and traumatic brain injury - all exhibit myelin dystrophy and working-memory impairment.",
+        "Limitations/future work: large-scale fronto-parietal models (Mejias and Wang 2022), dendritic and axon collateral interactions, nodal pathology (Arancibia-Carcamo and Attwell 2014), axonal metabolism changes (Gerevich et al. 2023)."
+      ],
+      "approx_length": "2-2.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Single neuron model: soma + apical/basal dendrites (68 compartments) from Rumbell et al. (2016), executed in NEURON (Carnevale and Hines 2006); ion channels NaF, NaP, KDR, KM, KA, CaL, KAHP, AR.",
+        "Axon: 5-compartment hillock + initial segment, 101 nodes (13 compartments each), 100 myelinated segments each with 4 paranodes + 2 juxtaparanodes + 1 internode + tight junctions (Gow and Devaux 2008; Scurfield and Latimer 2018).",
+        "Cohort construction: 8 LHS-varied parameters (axon diameter, node length, myelin segment length, lamella count, lamella thickness, plus leak/NaF/KDR conductance scale factors) with 1600 candidates -> 138 plausible -> 50 chosen.",
+        "Selection criteria: 13-16 Hz at +380 pA, silent at 0 pA, CV 0.3-0.8 m/s, saltatory conduction (suprathreshold at nodes, subthreshold in juxtaparanodes/internodes). Time step 0.025 ms.",
+        "Demyelination protocol: demyelination percentage (10, 25, 50, 75%) x lamellae removal percentage (25, 50, 55, 60, 65, 70, 75, 100%), 30 randomized segment lists per condition.",
+        "Remyelination protocol: demyelination percentage (25, 50, 75%) x remyelination percentage (25, 50, 75, 100%) x lamellae restoration percentage (10, 25, 50, 75%), under complete or partial initial demyelination.",
+        "Network model: N=20,000 LIF neurons (N_E=16,000, N_I=4,000), K=500 inputs/neuron (K_E=400, K_I=100), ring connectivity via sigma_EE/EI/IE/II, AMPA+NMDA+GABA synapses, facilitating recurrent excitation.",
+        "Delay task: 8 cue directions, cue period + delay period; population vector readout; memory strength M(t) = |Z(t)|, memory duration (M>=0.4), diffusion constant, drift.",
+        "CV slowing incorporated as synaptic-delay distributions (uniform 0-40 ms, 0-85 ms; 0-100 ms tested as extreme).",
+        "AP failures incorporated as probabilistic spike-transmission from excitatory presynaptic neurons; failure distribution matched single-neuron cohort per condition.",
+        "Mixed-axon groups: 50 neurons sampled per group; 60 groups with 80-100% normal myelin (40 groups with complete demyelination, 20 with 75% lamellae removed); 22 groups with <45% new sheaths (partial demyelination + 25% lamellae restored).",
+        "280 trials per network; 10 control networks; errors reported as mean +/- SEM; linear regressions for %normal and %new myelin correlations."
+      ],
+      "approx_length": "2 pages"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Axon parameter ranges for LHS construction",
+      "columns": ["Parameter", "Lower bound", "Upper bound", "Source"],
+      "data_source": "experimental_log Table 1 and Methods cohort construction",
+      "caption_sketch": "Eight axon parameters varied via Latin Hypercube Sampling to produce 1600 candidate models, constrained by rhesus monkey dlPFC empirical ranges."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Summary of demyelination effects on conduction velocity and AP failures",
+      "columns": ["% segments demyelinated", "% lamellae removed", "CV change (% mean +/- SEM)", "AP failure rate (% mean +/- SEM)"],
+      "data_source": "experimental_log statistical sentences for Figure 3",
+      "caption_sketch": "Mean conduction velocity slowing and AP failure rates averaged across 50 cohort axons and 30 trials per condition."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Working memory performance vs. myelin condition",
+      "columns": ["Condition", "% lamellae removed/restored", "Memory duration (s)", "Diffusion constant"],
+      "data_source": "experimental_log Figures 5-8 with control baselines 4 s / 0.064",
+      "caption_sketch": "Summary of memory duration and diffusion across control, demyelinated, remyelinated, and mixed-axon networks."
+    }
+  ],
+  "figure_plan": [
+    {
+      "figure_id": "fig_cv_demyelination",
+      "title": "CV slowing and AP failures vs. demyelination severity",
+      "type": "bar_chart",
+      "data_source": "statistical_sentences entries for 38+/-10%, 72+/-8%, 35+/-13%, 45+/-13%"
+    },
+    {
+      "figure_id": "fig_remyelination_recovery",
+      "title": "AP failure rates after remyelination",
+      "type": "grouped_bar",
+      "data_source": "14.6+/-5.1%, 1.8+/-1.1%, 25.7+/-11.5%, 10.6+/-7.6%"
+    },
+    {
+      "figure_id": "fig_network_correlations",
+      "title": "Memory duration and diffusion vs. %normal and %new myelin sheaths",
+      "type": "scatter_with_regression",
+      "data_source": "r=0.703, r=-0.802, r=-0.852, r=0.607 correlations"
+    },
+    {
+      "figure_id": "fig_pipeline_schematic",
+      "title": "Two-scale modeling pipeline schematic",
+      "type": "schematic",
+      "data_source": "idea_summary narrative of single-neuron -> network"
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "age-related cognitive decline rhesus monkey prefrontal cortex working memory",
+      "myelin dystrophy aging dorsolateral prefrontal cortex electron microscopy",
+      "oligodendrocyte aging remyelination primate cortex",
+      "spatial working memory spiking neural network attractor model prefrontal cortex",
+      "conduction velocity myelin lamellae multicompartment axon model"
+    ],
+    "micro_queries": [
+      "Peters Sethares 2002 myelin sheath aging monkey",
+      "Peters Sethares 2003 paranodal profiles aging",
+      "Peters 2009 myelin dystrophy mechanism review",
+      "Rumbell 2016 dlPFC pyramidal multicompartment model",
+      "Gow Devaux 2008 myelinated axon model tight junctions",
+      "Scurfield Latimer 2018 remyelination conduction velocity",
+      "Hansel Mato 2013 ring model working memory",
+      "Compte 2000 persistent activity working memory prefrontal",
+      "Ibanez 2020 aging firing rate synapse loss working memory model",
+      "Mongillo 2008 Stokes 2015 activity-silent working memory synaptic",
+      "Dimovasili 2022 oligodendrocyte maturation aging monkey",
+      "Chang 2005 2022 pyramidal neuron dlPFC electrophysiology aging",
+      "Luebke 2010 aging monkey prefrontal review",
+      "Wang 2011 in vivo working memory aging monkey",
+      "Waxman 1980 axon diameter myelin conduction",
+      "Moore 2017 2023 cognitive aging monkey",
+      "Panichello 2019 Bae 2021 working memory systematic bias"
+    ],
+    "must_cite": [
+      "Peters and Sethares 2002",
+      "Peters and Sethares 2003",
+      "Peters 2009",
+      "Rumbell et al. 2016",
+      "Gow and Devaux 2008",
+      "Scurfield and Latimer 2018",
+      "Hansel and Mato 2013",
+      "Compte et al. 2000",
+      "Ibanez et al. 2020",
+      "Chang et al. 2005",
+      "Chang et al. 2022",
+      "Luebke et al. 2010",
+      "Dimovasili et al. 2022",
+      "Wang et al. 2011",
+      "Carnevale and Hines 2006",
+      "Mongillo et al. 2008",
+      "Stokes 2015",
+      "Barbosa et al. 2020",
+      "Kilpatrick and Ermentrout 2013",
+      "Esnaola-Acebes et al. 2022",
+      "Wimmer et al. 2014",
+      "Funahashi et al. 1989",
+      "Arancibia-Carcamo and Attwell 2014",
+      "Mejias and Wang 2022",
+      "Naud and Longtin 2019",
+      "Lasiene et al. 2008",
+      "Powers et al. 2012",
+      "Coggan et al. 2015",
+      "Bowley et al. 2010",
+      "Peters et al. 2001",
+      "Morris and Mitchell 1995",
+      "Panichello et al. 2019"
+    ],
+    "citation_target": 35
+  }
+}

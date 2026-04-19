@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "working_title": "miniML: A Deep Learning Framework for Automated and Generalized Synaptic Event Analysis",
+    "venue": "eLife",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Spontaneous synaptic events carry fundamental information about synaptic function and plasticity, but their stochastic nature and low SNR make detection difficult.",
+    "gap": "Existing template- and threshold-based methods suffer from strong threshold dependence, produce false positives, and require laborious manual inspection.",
+    "approach": "We introduce miniML, a CNN-LSTM classifier trained on ~30,000 labeled cerebellar mEPSC segments that classifies short windows and detects events via sliding window inference, coupled with transfer learning for generalization.",
+    "key_results": "miniML achieves 98.4% validation accuracy, outperforms template matching, deconvolution, Bayesian inference, SimplyFire, MiniAnalysis, and finite-threshold methods in F1 across SNRs, generalizes across mouse/rat/zebrafish/Drosophila/human iPSC preparations, and detects ~40% of optical mEPSPs in ASAP5 voltage imaging data (recall 0.38 vs 0.25 template, 0.09 deconvolution).",
+    "impact": "Automated, threshold-robust, and reproducible synaptic event analysis applicable to electrophysiology and optical imaging, enabling high-throughput analysis of neural function and dysfunction."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Synaptic communication underlies brain function; spontaneous miniature events reveal receptor state and plasticity",
+        "Miniature EPSCs/EPSPs are small and stochastic, producing low SNR that challenges reliable detection",
+        "Existing techniques (finite-difference, template-matching, deconvolution, Bayesian, peak finding) are threshold-sensitive and require manual review",
+        "Deep learning, particularly CNNs, has transformed 1D biological signal analysis; CNN-LSTM architectures exploit temporal structure",
+        "We present miniML, a supervised CNN-LSTM classifier that detects synaptic events with high precision and generalizes across preparations via transfer learning"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_classification", "title": "miniML enables highly accurate classification of synaptic events", "content_bullets": ["CNN-LSTM-dense model trained on ~30,000 labeled MF-GC mEPSC windows (21,140 recorded + 9,000 simulated)", "Best model achieves 98.4% validation accuracy (SD 0.1, fivefold CV)", "Performance saturates above 5,000 samples (<0.2% gain)", "Saliency maps localize discrimination to event peak; UMAP shows linear separability"]},
+        {"id": "results_detection", "title": "miniML robustly detects events in electrophysiological recordings", "content_bullets": ["Sliding-window inference with stride for fast analysis", "120-s, 50-kHz recording analyzed in ~15 s on laptop (Apple M1 Pro, 16 GB RAM) with stride 20", "Output in [0,1] interpretable as event confidence; peak threshold 0.5", "GPU enables <20 s runtime for 6,000,000-sample trace"]},
+        {"id": "results_benchmark", "title": "AI-based event detection is superior to previous methods", "content_bullets": ["Synthetic events on event-free traces provide ground truth; log-normal amplitudes, SNR 2-15 dB", "Compared against template-matching, deconvolution, finite-threshold, Bayesian, SimplyFire, MiniAnalysis", "miniML had highest F1 across SNRs and highest precision (zero false positives)", "miniML remained consistent across threshold range 5-195%; false positives only at 5%"]},
+        {"id": "results_outsample", "title": "miniML reliably detects events in out-of-sample preparations", "content_bullets": ["Calyx of Held mEPSCs (P9) detected with pretrained MF-GC model", "Cerebellar Golgi cells: slower decay 1.83 ms (SD 0.44, n=10) vs GC training 0.9 ms; still detected reliably", "Human iPSC-derived cortical glutamatergic neurons: 0.15 Hz (SD 0.24, n=56); events in ~51% of neurons"]},
+        {"id": "results_transfer", "title": "Generalization via transfer learning", "content_bullets": ["Freeze CNN layers, retrain LSTM+dense; as few as 400 samples suffice", "TL accuracy 95.4% vs 96.1% for full training with 10x data", "Applied to MF-GC mEPSPs: voltage-clamp 0.49 Hz (SD 0.53), current-clamp 0.54 Hz (SD 0.6), n=15, strongly correlated"]},
+        {"id": "results_zebrafish", "title": "Diverse event kinetics in adult zebrafish telencephalon", "content_bullets": ["TL model detects spontaneous EPSCs in n=34 zebrafish principal neurons", "Decay times uncorrelated with anatomical position (p>0.05 in all 3 dims)", "Mean decay and rise times correlated across neurons; input resistance negatively correlated with decay time"]},
+        {"id": "results_drosophila", "title": "Genetic receptor perturbation at Drosophila NMJ", "content_bullets": ["WT and GluRIIA mutant two-electrode voltage-clamp recordings analyzed via TL", "GluRIIA: mEPSC amplitude reduced 54%, frequency reduced 64%", "Half decay -58%, rise -18% in GluRIIA vs WT"]},
+        {"id": "results_imaging", "title": "Optical event detection with iGluSnFR3 and ASAP5", "content_bullets": ["iGluSnFR3: n=1524 ROIs, rise 21.8 ms median, half decay 48.7 ms median; power-law frequency distribution", "ASAP5-Kv voltage imaging: SNR 2.26 (SD 0.46) vs electrophysiology 4.79 (SD 0.74), n=5", "miniML recall 0.38+/-0.05 vs template 0.25+/-0.05 (Cohen's d 1.25) vs deconvolution 0.09+/-0.01 (d 3.87); precision 0.93/0.95/0.8", "F1 0.53+/-0.04 vs 0.39+/-0.05 (d 1.35) vs 0.17+/-0.01 (d 5.1)"]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "miniML surpasses existing methods in precision and F1, eliminating trade-off between false positives and negatives",
+        "Threshold robustness supports automated, reproducible pipelines",
+        "Generalizes across species, preparations, and modalities via TL with a few hundred labeled events",
+        "Extends to optical recordings (iGluSnFR3, ASAP5) where template methods fail",
+        "Limitations: supervised labeling burden; overlapping event separation; imaging SNR/temporal resolution constraints",
+        "Outlook: unsupervised autoencoders, wavelet/shapelet augmentation, clinical neurophysiology extensions"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Materials and Methods",
+      "content_bullets": [
+        "Animals: C57BL/6J mice 1-5 months (Calyx P9); ACSF and internal solution composition",
+        "Recording: HEKA EPC10, 50 kHz, filter 2.9 kHz; LJP +13 mV; 120-s sweeps",
+        "Training data: mEPSCs from Delvendahl et al. 2019; 600-sample windows (12 ms at 50 kHz); 4500 augmentation negatives + simulated events -> 30,140 total (21,140 recorded, 9,000 simulated)",
+        "Architecture: 3 conv blocks (leaky ReLU, batch norm, avg pool) + 4th conv block + bidirectional LSTM + dense + dropout + sigmoid; 190,913 trainable params",
+        "Training: TensorFlow 2.12, Adam+AMSGrad, eta=2e-5, batch 128, 100 epochs max, early stopping patience 8; ~8 min on NVIDIA Tesla P100",
+        "Inference: sliding window stride, min peak height 0.5, 10-stride width; biexponential synthetic events, log-normal amplitudes variance 0.4, decay mean 1.0 ms (SD 0.25 ms)",
+        "Transfer learning: freeze convs, lr 2e-8, batch 32, dropout 0.5, patience 15",
+        "Baselines: template-matching thr -4, deconvolution 5*SD, finite-threshold -4 pA, Bayesian min amp 3.5 noise phi=[0.90,-0.52] rate 0.5 threshold 6*SD, SimplyFire kernel 300 stride 100 min amp 4 pA, MiniAnalysis auto EPSC mode",
+        "ASAP5: 400 fps, 482/18 ex, 525/50 em, 46 mW/mm^2 irradiance; electrophysiology 10 kHz acquisition, 1 kHz low-pass",
+        "Stats: permutation t-test 5000 reshuffles; Cohen's d or mean diff with 95% BCa CI from 5000 bootstraps"
+      ]
+    }
+  ],
+  "table_plan": [
+    {"table_id": "tab1", "title": "Classification and detection summary", "columns": ["Preparation", "Model", "Metric", "Value", "n"], "data_source": "experimental_log — MF-GC training, calyx, Golgi, iPSC, zebrafish, Drosophila", "caption_sketch": "Accuracy, event frequencies, and kinetic statistics across preparations."},
+    {"table_id": "tab2", "title": "Benchmark comparison of event detection methods", "columns": ["Method", "Precision", "Recall", "F1", "Threshold robustness"], "data_source": "experimental_log — Figure 3 and Figure 9H benchmarks", "caption_sketch": "Methods comparison across simulated and ASAP5 data."}
+  ],
+  "figure_plan": [
+    {"figure_id": "fig1", "title": "Model architecture and classification performance", "kind": "schematic+metric", "notes": "CNN-LSTM schematic and 98.4% accuracy summary"},
+    {"figure_id": "fig2", "title": "Benchmark F1 across methods and SNRs", "kind": "bar/line", "data": "F1 per method at representative SNR"},
+    {"figure_id": "fig3", "title": "Generalization across preparations", "kind": "bar", "data": "Event frequencies per preparation"},
+    {"figure_id": "fig4", "title": "Optical detection with ASAP5", "kind": "grouped bar", "data": "Recall/Precision/F1 for miniML vs template vs deconvolution"},
+    {"figure_id": "fig5", "title": "GluRIIA perturbation effect sizes", "kind": "bar", "data": "-54% amp, -64% freq, -58% decay, -18% rise"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "synaptic transmission miniature events review",
+      "miniature postsynaptic current detection methods",
+      "deep learning neuroscience time series"
+    ],
+    "micro_queries": [
+      "template matching synaptic event Clements Bekkers",
+      "deconvolution mEPSC detection Pernia-Andrade",
+      "Bayesian synaptic event inference Merel",
+      "CNN LSTM 1D time series classification",
+      "transfer learning convolutional neural networks",
+      "iGluSnFR3 glutamate imaging Aggarwal 2023",
+      "ASAP5 voltage imaging Hao 2024",
+      "Drosophila NMJ GluRIIA DiAntonio"
+    ],
+    "must_cite": [
+      "Kaeser Regehr 2014 synaptic vesicle release",
+      "Kavalali 2015 miniature neurotransmission",
+      "Clements Bekkers 1997 template matching",
+      "Pernia-Andrade 2012 deconvolution",
+      "Kudoh Taguchi 2002 finite threshold",
+      "Merel 2016 Bayesian event detection",
+      "Mori 2024 SimplyFire",
+      "LeCun 2015 deep learning",
+      "Fawaz 2019 time series classification review",
+      "Delvendahl 2019 MF-GC mEPSC",
+      "Rupprecht Friedrich 2018 zebrafish",
+      "Baccino-Calace 2022 Drosophila NMJ",
+      "Aggarwal 2023 iGluSnFR3",
+      "Hao 2024 ASAP5",
+      "DiAntonio 1999 GluRIIA",
+      "Kingma Ba 2014 Adam",
+      "Ioffe Szegedy 2015 batch norm",
+      "Srivastava 2014 dropout",
+      "Ho 2019 estimation statistics dabest",
+      "Simonyan 2013 saliency maps",
+      "Yosinski 2014 transferable features",
+      "Asadollahi 2023 iPSC neurons",
+      "Kita 2021 cerebellar Golgi",
+      "Martin Abadi 2015 TensorFlow"
+    ],
+    "citation_target": 25
+  }
+}

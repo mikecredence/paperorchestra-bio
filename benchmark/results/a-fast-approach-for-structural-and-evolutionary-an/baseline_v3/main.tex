@@ -1,0 +1,163 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{authblk}
+
+\title{A Fast Approach for Structural and Evolutionary Analysis Based on Energetic Profile Protein Comparison}
+
+\author[1]{Anonymous Author}
+\affil[1]{Anonymous Institution}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In structural bioinformatics, the efficiency of predicting protein similarity, function, and evolutionary relationships is crucial. We introduce an approach leveraging protein energy profiles derived from a knowledge-based potential that deviates from traditional methods relying on structural alignment or atomic distances. Each protein is characterized by a 210-dimensional vector summarising the summed energies over all 20$\times$21/2 pairs of amino-acid types, defined both from structure (Structural Profile of Energy, SPE) and from sequence composition alone (Compositional Profile of Energy, CPE). We show that CPE and SPE are strongly correlated (with $96\%$ of the 210 interaction types exhibiting length-vs-difference correlations below $0.5$), that they encode SCOP class, fold, superfamily, and family information, and that the Manhattan distance between profiles is a highly effective dissimilarity measure. On a CATH v4.2.0 benchmark of $251$ protein domains (44--854 residues, mean length $211$), CPE and TM-Vec both reach $100\%$ accuracy, but CPE completes in $1$\,s versus $67$\,s for TM-Vec. On a phylogenetic reconstruction of spike glycoproteins from $143$ coronaviruses (SARS-CoV: $31$; SARS-CoV-2: $80$; MERS-CoV: $32$), CPE attains the highest adjusted Rand index (ARI $= 0.95$), and SPE reaches a perfect ARI $=1$, while CPE completes in $0.9$\,s compared to $89$\,s for TM-Vec and $9.7$\,h for TM-Score. On the large SARS-CoV-2 proteome benchmark of $28$ families and $4{,}405$ protein models, both CPE and SPE reach near-$100\%$ accuracy, and on a BAGEL bacteriocin dataset of $690$ proteins, CPE separates classes with $p<10^{-16}$. Our sequence-based CPE method is thus both accurate and orders of magnitude faster than structural alignment or deep-learning alternatives.
+\end{abstract}
+
+\section{Introduction}
+
+A thorough understanding of protein function is central to biology, medicine, and pharmacy. Experimental methods for characterising function are highly accurate but slow and costly, motivating computational alternatives. Modern high-throughput pipelines have produced large repositories of protein sequences, a substantial fraction of which remain unannotated \cite{uniprot2021}. Methods for comparing proteins have therefore become fundamental, ranging from the classic PSI-BLAST \cite{altschul1997psiblast} to recent deep-learning embeddings such as TM-Vec \cite{hamamsy2023tmvec} and structure-prediction systems such as AlphaFold2 \cite{jumper2021alphafold2}, OmegaFold \cite{wu2022omegafold}, and ESMFold \cite{lin2023esmfold}.
+
+A guiding idea of this work is that the energy of a protein, as captured by knowledge-based statistical potentials \cite{sippl1990,krishnamoorthy2003four,singh1996delaunay}, plays a key role in determining its structure, and, by extension, its function. Indeed, energy-based matching of sequences to folds was introduced by Bowie, L\"uthy and Eisenberg \cite{bowie1991direct}, and energy-landscape theory \cite{onuchic1997theory} has since cemented the view that similar proteins occupy similar regions of the folding energy landscape. We take this one step further by assigning to every protein a 210-dimensional feature vector in which each entry is the summed pairwise potential between a specific amino-acid pair. This vector, which we call the \emph{profile of energy}, provides a compact, structure-free summary of the energetics underlying the protein.
+
+Hierarchical protein classification databases such as CATH \cite{orengo1997cath} and SCOP \cite{murzin1995scop}, together with curated subsets of SCOPe \cite{chandonia2022astral} (ASTRAL40 and ASTRAL95, version 2.08), provide well-defined ground-truth groupings at the class, fold, superfamily, and family level. We use these datasets to show that energy profiles separate proteins at all four levels. We further evaluate our method on the ferritin-like superfamily \cite{lundin2012ferritin}, whose members fall in the ``twilight zone'' (20--35\% sequence identity) where homology is hard to infer from sequence alone, on coronavirus spike glycoproteins from the CoV3D database \cite{gowthaman2021cov3d}, on the BAGEL bacteriocin dataset of $690$ proteins \cite{vandeheuvel2018bagel}, and on a large SARS-CoV-2 proteome dataset of $28$ families and $4{,}405$ protein models \cite{freiberger2023frustration}. Finally, we revisit the network-based drug-combination measure of Cheng et al.~\cite{cheng2019network} and show that a strongly correlated measure can be derived purely from sequence-based energy profiles. Throughout, we demonstrate that the profile-of-energy approach is orders of magnitude faster than structural-alignment methods (RMSD \cite{kabsch1976rmsd}, TM-Score \cite{zhang2004tmscore}, GR-Align \cite{malod2015graligna}, Yau--Hausdorff \cite{tian2020hausdorff}) while matching or exceeding their accuracy.
+
+\section{Methods}
+
+\paragraph{Training dataset for the knowledge-based potential.} A curated non-redundant set of protein chains was obtained from PISCES \cite{wang2003pisces}, filtered for pairwise sequence identity below $50\%$, resolution higher than $1.6$\,{\AA}, R-factor below $0.25$, and protein length between $40$ and $1{,}000$ residues. Proteins overlapping with any of our test sets were removed from the training set.
+
+\paragraph{Pairwise distance-dependent knowledge-based potential.} Each amino-acid residue is represented by its heavy atoms (hydrogens excluded). A Delaunay tessellation \cite{singh1996delaunay} of the resulting point set is computed using Qhull \cite{barber1996qhull}; two atoms are considered in contact if they share an edge in the Delaunay triangulation. Contacts are binned into $30$ distance shells of width $0.5$\,{\AA} starting at $0.75$\,{\AA}, and atoms are typed into $167$ classes based on residue and position within the residue. The potential energy between atoms $i$ and $j$ at distance $d$ follows Sippl \cite{sippl1990}:
+\begin{equation}
+E_{ij}(d) = -RT \ln \frac{\sigma M_{ij} f_{ij}(d) + f_{xx}(d)}{\sigma M_{ij} + 1},
+\end{equation}
+with $RT = 0.582$\,kcal/mol, $M_{ij}$ the number of observations for atom pair $(i,j)$, $f_{ij}(d)$ the relative frequency for $(i,j)$ in shell $d$, $f_{xx}(d)$ the reference relative frequency, and $\sigma = 0.02$ \cite{sippl1990}.
+
+The potential energy between residues $A$ and $B$, $\Delta E(A,B)$, is the sum of pairwise atomic potentials between atoms of $A$ and $B$ that are in Delaunay contact.
+
+\paragraph{Structural Profile of Energy (SPE).} For each protein, a $210$-dimensional vector is formed whose entries are the summed residue-level energies for each of the $210$ unordered amino-acid pairs.
+
+\paragraph{Compositional Profile of Energy (CPE).} We estimate pairwise energy content from amino-acid composition alone. For protein $S$, $E_i^S$ is the summed energy of all interactions of residues of type $i$. We model
+\begin{equation}
+\widehat{E}_i^S = \sum_{j=1}^{20} P_{ij}\, c_j^S,
+\end{equation}
+where $c_j^S = n_j^S / L^S$ is the composition frequency of residue $j$ in $S$ of length $L^S$, and $P$ is a $20\times 20$ predictor matrix. Rows of $P$ are fitted by minimising the residual sum of squares across training proteins, yielding a linear system that we solve in MATLAB's Symbolic Math Toolbox. Given $P$, the compositional pairwise energy is
+\begin{equation}
+E_{ij}^{\mathrm{CPE}} = \frac{1}{2}\bigl(P_{ij} c_j^S + P_{ji} c_i^S\bigr)\, L^S,
+\end{equation}
+yielding a $210$-dimensional profile normalised by protein length. The Manhattan distance between profiles serves as the dissimilarity measure throughout.
+
+\paragraph{Benchmarks and baselines.} We compare CPE and SPE against RMSD \cite{kabsch1976rmsd}, TM-Score \cite{zhang2004tmscore}, GR-Align \cite{malod2015graligna}, Yau--Hausdorff distance \cite{tian2020hausdorff}, and TM-Vec \cite{hamamsy2023tmvec}. RMSD uses a least-squares superposition of backbone C$\alpha$ atoms. TM-Vec is evaluated with \texttt{tm\_vec\_cath\_model}. TM-Score is computed via \texttt{tm\_align} from the \texttt{tmtools} 0.1.1 Python module. Classification is via 1-NN with leave-one-out cross-validation using the Manhattan distance on the profile-of-energy features.
+
+\paragraph{Drug-combination separation measure.} Let $d(a,b)$ denote the Manhattan distance between energy profiles of proteins $a$ and $b$. The energy-based separation measure between drugs $A$ and $B$ with target sets $T_A$ and $T_B$ is
+\begin{equation}
+E_{AB} = \langle d_{AB}\rangle - \tfrac{1}{2}\bigl(\langle d_{AA}\rangle + \langle d_{BB}\rangle\bigr),
+\end{equation}
+to be compared with the network-based separation $S_{AB}$ of Cheng et al.~\cite{cheng2019network}. We evaluate on the $65$ antihypertensive drugs of \cite{cheng2019network}.
+
+\paragraph{Software.} Analyses were implemented in R with packages \texttt{bio3d} \cite{grant2006bio3d}, \texttt{geometry}, \texttt{msa} \cite{bodenhofer2015msa}, \texttt{seqinr} \cite{charif2007seqinr}, \texttt{phangorn} \cite{schliep2011phangorn}, and \texttt{ggplot2} \cite{wickham2016ggplot2}. Phylogenetic networks were visualised with SplitsTree \cite{bryant2009splitstree}. UMAP embeddings \cite{mcinnes2018umap} used $n_{\mathrm{neighbors}}=30$, $\mathrm{min\_dist}=0.1$ for ASTRAL hierarchies and $n_{\mathrm{neighbors}}=13$, $\mathrm{min\_dist}=0.1$--$0.5$ for the coronavirus and bacteriocin sets. Comparative baselines for RMSD, TM-Score, GR-Align, and Yau--Hausdorff were taken from Table~1 of Tian et al.~\cite{tian2020hausdorff}, using the same hardware (2.4\,GHz, 8\,GB RAM) as in that study; other runtimes were measured on an Intel i9 11th-generation (2.6\,GHz, 32\,GB RAM).
+
+\section{Results}
+
+\subsection{Sequence- and structure-derived energies are strongly correlated}
+On the ASTRAL40 and ASTRAL95 datasets \cite{chandonia2022astral}, the total energies estimated from sequence versus structure are highly correlated, with Pearson $p$-value below $10^{-16}$ (the precision threshold of standard statistical computations). The correlation between the difference of energy estimates and protein length is small across interaction types: $96\%$ of the $210$ interaction types display an absolute correlation below $0.5$, indicating that protein length does not significantly affect accuracy for most interaction types. This supports CPE as a reliable sequence-only approximation to structural energies.
+
+\subsection{Energy profiles separate SCOP classes, folds, superfamilies, and families}
+UMAP projections of SPE and CPE separate the four SCOP classes (all-$\alpha$, all-$\beta$, $\alpha+\beta$, $\alpha/\beta$), and at lower levels consistently cluster domains within the same fold (a.100 vs.\ a.104), superfamily (a.29.2 vs.\ a.29.3), and family (a.25.1.0 vs.\ a.25.1.2). Pairwise Manhattan distances between profiles are significantly smaller within a class/fold/superfamily than across it.
+
+\subsection{CATH benchmark: 100\% accuracy with one-second runtime}
+Using the CATH v4.2.0 benchmark of $251$ protein domains (lengths $44$ to $854$, mean $211$) from two families --- the RuvA C-terminal domain (CATH code 1.10.8.10) and the Homing endonucleases (CATH code 3.10.28.10) --- a 1-NN classifier using CPE or SPE achieves $100\%$ accuracy, matching TM-Vec, while GR-Align, RMSD, TM-Score, and Yau--Hausdorff range from $59.2\%$ to $81.5\%$. CPE finishes in $1$\,s, against $67$\,s for TM-Vec (2.4\,GHz, 8\,GB RAM).
+
+\subsection{Classification of five SCOP superfamilies}
+We evaluated the five SCOP superfamilies winged helix (a.4.5), PH domain-like (b.55.1), NTF-like (d.17.4), Ubiquitin-like (d.15.1), and Immunoglobulins (b.1.1) \cite{murzin1995scop}. All methods achieved performance levels approaching $100\%$, as reported in Table~\ref{tab:scopsf}. CPE matched TM-Vec in accuracy but was markedly faster.
+
+\begin{table}[h]
+\centering
+\caption{Accuracy (\%) and F1-score for 1-NN classification on five SCOP superfamilies.}
+\label{tab:scopsf}
+\begin{tabular}{lccc}
+\toprule
+Superfamily & CPE & SPE & TM-Vec \\
+\midrule
+Winged helix (a.4.5) & $\approx 100$ & $\approx 100$ & $\approx 100$ \\
+PH domain-like (b.55.1) & $\approx 100$ & $\approx 100$ & $\approx 100$ \\
+NTF-like (d.17.4) & $\approx 100$ & $\approx 100$ & $\approx 100$ \\
+Ubiquitin-like (d.15.1) & $\approx 100$ & $\approx 100$ & $\approx 100$ \\
+Immunoglobulins (b.1.1) & $\approx 100$ & $\approx 100$ & $\approx 100$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Hemoglobin $\alpha$ vs.\ $\beta$ globins}
+For the $21$ mammalian hemoglobin biological units of Freiberger et al.~\cite{freiberger2023frustration}, UMAP projections of CPE, SPE, and TM-Vec all correctly separate $\alpha$ from $\beta$ globins.
+
+\subsection{Ferritin-like superfamily phylogeny}
+We reconstructed the phylogeny of the SCOP ferritin-like superfamily (a.25.1) --- comprising the Ferritin family (a.25.1.1: ferritins, bacterioferritins, Dps, Rubrerythrin) and the Ribonucleotide Reductase-like family (a.25.1.2: RNR R2, BMM-$\alpha$, BMM-$\beta$, fatty-acid desaturases). Trees built from CPE, SPE, and TM-Vec all recover the two major a.25.1.1 vs.\ a.25.1.2 branches. Spearman correlations between predicted branching order and the manually annotated network of \cite{malik2014ferritin,puente2022ferritin} show that both SPE and CPE outperform TM-Vec (Table~\ref{tab:spear}): SPE achieves a perfect Spearman correlation on a.25.1.1, whereas TM-Vec shows a negative correlation on a.25.1.2.
+
+\begin{table}[h]
+\centering
+\caption{Spearman correlation between the manually annotated network and predicted branching order on the ferritin-like superfamily.}
+\label{tab:spear}
+\begin{tabular}{lccc}
+\toprule
+Family & SPE & CPE & TM-Vec \\
+\midrule
+a.25.1.1 (Ferritin) & $1.00$ & positive & positive \\
+a.25.1.2 (RNR-like) & positive & positive & negative \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Clustering of spike glycoproteins}
+From the CoV3D database \cite{gowthaman2021cov3d} we curated $143$ spike glycoproteins with a closed RBD: $80$ chains from SARS-CoV-2, $31$ from SARS-CoV, and $32$ from MERS-CoV. On this benchmark, CPE achieves ARI $=0.95$ at a cut of $4$, SPE achieves ARI $=1$ at a cut of $3$, TM-Vec reaches ARI $=0.87$ at a cut of $5$, MSA reaches ARI $=0.49$ at a cut of $3$, and RMSD and TM-Score reach $0.73$ and $0.56$ at cuts of $6$ and $4$. In terms of runtime (Table~\ref{tab:runtime}), CPE completes in $0.9$\,s and SPE in $3$\,min, versus $89$\,s for TM-Vec, $72$\,s for MSA, $70$\,min for RMSD, and $9.7$\,h for TM-Score. All methods correctly place SARS-CoV-2 closer to SARS-CoV than to MERS-CoV, and the distance between SARS-CoV-2 and MERS-CoV is nearly identical to the distance between SARS-CoV and MERS-CoV. Bootstrap analysis with $100$ replicates on CPE, SPE, TM-Vec, and MSA gives high confidence for the three main species-level branches.
+
+\begin{table}[h]
+\centering
+\caption{Clustering quality and runtime on the $143$-chain spike-glycoprotein benchmark.}
+\label{tab:runtime}
+\begin{tabular}{lcc}
+\toprule
+Method & ARI (best cut) & Runtime \\
+\midrule
+CPE & $0.95$ (cut $4$) & $0.9$\,s \\
+SPE & $1.00$ (cut $3$) & $3$\,min \\
+TM-Vec & $0.87$ (cut $5$) & $89$\,s \\
+MSA & $0.49$ (cut $3$) & $72$\,s \\
+RMSD & $0.73$ (cut $6$) & $70$\,min \\
+TM-Score & $0.56$ (cut $4$) & $9.7$\,h \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bacteriocin classification on BAGEL}
+On the BAGEL dataset \cite{vandeheuvel2018bagel} of $690$ peptides (length $>30$) spanning three classes (RiPPs, class II, class III), UMAP on CPE cleanly partitions bacteriocins by class. Pairwise CPE distances among different classes ($n = 125{,}869$), the same class ($n = 111{,}349$), and subclass~1 within the same class ($n = 13{,}431$) differ significantly across all three two-tailed Student's $t$-tests (all $p < 10^{-16}$, below the precision of standard statistical computations). TM-scores of AlphaFold2-, OmegaFold-, and ESMFold-predicted structures produce overlapping distributions across classes, whereas CPE cleanly separates them.
+
+\subsection{Large-scale SARS-CoV-2 proteome benchmark}
+On the Freiberger et al.~\cite{freiberger2023frustration} coronavirus proteome dataset of $28$ families and $4{,}405$ AlphaFold2 models built from MAFFT \cite{katoh2013mafft} alignments, CD-HIT \cite{huang2010cdhit} clusters, and S3Det subfamilies \cite{rausell2010s3det}, both CPE and SPE achieve near-$100\%$ accuracy and F1 under 1-NN, with CPE being the faster of the two. The Papain-like Protease (PLPro) domain in this dataset is split into four Betacoronavirus subgenera --- Sarbecovirus ($n=31$), Nobecovirus ($n=11$), Merbecovirus ($n=35$), and Embecovirus ($n=45$) --- and both CPE and SPE UMAPs (with $n_{\mathrm{neighbors}}=13$, $\mathrm{min\_dist}=0.5$) cleanly separate all four subgenera.
+
+\subsection{Energy-based drug-combination measure}
+On $65$ antihypertensive drugs with complementary exposure to the hypertension disease module \cite{cheng2019network}, the Pearson correlation between network-based $S_{AB}$ and energy-based $E_{AB}$ is high and significant, demonstrating that energy profiles recapitulate a substantial portion of the network topology signal while requiring only protein sequences.
+
+\subsection{Scalability}
+On ASTRAL95 subsets from $1{,}000$ to $30{,}000$ proteins (in $5{,}000$-protein increments), the per-amino-acid runtime of both CPE and TM-Vec grows linearly, but CPE has a gentler slope, confirming better scalability for high-throughput applications.
+
+\section{Discussion}
+
+We have introduced a family of energy-based protein descriptors grounded in a knowledge-based potential of pairwise residue interactions. Each protein is characterised by a $210$-dimensional vector, yielding either a Structural Profile of Energy (SPE) computed from atomic structure or a Compositional Profile of Energy (CPE) computed from sequence composition. Two properties are striking. First, CPE and SPE are strongly correlated, with $96\%$ of the $210$ interaction types exhibiting length-versus-difference correlations below $0.5$, so sequence-based CPE is a reliable approximation to SPE and, by transitivity, to structural energy. Second, the Manhattan distance between profiles cleanly separates proteins at all levels of SCOP and CATH without any explicit structural or sequence alignment. In the CATH v4.2.0 benchmark, CPE attains $100\%$ accuracy in $1$\,s, versus $67$\,s for TM-Vec and accuracies between $59.2\%$ and $81.5\%$ for RMSD, TM-Score, GR-Align, and Yau--Hausdorff.
+
+The approach also captures phylogenetic signal in the ``twilight zone'' of the ferritin-like superfamily \cite{lundin2012ferritin,malik2014ferritin,puente2022ferritin}, outperforming TM-Vec in Spearman correlation with manually annotated subfamily orderings. On the $143$-chain coronavirus spike-glycoprotein benchmark, CPE reaches ARI $=0.95$ and SPE ARI $=1$, with CPE being $\sim 100\times$ faster than TM-Vec and $\sim 39{,}000\times$ faster than TM-Score. On the BAGEL bacteriocin dataset of $690$ peptides, CPE partitions the three BAGEL classes with significance $p < 10^{-16}$. On the $4{,}405$-protein, $28$-family SARS-CoV-2 proteome benchmark, near-$100\%$ accuracy is reached, and PLPro is correctly partitioned into four Betacoronavirus subgenera.
+
+Beyond classification and phylogenetics, we showed that an energy-based separation measure $E_{AB}$, computed from protein targets alone, correlates strongly with the network-based separation measure $S_{AB}$ of Cheng et al.~\cite{cheng2019network} on $65$ antihypertensive drugs, suggesting an efficient sequence-only route to ranking effective drug combinations. Limitations include the dependence of knowledge-based potentials on the structural database used to train them, and the fact that CPE may not capture protein complexity beyond length (folding patterns, heterogeneity, conformational dynamics); reweighting $P$ to specific tasks is a natural extension. We conclude that profiles of energy are a compact, interpretable, and highly efficient descriptor of protein structure and evolution, with direct applications to protein classification, phylogenetics, and drug-combination screening.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

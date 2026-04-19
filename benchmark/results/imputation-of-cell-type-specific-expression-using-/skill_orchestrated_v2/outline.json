@@ -1,0 +1,230 @@
+{
+  "metadata": {
+    "working_title": "Penalised regression improves imputation of cell-type-specific expression from mixed-cell RNA-seq data compared to domain-specific deconvolution methods",
+    "venue": "Nature Methods",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Bulk RNA-seq of mixed cell populations (e.g., PBMC) is cost-effective but obscures cell-type-specific expression patterns that drive immune-mediated disease.",
+    "gap": "Computational deconvolution estimates average cell-type expression, but imputing sample-level cell-type expression -- required for relating expression to quantitative traits -- is less well studied, and cross-domain machine-learning methods have not been benchmarked for this task.",
+    "approach": "We benchmark three domain-specific deconvolution methods (CIBERSORTx, bMIND, debCAM/swCAM) against two off-the-shelf multi-response penalised regression methods (multivariate LASSO and ridge) using a real dataset of paired PBMC and sorted (CD4, CD8, CD14, CD19) RNA-seq from N=158 subjects and pseudobulk datasets synthesised from eQTLgen scRNA-seq data.",
+    "key_results": "We introduce a differential-gene-expression (DGE) recovery metric. LASSO and ridge achieved higher DGE-recovery AUC across four cell types and multiple scenarios (dichotomous/continuous phenotypes with and without covariate adjustment; stimulation with C. albicans; batch-adjusted and Combat-seq pseudobulk). All methods attenuated log2 fold-change estimates (slopes 0.55-0.90), with LASSO/ridge the most accurate at sensitivity, but at higher computational cost (up to 192-658x longer CPU time and 3-11x more memory than CIBERSORTx).",
+    "impact": "Cross-domain machine-learning models are a viable and often superior alternative to domain-specific deconvolution when paired training data are available, and the DGE-recovery metric offers a more task-relevant benchmark than correlation or RMSE."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Cell-type-specific gene expression in immune cells discriminates disease pathogenesis and predicts prognosis, yet most studies of immune disease use mixed cell populations such as PBMC because flow sorting and single-cell RNA-seq are expensive and labour-intensive at scale.",
+        "Computational deconvolution from mixed-cell RNA-seq offers an alternative: bulk expression m for n genes can be modelled as m = H f where H is an n x c cell-type expression matrix and f is a vector of c cell-type fractions. Supervised methods use H to guide estimation of f; unsupervised methods decompose M into F and H1 simultaneously.",
+        "Fraction deconvolution methods (EPIC, quanTIseq, FARDEEP, CIBERSORT) differ primarily in how they regularise the regression against a reference signature H1.",
+        "Five existing methods -- CIBERSORTx, CellR, MIND, bMIND, swCAM -- extend to sample-level cell-type expression imputation G (n x c x k), but each carries restrictive assumptions: CellR requires scRNA-seq clusters, MIND requires multiple bulk measurements per subject, and CIBERSORTx/bMIND/swCAM rely on either a signature matrix or externally measured cell fractions.",
+        "Prediction accuracy has been extensively studied for cell fractions using synthetic data, but sample-level cell-type expression imputation is less well characterised, especially for recovery of downstream signals such as differential gene expression (DGE).",
+        "We benchmark CIBERSORTx (inbuilt and custom), bMIND and swCAM against multivariate LASSO and ridge regression -- cross-domain machine-learning methods not previously applied to this task -- using paired PBMC and sorted CD4/CD8/CD14/CD19 RNA-seq from 158 CLUSTER Consortium subjects and pseudobulk data derived from eQTLgen scRNA-seq.",
+        "Our contributions are: (i) a multi-response LASSO/ridge imputation framework that clusters correlated target genes into chunks so regression coefficients are shared across correlated outputs; (ii) a novel DGE-recovery metric that directly measures the utility of imputed expression for downstream analyses; (iii) a head-to-head evaluation spanning correlation, RMSE, sensitivity, specificity, slope attenuation, and computational cost."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_design",
+          "title": "Study design and paired CLUSTER cohort",
+          "content_bullets": [
+            "CLUSTER cohort: 158 subjects, 126 with juvenile idiopathic arthritis (JIA), 32 healthy controls, 58% female (N=91).",
+            "Training set = 80 subjects with full PBMC + CD4/CD8/CD14/CD19 RNA-seq; test set = 78 subjects with PBMC plus partial sorted data (CD4 n=71, CD8 n=65, CD14 n=52, CD19 n=57). Sequencing batch did not differ significantly between training and test sets (chi-squared p > 0.05).",
+            "Sorted cell purity averaged > 90%; RNA-seq run in four Illumina NovaSeq6000 batches, reads mapped to GRCh38 with STAR, summarised with featureCounts, batch-corrected with Combat-seq; 723 RNA-seq samples used in downstream analysis.",
+            "In addition, pseudobulk data were simulated from the eQTLgen 1M-scBloodNL scRNA-seq data (120 healthy Europeans, V2/V3 chemistry, unstimulated vs 3h C. albicans). Three datasets of 160 samples each were built, each sample summing expression of 5000 cells drawn in proportions sampled from a normal distribution with means/SDs 42.74% (4.30) CD4, 28.12% (2.40) CD8, 26.29% (6.21) CD14, 2.85% (0.36) CD19."
+          ]
+        },
+        {
+          "id": "results_fractions",
+          "title": "Estimation accuracy of sample-level cell fractions",
+          "content_bullets": [
+            "Four fraction-estimation pipelines were compared: CIBX-inbuilt (LM22), CIBX-custom (signature built from 80 training subjects), bMIND-custom and debCAM-custom.",
+            "Pearson correlation with flow-cytometry ground truth was highest for CD14, followed by CD19, CD8 and CD4, regardless of method.",
+            "CIBX-inbuilt and debCAM performed best overall; CIBX-custom performed worst across all four cell types; CD14 fractions were systematically over-estimated and CD4 under-estimated.",
+            "Custom matrix: 1589 signature genes in CLUSTER custom vs 547 in CIBX-inbuilt (LM22); 1247 debCAM cell-type-specific genes selected at OVE.FC=10."
+          ]
+        },
+        {
+          "id": "results_expression",
+          "title": "Accuracy of imputed sample-level cell-type expression",
+          "content_bullets": [
+            "CIBERSORTx imputed 5779-11794 genes depending on cell type; all other methods imputed almost all 18871 genes.",
+            "Per-subject correlations between observed and imputed expression were high for all methods (median r > 0.85), with LASSO and ridge slightly higher and log RMSE lower (Fig 4A-B).",
+            "Baseline correlations computed between matched cell types across different subjects were also high, limiting discriminatory power of per-subject correlation (S2 Fig).",
+            "Per-gene correlations (observed vs imputed expression for each gene across test subjects) varied substantially. swCAM was notably worse for CD8, CD14 and CD19. LASSO and ridge had slightly lower median log RMSE per gene than other approaches (Fig 4C-D).",
+            "Restricting to common genes predicted by all methods (CD4 3837, CD8 6274, CD14 5185, CD19 2689) preserved the ordering of methods."
+          ]
+        },
+        {
+          "id": "results_dge",
+          "title": "Differential gene expression (DGE) recovery",
+          "content_bullets": [
+            "We defined DGE recovery: FDR fixed at 0.05 in the observed-data analysis, varied from 0 to 1 by 0.05 in the imputed-data analysis, and the ROC AUC computed across ten simulated phenotypes.",
+            "In CLUSTER data (Fig 5), LASSO and ridge had higher median AUCs than CIBERSORTx-inbuilt, CIBERSORTx-custom, bMIND and swCAM across four scenarios: dichotomous phenotype, dichotomous phenotype + sex, continuous phenotype, continuous phenotype + sex.",
+            "Restriction to common gene sets preserved the ordering (S6 Fig).",
+            "LASSO and ridge had higher sensitivity but lower specificity than CIBERSORTx / bMIND / swCAM (S7A Fig).",
+            "Imputed log2 fold changes were attenuated across every method: average slopes 0.60-0.70 CIBX-inbuilt, 0.64-0.76 CIBX-custom, 0.66-0.85 bMIND, 0.55-0.90 swCAM, 0.69-0.76 LASSO, 0.68-0.76 ridge (S7C Fig).",
+            "Pseudobulk data (Fig 6): AUC increased with training sample size (20, 40, 60, 80). LASSO/ridge consistently dominated in all three scenarios (raw counts, batch+cond, Combat-seq cond) across CD4, CD8, CD14, CD19. CIBX-inbuilt imputed < 60 genes for CD19/Combat-seq so AUC estimates are noisy there."
+          ]
+        },
+        {
+          "id": "results_compute",
+          "title": "Computational performance",
+          "content_bullets": [
+            "CPU time increased approximately exponentially with training sample size for all methods; memory usage was roughly constant (S9 Fig).",
+            "LASSO and ridge required up to 192.3x and 658.1x more CPU time than CIBERSORTx, respectively.",
+            "bMIND was ~2.7x slower than CIBERSORTx; swCAM was ~385x slower.",
+            "LASSO and ridge required up to 3x and 11x more memory than CIBERSORTx; bMIND and swCAM needed 33% and 54% of CIBERSORTx memory usage."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Paragraph 1 - Summary: Across paired PBMC/sorted and pseudobulk experiments, penalised multi-response regression outperformed domain-specific deconvolution for recovery of differential expression signals despite using no signature matrix or external fractions.",
+        "Paragraph 2 - Fraction estimation: CD4 was consistently hardest (possibly due to shared signatures with CD8); CIBERSORTx was most accurate for CD8 while debCAM was best for CD4; bMIND and CIBX-custom produced implausibly zero fractions in some samples. Recommend CIBX-inbuilt and debCAM for fraction estimation.",
+        "Paragraph 3 - Metric choice: Good per-subject correlations are misleading because cell type explains most of the between-cell variance; per-gene correlations are lower and more discriminative. DGE recovery tracks utility in downstream applications better than correlation/RMSE.",
+        "Paragraph 4 - Why LASSO/ridge win: domain-specific methods first estimate f then H, compounding error. bMIND/swCAM used ground-truth flow fractions yet did not beat LASSO/ridge. The one-step penalised regression learns directly from paired training data, and the multi-response grouping exploits inter-gene correlations.",
+        "Paragraph 5 - Limitations: LASSO/ridge require paired bulk+sorted training data; computational cost is higher; all methods attenuate fold changes so imputed DGE is reliable for detection/direction, not effect-size estimation. Future work: refined gene-chunking, deep learning, larger training sets.",
+        "Paragraph 6 - Outlook: Cross-domain ML should be the default baseline for cell-type-expression imputation when paired data exist; DGE recovery should supplement correlation-based benchmarks in this field."
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "methods_cohort", "title": "CLUSTER cohort and sample processing", "content_bullets": [
+          "158 subjects recruited under London-Bloomsbury REC 05/Q0508/95, 95RU04, 11/LO/0330; heparinised blood; PBMC isolated by Lymphoprep density gradient.",
+          "FACS sorting (BD FACSAria III) with CD4-BV711, CD8-APC, CD14-FITC, CD19-PE-Cy7, CD3-BV605; DAPI exclusion of dead cells; average purity > 90%."
+        ]},
+        {"id": "methods_rnaseq", "title": "RNA sequencing and QC", "content_bullets": [
+          "PicoPure extraction; samples with RIN >= 5.0 and library concentration >= 4.5nM retained; libraries: TruSeq mRNA stranded v2 and Kapa HyperPrep; Illumina NovaSeq6000 in four batches.",
+          "2x100bp reads mapped to GRCh38 with STAR (--twopassMode Basic, --sjdbOverhang 99); UMI-aware deduplication (je suite); featureCounts summarisation; Combat-seq batch correction; filterByExpr with cpm < 0.836 threshold (equivalent to 10 reads in median library of 11.95M); 18871 genes retained; TPM computed for downstream analysis."
+        ]},
+        {"id": "methods_pseudobulk", "title": "eQTLgen pseudobulk", "content_bullets": [
+          "Data: 1m-scBloodNL scRNA-seq (120 Europeans); 19927 genes common to V2 and V3; 35 removed for chromosome mismatch and 4762 missing from GRCh38.103 annotation -> 15165 genes retained.",
+          "Three 160-sample datasets built by Jaakkola/Elo method: cell-type fractions drawn from normal distributions with means/SDs from eQTLgen data; for each sample 5000 cells sampled from condition and chemistry pools; bulk = sum across CD4/CD8/CD14/CD19.",
+          "Training sizes varied 25%, 50%, 75%, 100% of 80 training samples; each of six datasets (3 raw + 3 Combat-seq) and four training sizes yielded 24 pseudobulk datasets; genes per dataset 11964-12464."
+        ]},
+        {"id": "methods_signatures", "title": "Signature matrices and cell-type-specific genes", "content_bullets": [
+          "LM22 inbuilt signature from CIBERSORTx (547 signature genes).",
+          "Custom signature built from 80 training subjects using CIBERSORTxFractions (--G.min 300 --G.max 500 --q.value 0.01 --QN FALSE --single_cell FALSE): 1589 genes.",
+          "debCAM cell-type-specific genes at OVE.FC=1/2/5/10; 1247 genes chosen at OVE.FC=10."
+        ]},
+        {"id": "methods_cibersortx", "title": "CIBERSORTx analysis", "content_bullets": [
+          "CIBERSORTxHiRes with --variableonly TRUE; for LM22 added --classes and --rmbatchBmode; major cell types aggregated from LM22 subsets: CD4 = naive+memory resting+memory activated+follicular helper+Tregs; CD8 = T cells CD8; CD14 = monocytes+M0/M1/M2; CD19 = naive+memory B; fractions rescaled to sum 1; imputed expression log2-transformed."
+        ]},
+        {"id": "methods_bmind_swcam", "title": "bMIND and swCAM", "content_bullets": [
+          "bMIND: custom signature, flow fractions, log2(TPM+1) PBMC expression inputs to bMIND() from the MIND package.",
+          "swCAM: 10-fold CV to choose lambda; predicting step used lambda=800, PBMC TPM, flow fractions, NNLS-derived cell-type expression, sCAMfastNonNeg; log2 transform of predictions."
+        ]},
+        {"id": "methods_lasso_ridge", "title": "Multi-response LASSO/ridge", "content_bullets": [
+          "For each cell type, target genes clustered by hierarchical clustering on Euclidean distance of log2 TPM, grouped via cutree and cutreeDynamic (minClusterSize 250 decreasing by 5) until chunk size < 500.",
+          "Chunk counts (size ranges): CLUSTER: CD4 74 (49-481), CD8 71 (71-493), CD14 76 (76-496), CD19 83 (41-486); pseudobulk across 24 datasets: CD4 1358 (4-500), CD8 1306 (8-498), CD14 1533 (3-499), CD19 1180 (2-497).",
+          "For each chunk, fit cv.glmnet family=mgaussian, type.measure=mse, alpha=1 (LASSO) or alpha=0 (ridge), 5-fold CV, on log2(TPM+1); predict into test PBMCs."
+        ]},
+        {"id": "methods_performance", "title": "Performance metrics", "content_bullets": [
+          "Pearson r and RMSE between observed and imputed expression per subject and per gene; RMSE standardised by mean observed expression per gene.",
+          "DGE recovery: simulate 10 continuous and 10 dichotomous phenotypes per cell type via PCA of observed cell-type expression; DGE with limma::lmFit + eBayes; FDR 0.05 in observed data; varied FDR 0-1 in imputed; ROC/AUC with pROC package; R-4.3.3."
+        ]}
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_cohort",
+      "title": "Study design and sample counts by cell type and split",
+      "columns": ["Cell type / cohort", "Training (N)", "Test (N)"],
+      "data_source": "experimental_log Results paragraph 1 and Methods 'Training/testing set'",
+      "caption_sketch": "CLUSTER training (80) and test (52-71 depending on cell type) sample counts; 723 RNA-seq samples total from 158 subjects."
+    },
+    {
+      "table_id": "tab_signatures",
+      "title": "Signature-gene counts by method",
+      "columns": ["Signature set", "No. genes", "Source"],
+      "data_source": "experimental_log 'Signature gene matrices & cell-type specific genes'",
+      "caption_sketch": "547 inbuilt (LM22), 1589 custom, 1247 debCAM OVE.FC=10."
+    },
+    {
+      "table_id": "tab_slopes",
+      "title": "Average slopes of imputed vs observed log2 fold changes by method",
+      "columns": ["Method", "Slope range across cell types"],
+      "data_source": "experimental_log Results 'Recovery of significant genes' and statistical_sentences",
+      "caption_sketch": "CIBX-inbuilt 0.60-0.70; CIBX-custom 0.64-0.76; bMIND 0.66-0.85; swCAM 0.55-0.90; LASSO 0.69-0.76; ridge 0.68-0.76."
+    },
+    {
+      "table_id": "tab_compute",
+      "title": "Computational cost relative to CIBERSORTx",
+      "columns": ["Method", "CPU time (x CIBERSORTx)", "Memory (vs CIBERSORTx)"],
+      "data_source": "experimental_log Discussion paragraph on computational resources",
+      "caption_sketch": "bMIND 2.7x CPU, 0.33x memory; swCAM 385x CPU, 0.54x memory; LASSO 192.3x CPU, 3x memory; ridge 658.1x CPU, 11x memory."
+    },
+    {
+      "table_id": "tab_chunks",
+      "title": "Multi-response LASSO/ridge gene-chunk counts",
+      "columns": ["Dataset", "Cell type", "No. chunks", "Chunk size range"],
+      "data_source": "experimental_log Methods 'LASSO/ridge training and prediction'",
+      "caption_sketch": "CLUSTER: CD4 74 (49-481), CD8 71 (71-493), CD14 76 (76-496), CD19 83 (41-486). Pseudobulk (24 datasets): CD4 1358 (4-500), CD8 1306 (8-498), CD14 1533 (3-499), CD19 1180 (2-497)."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "cell-type deconvolution bulk RNA-seq review",
+      "tissue heterogeneity gene expression immune disease",
+      "juvenile idiopathic arthritis transcriptomics treatment response",
+      "single-cell RNA sequencing cost large-scale study",
+      "CD8 T cell exhaustion gene expression disease prognosis"
+    ],
+    "micro_queries": [
+      "CIBERSORTx high resolution cell type expression imputation",
+      "bMIND Bayesian mixed-effects cell-type expression",
+      "swCAM debCAM convex analysis of mixtures deconvolution",
+      "MIND expectation maximization cell type expression",
+      "CellR simulated annealing cell type expression RNA-seq",
+      "CIBERSORT nu-SVR leukocyte deconvolution LM22",
+      "EPIC quanTIseq constrained regression immune deconvolution",
+      "FARDEEP adaptive least trimmed squares deconvolution",
+      "eQTLgen 1M-scBloodNL PBMC single cell",
+      "Jaakkola Elo pseudobulk simulation benchmark",
+      "Combat-seq batch correction RNA-seq counts",
+      "glmnet multi-response Gaussian penalised regression",
+      "LASSO ridge multivariate regression gene expression prediction",
+      "limma empirical Bayes differential expression",
+      "STAR aligner RNA-seq featureCounts",
+      "edgeR filterByExpr low count filtering",
+      "pROC ROC curve analysis R",
+      "WGCNA cutreeDynamic hierarchical clustering"
+    ],
+    "must_cite": [
+      "Newman CIBERSORT 2015",
+      "Newman CIBERSORTx 2019",
+      "Wang bMIND 2021",
+      "Chen swCAM 2022",
+      "Wang debCAM 2020",
+      "Wang MIND 2020",
+      "Karakaslar CellR 2021",
+      "Racle EPIC 2017",
+      "Finotello quanTIseq 2019",
+      "Hao FARDEEP 2019",
+      "Jaakkola Elo pseudobulk simulation",
+      "Oelen eQTLgen 1M-scBloodNL scRNA-seq 2022",
+      "Friedman Hastie Tibshirani glmnet",
+      "Ritchie limma 2015",
+      "Dobin STAR aligner 2013",
+      "Liao featureCounts 2014",
+      "Zhang Combat-seq 2020",
+      "Robinson Smyth edgeR",
+      "Langfelder dynamicTreeCut 2008",
+      "Robin pROC 2011"
+    ],
+    "citation_target": 30
+  }
+}

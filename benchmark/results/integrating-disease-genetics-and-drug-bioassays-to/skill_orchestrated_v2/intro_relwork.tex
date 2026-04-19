@@ -1,0 +1,122 @@
+\section{Introduction}
+
+Thousands of approved drugs act on human biology in ways that only become
+apparent once the drugs are in widespread use, producing both adverse
+reactions and, occasionally, unexpected therapeutic benefits that motivate
+drug repurposing. Large pharmacovigilance resources such as SIDER catalog
+many of these associations by aggregating side effects and indications at
+scale \cite{kuhn2016sider}, while DrugBank and the Drug Repurposing Hub
+annotate the molecular targets and clinical uses of thousands of
+compounds \cite{knox2024drugbank,corsello2017repurposing}. Molecular
+profiling resources further characterize how drugs perturb biology: the EPA
+ToxCast/Tox21 program assays hundreds of compounds across more than a
+thousand biological endpoints \cite{richard2016toxcast}, and the
+Connectivity Map and its L1000 successor profile drug-induced gene-expression
+signatures \cite{lamb2006cmap,subramanian2017lincs}. Collectively these
+resources raise the prospect of reasoning systematically about which disease
+pathways a drug influences and why.
+
+In parallel, phenome-wide genetic studies are now producing gene-level maps
+of disease risk at unprecedented breadth. The UK Biobank cohort has enabled
+genome-wide association studies of thousands of traits
+\cite{bycroft2018ukbiobank}, and gene-based methods such as PrediXcan,
+S-PrediXcan and S-MultiXcan integrate GWAS summary statistics with
+tissue-specific eQTL models to map genetic associations from variants to
+genes \cite{gamazon2015predixcan,barbeira2018spredixcan,barbeira2019smultixcan}.
+PhenomeXcan compiles S-PrediXcan/S-MultiXcan results for thousands of
+UK Biobank phenotypes into a queryable gene-by-phenotype resource
+\cite{pividori2020phenomexcan}. On the tissue-regulatory side, the Genotype-Tissue
+Expression project provides an atlas of genetic regulatory effects
+across 49 tissues that anchors these transcriptome-wide analyses \cite{gtex2020atlas}.
+
+Most prior computational methods for discovering unexpected drug effects
+have exploited one of these data modalities at a time. A dominant family of
+approaches uses the connectivity principle -- that drugs effective for a
+disease should induce gene-expression changes that oppose the disease's
+molecular signature -- either directly from expression data
+\cite{lamb2006cmap,sirota2011drugrepo} or after converting GWAS to
+imputed transcriptomes for selected disorders
+\cite{so2017neuropsychiatric,reay2020pes,grotzinger2023tsem}. A second family
+uses drug-side-effect similarity to infer shared targets or repurposing
+candidates \cite{campillos2008sideeffect}. A third family treats drug-disease
+prediction as matrix completion on the incomplete drug-phenotype matrix.
+These approaches have successfully generated repositioning candidates, but
+they are typically predictive black boxes: they do not explain how the
+molecular effects of a drug propagate through disease driver genes to
+produce the observed phenotypic effects, and therefore do not yield the
+mechanistic hypotheses that experimentalists and clinicians need.
+
+We propose to close this gap by learning a single shared network that
+connects drug molecular effects directly to the genes that drive disease
+risk. Our method, Draphnet (Drug and Phenotype Network), is a supervised
+logistic affinity-regression model that takes three matrices as input: a
+drug-by-endpoint matrix $D$ compiled from ToxCast \cite{richard2016toxcast},
+a gene-by-phenotype matrix $P$ compiled from PhenomeXcan
+\cite{pividori2020phenomexcan,barbeira2019smultixcan}, and a drug-by-phenotype
+matrix $Y$ compiled from SIDER \cite{kuhn2016sider}. Draphnet learns an
+interaction matrix $W$ such that $DWP^{\top}$ approximates the logit of $Y$,
+imposes sparsity through $L_1$ regularization, and handles the high
+dimensionality of $D$ and $P$ through a SoftImpute decomposition of $D$
+\cite{mazumder2010softimpute} and a singular value decomposition of $P$, a
+strategy adapted from affinity regression in transcriptional
+biology \cite{osmanbeyoglu2014affinity}. The same network is learned once
+across thousands of drug-phenotype pairs, enforcing the prior that the
+biological mechanisms connecting endpoints to disease genes are largely
+shared across contexts. Phenotype names from UK Biobank and SIDER are
+harmonized through UMLS concept unique identifiers \cite{bodenreider2004umls}.
+
+Our contributions are threefold. First, we demonstrate that molecular and
+genetic similarity alone already carry strong signal for drug-disease
+biology: drugs with similar ToxCast endpoint profiles share significantly
+more phenotypes than expected ($p=1\text{e-}22$; linear model adjusted for
+shared-endpoint count $p=1.7\text{e-}43$), and diseases with more similar
+PhenomeXcan profiles are perturbed by more similar sets of drugs
+($p=4\text{e-}81$). Second, we show that Draphnet's learned model generalizes
+to held-out drugs and significantly outperforms a nearest-neighbor baseline
+(rank-sum $p=3\text{e-}8$). Third, and most importantly, by projecting each
+drug through the learned interaction matrix into a 10,027-gene disease-genome
+space, we recover mechanistically interpretable target-level enrichments --
+28 of 132 DrugBank targets shared by at least three drugs have disease-gene
+associations significant at adjusted $p<0.01$ -- and surface unexpected
+drug-gene associations including PPM1M for HTR2C-modulating neuroleptics
+and CETP for fenofibrate and other PPAR$\alpha$-targeting drugs, the latter
+consistent with experimental evidence that PERM1-family factors
+co-regulate PPAR$\alpha$ target genes \cite{huang2022perm1}.
+
+\section{Related work}
+
+Several lines of prior work motivate the components of Draphnet but do not,
+to our knowledge, integrate them. Drug-repurposing methods based on the
+connectivity principle \cite{lamb2006cmap,subramanian2017lincs,sirota2011drugrepo}
+have repeatedly shown that shared gene-expression responses can link drugs
+and diseases, but they operate on gene-expression signatures rather than on
+disease-driver genetics, and they do not learn an interaction network.
+Extensions of this principle to genetically informed transcriptomes using
+S-PrediXcan have been explored for neuropsychiatric disorders
+\cite{so2017neuropsychiatric,reay2020pes} and, more recently, through
+transcriptome-wide structural equation modeling across 13 psychiatric
+disorders \cite{grotzinger2023tsem}, but these analyses are restricted to a
+narrow disease family and report candidate drugs rather than drug-gene
+networks.
+
+A complementary line uses drug-phenotype similarity to infer drug-target
+relationships. Campillos et al.\ showed that side-effect similarity can
+predict shared molecular targets \cite{campillos2008sideeffect}, and this
+family of methods has since been extended with matrix-completion and
+network-based approaches. These methods predict either missing drug-disease
+annotations or shared targets, but, again, they do not expose the underlying
+drug-endpoint-to-disease-gene wiring.
+
+Finally, methodological work on polypharmacology has made clear that most
+clinically effective drugs act on multiple proteins and that effective
+biological models must allow for this complexity
+\cite{hopkins2008network}. This observation is directly relevant to the
+way we interpret Draphnet: drug targets such as CHRM1, which is annotated as
+a target for 14 mechanistically diverse compounds, are unlikely to produce
+homogeneous phenome-effect signatures, and our method is designed to
+tolerate such heterogeneity through target-specific rather than global
+enrichment tests. On the statistical side, the empirical permutation null
+and Benjamini-Yekutieli correction \cite{benjamini2001fdrdependency,benjamini1995fdr}
+allow us to control false discoveries across $\sim$10,000 correlated
+gene-level tests per drug, and graph analyses on disease-gene overlap are
+performed with NetworkX \cite{hagberg2008networkx}.

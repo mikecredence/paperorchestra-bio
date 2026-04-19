@@ -1,0 +1,333 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{lineno}
+\usepackage{setspace}
+\usepackage{caption}
+
+\doublespacing
+\linenumbers
+
+\title{A Prefrontal Network Model Operating Near Steady and Oscillatory States Links Spike Desynchronization and Synaptic Deficits in Schizophrenia}
+
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+%% ============================================================
+%%  ABSTRACT
+%% ============================================================
+\begin{abstract}
+Schizophrenia results in part from a failure of prefrontal networks, yet the mechanisms linking synaptic-level disruptions to network-level failures remain poorly understood. To address this gap, we developed a recurrent spiking network model of prefrontal local circuits that explains the link between NMDA receptor (NMDAR) synaptic and spike timing deficits observed in a pharmacological monkey model of prefrontal network failure in schizophrenia. The model comprises $N = 5{,}000$ leaky integrate-and-fire neurons ($N_E = 4{,}000$ excitatory, $N_I = 1{,}000$ inhibitory) connected randomly with probability $p = 0.2$. Using mean field approximation and linear stability analysis, we investigate how the balance between AMPA and NMDA components of recurrent excitation and GABA inhibition influences spike timing dynamics. We show that networks parameterized near the boundary between steady (asynchronous irregular) and oscillatory (synchronous irregular) regimes reproduce biologically realistic firing rates (excitatory: ${\sim}5.2$~Hz; inhibitory: ${\sim}20$~Hz) and exhibit gamma-frequency (${\sim}50$--$58$~Hz) oscillations upon increased external drive. Critically, reducing recurrent NMDAR synaptic currents prevents the network from shifting from a steady to an oscillatory state in response to extrinsic inputs, thereby preventing the emergence of 0-lag synchronous spiking. Direct comparison of simulated and experimentally recorded temporal correlations of spiking activity during the dot-pattern expectancy (DPX) task reveals strong quantitative parallels, including synchronous oscillation at ${\sim}55$~Hz with correlation peaks at $\pm 18$~ms lags in the pre-response period and its abolition by NMDAR blockade. These results establish that NMDAR synaptic deficits, implicated as causal in schizophrenia, could prevent the emergence of synchronous spiking in prefrontal circuits during behavior, potentially disconnecting those circuits via spike-timing-dependent mechanisms.
+\end{abstract}
+
+\section*{Keywords}
+schizophrenia; prefrontal cortex; NMDA receptors; spiking neural network; spike synchrony; gamma oscillations; mean field analysis; linear stability
+
+%% ============================================================
+%%  INTRODUCTION
+%% ============================================================
+\section{Introduction}
+
+Schizophrenia is a devastating and still poorly understood psychiatric disorder \citep{Insel2010, Jauhar2022} that appears to result in part from the functional disruption of prefrontal cortical networks. A critical gap in our understanding concerns how molecular and synaptic-level disruptions translate into the large-scale network failures that underlie the cognitive deficits characterizing the disease. To help fill this gap, parallel nonhuman primate and mouse genetic models of prefrontal network failure have been developed \citep{Kummerfeld2020, Zick2018, Zick2021}. These studies revealed that diverse insults operating through different molecular mechanisms---blocking NMDA receptors (NMDARs) in primates or deleting a schizophrenia risk gene in mice---converge on the same endpoint in prefrontal cortex: reduced 0-lag synchronous spiking between prefrontal neurons and diminished information transfer via synaptic interactions \citep{Kummerfeld2020, Zick2021, Zick2018}.
+
+Theoretical studies have shown that spike synchrony in cortical networks can arise naturally due to local recurrent connectivity, even when external afferent inputs are entirely uncorrelated. Such synchrony can emerge in randomly connected recurrent networks operating in asynchronous irregular \citep{Amit1989, AmitBrunel1997, Brunel2000, Renart2010, vanVreeswijk1996, Vicente2008} and synchronous irregular regimes \citep{Brunel2000, BrunelHakim1999, BrunelWang2003, Ledoux2011}. In both regimes, individual neurons fire spikes highly irregularly at low rates, a typical situation in cortex. The major distinction is that in an asynchronous regime population spike rate is steady in time, whereas in a synchronous regime it becomes oscillatory.
+
+Previous modeling studies have addressed the impact of NMDAR conductance modulation on neural dynamics in various contexts, including working memory stability \citep{Compte2000, Wang1999}, oscillatory activity in local field potential recordings \citep{BrunelWang2003}, and EEG correlates of auditory cortex entrainment \citep{Kirli2014}. However, none of these studies have addressed how NMDAR hypofunction desynchronizes spiking activity in prefrontal cortex, how spiking synchrony is modulated during transitions between oscillatory and steady states, or how such transitions may be influenced by NMDAR synaptic mechanisms.
+
+The interdependence between NMDAR synaptic mechanisms, oscillatory dynamics, and spike timing in prefrontal local circuits may be of critical importance to understanding the etiopathogenesis of schizophrenia. Synchronous or near-synchronous spiking in pre- and postsynaptic neurons governs spike-timing-dependent synaptic plasticity \citep{DanPoo2004}. Thus, any insult that disrupts the balance between NMDAR synaptic inputs, oscillatory activity, and spike timing could ultimately cause prefrontal circuits to disconnect via spike-timing-dependent plasticity. Additionally, recent evidence suggests that synchronous spiking establishes an eligibility trace at specific dendritic spines susceptible to dopamine-dependent potentiation \citep{He2015, Kasai2021, Yagishita2014}, suggesting that network oscillations and spike synchrony could confer synapse specificity on dopamine signals, linking Hebbian synaptic plasticity and reinforcement learning mechanisms.
+
+In this study, we present a spiking neural network model specifically informed by, and capable of explaining, neural recordings obtained in monkey prefrontal cortex before and during NMDAR blockade \citep{Zick2018}. We demonstrate that networks operating near the boundary between steady and oscillatory regimes can explain the emergence of 0-lag synchronous spiking during behavior, its association with gamma-frequency oscillatory population activity, and the desynchronization induced by NMDAR blockade. This provides a key conceptual advance explaining why NMDAR synaptic transmission deficits reduce oscillations and synchronous spiking in prefrontal networks.
+
+%% ============================================================
+%%  RESULTS
+%% ============================================================
+\section{Results}
+
+\subsection{Summary of Experimental Findings}
+
+We first summarize the main experimental findings reported previously \citep{Zick2018}. Spike trains of ensembles of single neurons were recorded simultaneously from the prefrontal cortex (PFC) of monkeys performing the dot-pattern expectancy (DPX) task, a task that measures specific deficits in cognitive control in schizophrenia \citep{Jones2010}. In the DPX task, monkeys were rewarded for moving a joystick to the left if the cue-probe sequence had been AX (69\% of trials), or to the right if any other cue-probe sequence had been presented (AY, BX, BY, collectively 31\% of trials).
+
+Population average pairwise spike correlation was quantified using a ratio between the observed frequency of synchronous spikes (2~ms resolution) and the frequency expected if spike trains were uncorrelated (with a subtraction of 1 so that the correlation value is zero for uncorrelated activity). The frequency of spike synchrony was determined from activity observed during a short (100~ms-long) sliding window across time during task performance.
+
+When trials were aligned to cue onset, spike synchrony remained relatively weak and unchanged during the cue (0--1{,}000~ms) and delay periods (1{,}000--2{,}000~ms) until probe onset at $t = 2{,}000$~ms, in both drug-na\"ive and drug conditions. The numbers of contributing neuron pairs for drug-na\"ive and drug conditions were 978 and 368, respectively. When trials were aligned to motor response time, spike synchrony started to increase sharply approximately 200~ms before the motor response in the drug-na\"ive condition but practically did not change in the drug (NMDAR antagonist) condition. For response-aligned analysis, the numbers of contributing neuron pairs for drug-na\"ive and drug conditions were 1{,}246 and 434, respectively.
+
+\subsection{Network Model and Theoretical Framework}
+
+To understand the phenomenon of drug-induced desynchronization and the role of various components of synaptic currents, we constructed a spiking network model representing a local circuit of monkey PFC. The network comprises $N = 5{,}000$ leaky integrate-and-fire (LIF) neurons \citep{DayanAbbott2001}, of which $N_E = 4{,}000$ ($= 0.8N$) are excitatory and $N_I = 1{,}000$ ($= 0.2N$) are inhibitory \citep{Abeles1991, BraitenbergSchuz1998}. Neurons are connected randomly with probability $p = 0.2$, so that each neuron receives on average $C = 10^3$ connections.
+
+Recurrent excitatory synaptic currents are two-component, mediated by AMPA and NMDA receptors, whereas inhibitory currents are mediated by GABA receptors. External currents represent noisy background synaptic activity mediated by AMPA receptors. The model thus entails eight maximal synaptic conductance parameters $g_{X,\alpha}$, $g_{\text{AMPA},\alpha}$, $g_{\text{NMDA},\alpha}$, $g_{\text{GABA},\alpha}$ ($\alpha = E, I$).
+
+\subsubsection{Neuron Parameters}
+
+For excitatory neurons, the membrane capacitance is $C_m = 0.5$~nF, membrane conductance is $g_m = 25$~nS, and refractory period is $\tau_{rp} = 2$~ms. For inhibitory neurons, $C_m = 0.2$~nF, $g_m = 20$~nS, and $\tau_{rp} = 1$~ms \citep{Koch2004}.
+
+\subsubsection{Synaptic Dynamics}
+
+Each synaptic current is characterized by latency ($\tau_l$), rise ($\tau_r$), and decay ($\tau_d$) time constants (Table~\ref{tab:synaptic_params}). NMDAR-mediated currents exhibit voltage dependence controlled by the extracellular magnesium concentration \citep{JahrStevens1990}, with parameters $\beta = 0.062$~mV$^{-1}$, $\gamma = 3.57$~mM, and $[\text{Mg}^{2+}] = 1$~mM.
+
+\begin{table}[htbp]
+\centering
+\caption{Synaptic time constants for AMPA, NMDA, and GABA receptor-mediated currents.}
+\label{tab:synaptic_params}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Receptor} & $\tau_l$ (ms) & $\tau_r$ (ms) & $\tau_d$ (ms) \\
+\midrule
+AMPA  & 1.0 & 0.2 & 2.0 \\
+NMDA  & 1.0 & 2.0 & 100.0 \\
+GABA  & 1.0 & 0.5 & 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mean Field Approximation and Network Parametrization}
+
+To derive the maximal synaptic conductance parameters providing prescribed neural firing rates $\nu_E$ and $\nu_I$, we employed mean field analysis \citep{AmitBrunel1997, Brunel2000, vanVreeswijk1996} extended to networks with realistic, conductance-based synapses \citep{BrunelWang2001, Renart2003}. The self-consistent mean field equations relate population firing rates to the mean ($\mu_\alpha$) and variance ($\sigma_\alpha^2$) of synaptic input through the current-frequency response function \citep{BrunelSergi1998, FourcaudBrunel2002}.
+
+Network dynamics were parametrized in terms of three dimensionless ratios characterizing the balance between components of synaptic currents: $I_{\text{AMPA}}/I_{\text{GABA}}$, $I_{\text{NMDA}}/I_{\text{GABA}}$, and $I_{X,E}/I_{\theta,E}$. For the analyses presented, the external spike rate was set to $\nu_X = 5$~Hz, prescribed firing rates of excitatory and inhibitory populations were set to 5~Hz and 20~Hz, respectively, and the NMDA current balance was fixed at $I_{\text{NMDA}}/I_{\text{GABA}} = 0.2$.
+
+\subsection{Linear Stability Analysis}
+
+We performed linear stability analysis of the asynchronous state \citep{AbbottVanVreeswijk1993, BrunelHakim1999} following the analytical framework of \citet{BrunelWang2003}. The analysis determines whether small oscillatory perturbations to stationary population firing rates grow or decay, yielding the perturbation growth rate $\lambda$ and oscillation frequency $\omega$. The state diagram in the ($I_{\text{AMPA}}/I_{\text{GABA}}$, $I_{X,E}/I_{\theta,E}$) parameter plane reveals two distinct regimes separated by a critical line ($\lambda = 0$): the asynchronous stationary state ($\lambda < 0$) and the synchronous oscillation state ($\lambda > 0$). The network oscillation frequency on the critical line depends on the balance between AMPA and GABA currents.
+
+\subsection{Selection of Primary Networks}
+
+Two primary network configurations were selected for detailed simulation:
+
+\begin{enumerate}
+\item \textbf{Steady state primary network}: Located well within the asynchronous regime (corresponding to the red asterisk in the state diagram).
+\item \textbf{Critical state primary network}: Located near the boundary between asynchronous and synchronous regimes (corresponding to the blue asterisk in the state diagram).
+\end{enumerate}
+
+\subsection{Direct Network Simulations}
+
+Both primary networks were simulated with $N = 5{,}000$ neurons ($N_E = 4{,}000$ excitatory, $N_I = 1{,}000$ inhibitory) connected randomly with probability $p = 0.2$. Numerical integration was performed using a second-order Runge-Kutta method with interpolation of spike firing times between integration steps $\Delta t = 0.1$~ms \citep{Hansel1998}.
+
+\subsubsection{Baseline Conditions ($\nu_X = 5$~Hz)}
+
+At the baseline external spike rate $\nu_X = 5$~Hz, both networks exhibited highly irregular firing (Table~\ref{tab:firing_rates}). Excitatory and inhibitory neurons displayed average firing rates of 5.2~Hz and 20~Hz in the steady state primary network, and 5.5~Hz and 21~Hz in the critical state primary network.
+
+\subsubsection{Increased External Drive ($\nu_X$ Increased by 5\%)}
+
+When the external spike rate $\nu_X$ was increased by 5\%, the two networks responded markedly differently (Table~\ref{tab:firing_rates}). In the steady state network, firing rates increased moderately to 7.8~Hz (excitatory) and 26~Hz (inhibitory). In contrast, the critical state network transitioned to the synchronous oscillation regime with substantially elevated firing rates of 15~Hz (excitatory) and 42~Hz (inhibitory). Individual neurons continued to fire irregularly, but population activity exhibited clear oscillatory behavior, indicating a synchronous irregular regime. The average firing frequency of neurons was low (approximately 20~Hz) compared to the frequency of network oscillation, which was approximately 50~Hz. This observed oscillation frequency is close to the theoretically predicted network frequency of 58~Hz near the onset of oscillation.
+
+\begin{table}[htbp]
+\centering
+\caption{Firing rates of excitatory ($\nu_E$) and inhibitory ($\nu_I$) neurons for steady state and critical state primary networks under baseline ($\nu_X = 5$~Hz) and increased external drive ($\nu_X$ increased by 5\%) conditions.}
+\label{tab:firing_rates}
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{\textbf{Steady State Network}} & \multicolumn{2}{c}{\textbf{Critical State Network}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\textbf{Condition} & $\nu_E$ (Hz) & $\nu_I$ (Hz) & $\nu_E$ (Hz) & $\nu_I$ (Hz) \\
+\midrule
+Baseline ($\nu_X = 5$~Hz) & 5.2 & 20 & 5.5 & 21 \\
+$\nu_X$ increased by 5\% & 7.8 & 26 & 15 & 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sensitivity of Spike Synchrony to External Drive and NMDAR Conductance}
+
+For the steady state network, spike correlation and synchrony were weak and insensitive to modulation of both external input spike rate $\nu_X$ and NMDAR conductance $g_{\text{NMDA}}$. In contrast, for the critical state network, spike correlation depended strongly on external spike rate and NMDAR conductance, and the degree of spike synchrony could be modulated from relatively weak to strong. Results for NMDAR conductance modulation were obtained from simulations in which $\nu_X$ was increased by 5\%.
+
+The state diagrams illustrate that for the critical state network, modulation of $\nu_X$ (increasing external drive) moves the network across the critical line from the asynchronous into the synchronous regime, while modulation of $g_{\text{NMDA}}$ (reducing NMDAR conductance) moves the network away from the critical boundary, preventing the transition to oscillatory dynamics. For the steady state network, both modulations remain within the asynchronous regime.
+
+\subsection{Comparison with Experimental Data}
+
+To directly compare model predictions with experimental recordings, temporal correlations of spiking activity were computed from simulated spike trains under conditions corresponding to the DPX task epochs.
+
+\subsubsection{Post-Probe Period}
+
+During the 200~ms period following probe presentation, temporal correlations in the simulated network were weak in both drug-na\"ive (standard NMDAR conductance) and drug (reduced NMDAR conductance) conditions, consistent with the experimental observation that spiking activity remained desynchronized immediately following probe onset.
+
+\subsubsection{Pre-Response Period}
+
+During the 200~ms period preceding the motor response, the simulated drug-na\"ive condition exhibited characteristics of synchronous oscillation with a gamma frequency of approximately 55~Hz, manifested as correlation peaks at time lags $\pm 18$~ms together with strong 0-lag synchrony. This closely paralleled the experimental observation. Administration of NMDAR blockade in the model (drug condition) desynchronized neuronal activity during this period, abolishing both the 0-lag synchrony peak and the $\pm 18$~ms lag correlation peaks, again consistent with the experimental data.
+
+The presence of strong spike synchrony at 0~ms lag together with correlation peaks at $\pm 18$~ms lags in the pre-response period, and the absence of these characteristics in the initial probe period, suggest that after probe presentation but before motor response, network dynamics switches from the asynchronous stationary state to the synchronous oscillation state with a gamma frequency around 55~Hz. When the oscillation frequency is approximately 50~Hz, this is manifested in temporal correlations as a sharp increase in synchrony and appearance of peaks at $\pm 20$~ms lags.
+
+Table~\ref{tab:comparison} summarizes the key quantitative comparisons between simulated and experimental observations.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of key quantitative comparisons between experimental recordings and model simulations.}
+\label{tab:comparison}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Observable} & \textbf{Experiment} & \textbf{Model} \\
+\midrule
+Pre-response oscillation frequency & ${\sim}55$~Hz & ${\sim}50$~Hz \\
+Predicted oscillation frequency (analytical) & --- & 58~Hz \\
+Correlation peak lags (pre-response) & $\pm 18$~ms & $\pm 20$~ms \\
+Synchrony onset before response & ${\sim}200$~ms & ${\sim}200$~ms \\
+NMDAR blockade effect on synchrony & abolished & abolished \\
+Drug-na\"ive neuron pairs (cue-aligned) & 978 & --- \\
+Drug neuron pairs (cue-aligned) & 368 & --- \\
+Drug-na\"ive neuron pairs (response-aligned) & 1{,}246 & --- \\
+Drug neuron pairs (response-aligned) & 434 & --- \\
+Spike synchrony resolution & 2~ms & 2~ms \\
+Temporal estimation window & 100~ms & 100~ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Effect of NMDA--GABA Balance on Network Dynamics}
+
+State diagrams in the modulated parameter plane were computed for several values of the $I_{\text{NMDA}}/I_{\text{GABA}}$ balance. The orientation of the critical line separating asynchronous and synchronous regimes depends on this balance, demonstrating that the NMDA--GABA ratio is a key parameter governing the network's susceptibility to oscillatory transitions and thus its sensitivity to NMDAR blockade.
+
+%% ============================================================
+%%  DISCUSSION
+%% ============================================================
+\section{Discussion}
+
+We have developed a recurrent spiking network model of prefrontal local circuits that operates near the boundary between steady (asynchronous irregular) and oscillatory (synchronous irregular) dynamical regimes. This model provides a mechanistic explanation for the link between NMDAR synaptic deficits and spike timing disturbances observed in a pharmacological monkey model of prefrontal network failure relevant to schizophrenia \citep{Zick2018}.
+
+\subsection{Key Findings}
+
+The principal findings of this study are threefold. First, networks parameterized near the critical boundary between asynchronous and synchronous regimes achieve biologically realistic stochastic spike trains and firing rates---excitatory neurons firing at approximately 5.2--5.5~Hz and inhibitory neurons at 20--21~Hz at baseline---consistent with firing rates observed in monkey PFC. Second, modest increases in extrinsic inputs (5\% increase in external spike rate) shift the critical state network from a steady into an oscillatory regime at gamma frequencies (${\sim}50$~Hz simulated, ${\sim}58$~Hz predicted analytically), causing the emergence of 0-lag synchronous spiking between neurons. Third, and most importantly, reducing recurrent NMDAR synaptic currents prevents these networks from transitioning into oscillatory activity, thereby preventing the emergence of 0-lag spike synchrony.
+
+\subsection{Parallels Between Simulated and Biological Data}
+
+The model establishes strong quantitative parallels with biological recordings. In the experimental data from the DPX task \citep{Zick2018}, spike synchrony was measured with 2~ms resolution using a 100~ms sliding window. Synchrony remained low during cue and delay periods but increased sharply approximately 200~ms before the motor response in the drug-na\"ive condition, involving 978 (cue-aligned) and 1{,}246 (response-aligned) contributing neuron pairs. NMDAR blockade by phencyclidine (0.25--0.30~mg/kg IM) abolished this pre-response synchrony increase, with 368 (cue-aligned) and 434 (response-aligned) contributing pairs in the drug condition.
+
+The simulated temporal correlations during the pre-response period reproduced the experimentally observed characteristics: 0-lag synchrony peaks, correlation peaks at $\pm 18$~ms lags indicating gamma-frequency (${\sim}55$~Hz) oscillation, and their abolition by NMDAR conductance reduction. These findings confirm that the model captures the essential features of spike timing dynamics in monkey PFC.
+
+\subsection{Implications for Schizophrenia}
+
+The present results suggest that NMDAR synaptic mechanisms control oscillatory population activity and synchronous spiking between prefrontal neurons. This has profound implications for understanding the etiopathogenesis of schizophrenia. Since synchronous spiking governs spike-timing-dependent synaptic plasticity \citep{DanPoo2004}, any genetic, developmental, or environmental insult that disrupts the balance between NMDAR synaptic inputs, oscillatory activity, and spike timing could cause prefrontal circuits to actively disconnect via spike-timing-dependent mechanisms, contributing to disease progression \citep{Zick2021, Zick2018}.
+
+Furthermore, recent evidence that synchronous spiking establishes eligibility traces at dendritic spines for dopamine-dependent potentiation \citep{He2015, Kasai2021, Yagishita2014} suggests that network oscillations and the spike synchrony they create could confer synapse specificity on dopamine reinforcement signals. This implies that NMDAR synaptic deficits in schizophrenia may disrupt reinforcement learning mechanisms in prefrontal networks, linking synaptic pathology to cognitive dysfunction.
+
+\subsection{Relation to Previous Modeling Work}
+
+Previous simulations of NMDAR conductance modulation in spiking networks either produced dynamics incompatible with prefrontal spiking patterns \citep{Kirli2014}, showed no impact of NMDAR modulation on spiking synchrony and oscillations \citep{BrunelWang2003}, or produced effects opposite to those observed experimentally \citep{Compte2000}. The present model is distinguished by its specific parameterization near the critical boundary, which renders the network's oscillatory behavior---and consequently spike synchrony---exquisitely sensitive to NMDAR conductance modulation. This sensitivity arises because the NMDAR component of recurrent excitation contributes to the effective excitatory drive that positions the network relative to the critical line separating asynchronous and synchronous regimes.
+
+\subsection{Limitations and Future Directions}
+
+The current model employs leaky integrate-and-fire neurons and random sparse connectivity, omitting cortical laminar structure, distance-dependent connectivity, short-term synaptic plasticity, and neuromodulatory effects beyond NMDAR modulation. Future work should investigate how these additional biological features interact with the critical boundary mechanism identified here. Additionally, extending the model to incorporate spike-timing-dependent plasticity would allow direct simulation of the activity-dependent disconnection process hypothesized to contribute to schizophrenia pathogenesis.
+
+%% ============================================================
+%%  METHODS
+%% ============================================================
+\section{Methods}
+
+\subsection{Experimental Methods}
+
+\subsubsection{Behavioral Task}
+
+Monkeys performed the dot-pattern expectancy (DPX) task \citep{Jones2010, Zick2018}. During each trial, monkeys maintained gaze fixated on a central target as a cue stimulus (1{,}000~ms), followed by a delay period (1{,}000~ms), and a probe stimulus (500~ms) were presented. Monkeys were rewarded for moving a joystick to the left if the cue-probe sequence had been AX (69\% of trials), or to the right if any other cue-probe sequence had been presented (AY, BX, BY, collectively 31\% of trials). The number of correct trials in the DPX task was on the order of $K \approx 200$.
+
+\subsubsection{Neural Recordings}
+
+Spike trains were recorded from PFC using multi-electrode arrays. Electrodes were spaced 400~$\mu$m apart, and interelectrode distances in the array spanned 400--1{,}400~$\mu$m. Spike correlation was evaluated within ensembles of simultaneously recorded neurons using spike trains recorded during DPX task performance \citep{Zick2018}.
+
+\subsubsection{NMDAR Antagonist Regimen}
+
+We examined the effect of systemic administration of an NMDAR antagonist (phencyclidine, 0.25--0.30~mg/kg IM) on spike timing dynamics in prefrontal local circuits.
+
+\subsubsection{Spike Synchrony Measurement}
+
+Spike synchrony was defined as 0-lag correlation. Spike synchrony was measured with 2~ms resolution ($\Delta t \sim 2$~ms), and its temporal modulation was estimated with 100~ms resolution ($\Delta T \sim 100$~ms). The firing rates of PFC neurons are relatively low, on the order of 10~Hz. Given that the number of correct trials was on the order of $K \approx 200$, the geometric mean firing rate of neuron pairs for which a reliable estimation of synchrony could be achieved should be at least 5~Hz.
+
+The strength of spike correlation was quantified by the ratio between the observed frequency of synchronous spikes (2~ms resolution) and the frequency expected if the spike trains were uncorrelated. A value of 1 was subtracted from this ratio so that the correlation value is zero for uncorrelated, positive for correlated, and negative for anticorrelated spike activity.
+
+\subsection{Network Model}
+
+\subsubsection{Neuron Model}
+
+The network consists of $N$ leaky integrate-and-fire (LIF) neurons \citep{DayanAbbott2001}, of which $N_E = 0.8N$ are excitatory and $N_I = 0.2N$ are inhibitory \citep{Abeles1991, BraitenbergSchuz1998}. In most simulations, $N = 5 \times 10^3$ neurons were randomly connected with probability $p = 0.2$, so each neuron received on average $C = 10^3$ connections.
+
+Neuron parameters are given in Table~\ref{tab:neuron_params}.
+
+\begin{table}[htbp]
+\centering
+\caption{Neuron parameters for excitatory and inhibitory populations.}
+\label{tab:neuron_params}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Excitatory} & \textbf{Inhibitory} \\
+\midrule
+Membrane capacitance & $C_m$ & 0.5~nF & 0.2~nF \\
+Membrane conductance & $g_m$ & 25~nS & 20~nS \\
+Refractory period & $\tau_{rp}$ & 2~ms & 1~ms \\
+Excitatory reversal potential & $V_E$ & \multicolumn{2}{c}{0~mV} \\
+Inhibitory reversal potential & $V_I$ & \multicolumn{2}{c}{$-70$~mV} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Synaptic Currents}
+
+The total synaptic input for each neuron is a linear sum of four components:
+\begin{equation}
+I_{\text{syn}} = i_{\text{AMPA}} + i_{\text{NMDA}} + i_{\text{GABA}} + i_X
+\end{equation}
+where $i_{\text{AMPA}}$ and $i_{\text{NMDA}}$ correspond to recurrent excitatory currents mediated by AMPA and NMDA receptors, respectively, $i_{\text{GABA}}$ corresponds to inhibitory currents mediated by GABA receptors, and $i_X$ corresponds to external currents mediated by AMPA receptors. Synaptic reversal potentials were $V_E = 0$~mV and $V_I = -70$~mV.
+
+NMDAR-mediated currents have voltage dependence controlled by the extracellular magnesium concentration \citep{JahrStevens1990}: $\beta = 0.062$~mV$^{-1}$, $\gamma = 3.57$~mM, $[\text{Mg}^{2+}] = 1$~mM. The NMDAR voltage dependence parameters are summarized in Table~\ref{tab:nmda_params}.
+
+\begin{table}[htbp]
+\centering
+\caption{NMDAR voltage dependence parameters.}
+\label{tab:nmda_params}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
+\midrule
+Voltage sensitivity & $\beta$ & 0.062~mV$^{-1}$ \\
+Mg$^{2+}$ affinity & $\gamma$ & 3.57~mM \\
+Mg$^{2+}$ concentration & $[\text{Mg}^{2+}]$ & 1~mM \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Synaptic time constants for each receptor type are given in Table~\ref{tab:synaptic_params}. AMPAR-mediated current parameters are based on \citet{ZhouHablitz1998}, NMDAR parameters on \citet{Hestrin1990}, and GABAR parameters on \citet{Gupta2000}.
+
+\subsection{Mean Field Approximation}
+
+To derive maximal synaptic conductance parameters $g_{X,\alpha}$, $g_{\text{AMPA},\alpha}$, $g_{\text{NMDA},\alpha}$, $g_{\text{GABA},\alpha}$ ($\alpha = E, I$) providing prescribed neural firing rates $\nu_E$ and $\nu_I$, we used mean field analysis \citep{AmitBrunel1997, Brunel2000, vanVreeswijk1996} extended to networks of neurons with realistic, conductance-based synapses \citep{BrunelWang2001, Renart2003}. In this framework, sums of gating variables are replaced by their respective population averages, and the voltage dependence of NMDAR conductance is linearized around the mean membrane potential.
+
+The self-consistent equations for population firing rates are:
+\begin{equation}
+\nu_\alpha = \phi(\mu_\alpha, \sigma_\alpha), \quad \alpha = E, I
+\end{equation}
+where $\phi$ is the current-frequency response function for the LIF neuron \citep{BrunelSergi1998, FourcaudBrunel2002}, and $\mu_\alpha$ and $\sigma_\alpha$ are the mean and fluctuation magnitude of synaptic input, respectively.
+
+Network dynamics were parameterized by equalizing the ratio of synaptic conductances for component currents between excitatory and inhibitory neurons, fixing the balance between inhibition and two-component recurrent excitation ($I_{\text{AMPA}}/I_{\text{GABA}}$ and $I_{\text{NMDA}}/I_{\text{GABA}}$), and specifying the relative magnitude of average external current ($I_{X,E}/I_{\theta,E}$). For the asynchronous irregular state, the constraints $I_{\text{AMPA}}/I_{\text{GABA}} + I_{\text{NMDA}}/I_{\text{GABA}} < 1$ and $I_{X,E}/I_{\theta,E} \gtrsim 1$ must hold.
+
+\subsection{Linear Stability Analysis}
+
+Linear stability analysis of the asynchronous state was performed following the analytical framework of \citet{BrunelWang2003} (see also \citet{AbbottVanVreeswijk1993, BrunelHakim1999}). Small oscillatory perturbations were added to stationary population rates:
+\begin{equation}
+\nu_\alpha(t) = \bar{\nu}_\alpha (1 + \varepsilon_\alpha e^{(\lambda + i\omega)t}), \quad |\varepsilon_\alpha| \ll 1
+\end{equation}
+where $\lambda$ is the growth rate and $\omega$ is the oscillation frequency. The analysis shows no phase lag between firing rates of excitatory and inhibitory populations.
+
+Self-consistent mean field equations for the eight conductance parameters, and linear stability equations for $\lambda$ and $\omega$, were both solved numerically using custom MATLAB (The MathWorks) codes with the aid of the \texttt{fsolve} function.
+
+\subsection{Network Simulations}
+
+In all direct network simulations, numerical integration of coupled differential equations was carried out using a custom MATLAB code implementing a second-order Runge-Kutta method with interpolation of spike firing times between integration time steps \citep{Hansel1998}. In most simulations, $\Delta t = 0.1$~ms.
+
+The total synaptic noise characterizing fluctuations in input from random spike arrival is approximated as the sum of external and recurrent input fluctuations \citep{FourcaudBrunel2002}, with effective synaptic time constants $\tau_{\text{AMPA}} = \tau_{\text{AMPA},l} + \tau_{\text{AMPA},r} + \tau_{\text{AMPA},d}$, $\tau_{\text{NMDA}} = \tau_{\text{NMDA},l} + \tau_{\text{NMDA},r} + \tau_{\text{NMDA},d}$, and $\tau_{\text{GABA}} = \tau_{\text{GABA},l} + \tau_{\text{GABA},r} + \tau_{\text{GABA},d}$.
+
+The input--output relationship $\nu(t) = F(I_{\text{syn}}(t))$ can be approximated by the current-frequency response function $\phi$ \citep{Brunel2001, FourcaudBrunel2002} when synaptic noise is sufficiently strong and the synaptic time constant is comparable with the membrane time constant.
+
+%% ============================================================
+%%  REFERENCES
+%% ============================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

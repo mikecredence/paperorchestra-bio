@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "working_title": "Leveraging Permutation Testing to Assess Confidence in Positive-Unlabeled Learning Applied to High-Dimensional Biological Datasets",
+    "venue": "BMC Bioinformatics",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Positive-Unlabeled (PU) learning methods classify samples when only a small set of known positives and a large unlabeled set are available, but validating predictions without negative examples is a major barrier in biological applications.",
+    "gap": "Prior PU learning evaluations rely on ground-truth negative labels (accuracy, F1, MCC) that are unavailable in real-world biomedical contexts; no prior study has used permutation testing to evaluate confidence in PU classifications.",
+    "approach": "We combine a k-fold spy-positive technique with a transductive PU bagging SVM-RBF classifier and compare Explicit Positive Recall (EPR) and Mean Bagging Score (MBS) for the known-positive set under actual vs. permuted P/U labels using Welch's t-test, Cliff's delta with 95% CI, and p-values from a z-score.",
+    "key_results": "Across nine synthetic datasets spanning three class separations (0, 1, 2) and three true-negative proportions (10%, 30%, 50%), the Wisconsin Diagnostic Breast Cancer (WDBC) dataset, a BRCA (n=300) vs. LUAD (n=141) PANCAN subset, and the Lakhashe et al. vaccine dataset (n=36), significant differences between actual and permuted scores align with U-AUC ranging from 1.00 (easy) to 0.54 (hard). The z-score p-value remains stable across 30, 100, and 500 permutation repetitions, while Welch's t-test is destabilized by increasing permutations; Cliff's delta preserves the 'large' boundary (>0.474) under actual labels.",
+    "impact": "Permutation testing can serve as a gatekeeper for PU learning confidence in settings lacking ground-truth negatives, enabling practitioners to distinguish reliable from unreliable model outputs."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Background",
+      "content_bullets": [
+        "High-dimensional (p>=n) biological datasets suffer from the curse of dimensionality; strategies include regularization, cross-validation, and permutation testing.",
+        "Permutation testing scrambles labels to create a null distribution against which observed model performance is compared.",
+        "PU learning addresses the common biomedical setting in which only positive examples are known and the unlabeled set contains both positives and negatives.",
+        "Major PU learning categories are Reliable Negative Selection and Base Classifier Adaptation; PU Bagging is an ensemble strategy that is robust to classifier choice.",
+        "Existing PU evaluations use accuracy/F1/MCC, which require true negatives. EPR has been proposed but whether good positive-example recall is a surrogate for overall prediction quality is context-dependent.",
+        "We propose combining the spy-positive technique with permutation testing to evaluate known-positive set scores against a null distribution, without requiring ground-truth negatives."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_null_distribution",
+          "title": "Generating a null distribution of positive-class scores via spy folds and label permutation",
+          "content_bullets": [
+            "Context: in PU learning there is no reference distribution for positive-set scores when true negatives are unavailable.",
+            "Approach: each known-positive sample is placed into a spy fold and scored by PU bagging; scores are aggregated by EPR and MBS across 30 repeated k-fold splits (k=5), then compared with distributions obtained after 30/100/500 label permutations (Fig. 1).",
+            "Finding: the pipeline yields matched actual and permuted score distributions for each dataset and scoring method.",
+            "Interpretation: this design enables a principled hypothesis test for whether KP samples carry separable signal without negative labels."
+          ]
+        },
+        {
+          "id": "results_synthetic",
+          "title": "Evaluating confidence on high-dimensional synthetic datasets",
+          "content_bullets": [
+            "Context: nine synthetic datasets with class separations of 0 (negative control), 1 (medium), and 2 (high), and true-negative proportions of 10%, 30%, and 50% (200 features, 200 subjects; 30% informative, 70% redundant).",
+            "Approach: compute U-AUC between PU bagging scores for the unlabeled set and ground-truth labels; compare EPR and MBS for actual vs. permuted positives using Welch's t-test, Cliff's delta with 95% CI, and z-score p-values (Fig. 2, Fig. 3).",
+            "Finding: at 50% TN, U-AUC varied from 1.00 (excellent) to 0.64 (near random) with class separation. At 10% TN, U-AUC fell to a range of 0.88 (excellent) to 0.54 (no discrimination). At class separation = 1 and 10% TN, actual-vs-permuted EPR and MBS became not significantly different; at class separation = 0, significance was generally absent as expected.",
+            "Interpretation: EPR was somewhat less susceptible to false positive observations; the null-distribution comparison correctly identifies the regime in which PU scores should not be trusted."
+          ]
+        },
+        {
+          "id": "results_realworld",
+          "title": "Evaluating confidence on real-world biological benchmarks",
+          "content_bullets": [
+            "Context: WDBC (400 samples drawn from 569 instances at 50%, 30%, and 10.8% TN), PANCAN BRCA/LUAD (TP n=300, TN n=141, 325 PCs retaining 95% variance), and the Lakhashe et al. vaccine dataset (36 Rhesus Macaques, TN group L n=36) with KP fractions of 10%, 20%, 30%, 40%.",
+            "Approach: compute U-AUC and compare EPR and MBS between actual and permuted labels (Welch's t-test with ****p<0.0001 thresholds), z-score, and Cliff's delta (Fig. 4).",
+            "Finding: for all three datasets, high U-AUC coincided with significant separation between actual and permuted score distributions across NKP. For WDBC, even when EPR and MBS approached 0.5, U-AUC remained >0.9. For the small Lakhashe dataset, increasing NKP produced greater gains in permuted than actual scores, yet distributions remained distinct with a large effect size.",
+            "Interpretation: across varied real-world regimes, permutation-based comparisons provide confidence in KP set quality without requiring ground-truth negatives."
+          ]
+        },
+        {
+          "id": "results_permutation_count",
+          "title": "Stability of comparison metrics across permutation repetitions",
+          "content_bullets": [
+            "Context: permutation testing increases compute cost linearly in the number of permutations; practitioners need guidance on how many permutations suffice.",
+            "Approach: apply the pipeline to the Lakhashe dataset and a dimension-matched synthetic dataset (n=100, p=200, 30% TN; KP=20 -> U-AUC=0.696, KP=40 -> U-AUC=0.733), varying permutation count across 30, 100, and 500 and computing Cliff's delta, z-score p-value, and Welch's t-test p-value (Fig. 5).",
+            "Finding: Cliff's delta estimates preserved the 'large' boundary (>0.474) for actual labels across permutation counts; z-score p-values were stable across permutation counts in both high- and low-significance regimes; Welch's t-test p-values drifted monotonically with permutation count, indicating inflation artifacts.",
+            "Interpretation: z-score comparisons are the preferred metric, consistent with the conceptual one-versus-many structure of comparing a single actual label set to many permuted sets."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Paragraph 1: summarize the novel contribution: permutation testing applied inside a PU bagging + spy-positive pipeline, yielding a null distribution for positive-set scores.",
+        "Paragraph 2: empirical behaviour across class separation, TP/TN imbalance, and KP fractions; methodology distinguishes reliable from unreliable inference.",
+        "Paragraph 3: metric choice: z-score is robust to permutation count, Welch's t-test is inflated by large permutation counts, Cliff's delta preserves effect-size category; MBS usually shows lower variance than EPR.",
+        "Paragraph 4: limitations: 10% TN regime can yield false negative signals even when U-AUC is acceptable; current approach cannot pinpoint whether class overlap or imbalance is responsible.",
+        "Paragraph 5: future work: improved PU algorithms for extreme imbalance, more informative KP-set scoring that captures probability distributions, investigation of the impact of k in k-fold spy positive splits."
+      ]
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusions",
+      "content_bullets": [
+        "Permutation testing serves as a no-information-rate baseline for PU learning, analogous to its role in supervised ML.",
+        "Across varied class-label ratios and class separations, the methodology provides an initial gatekeeper for PU classification deployments in real-world biomedical settings."
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {
+          "id": "methods_datasets",
+          "title": "Datasets",
+          "content_bullets": [
+            "Synthetic datasets (scikit-learn): 200 features, 200 subjects per dataset; 30% informative, 70% redundant features (random linear combinations); 3 separations x 3 TN proportions = 9 datasets; small variant n=100, p=200 for permutation-count ablation.",
+            "WDBC: 30 numeric features across 10 characteristics; 400 subjects sampled from 569 with 50%, 30%, and 10.8% TN; Malign relabelled Class 0 (TN), Benign relabelled Class 1 (TP).",
+            "BRCA/LUAD from PANCAN: TP BRCA n=300, TN LUAD n=141; PCA to 325 PCs retaining 95% variance.",
+            "Lakhashe et al.: 36 Rhesus Macaques, three regimens M/K/L; group L defined as TN (n=36)."
+          ]
+        },
+        {
+          "id": "methods_pipeline",
+          "title": "Analysis Pipeline",
+          "content_bullets": [
+            "K-fold spy positive (k=5): KP split into 5 folds, one fold reassigned to U at a time; 30 different fold partitions per KP set.",
+            "PU Bagging (Mordelet et al.): bootstrapped unlabeled samples labelled as negative, 100-time repeated bagging; SVM-RBF classifier with scikit-learn defaults.",
+            "Scoring: EPR = fraction of KP with bagging score >0.5; MBS = mean class-1 probability for KP.",
+            "Permutation: KP/U labels randomly shuffled; 30, 100, and 500 replicates tested.",
+            "Statistics: Welch's t-test, Cliff's delta with 95% CI (large boundary = 0.474), upper-tailed one-sample z-test (z = (mu - mu_0) / sigma) comparing actual mean to permuted distribution."
+          ]
+        }
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_datasets",
+      "title": "Description of datasets and PU settings evaluated",
+      "columns": ["Dataset", "n", "features/p", "%TN", "KP fractions"],
+      "data_source": "experimental_log: Table 1 captions and dataset descriptions",
+      "caption_sketch": "Synthetic (a-c, g), WDBC (d), BRCA/LUAD PANCAN (e), Lakhashe (f). Includes sample sizes, feature dimensionality, % TN, KP percentages tested."
+    },
+    {
+      "table_id": "tab_synthetic_uauc",
+      "title": "U-AUC across class separation and % True Negative for synthetic datasets",
+      "columns": ["Class separation", "%TN=50", "%TN=30", "%TN=10"],
+      "data_source": "experimental_log: statistical report: U-AUC varied from 1.00 to 0.64 at high %TN and 0.88 to 0.54 at 10% TN",
+      "caption_sketch": "Reported ranges per the Results section. Only values that appear verbatim in the extraction are used."
+    },
+    {
+      "table_id": "tab_realworld_summary",
+      "title": "Real-world dataset summary with PCA / NKP settings",
+      "columns": ["Dataset", "TP n", "TN n", "Features after PCA", "NKP fractions"],
+      "data_source": "experimental_log: WDBC 569 total, BRCA=300, LUAD=141, PANCAN 325 PCs (95% variance), Lakhashe n=36; NKP 10-40%",
+      "caption_sketch": "Collated from Methods extraction."
+    },
+    {
+      "table_id": "tab_permutation_count",
+      "title": "Stability of statistical comparison metrics across permutation counts",
+      "columns": ["Metric", "30 perms", "100 perms", "500 perms", "Observed behavior"],
+      "data_source": "experimental_log statistical reports: Cliff's delta large boundary preserved; z-score stable; Welch's t-test drifts",
+      "caption_sketch": "Qualitative stability across permutation replicate counts for each statistical comparison method used."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "positive unlabeled learning bioinformatics",
+      "curse of dimensionality biological machine learning",
+      "permutation testing machine learning null distribution",
+      "semi-supervised learning classification biomedical"
+    ],
+    "micro_queries": [
+      "PU bagging Mordelet transductive",
+      "spy positive technique PU learning Liu",
+      "Bekker Davis positive unlabeled learning survey",
+      "Cliff's delta effect size non-parametric",
+      "Wisconsin Diagnostic Breast Cancer dataset machine learning",
+      "PANCAN RNA-seq TCGA BRCA LUAD",
+      "Lakhashe rhesus macaque vaccine humoral immunity",
+      "Explicit Positive Recall EPR positive unlabeled",
+      "scikit-learn synthetic classification make_classification",
+      "SVM RBF kernel classification high dimensional"
+    ],
+    "must_cite": [
+      "Mordelet PU bagging transductive",
+      "Liu spy positive two-step PU",
+      "Li PU learning bioinformatics review",
+      "Bekker Davis PU learning survey",
+      "Cheng Explicit Positive Recall",
+      "Scikit-learn make_classification",
+      "Wisconsin Diagnostic Breast Cancer (Wolberg, UCI)",
+      "PANCAN / TCGA pan-cancer",
+      "Lakhashe vaccine SHIV rhesus macaque",
+      "Cliff delta effect size",
+      "Plotly / ggpubr visualization packages",
+      "NumPy random seed / Harris NumPy"
+    ],
+    "citation_target": 20
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "metadata": {
+    "working_title": "Peafowl: An Alignment-free Method for Phylogeny Estimation using Maximum Likelihood",
+    "venue": "Bioinformatics",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Inferring phylogenies from whole-genome data is increasingly needed for genome skims and species whose genomes contain extensive rearrangements, but alignment remains a computational bottleneck and is brittle under rearrangement.",
+    "gap": "Alignment-free methods avoid multiple sequence alignment but the vast majority are distance-based and rely on simplified pairwise distance models; no widely used maximum-likelihood alignment-free tool exists, despite maximum-likelihood methods being more accurate than distance-based ones in the alignment-based setting.",
+    "approach": "We encode presence and absence of k-mers of a data-driven length in a binary matrix per species and estimate the maximum-likelihood tree topology under the two-state BINGAMMA substitution model in RAxML. The k-mer length k_entropy is selected by maximizing cumulative entropy over 5000 sampled rows across odd k from 9 to 31.",
+    "key_results": "On seven real datasets (7 Primates, 14 Drosophila genome skims, 29 E.coli/Shigella, 25 Labroidei fish, 14 plants, 27 E.coli/Shigella, 8 Yersinia) Peafowl achieves the lowest normalized Robinson-Foulds distance on three datasets, ties the best on fish (nRF = 0.05) and primates (nRF = 0), and reconstructs the Yersinia reference tree exactly (nRF = 0) in non-canonical counting mode, on which most tools achieve nRF above 0.8.",
+    "impact": "A likelihood-based alignment-free framework closes a long-standing methodological gap and mirrors the historical improvement of likelihood over distance in alignment-based phylogenetics, suggesting a clear path to refined alignment-free phylogenomics."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Phylogenetic tree inference from genome data is a central problem in bioinformatics and systematics.",
+        "Two traditional paradigms: distance-based (e.g., UPGMA, neighbor-joining) and character-based (maximum parsimony, maximum likelihood).",
+        "Within alignment-based inference, maximum likelihood has repeatedly been shown more accurate and robust than distance-based approaches, especially when model assumptions are violated.",
+        "Alignment-based methods require multiple sequence alignment (MSA), which is memory- and time-intensive, NP-hard to optimize exactly, and brittle to rearrangement events (translocation, inversion) common in whole-genome data.",
+        "Alignment-free methods avoid MSA and scale to whole genomes and to genome skims where assembly is impractical, but accuracy lags alignment-based approaches; almost all alignment-free tools are distance-based.",
+        "Prior work by Hoehl and Ragan used a Bayesian k-mer-based method, but no mature maximum-likelihood alignment-free tool exists.",
+        "Contribution: Peafowl builds a k-mer presence/absence binary matrix and runs RAxML under the BINGAMMA binary-trait model to get a maximum-likelihood tree, with an entropy-based procedure for k selection.",
+        "We evaluate on seven real datasets, including five from the AFproject benchmark, and compare against nine state-of-the-art alignment-free tools."
+      ],
+      "approx_length": "1.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "methods_overview", "title": "Overview", "content_bullets": [
+          "Four-stage pipeline: k-mer generation; binary matrix construction; k-mer length selection by cumulative entropy; maximum-likelihood tree estimation with RAxML under BINGAMMA.",
+          "Figure 1 summarizes the pipeline."
+        ]},
+        {"id": "methods_kmers", "title": "Generating k-mers", "content_bullets": [
+          "Use Jellyfish 2.2.4 to enumerate k-mers for odd k in {9, 11, ..., 31}.",
+          "Two modes: canonical (k-mer and reverse complement collapsed) and non-canonical (treated as distinct); canonical is default.",
+          "Figure 2 illustrates how the existence of k-mers depends on length."
+        ]},
+        {"id": "methods_matrix", "title": "Binary matrix construction", "content_bullets": [
+          "Matrix X with rows indexed by unique k-mers and columns by species; X_ij = 1 if k-mer i (or its reverse complement in canonical mode) occurs in species j, else 0.",
+          "Hash table maps each k-mer to the species carrying it; matrix entries are filled by iterating hash indices."
+        ]},
+        {"id": "methods_k_selection", "title": "Entropy-based k-mer length selection", "content_bullets": [
+          "Per-row binary entropy H(X_i) = - sum_{x in {0,1}} f(x) log f(x) over m species.",
+          "Cumulative entropy C_entropy(k) = sum over p = 5000 randomly sampled rows of H(X_i).",
+          "Choose k_entropy = argmax_k C_entropy(k) over the scanned odd values.",
+          "Rationale: intermediate-frequency k-mers (neither ubiquitous nor extremely rare) carry the most phylogenetic information."
+        ]},
+        {"id": "methods_tree", "title": "Tree estimation", "content_bullets": [
+          "Feed binary matrix for k_entropy to RAxML 8.2.4 under BINGAMMA (two-state model with a gamma-distributed site-rate prior).",
+          "Report tree topology only; branch-length estimation is deferred because neighboring k-mers are not independent under a single substitution."
+        ]},
+        {"id": "methods_impl", "title": "Implementation", "content_bullets": [
+          "Peafowl is implemented in C++ and shell scripts and is available at https://github.com/hasin-abrar/Peafowlrepo.",
+          "Jellyfish is chosen for k-mer counting based on the comparison by Zhang et al."
+        ]}
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_datasets", "title": "Datasets and benchmarking", "content_bullets": [
+          "Seven real datasets: 7 Primates mitochondrial; 14 Drosophila genome skims (100 Mb); 29 E.coli/Shigella assembled; 25 Labroidei fish mitochondrial; 14 plants; 27 E.coli/Shigella full; 8 Yersinia full.",
+          "Compared methods: FFP, co-phylog, mash, Skmer, FSWM/Read-SpaM, andi, phylonium, Multi-SpaM, CAFE-cvtree.",
+          "Metric: normalized Robinson-Foulds (nRF) between estimated and reference tree, computed with PHYLIP; distance-only methods post-processed with neighbor-joining and UPGMA in MEGA-X."
+        ]},
+        {"id": "results_kselection", "title": "Selection of k-mer lengths", "content_bullets": [
+          "For all datasets, the k with the highest cumulative entropy corresponds to the lowest observed nRF across scanned odd k.",
+          "On 7 Primates, both maximum entropy and nRF = 0 occur at k = 9; a secondary dip at k = 23 is attributed to the small number of species."
+        ]},
+        {"id": "results_primates_dros", "title": "Primates and Drosophila", "content_bullets": [
+          "Peafowl reconstructs the 7 Primates reference tree exactly (nRF = 0); so do andi, Multi-SpaM, and FFP.",
+          "Mash, Skmer, and co-phylog misplace Gibbon as sister to hominines, failing the (orangutan, (gorilla, (chimpanzee, human))) relationship.",
+          "On Drosophila, Peafowl, Skmer, and phylonium achieve the lowest nRF; Peafowl and Skmer produce identical trees that differ from the reference by one branch in the mauritiana/simulans/sechellia clade."
+        ]},
+        {"id": "results_afproject", "title": "AFproject genome-based phylogeny", "content_bullets": [
+          "Peafowl nRF: 0.23 on 29 E.coli/Shigella; 0.05 on 25 Labroidei fish; 0.36 on 14 plants.",
+          "On the 25 Labroidei fish dataset, Peafowl ties mash and FSWM for the lowest nRF.",
+          "On 29 E.coli/Shigella, phylonium is best; on 14 plants, co-phylog, mash, and Multi-SpaM are best.",
+          "For the plant dataset, k is scanned only over {9, ..., 17} to avoid resource exhaustion; k = 9 gives degenerate all-1 rows."
+        ]},
+        {"id": "results_hgt", "title": "Horizontal gene transfer datasets (E.coli full and Yersinia)", "content_bullets": [
+          "On 27 E.coli/Shigella full genomes, Peafowl nRF = 0.17; best are co-phylog, andi, phylonium at nRF = 0.08.",
+          "On 8 Yersinia with canonical counting, Peafowl nRF = 1; most tools have nRF > 0.8, only two are below 0.8; CAFE-cvtree is best.",
+          "With non-canonical counting, Peafowl reconstructs the Yersinia reference tree exactly (nRF = 0), because inversions become visible when a k-mer and its reverse complement are distinguished.",
+          "Non-canonical counting yields substantially higher entropy than canonical on Yersinia, consistent with more informative binary columns."
+        ]},
+        {"id": "results_runtime", "title": "Runtime and memory", "content_bullets": [
+          "Measurements taken on Intel Core i7-7700 at 3.60 GHz with 8 processors and 32 GB RAM.",
+          "Per-dataset runtime, unzipped size, and peak memory are reported in Table 1."
+        ]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Peafowl demonstrates that a likelihood-based alignment-free approach is feasible and competitive with the state of the art.",
+        "Performance varies substantially across datasets; no single method dominates, echoing prior AFproject conclusions.",
+        "Non-canonical counting unlocks inversion signal, explaining the dramatic Yersinia result.",
+        "Limitations: small taxa cap (30); distant species yield few shared k-mers; missing regions in sequences degrade performance; counts are discarded; branch lengths are not estimated; unassembled reads are not yet supported.",
+        "Future directions: richer count-based models; extension to reads; branch-length estimation; scaling to more taxa; mixture-model priors on site rates across k-mer classes."
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "conclusions",
+      "title": "Conclusions",
+      "content_bullets": [
+        "Peafowl introduces the first maximum-likelihood alignment-free phylogeny tool.",
+        "It achieves the lowest nRF on three of seven datasets and matches the reference tree on Yersinia under non-canonical counting.",
+        "The gap between alignment-free and alignment-based methods may close as likelihood-based alignment-free methods mature, mirroring the historical improvement of likelihood over distance in alignment-based phylogenetics."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Peafowl nRF across seven real datasets",
+      "columns": ["Dataset", "Taxa", "Data type", "Peafowl nRF", "Best competing method (nRF)"],
+      "data_source": "experimental_log 'Peafowl nRF results on the seven datasets'",
+      "caption_sketch": "Normalized Robinson-Foulds distance of Peafowl compared to the best alignment-free method on each of the seven benchmark datasets."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Peafowl methods parameters",
+      "columns": ["Parameter", "Value"],
+      "data_source": "experimental_log 'Methods parameters' table",
+      "caption_sketch": "Software versions, parameter ranges, and modeling choices used by Peafowl in all reported experiments."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Runtime and peak memory by dataset",
+      "columns": ["Dataset", "Unzipped size", "Runtime", "Peak memory"],
+      "data_source": "experimental_log 'Runtime and peak memory' table",
+      "caption_sketch": "Runtime and peak memory of Peafowl per dataset on an Intel Core i7-7700 with 32 GB RAM. Values not available in the extraction are marked 'not reported'."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig1", "title": "Peafowl pipeline schematic", "kind": "schematic", "caption_sketch": "Four-stage pipeline: k-mer generation, binary matrix construction, k selection via cumulative entropy, and ML tree estimation with RAxML under BINGAMMA."},
+    {"figure_id": "fig2", "title": "Peafowl nRF vs. best competitor across datasets", "kind": "grouped bar chart", "caption_sketch": "Normalized Robinson-Foulds distance of Peafowl and the best competing alignment-free method per benchmark dataset."},
+    {"figure_id": "fig3", "title": "Canonical vs. non-canonical counting on Yersinia", "kind": "bar chart", "caption_sketch": "nRF on the 8 Yersinia dataset under canonical and non-canonical k-mer counting, illustrating the inversion-signal recovery."}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "alignment-free phylogeny k-mer review",
+      "maximum likelihood phylogeny binary traits",
+      "genome skim phylogenetics",
+      "multiple sequence alignment computational complexity",
+      "Robinson-Foulds distance tree comparison"
+    ],
+    "micro_queries": [
+      "co-phylog alignment-free phylogeny",
+      "mash MinHash sketches genome distance",
+      "andi pairwise genome distance mismatches",
+      "Multi-SpaM spaced word matches quartet",
+      "FFP feature frequency profile phylogeny",
+      "Skmer genome skim phylogenetics",
+      "FSWM Read-SpaM spaced word",
+      "phylonium alignment-free phylogeny",
+      "CAFE cvtree composition vector",
+      "Jellyfish k-mer counter",
+      "RAxML maximum likelihood phylogeny",
+      "AFproject alignment-free benchmark",
+      "BINGAMMA binary trait substitution model",
+      "Hoehl Ragan Bayesian k-mer phylogeny"
+    ],
+    "must_cite": [
+      "UPGMA Sokal Michener",
+      "neighbor-joining Saitou Nei",
+      "maximum parsimony Fitch",
+      "maximum likelihood Felsenstein 1981",
+      "co-phylog Yi Jin",
+      "andi Haubold",
+      "mash Ondov",
+      "Multi-SpaM Dencker",
+      "spaced word matches Leimeister",
+      "Skmer Sarmashghi",
+      "FSWM Leimeister",
+      "phylonium Klotzl Haubold",
+      "FFP Sims",
+      "CAFE cvtree",
+      "AFproject Zielezinski",
+      "Jellyfish Marcais Kingsford",
+      "RAxML Stamatakis",
+      "Robinson Foulds 1981",
+      "PHYLIP Felsenstein",
+      "MEGA-X Kumar",
+      "Hoehl Ragan Bayesian k-mer",
+      "Slope-SpaM"
+    ],
+    "citation_target": 30
+  }
+}

@@ -1,0 +1,134 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\title{Leveraging Permutation Testing to Assess Confidence in Positive-Unlabeled Learning Applied to High-Dimensional Biological Datasets}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Compared to traditional supervised machine learning approaches employing fully labeled samples, positive-unlabeled (PU) learning techniques aim to classify unlabeled samples using a smaller proportion of known positive (KP) examples. This reflects many real-world biomedical scenarios in which negative examples are unavailable, posing direct challenges to validating prediction robustness. In this study, we combine established PU learning strategies, the ``spy positive'' technique and PU bagging, with permutation testing to evaluate the ability of KP examples to classify unlabeled samples without ground truth labels. We generated nine high-dimensional (p $\geq$ n) synthetic datasets spanning class separations of 2, 1, and 0 and true-negative fractions of 10\%, 30\%, and 50\%. We additionally applied the method to the Wisconsin Diagnostic Breast Cancer (WDBC) dataset (n=569; 400-point subsamples with 50\%, 30\%, and 10.8\% TN), a BRCA (TP, n=300) vs.\ LUAD (TN, n=141) subset of the PANCAN RNA-seq dataset reduced by PCA to the top 325 components (95\% variance), and a humoral immune response dataset of 36 Rhesus Macaques from Lakhashe et al. Scores computed from actual labels were compared against distributions under permuted labels (30, 100, and 500 permutations) using Welch's t-test, Cliff's Delta with 95\% confidence interval, and a one-sample z-score. Across synthetic and real-world settings, Explicit Positive Recall (EPR) and Mean Bagging Score (MBS) of actual KPs were distinguishable from permuted labels, with the p-value from z-score remaining stable across permutation counts. Permutation testing provides a baseline ``no-information rate'' benchmark for PU learning inference.
+\end{abstract}
+
+\section{Introduction}
+Classification and clustering with machine learning algorithms are widely applied in biological and biomedical research. However, modern profiling datasets often exhibit the curse of dimensionality, where thousands of features accompany much smaller sample numbers \cite{bellman1961}. In wide datasets, overfitting must be controlled by dimensionality reduction, cross-validation, and regularization. Permutation testing, in which labels are scrambled before modeling, offers a further way to quantify model robustness \cite{ojala2010permutation,good2005permutation}.
+
+Positive-Unlabeled (PU) learning is a subclass of semi-supervised learning in which a small set of labeled positive examples coexists with an unlabeled set containing both positives and negatives, with no known true negatives. PU algorithms for bioinformatics broadly fall into reliable-negative selection and base-classifier adaptation, including bootstrapped aggregation (Bagging) \cite{li2014pu,mordelet2014bagging}. Prior work has shown that PU bagging outperforms a single biased SVM when the proportion of known positives is small and is largely insensitive to the choice of base classifier \cite{mordelet2014bagging}.
+
+Most prior PU learning evaluations rely on ground truth labels for metrics such as accuracy, F1 score, or Matthew's correlation coefficient, which are not attainable in real-world biomedical tasks where true negatives are costly or infeasible to obtain. A small number of studies have attempted to validate predictions using only positive examples: for example, Explicit Precision Recall (EPR) measures the fraction of known positives predicted as positive \cite{cheng2017pu}. However, whether strong prediction of known positives is a reliable surrogate for correct classification of unlabeled samples is context dependent \cite{bekker2020learning}.
+
+Here we propose a generalizable methodology that couples the ``spy positive'' technique \cite{liu2003building} with PU bagging \cite{mordelet2014bagging} and permutation testing. A small proportion of KP samples is randomly treated as unlabeled and scored by the bagging classifier, generating a distribution of positive class probabilities. The same procedure under many permuted P/U label assignments establishes a null distribution against which actual scores are compared. We evaluate this pipeline on nine synthetic datasets with varied class separation and class imbalance, the Wisconsin Diagnostic Breast Cancer (WDBC) dataset \cite{street1993wdbc}, a BRCA/LUAD subset of the PANCAN RNA-seq dataset \cite{weinstein2013pancan}, and a humoral immune response dataset from a Rhesus Macaque vaccine study \cite{lakhashe2019humoral}.
+
+\section{Methods}
+\subsection{Datasets}
+The datasets included multivariate synthetic datasets, real-world benchmark datasets outside vaccinology, and one humoral immune response profile. Synthetic datasets were generated using scikit-learn \cite{pedregosa2011scikit} with 200 features for 200 subjects (p $\geq$ n). To introduce covariance, features were composed of 30\% informative features and 70\% redundant features, generated as a random linear combination of informative features. Multiple synthetic datasets were generated with varied percentages of true negative (TN) samples (10\%, 30\%, 50\%) and varied separation (small, medium, large) between hypercubes labeled TN or true positive (TP). A smaller dataset of 100 samples with moderate hypercube separation was also generated to assess stability under varied permutation repetitions.
+
+For the WDBC dataset \cite{street1993wdbc}, three datasets of 400 data points each were randomly sampled from 569 instances, with 50\%, 30\%, and 10.8\% of samples labeled TN. Samples originally labeled ``Malign'' were relabeled as Class 0 (TN), and ``Benign'' as Class 1 (TP). For the BRAC/LUAC dataset from PANCAN RNA-seq \cite{weinstein2013pancan}, BRCA samples (TP, n=300) and LUAD samples (TN, n=141) were selected. Principal Component Analysis identified the top 325 principal components retaining 95\% of the variance. The Lakhashe et al.\ dataset \cite{lakhashe2019humoral} comprised humoral immune profiles of 36 Rhesus Macaques across three vaccine regimens (M, K, L) and three timepoints; group L (overall vaccine efficacy) was defined as TN (n=36).
+
+\subsection{Positive-Unlabeled Simulation and Analysis Pipeline}
+Positive and Unlabeled (P/U) labels were assigned by randomly selecting KPs from TPs; remaining data points were labeled unlabeled (U). NumPy random seeds were used only for reproducibility \cite{harris2020numpy}. The spy positive technique was adapted by allocating the KP set into K folds (K=5) and reassigning one fold to U as a ``spy fold.'' For each setting, 30 different k-fold splits were performed to define variance.
+
+Transductive PU bagging \cite{mordelet2014bagging} was employed. A matched number of unlabeled subjects was bootstrapped from U and temporarily labeled negative. A SVM with Radial Basis Function kernel (SVM-RBF) \cite{pedregosa2011scikit} was trained with all KPs and bootstrapped unlabeled samples to predict the out-of-bag (OOB) samples. The PU Bagging score was aggregated from 100-time repeated bootstrapping.
+
+Two scoring methods evaluated predictions. Explicit Positive Recall (EPR) \cite{cheng2017pu} was defined as the proportion of KP samples predicted positive (Bagging Score > 0.5). Mean Bagging Score (MBS) was the average Class 1 probability for positive samples.
+
+Permuted labels were generated by randomly shuffling KP/U labels over 30, 100, or 500 repetitions. For each repetition the permuted positive set was scored with the same pipeline. Scores were compared using Welch's t-test, Cliff's Delta with 95\% confidence interval, and p-value from a one-sample z-score, where $\mu$ is the mean score of positive sets from 30-time repeated cross-validation, $\mu_0$ is the mean score over permuted labels, and $\sigma$ is the permutation standard deviation (using $n-1$ degrees of freedom). An upper-tailed test was performed under $\mu > \mu_0$. ROC-AUC between bagging scores and ground truth U labels (U-AUC) was used as an external indicator of expected performance. PCA plots were created with plotly \cite{plotly}; statistical annotation was performed with ggpubr in R (version 4.2.2) \cite{kassambara2020ggpubr}.
+
+\begin{table}[h]
+\centering
+\caption{Datasets and positive-unlabeled settings evaluated.}
+\begin{tabular}{lllll}
+\toprule
+Dataset & n (samples) & Features (p) & \%TN & TP class \\
+\midrule
+Synthetic (a--c) & 200 & 200 & 10, 30, 50 & hypercube TP \\
+Synthetic (g) & 100 & 200 & 30 & hypercube TP (moderate sep.) \\
+WDBC (d) & 400 (of 569) & 30 & 10.8, 30, 50 & Benign \\
+BRAC/LUAC (e) & 441 (300 BRCA + 141 LUAD) & 325 PCs (95\% var.) & $\approx$32 & BRCA \\
+Lakhashe (f) & 108 (36 macaques $\times$ 3 timepoints) & multiplex & 33.3 (n=36) & M, K regimens \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+\subsection{Generating a null distribution via the spy-positive and permutation pipeline}
+We score the Class 1 probability of each spy fold with PU bagging and aggregate via either EPR or MBS. The resulting distribution of bagging scores for actual positives is compared to the distribution under permuted P/U labels, yielding a statistical interpretation of model confidence that does not require ground-truth negatives.
+
+\subsection{Synthetic data results}
+We generated nine high-dimensional (p $\geq$ n) synthetic datasets with different hypercube distances---high (class separation = 2), medium (class separation = 1), and a negative control (class separation = 0)---and varied ground truth label class ratios (10\%, 30\%, 50\% True Negative). As expected, U-AUC spanned from excellent (1.00) to close to random (0.64) under high TN proportions, and ranged from 0.88 (excellent) to 0.54 (low to no discrimination) when the proportion of true negative samples within the unlabeled set was decreased to 10\% \cite{hosmer2013applied}. Modeling was then repeated after the actual PU labels were permuted multiple times.
+
+When classes were well separated (class separation = 2), distributions of actual vs.\ permuted positive scores were distinct by Welch's t-test, Cliff's Delta, and p-value from z-score. Even with moderate class separation (class-separation = 1), a low proportion (10\%) of true negatives yielded EPR and MBS values for actual positives that were not significantly different than those observed when labels were permuted. When classes were not distinct (class separation = 0), statistically significant differences between actual and permuted EPR or MBS were generally not observed. EPR appeared somewhat less susceptible to false positive observations than MBS in this regime.
+
+\begin{table}[h]
+\centering
+\caption{Synthetic data U-AUC ranges across class separation and TN proportion.}
+\begin{tabular}{lll}
+\toprule
+Condition & TN = 50--30\% & TN = 10\% \\
+\midrule
+Class separation 2 (high) & 1.00 (excellent) & 0.88 (excellent) \\
+Class separation 1 (medium) & range & range \\
+Class separation 0 (neg. control) & 0.64 (near random) & 0.54 (low/none) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Real-world biomedical datasets}
+On WDBC, confident differences between actual and permuted positive samples were observed for all proportions of true negatives; U-AUC consistently surpassed 0.9 even when EPR and MBS approached 0.5, and all analyzed metrics reached significance under actual vs.\ permuted comparisons.
+
+We then varied the percentage of randomly selected known positive samples from 10\% to 40\% across WDBC, BRAC/LUAC (n=300 BRCA, n=141 LUAD), and the Lakhashe et al.\ dataset. Across all datasets, actual KP EPR and MBS were significantly different (Welch's t-test, p < 0.0001 in the real-world comparisons) from permuted positives regardless of the number of known positives. For WDBC and BRAC/LUAC, increasing the number of known positives (NKP) had limited impact on permuted scores but increased actual-label scores. For the smaller Lakhashe et al.\ dataset, increasing NKP led to larger gains for permuted than actual data, though the distributions remained distinct and a large effect size (Cliff's Delta) was observed.
+
+\begin{table}[h]
+\centering
+\caption{Summary of real-world dataset comparisons (actual vs.\ permuted positive scores).}
+\begin{tabular}{llll}
+\toprule
+Dataset & n (TP / TN) & U-AUC & Actual vs.\ permuted (Welch's t) \\
+\midrule
+WDBC & 400 (Benign / Malign at 50, 30, 10.8\% TN) & > 0.9 & p < 0.0001 \\
+BRAC/LUAC & 300 / 141 & high & p < 0.0001 \\
+Lakhashe et al. & 36 macaques (L=TN, n=36) & moderate & p < 0.0001 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Robustness to number of permutation repetitions}
+Using the Lakhashe et al.\ dataset, we evaluated three permutation-repetition levels (30, 100, 500) and four NKP values. For all conditions, EPR and MBS yielded a large effect size (Cliff's Delta > 0.474) and high confidence (z-score or t-test). Compared to scores using the MBS value, a larger 95\% confidence interval of Cliff's Delta was observed under a lower number of permutations; however, the group difference level remained stable over the boundary of ``large'' (Cliff's Delta estimate > 0.474), and a substantial change in p-value was not identified under different numbers of permutations in the p-value from the z-score, which was used to compare the mean score from the actual label and the distribution of scores from multiple permutations.
+
+In a dimension-matched synthetic dataset (n=100, p=200, \%TN=30, moderate separation) with poor to acceptable U-AUC (KP=20: U-AUC = 0.696; KP=40: U-AUC = 0.733), with a 95\% confidence interval of falling into the range from ``negligible'' to ``medium'' Cliff's Delta, varying the number of permutations from low to high did not positively or negatively impact the estimate from this non-parametric test. However, a continuous decrease in p-value was observed in the two-sample t-test with MBS values by increasing the number of permutations, demonstrating instability. The p-value from z-score demonstrated stability under both larger and smaller group differences regardless of permutation count.
+
+\begin{table}[h]
+\centering
+\caption{Stability of comparison metrics under varied permutation repetitions.}
+\begin{tabular}{lll}
+\toprule
+Metric & Stability with permutation count (30, 100, 500) & Notes \\
+\midrule
+Cliff's Delta (95\% CI) & stable at > 0.474 (Lakhashe) & wider CI at low permutations \\
+Welch's two-sample t-test & unstable with increasing permutations (synthetic) & p continuously decreases \\
+One-sample z-score p-value & stable across 30/100/500 & insensitive to permutation count \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+One of the primary challenges in PU learning is validating binary predictions without negative examples. We introduced a methodology that combines the spy-positive technique and PU bagging with permutation testing to provide a statistical interpretation of model confidence. Across synthetic datasets and real-world benchmarks, the approach reliably detected settings where actual positives were separable from permuted positives using z-score and Cliff's Delta.
+
+The z-score has two advantages over a two-sample t-test: it compares a single actual label mean to a permutation distribution, adhering more closely to the conceptual basis of permutation testing, and it is less vulnerable to inflation of significance by increasing the number of permutation replicates. MBS generally showed a lower standard deviation in scores than EPR, giving improved ability to distinguish actual from permuted labels, though EPR was somewhat more conservative against false positive observations under the class separation = 0 control.
+
+Limitations remain. Low to moderate statistical significance between actual-label and permuted-label scores may arise either from small class separation or from very low true-negative proportions. In the specific cases in which only 10\% of true negatives existed among all the samples, we identified a rapid drop in statistical significance with multiple statistical comparison methods between positive set scores from actual P/U label and permutation repetitions, even though acceptable to excellent discrimination was suggested by the U-AUC calculated between PU bagging score of unlabeled set and ground truth. Without a ground truth label or prior knowledge of underlying class proportion, the current methodology cannot pinpoint the exact source of reduced confidence. Future work may improve PU algorithms under extreme imbalance and develop KP scoring methods that more fully quantify probability distributions.
+
+The study used K=5 folds for the spy positive set as a proof of concept. The choice of K may trade compute against bias in positive-set scoring; its impact on permutation-based robustness remains to be studied. Overall, this work establishes permutation testing as a baseline ``no-information rate'' for PU learning inference, complementing existing positive-only validation metrics when true negatives are unavailable.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

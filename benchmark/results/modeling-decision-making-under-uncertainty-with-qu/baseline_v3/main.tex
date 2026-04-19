@@ -1,0 +1,153 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\title{Modeling Decision-Making Under Uncertainty with Qualitative Outcomes}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Modeling decision-making under uncertainty typically relies on quantitative outcomes. Many decisions, however, are qualitative in nature, posing problems for traditional models. Here, we aimed to model uncertainty attitudes in decisions with qualitative outcomes. Participants made choices between certain outcomes and the chance for more favorable outcomes in quantitative (monetary) and qualitative (medical) modalities. Sixty-six in-person and 332 online participants completed the task. Using hierarchical Bayesian modeling, we estimated the values participants assigned to qualitative outcomes and compared uncertainty attitudes across domains. Our Estimated Value model provided a good fit for the data, including quantitative estimates for qualitative outcomes, and outperformed a classical utility model in quantitative decisions. Ambiguity aversion ($\beta$) in the medical domain was strongly and positively associated with the same attitude in the monetary domain (mean slope = 0.76, 89\% HDP [0.63, 0.91]); this association was replicated in the online sample (mean slope = 0.37, 89\% HDP [0.29, 0.44]). We demonstrate the ability to extract quantitative measures from qualitative outcomes, enabling more thorough characterization of individual behavior traits.
+\end{abstract}
+
+\section{Introduction}
+Life is a series of decisions where outcomes are often uncertain \cite{kahneman1979prospect}. These decisions range from trying a new dish at a favorite restaurant to selecting a life-saving medical treatment. Many choices are quantitative---for example, buying a lottery ticket with known odds---but many are qualitative, such as choosing whether to dine at an Italian or Thai restaurant. Uncertainty attitudes can be decomposed into risk (precisely known probabilities) \cite{knight1921risk} and ambiguity (partially or entirely unknown probabilities) \cite{ellsberg1961risk}. Individuals tend to exhibit aversion to both risk and ambiguity in gain scenarios \cite{holt2002risk,levy2010neural,tymula2012adolescents,tymula2013aging}, but these attitudes vary across individuals and are not strongly correlated \cite{levy2010neural,tymula2013aging,xu2021ambiguity}.
+
+Most studies characterize these attitudes using monetary or point outcomes \cite{levy2010neural,tymula2012adolescents,tymula2013aging,grubb2016neural,korn2020decisionmaking}, and the few studies that quantified individual attitudes in other domains still relied on quantifiable outcomes (numbers of M\&Ms and milliliters of water \cite{rosati2013capuchin}, months of extended lifespan \cite{tymula2023exchanging}, or milligrams of medication and minutes spent with social partners \cite{tymula2020social}). Earlier qualitative decision studies \cite{simon1955behavioral,march1987decision} did not provide a readily applicable model. Consequently such decisions are rarely addressed in neuroimaging or psychiatric research.
+
+Here we estimated risk and ambiguity attitudes in two modalities: quantitative (monetary) and qualitative (medical). Our objectives were to (1) estimate subjective values for qualitative outcomes, (2) assess the model's fit using quantitative outcomes for comparison, and (3) explore how uncertainty attitudes vary across domains.
+
+\section{Methods}
+\subsection{Participants and procedure}
+In Study 1 (in-person), 101 adults (48 females; age range = 18--89; mean 52.97, SD $\pm$22.41) were screened for major medical and psychiatric conditions. After attrition (failed to complete the task n=4; failed to come to consecutive sessions n=6), 91 participants remained. Data from participants who scored less than 26 on the Montreal Cognitive Assessment (MoCA) \cite{nasreddine2005moca,carson2018moca} were excluded, resulting in 71 cognitively healthy participants (32 females; age range = 18--88; mean 49.68 $\pm$22.3 SD). Participants who failed six or more attention checks (n=3) and those who chose the lottery less than two times (n=2) were removed from the analysis. The final in-person sample was 66 participants. The task was completed in session 1 of three sessions within one week.
+
+In Study 2 (online), 404 adults (212 females; age range = 20--80; mean 49.362, SD $\pm$14.849) were recruited via Amazon Mechanical Turk; after attrition (n=72), 332 remained \cite{xu2021ambiguity}. Each lottery was presented twice instead of four times, and an additional 100\% ambiguity condition was introduced.
+
+\subsection{Decision-making task}
+The monetary task was based on a prior paradigm \cite{tymula2013aging}. On each trial participants chose between a small certain gain (\$5) and a lottery offering a larger amount. Half of the trials were risky (known probabilities of 25\%, 50\%, 75\%), and half were ambiguous, implemented by occluding part of the bag (occluder sizes 24\%, 50\%, 74\%). Dollar amounts used were \$5, \$8, \$12, \$25 for lotteries and \$5 for sure bets. Each combination of amount and risk/ambiguity was presented four times. Twelve of 84 trials were attention checks (choose between \$5 for sure and a chance to win \$5).
+
+In the medical task, participants chose between a known treatment with a known ``slight improvement'' outcome (parallel to a fixed \$5 monetary gain) and an experimental treatment with outcomes ``moderate improvement,'' ``major improvement,'' or ``complete recovery.'' Risk and ambiguity levels matched the monetary task. Order of monetary vs.\ medical was counterbalanced across participants.
+
+\subsection{Modeling approach}
+We used hierarchical Bayesian modeling \cite{lee2014bayesian}. For the monetary domain, we used a power utility function \cite{holt2002risk} with a linear ambiguity effect on perceived probability (Equation~\ref{eq:classic}, Classical Utility):
+\begin{equation}
+\mathrm{SV} = \left(P - \beta \cdot \frac{A}{2}\right) \cdot V^{\alpha}
+\label{eq:classic}
+\end{equation}
+with objective probability $P$ (risky: 0.25, 0.5, 0.75; ambiguous: 0.5; certain: 1), ambiguity level $A$ (risky or certain: 0; ambiguous: 0.24, 0.5, 0.74), and potential winnings $V$ (5, 8, 12, 25 dollars for lotteries; 5 for sure bet). The choice was modeled with a logistic function (Equation~\ref{eq:logistic}):
+\begin{equation}
+P(\text{lottery}) = \frac{1}{1 + \exp(-\gamma \cdot (\mathrm{SV}_{\text{lottery}} - \mathrm{SV}_{\text{sure}}))}
+\label{eq:logistic}
+\end{equation}
+We also tested a ``trembling-hand'' logistic choice function \cite{scholten2015trembling}. Risk attitude ($\alpha$) and ambiguity attitude ($\beta$) captured individual differences. Hyperpriors were chosen based on previous data \cite{tymula2013aging}, with slight risk (mean 0.72) and ambiguity (mean 0.65) aversion.
+
+For medical decisions, the utility function is ill-posed due to the lack of a quantitative value $V$. Our Estimated Value model replaces $V^{\alpha}$ with an estimated subjective value $\nu_i$ for each outcome, computed cumulatively (Equation~\ref{eq:estvalue}):
+\begin{equation}
+\nu_i = \sum_{j \leq i} \Delta\nu_j
+\label{eq:estvalue}
+\end{equation}
+assuming ordinal outcomes. We also used a No-Subjective-Parameters baseline using the category level (e.g., 1 for slight, 2 for moderate) as $V$.
+
+All models converged (rHat < 1.01; effective sample size > 1000). Analyses were conducted in Python 3.10.14 with PyMC 4.1.7 \cite{salvatier2016pymc} and ArviZ 0.17.1 \cite{kumar2019arviz}, using the No-U-Turn Sampler (NUTS) with PyMC defaults: 1000 draws, 1000 tuning steps, no thinning, 80\% acceptance rate. Code: \url{https://github.com/KoremNSN/QualMod/tree/main}.
+
+\subsection{Model comparison and simulations}
+Models were compared by Leave-One-Out (LOO) cross-validation \cite{vehtari2017loo} using ArviZ's ELPD estimate; higher LOO indicates better fit. To evaluate overfitting risk, we simulated data using the Utility function (Equation~\ref{eq:classic}) and the Estimated Value model (Equation~\ref{eq:estvalue}) at different noise levels and sample sizes: (N, noise) = (30, 0.1), (30, 0.3), (30, 0.5), (60, 0.3), (60, 0.5), (120, 0.5), (300, 0.5). Risk attitude was limited to [0.1, 1.6] and ambiguity attitude to [$-$1.4, 1.4] for convergence.
+
+\begin{table}[h]
+\centering
+\caption{Sample characteristics across studies.}
+\begin{tabular}{lll}
+\toprule
+Sample & In-person (Study 1) & Online (Study 2) \\
+\midrule
+Screened / recruited & 101 & 404 \\
+Post-exclusion analyzed & 66 & 332 \\
+Attention check failures (removed) & 3 & -- \\
+Lottery choice < 2 (removed) & 2 & -- \\
+Female & 48 (screened); 32 (MoCA-cleared 71) & 212 \\
+Age range & 18--89 & 20--80 \\
+Age mean (SD) & 52.97 ($\pm$22.41) screened / 49.68 ($\pm$22.3) & 49.362 ($\pm$14.849) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+\subsection{Extracting quantitative values from qualitative outcomes}
+We applied the Estimated Value model (Equation~\ref{eq:estvalue}) to the medical decision data in both samples; it demonstrated superior fit to the No-Subjective-Parameters baseline (Equation using category level as $V$). For the in-person sample, the mean value for slight improvement was 6.93 (SD 1.79), increasing by 9.00 (SD 2.62) for moderate improvement, by a further 7.04 (SD 2.89) for major improvement, and by 4.18 (SD 2.41) for complete recovery. For the online sample, slight improvement was 8.63 (SD 2.54), increasing by 12.62 (SD 4.25) for moderate improvement, by a further 4.66 (SD 2.56) for significant improvement, and by 2.37 (SD 1.61) for complete recovery.
+
+\begin{table}[h]
+\centering
+\caption{Estimated added value per medical outcome category (mean, SD).}
+\begin{tabular}{lll}
+\toprule
+Category step & In-person (n=66) & Online (n=332) \\
+\midrule
+Slight improvement & 6.93 (1.79) & 8.63 (2.54) \\
++ Moderate improvement & 9.00 (2.62) & 12.62 (4.25) \\
++ Major / Significant improvement & 7.04 (2.89) & 4.66 (2.56) \\
++ Complete recovery & 4.18 (2.41) & 2.37 (1.61) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model validation and comparative analysis}
+Applied to the monetary decision data, the Estimated Value model was compared against the No-Subjective-Parameters model, the Classical Utility model (Equation~\ref{eq:classic}), and a Classical Utility with trembling-hand choice function. The Estimated Value model outperformed these alternatives in both samples. Derived monetary category values in the in-person sample were: \$5, 7.22 (SD 1.60); +\$8 step, 4.13 (SD 1.47); +\$12 step, 6.23 (SD 2.18); +\$25 step, 8.77 (SD 3.41). In the online sample: \$5, 10.91 (SD 2.72); +\$8, 4.13 (SD 1.84); +\$12, 5.04 (SD 2.35); +\$25, 3.92 (SD 2.18).
+
+\begin{table}[h]
+\centering
+\caption{Estimated added value per monetary outcome category (mean, SD).}
+\begin{tabular}{lll}
+\toprule
+Category step & In-person (n=66) & Online (n=332) \\
+\midrule
+\$5 & 7.22 (1.60) & 10.91 (2.72) \\
++ \$8 & 4.13 (1.47) & 4.13 (1.84) \\
++ \$12 & 6.23 (2.18) & 5.04 (2.35) \\
++ \$25 & 8.77 (3.41) & 3.92 (2.18) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Model comparison summary (LOO / ELPD).}
+\begin{tabular}{lll}
+\toprule
+Model & In-person ranking & Online ranking \\
+\midrule
+Estimated Value (Eq.~\ref{eq:estvalue}) & 1 (best) & 1 (best) \\
+Classical Utility (Eq.~\ref{eq:classic}) & 2 & 2 \\
+Classical Utility + trembling-hand & 3 & 3 \\
+No-Subjective-Parameters (category-level $V$) & 4 & 4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cross-domain association between uncertainty attitudes}
+Using robust regression \cite{pernet2012robust,yu2017robust}, ambiguity aversion ($\beta$) in the medical domain was strongly and positively associated with the same attitude in the monetary domain (mean slope = 0.76, 89\% HDP [0.63, 0.91]). This association was replicated in the online sample (mean slope = 0.37, 89\% HDP [0.29, 0.44]). Because risk attitudes in the Estimated Value model are integrated into the estimated outcome values, straightforward cross-domain comparison of risk attitudes was not possible.
+
+\subsection{Simulations}
+With lower noise (0.1), the Classical Utility model provided a better fit, consistent with the data-generating process. As noise increased to 0.3 and 0.5, the Estimated Value model consistently showed superior LOO values and weights across sample sizes. For the parameter sets (N, noise) = (30, 0.1), (30, 0.3), (30, 0.5), (60, 0.3), (60, 0.5), (120, 0.5), and (300, 0.5), results showed that at low noise the LOO penalty for model complexity dominated, while at higher noise the Estimated Value model's flexibility provided a better fit irrespective of N.
+
+\section{Discussion}
+This study aimed to quantify the values of qualitative outcomes and to characterize individual uncertainty attitudes across domains. Through hierarchical Bayesian modeling, we estimated subjective values for qualitative outcomes and found that ambiguity attitudes were consistent across quantitative (monetary) and qualitative (medical) domains. Our Estimated Value model outperformed the classical utility model in both domains.
+
+When testing uncertainty attitudes, a persistent challenge has been how to handle qualitatively different outcomes \cite{tversky1988contingent}. Theoretically this stems from the difficulty in comparing outcomes that do not share a common metric \cite{dehaene1997numerical}; methodologically, it complicates experimental design \cite{gigerenzer1999simple}. Earlier approaches quantified some aspect of the outcome \cite{tymula2023exchanging,tymula2020social,frey2017risk} or treated outcomes as categorical with fixed distances \cite{xu2021ambiguity}. By estimating values per participant and outcome, our approach supports flexible ordinal categories without fixed distance assumptions.
+
+Uncertainty is central to medical decision-making \cite{politi2011communicating,han2011uncertainty}. Prior studies operationalized medical outcomes as years of life \cite{tymula2023exchanging,bleichrodt2008health} or milligrams of medication \cite{tymula2020social}, which abandons the original qualitative character. Our model's ambiguity-attitude result also supports previous observations that, while ambiguity attitudes can be less stable over time than risk attitudes \cite{xu2021ambiguity,tymula2013aging}, they are consistent across simultaneously measured domains, with few known structural correlates \cite{huettel2006neural,levy2010neural}.
+
+Compared to the utility model's single curvature \cite{prelec1998probability}, the Estimated Value model accommodates individual curvatures per outcome set, potentially capturing framing and range-frequency effects \cite{tversky1981framing,parducci1965category,stewart2003prospect}. Leave-one-out cross-validation mitigated overfitting risk, and simulations confirmed that the Estimated Value model's advantage emerges only when data deviate from the utility function's rigid curve. Having both monetary and medical datasets allowed us to benchmark the Estimated Value model against quantitative ground truth, giving confidence in its qualitative-domain estimates.
+
+In conclusion, the model can assign quantitative values to qualitative outcomes, provides a better fit than classical alternatives, and is not driven by overfitting. It opens new possibilities for neuroimaging and psychiatric research in domains that cannot be objectively quantified.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

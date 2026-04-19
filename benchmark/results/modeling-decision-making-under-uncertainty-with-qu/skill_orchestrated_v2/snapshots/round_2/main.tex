@@ -1,0 +1,242 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\bibliographystyle{plainnat}
+\setlength{\parskip}{0.4em}
+
+\title{Modeling Decision-Making Under Uncertainty with Qualitative Outcomes}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Models of decision-making under uncertainty typically rely on choices between options with quantitative outcomes, yet many of the most consequential decisions people face---whether to accept a medical treatment, whether to select one job offer over another, whether to try a new restaurant---involve qualitative outcomes that do not share a common numeric scale. This creates a methodological gap: the computational toolkit for extracting individualised risk and ambiguity attitudes has been developed almost entirely within the monetary domain, and the standard workarounds for qualitative choice either quantify a surrogate feature of the outcome or treat categories as equidistant, abandoning the qualitative structure of the choice. Here we fit a hierarchical Bayesian Estimated Value model that assigns an individualised subjective value to each ordered qualitative outcome and compare it against a classical utility function in an in-person sample of 66 cognitively healthy adults and an independent online replication sample of 332 adults. Every participant made choices between a certain option and risky or ambiguous alternatives in both a monetary domain (outcomes of \$5, \$8, \$12, \$25) and a medical domain (slight, moderate, major or complete recovery). The Estimated Value model provided a superior fit under leave-one-out cross-validation in both domains and both samples, and ambiguity aversion $\beta$ estimated within each domain was strongly associated across domains (in-person mean slope = 0.76, 89\% HDPi [0.63, 0.91]; online mean slope = 0.37, 89\% HDPi [0.29, 0.44]). These results demonstrate that quantitative measures of subjective value can be extracted from choices with qualitative outcomes, and they open the medical and other qualitative domains to computational-psychiatry and neuroimaging investigations that previously required forcing outcomes onto a numeric axis.
+\end{abstract}
+
+\section{Introduction}
+
+Human life is a sequence of decisions whose outcomes are rarely certain. These decisions run the gamut from quantitative choices, such as whether to buy a lottery ticket, to qualitative ones, such as which medical treatment to accept or which meal to order at an unfamiliar restaurant. Although both kinds of choice require the chooser to weigh uncertain alternatives against a reference point, the behavioural and computational literature has concentrated almost exclusively on the quantitative case. Our understanding of how people trade off the desirability of different qualitative outcomes when probabilities are imperfectly known therefore remains thin, even though those are the decisions that most often arise in clinical and everyday life.
+
+Economic and psychological theory distinguishes two components of uncertainty that jointly shape choice. Risk describes a situation in which the probabilities of the possible outcomes are precisely known; ambiguity describes situations in which these probabilities are only partially or entirely unknown \citep{ellsberg1961risk,trimmer2011bayesians}. Individuals generally exhibit aversion to both risk and ambiguity when choosing between gains, but these two aversions vary substantially across individuals and are only weakly correlated with each other \citep{levy2010neural,tymula2013lifespan}. Characterising these attitudes at the individual level is important because they predict real-world behaviour and clinical phenotypes: ambiguity-related choice anomalies have been linked with aging \citep{tymula2013lifespan}, post-traumatic stress disorder in combat veterans \citep{ruderman2016ptsd}, and clinical decisions such as breast- and prostate-cancer screening \citep{yeh2015dense,james2017prostate}.
+
+The dominant experimental paradigm for measuring risk and ambiguity attitudes presents participants with choices between a small certain gain and a lottery whose monetary payoff and probability of winning are parametrically varied \citep{levy2010neural,levy2012measuring,jia2020learning}. The analytic backbone is a power utility function in which a single risk-attitude parameter governs the curvature of the mapping from dollars to subjective value and a single ambiguity-attitude parameter governs the additional discount applied when probabilities are not known. This machinery fits monetary choices well but presupposes that every outcome can be placed on a single numeric axis. When the choice set is qualitative---for example, the severity of symptoms after a medical treatment---the utility function cannot be fit directly. The typical workarounds are either to quantify some surrogate feature of the outcome (milligrams of medication, months of extended lifespan, millilitres of water) or to treat qualitative categories as equally spaced \citep{bijlenga2007balance,basu2018vio}. Both strategies abandon the original qualitative framing of the choice and discard information about individual differences in how people weight each category.
+
+This gap matters for clinical, neuroimaging and computational-psychiatry research. Medical diagnoses and treatment outcomes are intrinsically qualitative \citep{basu2018vio,james2017prostate}, yet existing computational tools force them into one of the two surrogates above. Similarly, investigations that link choice behaviour to anxiety, post-traumatic stress, obsessive-compulsive disorder or binge eating disorder \citep{ruderman2016ptsd,voon2015bed} would benefit from a framework that accommodates qualitative outcomes directly, rather than shoehorning them into monetary equivalents.
+
+In this work we develop such a framework and validate it against data in which objective values are actually available. We ran two samples through a decision-making task in which the same individuals faced both monetary choices and hypothetical medical choices calibrated to the same probability and ambiguity levels \citep{levy2012measuring,jia2020learning}. The first sample consisted of 66 cognitively healthy adults (pre-screened with the Montreal Cognitive Assessment \citep{nasreddine2005moca,fujiwara2010mocaj}) who completed the task in person; the second sample consisted of 332 adults recruited online. We fit hierarchical Bayesian models using the No-U-Turn Sampler \citep{hoffman2014nuts} implemented in PyMC \citep{salvatier2016pymc3} and compared models using leave-one-out cross-validation with ArviZ \citep{kumar2019arviz,vehtari2017loo}. Our Estimated Value model replaces the single utility-curve parameter with an individualised set of subjective values, one for each ordered qualitative outcome, estimated directly from the choices. The contributions of this paper are therefore: (i) an Estimated Value hierarchical Bayesian model that extracts individualised subjective values for ordinal qualitative outcomes without assuming equal spacing; (ii) a direct validation, showing that on monetary data (where objective values exist) the Estimated Value model outperforms a classical utility function and its trembling-hand extension in both samples; (iii) evidence that ambiguity aversion generalises across domains, with strong cross-domain associations in both cohorts; and (iv) simulations that distinguish genuine model advantage from overfitting by varying the noise on the latent generative utility function.
+
+\section{Related work}
+
+\paragraph{Risk and ambiguity attitudes under monetary outcomes.} A substantial line of work has used parametric gambling tasks to measure risk and ambiguity attitudes in healthy adults and clinical populations. \citet{levy2010neural} established that subjective value under risk and under ambiguity share a common neural representation in striatum and medial prefrontal cortex while the two attitudes are behaviourally dissociable. \citet{levy2012measuring} formalised the accompanying experimental-economics protocol---participants choose between a certain gain and a lottery that varies in either outcome probability or ambiguity level, and a power utility function is fit to their choices. This protocol has since been extended to trace lifespan changes \citep{tymula2013lifespan}, the effects of learning interventions \citep{jia2020learning}, sleep deprivation \citep{mullette2015sleep}, and differences induced by brain lesions \citep{clark2008vmpfc}. Across this literature, attitudes towards risk and ambiguity are treated as stable individual-difference measures, though their test-retest and cross-domain stability has been debated \citep{jia2020learning}.
+
+\paragraph{Qualitative and medical outcomes.} Attempts to characterise uncertainty attitudes outside the monetary domain have relied on numeric surrogates. Studies of medical decision-making quantify outcomes as months of extended lifespan or life-years \citep{basu2018vio}, as values placed on multidimensional health states at term pregnancy \citep{bijlenga2007balance}, or as willingness to undergo a screening procedure \citep{yeh2015dense,james2017prostate}. While these approaches are useful for specific clinical questions, they collapse the qualitative structure of the outcome space onto a single axis and cannot capture how an individual weights, for example, ``moderate improvement'' relative to ``complete recovery'' on that individual's own scale.
+
+\paragraph{Clinical relevance of ambiguity attitudes.} Ambiguity aversion has been linked to clinical and subclinical phenotypes. \citet{ruderman2016ptsd} showed that combat veterans with PTSD exhibit heightened aversion specifically to ambiguous losses, and that the degree of aversion mediates the link between combat exposure and anxious-arousal symptoms. \citet{voon2015bed} reviews how decision-making under ambiguity is reshaped across obesity and binge eating disorder, and \citet{yeh2015dense} finds that dense-breast screening notifications reduce screening intentions more strongly in ambiguity-averse women. A framework that extracts individualised subjective values from qualitative medical choices would let this literature move beyond surrogate quantifications.
+
+\paragraph{Hierarchical Bayesian modelling of choice.} Hierarchical Bayesian modelling has become a standard tool for estimating individual-level parameters from behavioural choice data because it exploits partial pooling across participants to stabilise individual estimates \citep{salvatier2016pymc3,kumar2019arviz}. Posterior inference is routinely performed using the No-U-Turn Sampler \citep{hoffman2014nuts}, and competing models are compared with leave-one-out cross-validation on the expected log pointwise predictive density (ELPD) \citep{vehtari2017loo}. We build directly on this tooling and on the power-utility formulation of \citet{levy2012measuring}. Our contribution is to replace the single-parameter utility curve with an individualised vector of estimated subjective values that can be fit equally well to quantitative and qualitative outcomes, and to show that doing so does not cost predictive accuracy---in fact it improves it, even when objective dollar amounts are available. Our Estimated Value model also connects naturally to two foundational ideas in the psychology of value: the non-linear, frame-dependent mapping from objective outcomes to subjective value \citep{kahneman1979prospect} and the dependence of category judgements on the range and frequency of encountered outcomes \citep{parducci1965range}. A single-parameter utility curve cannot easily accommodate either phenomenon, whereas a per-category posterior can.
+
+\section{Materials and methods}
+
+\subsection{Participants}
+
+\paragraph{Study 1 (in-person).} One hundred and one adults were screened by phone to exclude major medical conditions including neurological illness and lifetime Axis~I psychiatric disorders. Ten participants did not complete the study (failed to complete the task $n=4$; failed to come to consecutive sessions $n=6$), leaving ninety-one participants. All remaining participants were administered the Montreal Cognitive Assessment \citep{nasreddine2005moca,fujiwara2010mocaj}. Data from participants scoring less than 26 on the MoCA were excluded, resulting in a sample of seventy-one cognitively healthy participants (32 females; age range 18--88; mean 49.68, SD $\pm$22.3). Of these, three participants failed six or more attention checks in the risk and ambiguity task and were removed; a further two participants chose the lottery fewer than two times and were omitted because the choice function requires response variability to estimate individual parameters. The final in-person analysis sample thus contained $n=66$ participants.
+
+\paragraph{Study 2 (online).} Four hundred and four adults were recruited via Amazon Mechanical Turk; seventy-two did not complete the study, leaving three-hundred and thirty-two participants for analysis (212 females; age range 20--80; mean 49.362, SD $\pm$14.849). All online participants provided consent online after reading a detailed explanation of the study, following Yale Human Investigation Committee guidelines.
+
+\subsection{Decision-making task}
+
+The task was adapted from a previously developed protocol \citep{levy2012measuring}. On each trial, participants chose between a small certain gain (\$5 in the monetary domain or ``slight improvement'' in the medical domain) and a lottery that offered one of four more-favourable outcomes. Monetary outcomes were \$5, \$8, \$12 and \$25; medical outcomes were slight, moderate, major and complete recovery within a hypothetical scenario in which a participant had been in a car accident and sustained a spinal injury. On risky trials the outcome probability was fully disclosed via red-and-blue bar proportions on a bag of chips; three probabilities were used (25\%, 50\% and 75\%). On ambiguous trials the centre of the bag was obscured by a grey rectangle, so that the probability was only partially known; three occluder sizes (24\%, 50\% and 74\%) determined the range of possible probabilities. Each combination of outcome and uncertainty level was presented four times in the in-person study; twelve trials asked participants to choose between \$5 for sure and a chance to win \$5, and were used as attention checks. Participants in the online study completed a similar task with two differences: each combination was presented twice rather than four times, and an additional condition of 100\% ambiguity was introduced. Figure~\ref{fig:task} illustrates the four task scenarios.
+
+\subsection{Modelling approach}
+
+We used hierarchical Bayesian modelling to estimate subject-level choice parameters with partial pooling across individuals. The Classical Utility Model defines the subjective value of a lottery as
+\begin{equation}
+SV = \left(P - \beta \cdot \tfrac{A}{2}\right)\, V^{\alpha},
+\label{eq:classical}
+\end{equation}
+where $P$ is the outcome probability (0.25, 0.5 or 0.75 on risky trials; 0.5 on ambiguous trials; 1 on the certain option), $A$ is the ambiguity level (0 on risky and certain trials; 0.24, 0.5 or 0.74 on ambiguous trials), $V$ is the potential winnings (5, 8, 12 or 25 dollars for the lotteries and 5 dollars for the sure bet), $\alpha$ is the subject-level risk-attitude parameter and $\beta$ is the subject-level ambiguity-attitude parameter \citep{levy2012measuring}. The probability of choosing the lottery on each trial was modelled by a logistic choice function with inverse temperature $\gamma$,
+\begin{equation}
+p(\text{lottery}) = \frac{1}{1 + \exp\!\big(-\gamma\,(SV_{\text{lottery}} - SV_{\text{sure}})\big)}.
+\label{eq:logistic}
+\end{equation}
+We also fit a ``trembling-hand'' variant of the logistic choice function in which a small lapse rate attenuates the dependency between the risk and ambiguity parameters and the slope of the logistic,
+\begin{equation}
+p_{\text{TH}}(\text{lottery}) = (1 - 2\epsilon)\,\frac{1}{1 + \exp\!\big(-\gamma\,(SV_{\text{lottery}} - SV_{\text{sure}})\big)} + \epsilon,
+\label{eq:trembling}
+\end{equation}
+with $\epsilon$ treated as a per-subject parameter that captures occasional random responses \citep{wu2016loss}.
+
+In the medical domain the objective value $V$ is not numerically defined. To address this, we introduced the \emph{Estimated Value} model, which assumes the outcomes are ordinal (e.g.\ slight improvement $<$ moderate improvement) and models the subjective value of each outcome category as the cumulative sum of the subjective values of the preceding categories plus an additive increment:
+\begin{equation}
+SV_i = \left(P - \beta \cdot \tfrac{A}{2}\right) \cdot \sum_{j \le i} \nu_j,
+\label{eq:estvalue}
+\end{equation}
+where $\nu_j$ is the positive added value of category $j$. Because values are individually tailored to each outcome and each participant, the risk-attitude parameter $\alpha$ is absorbed into the $\nu_j$ and is therefore not estimated separately in this model. As a reference point, we also fit a No-Subjective-Parameters baseline model in which the category level (1 for slight, 2 for moderate, etc.) is used in place of $V$ in Equation~\ref{eq:classical}; this ``straw-man'' model carries no subject-specific value parameters beyond risk and ambiguity and serves as a reference for the Estimated Value model's fit.
+
+\paragraph{Priors and inference.} The same priors were used for both samples and were chosen based on previous data \citep{levy2012measuring}, with a slightly risk-averse prior mean of $\alpha = 0.72$ and a slightly ambiguity-averse prior mean of $\beta = 0.65$. Hyperpriors allowed the group-level distribution to shift away from these anchors when warranted by the data. Posterior inference used the No-U-Turn Sampler \citep{hoffman2014nuts} as implemented in PyMC 4.1.7 \citep{salvatier2016pymc3}, with the package defaults of 1000 draws, 1000 tuning steps, no thinning, and an 80\% target acceptance rate. All models converged with $\hat{R} < 1.01$ and effective sample size greater than 1000. We used ArviZ 0.17.1 \citep{kumar2019arviz} to compute the expected log pointwise predictive density (ELPD) by leave-one-out cross-validation \citep{vehtari2017loo} for model comparison; higher LOO indicates better predictive fit. All analyses were performed in Python 3.10.14.
+
+\subsection{Simulations}
+
+Because the Estimated Value model has additional degrees of freedom, any apparent fit advantage could in principle reflect overfitting. We therefore simulated synthetic participants who chose by the Classical Utility model, and we introduced Gaussian noise on $\alpha$ and $\beta$ with mean 0 and varying standard deviation; $\alpha$ was clipped to [0.1, 1.6] and $\beta$ to [$-$1.4, 1.4] to ensure convergence. We swept the sample size $N$ and the noise SD across the following seven $(N, \text{noise})$ combinations: $(30, 0.1)$, $(30, 0.3)$, $(30, 0.5)$, $(60, 0.3)$, $(60, 0.5)$, $(120, 0.5)$ and $(300, 0.5)$. For each combination we compared LOO values and LOO weights for the Estimated Value model and the Classical Utility model.
+
+\section{Results}
+
+Demographic characteristics of the two analysis samples are summarised in Table~\ref{tab:demographics}. Sixty-six participants in the in-person sample and 332 participants in the online sample completed the task described above. Our goals were to (i) extract subjective values from choices over qualitative outcomes, (ii) validate these estimated values against a classical utility function on data for which objective dollar amounts were available, and (iii) test whether individual uncertainty attitudes generalise across decision domains. Results from the in-person sample are reported first in each subsection, followed by the independent online replication.
+
+\subsection{Extracting quantitative values from qualitative outcomes}
+
+The central methodological question is whether a hierarchical Bayesian model can extract stable, individualised subjective values from choices over qualitative outcomes that do not share a common numeric scale. To answer it we applied the Estimated Value model (Equation~\ref{eq:estvalue}) to the medical decision data in both samples, and for comparison we also fit the No-Subjective-Parameters baseline (which replaces $V$ with the category index). Model fit was compared with leave-one-out cross-validation on the ELPD \citep{vehtari2017loo}.
+
+In both samples, the Estimated Value model provided a superior fit to the medical data under LOO compared with the No-Subjective-Parameters baseline (Table~\ref{tab:loo}). We then extracted the posterior mean of the added value per category for each participant. In the in-person sample, the mean added value for ``slight improvement'' was 6.93 (SD 1.79), and this value increased by 9.00 (SD 2.62) for ``moderate improvement'', by a further 7.04 (SD 2.89) for ``major improvement'', and finally by 4.18 (SD 2.41) for ``complete recovery'' (Figure~\ref{fig:values}A). In the online replication sample, the added value for ``slight improvement'' was 8.63 (SD 2.54), which increased by 12.62 (SD 4.25) for the next category, by 4.66 (SD 2.56) for the subsequent category and by 2.37 (SD 1.61) for ``complete recovery'' (Figure~\ref{fig:values}C).
+
+Two observations stand out. First, the spacing of the added values is not uniform: in the in-person medical data the largest step is from ``slight'' to ``moderate'' and the smallest is the final step to ``complete recovery'', while in the online data the largest step is again the second one but the tail-end steps are compressed. This pattern of compression towards the upper end is exactly what a fixed-spacing or equal-category-distance model would miss. Second, individual participants' curves deviate substantially from the group mean (visible in the per-participant scatter of Figure~\ref{fig:values}A,C), indicating that the Estimated Value model is not simply recovering the group-level hyperprior but is learning subject-specific posterior distributions over category values. Together, these results establish that individualised quantitative values can be extracted from qualitative choice data.
+
+\subsection{Model validation against a classical utility function}
+
+Having shown that the Estimated Value model fits qualitative data, we next asked whether it also fits quantitative data---where a classical utility function with access to objective dollar amounts is expected to do well. This is the strongest possible test of the model, because it pits the Estimated Value model against competitors that have strictly more information about the outcomes.
+
+We fit four models to the monetary decision data of both samples: the Estimated Value model (Equation~\ref{eq:estvalue}), a Classical Utility model (Equation~\ref{eq:classical}), a Classical Utility with Trembling-Hand choice function, and the No-Subjective-Parameters baseline. The Estimated Value model achieved the highest LOO in both samples (Table~\ref{tab:loo}), despite not being given the objective dollar amounts that the Classical Utility models have access to. The added monetary values recovered by the model were internally consistent with the dollar ladder. In the in-person sample the value for \$5 was 7.22 (SD 1.60), increasing by 4.13 (SD 1.47) for \$8, by 6.23 (SD 2.18) for \$12, and by 8.77 (SD 3.41) for \$25 (Figure~\ref{fig:values}B). In the online replication the corresponding added values were 10.91 (SD 2.72) for \$5, +4.13 (SD 1.84), +5.04 (SD 2.35) and +3.92 (SD 2.18) for the higher amounts (Figure~\ref{fig:values}D).
+
+The pattern of monetary added values is informative in two ways. The in-person sample shows increasing increments, consistent with a convex, non-linear mapping from dollars to subjective value that the Classical Utility's single-parameter power function cannot easily accommodate when different participants show different curvatures. The online sample shows the opposite compression pattern, with decreasing increments beyond the \$8 step. Such cross-sample heterogeneity is a natural feature of empirical data and illustrates why a flexible per-category representation outperforms a single utility curve: different cohorts can, and do, deviate from a single functional form.
+
+\subsection{Cross-domain association in ambiguity aversion}
+
+A natural follow-up question is whether the uncertainty-attitude parameters estimated within each domain reflect a stable individual trait that generalises across domains. We tested this for the ambiguity parameter $\beta$, which is directly comparable across domains because it quantifies the additional discount applied when probabilities are not known, independent of the absolute magnitudes of the outcomes.
+
+Using robust regression \citep{wu2016loss}, we found that medical $\beta$ was strongly and positively associated with monetary $\beta$ in the in-person sample, with a mean posterior slope of 0.76 and an 89\% highest density posterior interval of [0.63, 0.91] (Figure~\ref{fig:cross}). The relationship replicated in the online sample, with a mean slope of 0.37 and 89\% HDPi [0.29, 0.44] (Figure~\ref{fig:cross}). The in-person slope is larger than the online slope, but both intervals exclude zero by a wide margin, so the qualitative conclusion---that ambiguity aversion is a domain-general trait---holds in both samples.
+
+It is important to note that an analogous cross-domain comparison cannot be performed for risk attitude $\alpha$ within our framework. Because the Estimated Value model absorbs the risk-attitude curvature into the per-category subjective values, there is no single $\alpha$ parameter to compare across domains. Ambiguity, by contrast, modulates choices within a domain by an amount that is independent of the value ladder of that domain, which makes it structurally comparable across domains. Our data therefore provide direct evidence for the cross-domain stability of ambiguity aversion, but leave open the question of whether risk attitudes generalise in the same way.
+
+\subsection{Simulations distinguish genuine fit from overfitting}
+
+A model with additional degrees of freedom can in principle win LOO comparisons by fitting noise rather than signal. To rule out this explanation, we simulated synthetic participants who made choices according to the Classical Utility model, injected Gaussian noise on the $\alpha$ and $\beta$ parameters with varying standard deviation, and examined which model won under LOO as a function of simulated sample size $N$ and noise level (Figure~\ref{fig:sims}).
+
+The pattern was clear. At the lowest noise level tested (SD 0.1) with $N = 30$, the Classical Utility model provided the better fit, as it should: the data were generated from the Classical Utility model with negligible deviation from its parametric form, and the Estimated Value model's extra flexibility was appropriately penalised by LOO. As noise increased to 0.3 or 0.5, however, the Estimated Value model won the comparison regardless of the simulated sample size (including $N=30$, $N=60$, $N=120$ and $N=300$). In other words, the Estimated Value model's advantage is not a free lunch of flexibility; it appears only when the data depart from the parametric assumptions of the Classical Utility function, which empirical human data in fact do. These simulations provide the mechanistic interpretation of the LOO-based model comparison on real data: the Estimated Value model does not overfit in the low-noise regime, yet it outperforms the Classical Utility function precisely when the generative process has real subject-level heterogeneity.
+
+\begin{table}[htbp]
+\centering
+\caption{Demographic description of the in-person and online samples analysed in this study. Sample numbers reflect post-exclusion analysis samples (see Methods).}
+\label{tab:demographics}
+\begin{tabular}{lcc}
+\toprule
+Characteristic & In-person (analysis $n=66$) & Online ($n=332$) \\
+\midrule
+Female participants & 32 & 212 \\
+Age range (years) & 18--88 & 20--80 \\
+Mean age (years) & 49.68 & 49.362 \\
+SD of age (years) & 22.3 & 14.849 \\
+MoCA screening & Yes ($<26$ excluded) & No \\
+Post-screening $n$ & 71 (cognitively healthy) & 332 \\
+Task-based exclusions & 3 (attention), 2 (choice variability) & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Leave-one-out cross-validation (LOO) ranking of models in each domain and sample. Rank 1 denotes the best-fitting model under ELPD.}
+\label{tab:loo}
+\begin{tabular}{llcc}
+\toprule
+Model & Domain & In-person rank & Online rank \\
+\midrule
+Estimated Value (Eq.~\ref{eq:estvalue})              & Medical  & 1 & 1 \\
+No-Subjective-Parameters                             & Medical  & 2 & 2 \\
+Estimated Value (Eq.~\ref{eq:estvalue})              & Monetary & 1 & 1 \\
+Classical Utility (Eq.~\ref{eq:classical})           & Monetary & 2 & 2 \\
+Classical Utility + Trembling-Hand                   & Monetary & 3 & 3 \\
+No-Subjective-Parameters                             & Monetary & 4 & 4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Estimated added subjective values per outcome category, posterior mean (SD) across participants. Values are the increment relative to the preceding category; ``slight'' and ``\$5'' are the first steps rather than increments.}
+\label{tab:values}
+\begin{tabular}{lcccc}
+\toprule
+Sample / Domain & Step 1 & Step 2 & Step 3 & Step 4 \\
+\midrule
+In-person, medical  & 6.93 (1.79) & +9.00 (2.62) & +7.04 (2.89) & +4.18 (2.41) \\
+In-person, monetary & 7.22 (1.60) & +4.13 (1.47) & +6.23 (2.18) & +8.77 (3.41) \\
+Online, medical     & 8.63 (2.54) & +12.62 (4.25) & +4.66 (2.56) & +2.37 (1.61) \\
+Online, monetary    & 10.91 (2.72) & +4.13 (1.84) & +5.04 (2.35) & +3.92 (2.18) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Simulation grid: winning model in LOO comparison as a function of simulated sample size $N$ and Gaussian noise SD on the generative $\alpha$ and $\beta$. Dashes indicate combinations not tested in the extraction grid.}
+\label{tab:sims}
+\begin{tabular}{lccc}
+\toprule
+$N$ \textbackslash\ Noise SD & 0.1 & 0.3 & 0.5 \\
+\midrule
+30  & Classical & Estimated & Estimated \\
+60  & --        & Estimated & Estimated \\
+120 & --        & --        & Estimated \\
+300 & --        & --        & Estimated \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1_task_schematic.pdf}
+\caption{Task design. On every trial participants choose between a certain option (left) and an uncertain lottery (right). In risky trials (A, C) outcome probabilities are fully disclosed by red and blue bar proportions; in ambiguous trials (B, D) the centre of the bag is occluded by a grey rectangle, leaving the probability only partially known. Outcome probabilities in risky trials were 25\%, 50\% and 75\%; occluder sizes in ambiguous trials were 24\%, 50\% and 74\%. Monetary outcomes on the right side were \$5, \$8, \$12 and \$25; medical outcomes were slight, moderate, major and complete recovery, paired with a certain option of \$5 or ``slight improvement'' respectively.}
+\label{fig:task}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig2_estimated_values.pdf}
+\caption{Added subjective values extracted by the Estimated Value model. Each bar is the posterior mean of the added value for the corresponding outcome category (increment relative to the preceding category), with error bars showing one standard deviation across participants. Panels A and C show medical outcomes, panels B and D show monetary outcomes; top row is the in-person sample ($n=66$) and bottom row the online sample ($n=332$).}
+\label{fig:values}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{figures/fig3_cross_domain.pdf}
+\caption{Cross-domain association in ambiguity aversion ($\beta$). Points show the posterior mean slope of a robust regression of medical $\beta$ on monetary $\beta$; error bars show the 89\% highest density posterior interval. The association is strongly positive in both the in-person sample (slope = 0.76, 89\% HDPi [0.63, 0.91]) and the online sample (slope = 0.37, 89\% HDPi [0.29, 0.44]), indicating that ambiguity aversion is a trait that generalises across decision domains.}
+\label{fig:cross}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{figures/fig4_simulations.pdf}
+\caption{Simulation results. Each coloured cell is a simulated participant group characterised by its sample size $N$ and the standard deviation of Gaussian noise injected on the generative $\alpha$ and $\beta$ parameters. The cell colour indicates which model achieves higher LOO: the Classical Utility model wins only at the lowest noise level (SD = 0.1); at higher noise the Estimated Value model wins regardless of sample size. Grey cells were not tested in the extracted simulation grid.}
+\label{fig:sims}
+\end{figure}
+
+\section{Discussion}
+
+Our study aimed to quantify the subjective values of qualitative outcomes and to characterise individual uncertainty attitudes when such outcomes are on the table. Through hierarchical Bayesian modelling, we estimated the values that participants implicitly assigned to different qualitative outcomes and assessed their ambiguity attitudes both within and across a qualitative (medical) and a quantitative (monetary) domain. Across two independent samples---66 in-person participants and 332 online participants---our Estimated Value model provided a superior fit over a classical utility function and over a no-subjective-parameter baseline, and it revealed a strong cross-domain association in ambiguity aversion. These findings demonstrate that quantitative measures of subjective value can be extracted from qualitative choice data without surrogate numeric scales, and that when this is done the resulting model in fact outperforms a classical utility function on data for which objective dollar amounts are available.
+
+One of the enduring challenges in decision-making research is how to treat outcomes that differ qualitatively \citep{bijlenga2007balance,basu2018vio}. Theoretically, comparing outcomes that lack a common metric is difficult \citep{trimmer2011bayesians}; methodologically, traditional paradigms depend on quantitative measures \citep{levy2012measuring}; and statistically, modelling categorical outcomes typically requires either an arbitrary distance assumption or an outcome-feature surrogate. Our Estimated Value model sidesteps these issues by estimating individualised subjective values directly from the choices, with no assumption that categories are equidistant. This is particularly relevant in the medical domain, where diagnoses and treatment outcomes are intrinsically qualitative yet clinically central \citep{james2017prostate}. Our framework opens the door to neuroimaging and computational-psychiatry studies in which qualitative outcomes can be parametrically regressed on brain activity or on symptom scales, without forcing a mapping onto life-years or milligrams of medication.
+
+The finding that ambiguity aversion generalises across domains is perhaps the most immediately useful result for clinical and neuroeconomic applications. Previous work had shown that ambiguity attitudes are less stable over time than risk attitudes \citep{jia2020learning} and had found mixed evidence on their neural substrates. Our cross-domain slopes---0.76 (89\% HDPi [0.63, 0.91]) in-person and 0.37 (89\% HDPi [0.29, 0.44]) online---show that when two different domains are probed in the same individual within the same session, ambiguity aversion emerges as a genuinely general trait. Risk attitudes cannot be compared in the same straightforward way, because in the Estimated Value model the risk-attitude curvature is absorbed into the per-category subjective values. Future work that disentangles the risk component from the estimated values would be a natural extension of our approach and would let researchers test whether risk attitudes, like ambiguity attitudes, generalise across domains.
+
+In the monetary domain we showed that our model fits the data better than a classical utility function, and we used two independent tools to guard against overfitting. The first was leave-one-out cross-validation \citep{vehtari2017loo}, which penalises models for unwarranted flexibility; the Estimated Value model won LOO in both samples. The second was a simulation study in which we generated synthetic data from the Classical Utility model and observed that the Estimated Value model loses only in the low-noise regime (SD = 0.1 at $N=30$) and wins whenever the generating noise is large enough to drive meaningful deviations from the parametric form. Because human participants' data are in fact noisy departures from any single utility curve, this simulation pattern directly explains why the Estimated Value model wins on real data. Beyond the raw fit advantage, the additional flexibility creates a natural home for classic phenomena that a single utility curve cannot handle: framing effects \citep{kahneman1979prospect} and range-frequency effects \citep{parducci1965range} both predict that the curvature of the value mapping varies with the outcome set and context, and a per-category posterior can accommodate both.
+
+Our study has several limitations that are worth noting. The estimated subjective values are on a relative scale without absolute units, which precludes direct comparison of value magnitudes across domains. The medical scenario was hypothetical---participants did not actually receive the treatments or their outcomes---and the hypothetical framing was chosen deliberately to match the monetary condition in which lottery outcomes were also not paid out. We excluded participants with MoCA scores below 26 \citep{nasreddine2005moca} and those who failed the attention checks or chose the lottery fewer than two times; the resulting in-person sample is small ($n=66$), though the 332-participant online replication addresses the concern about sample size. Finally, we did not separately estimate a risk-attitude parameter for the Estimated Value model, which limits what we can say about the cross-domain stability of risk.
+
+Taken together, our results introduce an Estimated Value model that assigns quantitative values to qualitative outcomes and show that this model is preferred by LOO cross-validation in both samples and both domains. By providing a better fit to quantitative data---where a classical utility function with access to objective outcomes might have been expected to win---the model earns the credibility needed to trust its estimates in the qualitative domain. This opens new avenues for examining the representation of value in the brain, for characterising individual traits in clinical populations \citep{ruderman2016ptsd,voon2015bed}, and for studying real-world decisions where outcomes resist a single numeric scale \citep{yeh2015dense,james2017prostate,basu2018vio}. More broadly, it argues that individualised, category-specific posteriors are a useful computational primitive for decision science, and that the assumption of a single utility curve---while elegant---should be treated as a special case rather than a default.
+
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,176 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{authblk}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{Penalised Multivariate Regression Improves Imputation of Sample-Level Cell-Type-Specific Expression from Mixed-Cell RNA-seq Compared with Domain-Specific Deconvolution Methods}
+
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Gene expression studies often use bulk RNA sequencing of mixed cell populations because single cell or sorted cell sequencing may be prohibitively expensive. However, mixed-cell studies may miss expression patterns that are restricted to specific cell populations. Computational deconvolution can be used to estimate cell fractions from bulk expression data and infer average cell-type expression in a set of samples (e.g. cases or controls), but imputing sample-level cell-type expression --- required for more detailed analyses, such as relating expression to quantitative traits --- is less commonly addressed. Here, we assessed the accuracy of imputing sample-level cell-type expression using a real dataset in which mixed peripheral blood mononuclear cells (PBMC) and sorted (CD4, CD8, CD14, CD19) RNA-seq data were generated from the same subjects ($N=158$), and pseudobulk datasets synthesised from eQTLgen single-cell RNA-seq data. We compared three domain-specific methods --- CIBERSORTx~\citep{newman2019cibersortx}, bMIND~\citep{wang2021bmind} and debCAM/swCAM~\citep{chen2022swcam,wang2016debcam} --- and two cross-domain machine-learning methods, multiple-response LASSO and ridge regression~\citep{tibshirani1996lasso,hoerl1970ridge,friedman2010glmnet}, that had not been used for this task before. We also assessed the methods according to their ability to recover differential gene expression (DGE) results. LASSO and ridge regression achieved higher sensitivity but lower specificity for recovering DGE signals compared with deconvolution methods, yet obtained higher area under the receiver operating characteristic curve (AUC). Imputed log2 fold changes were systematically attenuated across all methods (average slopes 0.60--0.70 for CIBERSORTx inbuilt, 0.64--0.76 for CIBERSORTx custom, 0.66--0.85 for bMIND, 0.55--0.90 for swCAM, 0.69--0.76 for LASSO and 0.68--0.76 for ridge), indicating that imputed data should be used for direction/detection rather than unbiased fold-change estimation. Machine-learning methods have the potential to outperform domain-specific methods when suitable training data are available.
+\end{abstract}
+
+\section{Introduction}
+Tissues are heterogeneous environments comprising many cell populations. In immune-mediated diseases, gene expression profiling of immune cells has identified subsets of genes characterising disease prognosis~\citep{avila2020immune,avilapedretti2021jia}, enabling better discrimination of disease pathogenesis than at mixed cell level~\citep{avila2019treatment}. Studying cell-type-specific expression has revealed gene signatures, such as CD8 T-cell exhaustion, that predict disease course~\citep{mahnke2013cd8exhaustion}. However, flow-sorting cell types followed by RNA extraction for parallel expression profiling is labour- and resource-intensive. Single-cell RNA sequencing (scRNA-seq) is more robust to several of these factors but is expensive, especially in large-scale studies with many subjects~\citep{stoeckius2017citeseq,mcdavid2019scrnacost}. These bottlenecks mean many studies of immune cells still use mixed populations, such as peripheral blood mononuclear cells (PBMC), which hinders the discovery of genes that exert their roles in a cell-type-specific manner.
+
+Computational deconvolution of cell-specific transcriptomes from mixed-cell RNA-seq data provides an alternative. Observed gene expression in a mixture is typically modelled as the weighted sum of cell-type-specific expression~\citep{newman2015cibersort,shen2010cssam,macparland2018scrna}:
+\begin{equation}
+m = H \, f,
+\end{equation}
+where $m$ is the vector of observed gene expression profiles of $n$ genes, $H$ is a latent $n \times c$ matrix representing gene expression profiles in each of $c$ cell types, and $f$ is a vector of cell fractions. While our goal is to impute cell-type-specific expression for each individual, $H$ is often treated as constant across a population, or a subgroup, yielding a single $H_1$. The sample-level cell-type expression profiles for a cohort may be written as $G$ ($n \times c \times k$), where $k$ is the number of samples. Many deconvolution methods first estimate $f$ from a predefined cell-type signature matrix (supervised) or directly (unsupervised)~\citep{racle2017epic,finotello2019quantiseq,hao2019fardeep,newman2015cibersort,wang2016debcam}.
+
+Fraction-deconvolution methods differ in the regression models or optimisation strategies used to minimise the sum of squares between fitted expression and $m$, and in preprocessing and assumptions about unknown cell types. For example, EPIC~\citep{racle2017epic} and quanTIseq~\citep{finotello2019quantiseq} employ constrained least-squares regression; FARDEEP~\citep{hao2019fardeep} implements adaptive least trimmed squares to remove expression outliers; and CIBERSORT~\citep{newman2015cibersort} uses linear $\nu$-support vector regression that is robust to noise and collinearity. CIBERSORTx~\citep{newman2019cibersortx} extends CIBERSORT, first estimating $f$ using a predefined signature and then estimating average cell-type expression in a set of samples conditional on $f$ using non-negative least squares (NNLS). Other supervised methods such as Rodeo~\citep{gong2011rodeo} and csSAM~\citep{shen2010cssam} likewise estimate an average cell-type expression matrix. Unsupervised methods decompose the bulk matrix directly but require additional scRNA-seq data to annotate results~\citep{wang2016debcam,wang2019bulk}.
+
+Only five out of ten existing methods have developed strategies to impute sample-level cell-type expression~(S1 Table): CIBERSORTx~\citep{newman2019cibersortx}, CellR~\citep{mehran2021cellr}, MIND~\citep{wang2020mind}, bMIND~\citep{wang2021bmind} and swCAM~\citep{chen2022swcam}. CIBERSORTx iteratively applies bootstrapped NNLS to estimate sample-level cell-type coefficients for each gene. CellR models sample-level expression as a negative-binomial function of counts and uses simulated annealing. MIND uses an expectation--maximisation algorithm across multiple transcriptomes per subject. bMIND extends this via a Bayesian mixed-effects model using Markov chain Monte Carlo. swCAM builds on debCAM~\citep{wang2016debcam} and uses low-rank matrix factorisation, assuming variation arises from a small number of functional modules.
+
+While fraction-prediction accuracy has been extensively benchmarked~\citep{cobb2020deconvbench,jin2021scscores,sturm2019benchmark}, less is known about the accuracy of deconvolution-based methods in imputing cell-type-specific expression at the sample level. Here we use RNA-seq from mixed and sorted populations from the same individuals, and pseudobulk datasets generated from eQTLgen scRNA-seq~\citep{oosterhoff2023eqtlgen}, to examine the accuracy of CIBERSORTx, bMIND and swCAM. We excluded CellR (requires predefined scRNA-seq clusters) and MIND (requires multiple bulk measurements per subject). We compare these domain-specific approaches with general machine-learning methods --- multivariate LASSO~\citep{tibshirani1996lasso} and ridge regression~\citep{hoerl1970ridge} --- that are not bound by the deconvolution equation and instead learn $G_{\cdot,j,\cdot}$ for each cell type $j$ given paired training data.
+
+\section{Methods}
+\subsection{Study subjects and sample handling}
+Data came from 158 subjects recruited in the CLUSTER Consortium. Approximately 80\% of subjects ($N=126$) have juvenile idiopathic arthritis (JIA)~\citep{petty2012jia}; the remainder are healthy controls from adults and children. About 58\% of subjects are female ($N=91$). Peripheral blood samples were obtained in accordance with ethics approved by the London-Bloomsbury Research Ethics Committee (REC 05/Q0508/95, 95RU04 and 11/LO/0330). Blood was collected in heparinised tubes and PBMC were isolated by density gradient centrifugation with Lymphoprep. Isolated PBMC were sorted using BD FACSAria III into CD4, CD8, CD14 and CD19 populations using antibodies against CD4-BV711, CD8-APC, CD14-FITC, CD19-PE-Cy7, and CD3-BV605; DAPI excluded dead cells. Sorted cell purity was on average $>$90\%.
+
+\subsection{RNA sequencing and processing}
+Unsorted PBMC and sorted cells were extracted with PicoPure RNA Isolation Kit. RNA samples with RIN $\geq 5.0$ and library concentration $\geq 4.5$~nM ($\sim$0.7~ng/\textmu L) were selected for sequencing. Libraries were prepared with Illumina TruSeq mRNA stranded v2 or Roche Kapa mRNA HyperPrep and sequenced in four batches on an Illumina NovaSeq6000. Samples from the same subjects were sequenced in the same batch and ComBat-seq~\citep{zhang2020combatseq} was used to minimise batch effects. Reads ($2\times100$~bp) were aligned to GRCh38 using STAR~\citep{dobin2013star} with gene annotation Homo\_sapiens.GRCh38.103.gtf, options \texttt{--twopassMode Basic} and \texttt{--sjdbOverhang 99}. PCR duplicates were identified using alignment coordinates with up to 1 UMI mismatch using the je suite~\citep{girardot2016je}. featureCounts~\citep{liao2014featurecounts} summarised reads over gene features, producing a read-count table per batch. The pipeline was implemented as RSSnextflow under Nextflow~\citep{di2017nextflow}. A total of 723 RNA-seq samples from 158 subjects with PBMC and at least one cell-type were used downstream. Genes were filtered using the edgeR \texttt{filterByExpr} function~\citep{robinson2010edger,chen2016filterbyexpr}, removing genes with counts-per-million $<0.836$ (10 reads in the median library of 11.95~M reads) in fewer than 96 samples, and genes with fewer than 15 total reads. Transcripts per million (TPM) were then calculated.
+
+\subsection{Training/testing split}
+Of 158 subjects, 80 with complete RNA-seq data across all four sorted cells and PBMC formed the training set. The remaining 78 subjects (PBMC plus partial sorted data) formed the test set, with per-cell counts CD4: 71, CD8: 65, CD14: 52, CD19: 57. Sequencing batch did not differ significantly between training and testing sets (Chi-squared test $p > 0.05$).
+
+\subsection{eQTLgen pseudobulk data}
+Pseudobulk data were generated from scRNA-seq downloaded from the eQTLgen consortium (\url{https://eqtlgen.org/sc/datasets/1m-scbloodnl-dataset.html}) as of 26 September 2024. This dataset includes PBMC from 120 healthy Europeans under seven conditions (unstimulated UA; and in vitro stimulation with C. albicans CA, M. tuberculosis MTB, P. aeruginosa PA at 3h and 24h) across two sequencing chemistries (V2 and V3)~\citep{oosterhoff2023eqtlgen}. We retained 19{,}927 genes common to both chemistries, excluded 35 with chromosome mismatches and 4{,}762 not in GRCh38.103, yielding 15{,}165 genes. Following Jaakkola and Elo~\citep{jaakkola2022pseudobulk}, cell-type fractions were drawn from a normal distribution matching the observed mean and standard deviation. The average percentages (SD) were 42.74\% (4.30) for CD4, 28.12\% (2.40) for CD8, 26.29\% (6.21) for CD14 and 2.85\% (0.36) for CD19, standardised to sum to 1. Three pseudobulk datasets of 160 samples each were simulated; for every sample, cell-type read counts were summed over 5000 cells drawn from the matched condition/chemistry pool in proportion to the sampled cell fractions, and bulk expression was the sum over the four cell types. Each dataset was processed with or without ComBat-seq (batch factor = chemistry), giving six datasets. Training sizes were varied from 25\% ($N=20$) to 100\% ($N=80$) of training samples while keeping the test set fixed. Low-expressed genes were filtered with edgeR \texttt{filterByExpr}; gene counts ranged from 11{,}964 to 12{,}464 across pseudobulk datasets.
+
+\subsection{Signature matrices and cell-type specific genes}
+Two signature matrices were used with CIBERSORTx: the inbuilt LM22 (derived from microarray expression of 22 leukocyte subsets~\citep{newman2015cibersort}) and a custom signature built from our sorted-cell TPM in the training set using the CIBERSORTxFractions module (\texttt{--G.min 300 --G.max 500 --q.value 0.01 --QN FALSE --single\_cell FALSE}). In CLUSTER data, the inbuilt matrix contained $N=547$ genes and the custom one $N=1589$ genes, attributed to the dynamic ranges of microarray versus RNA-seq. Cell-type-specific genes for debCAM were selected using OVE.FC (one-versus-everyone fold change) criteria of 1, 2, 5 and 10; 1247 genes were selected at OVE.FC $=10$ to match the custom signature size. For the eQTLgen data, a custom signature was derived from synthesised pure-cell expression in training samples.
+
+\subsection{CIBERSORTx, bMIND and debCAM/swCAM}
+CIBERSORTx was run locally. CIBERSORTxHiRes was used with RNA-seq defaults and \texttt{--variableonly TRUE}. For LM22, additional arguments \texttt{--classes} and \texttt{--rmbatchBmode} were used to aggregate to 11 major leukocytes and minimise platform differences. CD4, CD8, CD14 and CD19 LM22 fractions were derived from their shared-lineage subsets: CD4 $=$ naive, memory resting, memory activated, follicular helper and regulatory (Tregs); CD8 $=$ T cells CD8; CD14 $=$ Monocytes + Macrophages M0/M1/M2; CD19 $=$ naive and memory B cells. Proportions were rescaled to sum to 1 and imputed expression log2-transformed for evaluation. bMIND fraction deconvolution used the custom signature with the \texttt{bMIND} function in the MIND package~\citep{wang2021bmind}. Cell-type-specific markers (10-fold over-expressed in one cell type) were supplied to debCAM's \texttt{AfromMarkers} for estimating fractions~\citep{wang2016debcam}. bMIND and swCAM were then run in supervised mode using the flow-cytometry fractions (or designated ones in eQTLgen) and log2(TPM+1) PBMC expression. swCAM~\citep{chen2022swcam} used 10-fold cross-validation to select lambda by RMSE between masked and imputed expression (\texttt{script-swCAM-cv.R}); lambda $=800$, PBMC TPM, true fractions and group expression (from NNLS) were used in \texttt{sCAMfastNonNeg} for final imputation. Estimates were log2-transformed.
+
+\subsection{LASSO/ridge training and prediction}
+We fit multi-response penalised regression models in which a set of target genes in a cell type is predicted jointly from PBMC expression. The multi-response group penalty shrinks a predictor's coefficients to zero for all targets simultaneously; non-zero coefficients take distinct values per target. Target genes were grouped into chunks by hierarchical clustering on Euclidean distances of log2 TPM expression in the training data for each cell type, with chunk size $\leq 500$ genes. Large chunks were re-clustered and cut using the \texttt{cutreeDynamic} function~\citep{langfelder2008wgcna} with minimum cluster size starting at 250, reducing by steps of 5, until all chunks had $<500$ genes. The number of chunks (with size ranges) in CLUSTER were 74 (49--481) for CD4, 71 (71--493) for CD8, 76 (76--496) for CD14 and 83 (41--486) for CD19. In the 24 pseudobulk datasets, total chunk counts (size ranges) were 1358 (4--500) for CD4, 1306 (8--498) for CD8, 1533 (3--499) for CD14 and 1180 (2--497) for CD19. For each chunk, a penalised multi-response linear regression (LASSO or ridge) was fit with PBMC TPM on the log2(TPM+1) scale using \texttt{glmnet}~\citep{friedman2010glmnet}; \texttt{family=mgaussian}, \texttt{type.measure=mse}, \texttt{alpha=1} (LASSO) or \texttt{alpha=0} (ridge), and 5-fold cross-validation via \texttt{cv.glmnet}. The \texttt{predict} function was used for imputation.
+
+\subsection{Performance measures}
+Predicted fractions were compared to flow cytometry with Pearson correlation ($r$) and root-mean-square error (RMSE). Correlations and RMSE per gene were computed between imputed and observed log2 expression. For differential-gene-expression (DGE) recovery, we simulated ten phenotypes by PCA of the observed target cell-type expression: continuous phenotypes as PC value plus standard normal error, and binary phenotypes by dichotomising each PC at zero. DGE analysis was performed twice with limma~\citep{ritchie2015limma}: (i) using all observed data (train + test), treated as ground truth; and (ii) using training observed + imputed test expression. A false discovery rate (FDR) of 0.05 defined true signals; the imputed FDR was varied from 0 to 1 in steps of 0.05. ROC curves and AUC were computed with pROC~\citep{robin2011proc}. All analyses were performed in R-4.3.3~\citep{rproject2024}.
+
+\section{Results}
+\subsection{Data and study design}
+The CLUSTER design included PBMC samples from all 158 subjects and sorted CD4/CD8/CD14/CD19 cells from a subset, providing paired training (80 samples) and testing (52--71 per cell type) sets. Sorted cell purity averaged $>$90\%, and sequencing batch did not differ between train/test (Chi-squared $p > 0.05$).
+
+\subsection{Estimation accuracy of sample-level cell fractions}
+Cell fractions for the four populations were estimated from PBMC using: CIBERSORTx with the inbuilt LM22 matrix (CIBX-inbuilt); CIBERSORTx with the custom signature (CIBX-custom); bMIND with the custom matrix (bMIND-custom); and debCAM with marker genes (debCAM-custom). Correlations with flow cytometry were highest for CD14, followed by CD19, CD8 and CD4, regardless of method. CIBX-custom generally performed less well than the other three approaches; CIBX-inbuilt and debCAM performed best overall, though the ordering varied by cell type. CD14 fractions were over-estimated and CD4 fractions under-estimated by all methods.
+
+\subsection{Sample-level cell-type expression imputation}
+We compared six approaches: CIBX-inbuilt, CIBX-custom, bMIND (flow fractions), swCAM (flow fractions), and multivariate LASSO and ridge. While CIBERSORTx imputed only a confident subset (5,779--11,794 genes depending on cell type), all other methods imputed expression for all or almost all 18,871 genes. Within-subject comparisons of observed vs.\ imputed expression yielded high median Pearson correlations ($r>0.85$) across methods, with LASSO and ridge slightly better; between-subject baseline correlations were also high, limiting discrimination via per-sample correlation (Table~\ref{tab:acc}). Per-gene correlations were more informative: swCAM showed markedly lower correlation for CD8, CD14 and CD19; methods were comparable for CD4. Per-gene RMSE was similar across methods, with LASSO and ridge having slightly lower medians. Restricting to common gene sets (3,837 CD4; 6,274 CD8; 5,185 CD14; 2,689 CD19) preserved the ordering.
+
+\begin{table}[htbp]
+\centering
+\caption{Per-method summary of sample-level cell-type expression imputation on the CLUSTER test set. Number of predicted genes, per-subject correlation (median), and attenuation of log2 fold changes (range of slopes over cell types) in DGE analysis on imputed data.}
+\label{tab:acc}
+\begin{tabular}{lccc}
+\toprule
+Method & Predicted genes range & Per-subject $r$ & Slope range (imputed vs.\ observed log2 FC) \\
+\midrule
+CIBX-inbuilt & 5{,}779--11{,}794 & $>$0.85 & 0.60--0.70 \\
+CIBX-custom  & 5{,}779--11{,}794 & $>$0.85 & 0.64--0.76 \\
+bMIND        & $\sim$18{,}871   & $>$0.85 & 0.66--0.85 \\
+swCAM        & $\sim$18{,}871   & $>$0.85 & 0.55--0.90 \\
+LASSO        & $\sim$18{,}871   & $>$0.85 & 0.69--0.76 \\
+ridge        & $\sim$18{,}871   & $>$0.85 & 0.68--0.76 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Common-gene sets used for fair comparison}
+\begin{table}[htbp]
+\centering
+\caption{Sizes of the intersection of predicted genes across all methods, by cell type.}
+\label{tab:commongenes}
+\begin{tabular}{lcccc}
+\toprule
+Cell type & CD4 & CD8 & CD14 & CD19 \\
+\midrule
+Common genes & 3{,}837 & 6{,}274 & 5{,}185 & 2{,}689 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Recovery of significant genes (DGE recovery)}
+To assess predictions in a realistic downstream scenario, we introduced a DGE-recovery measure. Ten phenotypes (five continuous, five dichotomous) were simulated from PCs of observed expression in each target cell type, with FDR $=0.05$ as the true-signal threshold in the observed data and a variable FDR (0--1 in steps of 0.05) in imputed data. LASSO and ridge achieved higher median AUCs across all four cell types and all four scenarios (dichPheno, dichPheno+sex, contPheno, contPheno+sex) than CIBX-inbuilt, CIBX-custom, bMIND and swCAM. Restricting to common genes preserved this ordering. At FDR~$<$~0.05 in both observed and imputed data, LASSO and ridge had higher sensitivity but lower specificity than the deconvolution methods. Log2 fold changes were attenuated in the imputed data for every method, with average slopes of 0.60--0.70 (CIBX inbuilt), 0.64--0.76 (CIBX custom), 0.66--0.85 (bMIND), 0.55--0.90 (swCAM), 0.69--0.76 (LASSO) and 0.68--0.76 (ridge).
+
+\subsection{Pseudobulk data from eQTLgen}
+We constructed cell-specific bulk RNA-seq from single-cell data from eQTLgen~\citep{oosterhoff2023eqtlgen}, comparing cells stimulated with \emph{C.\ albicans} for 3 hours (3hCA) to untreated (UT) in three DGE settings: unadjusted (cond), with batch as a covariate (batch+cond) and with ComBat-seq batch-corrected counts (ComBat-seq cond). Training sample size was varied from 20 (25\%) to 80 (100\%), with three replicates per training size. AUCs generally increased with training size for all approaches. LASSO and ridge consistently outperformed the other methods across all cell types and scenarios. In CD19 with ComBat-seq cond, CIBX-inbuilt imputed $<$60 genes (versus $\sim$1{,}000 for CIBX-custom and $>$11{,}000 for other methods), so its AUC estimates were very noisy and were omitted. Results were consistent after restricting to common predicted genes. Table~\ref{tab:eqtl} summarises the eQTLgen pseudobulk data-generating parameters.
+
+\begin{table}[htbp]
+\centering
+\caption{eQTLgen pseudobulk data parameters. Per-condition cell-type fractions sampled from normal distributions with the indicated means and standard deviations (SD), estimated from the eQTLgen scRNA-seq dataset. Sampled fractions are rescaled to sum to 1.}
+\label{tab:eqtl}
+\begin{tabular}{lcc}
+\toprule
+Cell type & Mean percentage (\%) & SD (\%) \\
+\midrule
+CD4  & 42.74 & 4.30 \\
+CD8  & 28.12 & 2.40 \\
+CD14 & 26.29 & 6.21 \\
+CD19 &  2.85 & 0.36 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational performance}
+Across both datasets, CIBERSORTx was typically the fastest. bMIND required the least memory. swCAM and the machine-learning methods took longer, and the machine-learning methods used more memory. CPU time increased approximately exponentially with training size, while memory usage remained roughly constant. Specifically, LASSO/ridge took up to $192.3\times$ or $658.1\times$ as long as the fastest method (CIBERSORTx); bMIND was $2.7\times$ slower than CIBERSORTx; swCAM was $385\times$ slower. LASSO/ridge required up to 3 or 11 times more memory than CIBERSORTx, while bMIND and swCAM required only 33\% or 54\% of CIBERSORTx's memory (Table~\ref{tab:resources}).
+
+\begin{table}[htbp]
+\centering
+\caption{Relative computational performance versus CIBERSORTx (set to $1\times$).}
+\label{tab:resources}
+\begin{tabular}{lcc}
+\toprule
+Method & Relative CPU time (max) & Relative memory usage (max) \\
+\midrule
+CIBERSORTx & 1.0$\times$   & 1.0$\times$ (100\%) \\
+bMIND      & 2.7$\times$   & 0.33$\times$ (33\%) \\
+swCAM      & 385$\times$   & 0.54$\times$ (54\%) \\
+LASSO      & 192.3$\times$ & 3$\times$           \\
+ridge      & 658.1$\times$ & 11$\times$          \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Signature gene counts}
+\begin{table}[htbp]
+\centering
+\caption{Signature gene counts used in the CLUSTER analyses.}
+\label{tab:sigcounts}
+\begin{tabular}{lc}
+\toprule
+Signature / criterion & Number of genes \\
+\midrule
+CIBERSORTx inbuilt (LM22, microarray)          & 547   \\
+Custom signature (CIBERSORTxFractions, RNA-seq) & 1{,}589 \\
+debCAM OVE.FC $=10$ cell-type specific genes   & 1{,}247 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+Using paired PBMC, sorted-cell RNA-seq and flow cytometry data from the same individuals, our study evaluated the accuracy of estimates of cell fractions and of sample-level cell-type expression. All methods performed least well for CD4. CIBERSORTx gave the most accurate fractions for CD8 but not for CD4, whereas debCAM performed best for CD4 but not for CD8. This suggests that accurately estimating related cell types remains challenging, likely due to shared signature genes or a limited number of cell-type-specific markers. Both CIBX-inbuilt and debCAM generally outperformed bMIND and CIBX-custom; the latter two produced several cell-fraction estimates of exactly zero despite clearly non-zero true fractions. We therefore recommend CIBX-inbuilt and debCAM for estimating cell fractions from mixed populations.
+
+Our real-data comparison of sample-level cell-type expression imputation included two off-the-shelf machine-learning methods (multivariate LASSO and ridge) as comparators alongside CIBERSORTx, bMIND and swCAM. Per-subject correlations were consistently high and consistent with previously reported values~\citep{newman2019cibersortx,wang2021bmind,chen2022swcam}; however, between-subject baseline correlations were also high, likely because cell type explains the greatest proportion of variability in gene expression. Per-gene correlations were lower and more variable --- consistent with reports for bMIND~\citep{wang2021bmind} and swCAM~\citep{chen2022swcam} --- suggesting that correlation is not an optimal performance measure. Our DGE-recovery measure mimics real downstream analyses and better discriminates methods. Using this measure, LASSO and ridge outperformed the three deconvolution approaches.
+
+To impute cell-type expression, deconvolution methods first require estimates of cell fractions. CIBERSORTx estimates fractions from RNA-seq data and performed well, despite notable CD4 underestimation. bMIND and swCAM used flow-cytometry-measured fractions, expected to be more accurate representations of the assayed sample composition. Despite this advantage, DGE recovery was comparable across deconvolution methods, though the number of genes with estimated expression varied (lower for CIBERSORTx). LASSO/ridge are one-step approaches that do not depend on fraction estimates; instead they learn directly from paired PBMC--sorted cell training data. Multi-response LASSO/ridge batches correlated genes so that predictions can share information through which PBMC genes are selected as predictors.
+
+LASSO/ridge have limitations. They require paired bulk and sorted training data, whereas deconvolution methods do not. They are computationally expensive: up to 192.3$\times$ (LASSO) or 658.1$\times$ (ridge) slower than CIBERSORTx, while bMIND was 2.7$\times$ and swCAM 385$\times$ slower. LASSO/ridge required up to 3 or 11 times more memory than CIBERSORTx, while bMIND and swCAM required only 33\% or 54\%. Importantly, across all methods the predicted log2 fold changes were systematically attenuated relative to those estimated from observed data; accordingly, DGE analysis on imputed data supports detection of differentially expressed genes and direction of effect, but not unbiased estimation of fold changes. Finally, we did not optimise LASSO/ridge hyperparameters or gene-batching strategy; further improvements may be possible through these or other non-domain-specific approaches.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

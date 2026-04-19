@@ -1,0 +1,120 @@
+% Draft introduction and related work for downstream rewriting by writing-agent.
+% Every citation key below appears in references.bib.
+
+\section{Introduction}
+
+Messenger RNA has moved rapidly from a niche reagent to a central modality
+for vaccines, protein replacement, and \emph{in situ} gene editing. The
+nucleoside-modified platform validated during the COVID-19 pandemic
+\cite{thomas2021bnt162b2,karik{\'o}2013pseudouridine} and the arrival of
+individualized cancer vaccines \cite{sahin2026tnbcvaccine} demonstrate that
+synthetic mRNAs can direct therapeutically meaningful expression in humans.
+Parallel advances in lipid nanoparticle formulation are extending these
+gains to non-vaccine cargos, including proteins encoded at
+low doses for tissue-specific applications
+\cite{kim2026lnp_utr,wisitrasameewong2022mrnaregen}. Yet the \emph{sequence}
+of the mRNA itself, and in particular its 5' untranslated region, remains
+a surprisingly under-optimized lever.
+
+The 5' UTR is a principal determinant of ribosome recruitment and
+start-codon selection, and even small changes to it can shift the amount
+of protein produced by orders of magnitude. Strong Kozak context, scanning
+efficiency, upstream AUGs, and local secondary structure all contribute
+to initiation \cite{chaldebas2026utrvariants,stettler2026kozak,
+balasov2025kozaknoncanonical,shikalov2021ddx3}, but their combined
+effect is difficult to predict from first principles. Massively parallel
+reporter assays (MPRAs) coupled to polysome profiling have emerged as a
+practical way to quantify 5' UTR activity at scale
+\cite{reimaopinto2025danio5p,strayer2024naptrap}, yielding datasets
+large enough to train supervised models that predict mean ribosome load
+(MRL) from sequence alone. A longstanding limitation of these efforts is
+that most reporter libraries have been profiled in a single cell type,
+typically HEK293T, and it has not been established whether models trained
+on such data generalize to therapeutically relevant cells such as primary
+T lymphocytes or liver-derived lines.
+
+Sequence design has advanced in parallel. Gradient-based activation
+maximization over one-hot encodings, exemplified by Fast SeqProp
+\cite{linder2021fastseqprop}, produces high-scoring sequences but is
+prone to local optima and limited diversity. Generative approaches, in
+particular Deep Exploration Networks (DENs)
+\cite{linder2020den}, address both issues by training a generator to
+maximize a fitness predictor while penalizing similarity between outputs;
+variational autoencoders (VAEs) can additionally constrain generated
+sequences to stay within the likelihood region of the training data.
+These ideas have been applied to polyadenylation signals, splicing
+regulators, and protein design
+\cite{linder2020den,lei2025promoterdiffusion,zhao2024promotergan},
+and recently to m$^1$$\Psi$-modified 5' UTRs for vaccine use
+\cite{tang2023smart5utr,kim2026lnp_utr}. Whether DEN- and SeqProp-designed
+5' UTRs carry functional benefit beyond reporter readouts, and whether
+they improve delivery of clinically relevant cargos such as mRNA-encoded
+gene editors, is still an open question.
+
+Gene editing by mRNA-delivered nucleases is a particularly demanding
+test case. Editing efficiency depends non-linearly on transient
+protein concentration, and the payloads are large and structurally
+idiosyncratic. megaTAL nucleases, hybrid enzymes built from LAGLIDADG
+homing endonuclease scaffolds and TALE arrays
+\cite{mcmurrough2018laglidadg,laforet2019endonuclease,gwiazda2016tcellediting},
+offer high on-target activity and have been used to disrupt
+therapeutically relevant loci such as \emph{TGFBR2} in
+tumor-infiltrating lymphocytes \cite{fix2022tgfbr2} and \emph{PDCD1}
+in adoptive T-cell products \cite{mohammad2025pd1}. Delivery of
+megaTALs as mRNA, via electroporation
+\cite{schwarze2021electroporation,gwiazda2016tcellediting}, lets the
+nuclease act transiently but leaves editing rates highly sensitive to
+translation efficiency in the target cell.
+
+In this work, we close the loop between MPRA-based modelling and
+mRNA-delivered gene editing. We profile randomized 5' UTR libraries in
+three human cell types by polysome-profiling MPRA, train convolutional
+and k-mer models on the resulting data, and use them to guide the
+design of 50-nucleotide and 25-nucleotide 5' UTRs via Fast SeqProp and
+DENs. We then test designed 5' UTRs in a mRNA-delivered megaTAL gene
+editing assay targeting two independent loci in two cell lines. Our
+central contributions are: (i) empirical demonstration that 5' UTR
+activity is highly correlated across cell types and therefore transferable;
+(ii) a new model, Optimus 5-Prime(25), adapted to 25-nt fully-variable
+libraries; and (iii) functional validation that generatively-designed
+5' UTRs support absolute editing efficiencies above 40\% for
+\emph{TGFBR2} and above 80\% for \emph{PDCD1} at therapeutic mRNA doses,
+with cargo- and locus-specific deviations that argue for empirical
+validation alongside \emph{in silico} design.
+
+\section{Related Work}
+
+\paragraph{Deep-learning models of 5' UTR translation.} MPRA--trained
+convolutional and attention models have mapped sequence features that
+govern ribosome recruitment, including length, upstream ORFs, Kozak
+context, and motif composition
+\cite{reimaopinto2025danio5p,strayer2024naptrap,chaldebas2026utrvariants}.
+Most such efforts profile a single cell type, leaving the cross-cell-line
+transferability of predictions unresolved.
+
+\paragraph{Generative sequence design.} Gradient-based activation
+maximization (Fast SeqProp) and generative networks with diversity
+penalties (DENs) \cite{linder2020den,linder2021fastseqprop} have become
+the standard toolkit for cis-regulatory design. Related approaches
+leveraging GANs and diffusion models have been applied to synthetic
+promoters \cite{zhao2024promotergan,lei2025promoterdiffusion} and to
+m$^1$$\Psi$-modified 5' UTRs for vaccines \cite{tang2023smart5utr}.
+
+\paragraph{mRNA therapeutics.} Nucleoside-modified, LNP-formulated mRNA
+underpins approved COVID-19 vaccines and clinical-stage individualized
+cancer vaccines \cite{thomas2021bnt162b2,sahin2026tnbcvaccine,
+karik{\'o}2013pseudouridine}. Recent work couples ionizable lipid
+engineering with UTR tuning to lift potency at low doses
+\cite{kim2026lnp_utr}.
+
+\paragraph{megaTAL-based gene editing.} megaTALs combine engineered
+LAGLIDADG homing endonucleases with TALE DNA-binding arrays and have
+been deployed for high-efficiency editing of primary human T cells
+\cite{gwiazda2016tcellediting,mcmurrough2018laglidadg,
+laforet2019endonuclease}. TGFBR2 knockout lifts TGF-$\beta$-mediated
+suppression of tumor-infiltrating lymphocytes \cite{fix2022tgfbr2} and
+PDCD1 disruption is being pursued to relieve T-cell exhaustion
+in CAR-T and TIL products \cite{mohammad2025pd1}. Electroporation of
+synthetic mRNA is a standard delivery route for such edits
+\cite{schwarze2021electroporation}, making the translational tuning of
+the 5' UTR directly relevant to editing outcomes.

@@ -1,0 +1,144 @@
+% Introduction and Related Work draft (Stage 2 output).
+% All \cite{} keys are defined in references.bib.
+
+\section{Introduction}
+
+Higher-order thalamic nuclei were once viewed as passive relays of cortical
+activity, but a growing body of work has repositioned them as active
+participants in cognition and motor control \cite{sherman2007thalamic,
+sherman2016thalamus, halassa2019thalamocortical}. Unlike primary sensory
+thalamic nuclei, higher-order nuclei receive the bulk of their drive from
+cortex itself, forming reciprocal cortico-thalamo-cortical (CTC) loops that
+have been mapped in rodent sensory, motor, and prefrontal regions
+\cite{yamawaki2015synaptic, economo2018distinct, collins2018reciprocal,
+guo2018anterolateral}. Perturbation studies in mice demonstrate that these
+loops are required for the maintenance of persistent activity during working
+memory \cite{guo2017maintenance, bolkan2017thalamic, schmitt2017thalamic},
+for the execution of dexterous movements \cite{sauerbrei2020cortical}, and
+for flexible switching among cortical representations
+\cite{rikhye2018thalamic, alcaraz2018thalamocortical}.
+
+The central computational puzzle raised by this anatomy is that thalamic
+populations are much smaller than the cortical populations with which they
+interact. A CTC loop therefore implements a compression of cortical
+activity into a low-dimensional thalamic space, followed by an expansion
+back to cortex. For purely feedforward architectures, theories of
+compressed sensing and efficient coding have clarified how such bottlenecks
+should be structured to preserve or emphasize behaviorally relevant signals
+\cite{ganguli2012compressed, olshausen1996emergence}. Recurrent CTC loops,
+however, are not feedforward; insights obtained in feedforward settings do
+not transfer directly. Existing theoretical treatments of thalamocortical
+loops tune the weights of the loop by numerical optimization and show that
+the resulting circuit can support motor preparation or flexible motor
+sequencing \cite{kao2021optimal, logiaco2021thalamic}. What these models do
+not address is how such tuned weights could be established by a
+biologically plausible mechanism.
+
+The question becomes especially pointed when we ask how local, error-driven
+plasticity could operate in a CTC loop. Three-factor and random-feedback
+rules have been proposed as biologically plausible approximations to
+gradient-based learning in recurrent networks \cite{murray2019local,
+lillicrap2016random, gilra2017predicting, miconi2017biologically,
+gerstner2018eligibility}, and experimental studies support plasticity at
+thalamocortical synapses into adulthood
+\cite{hasegawa2018thalamocortical}. Yet evidence for plasticity at
+corticothalamic synapses is limited, and these synapses sit far upstream of
+the behavioral readout so that any local learning rule must contend with a
+particularly severe credit-assignment problem. We hypothesized that the
+ability of the thalamus to contribute to learning therefore depends on the
+\emph{structure} of corticothalamic projections, rather than on local
+plasticity at those projections, and asked what structure is optimal for
+each task.
+
+We approach this question with a recurrent thalamocortical model in which
+$N$ cortical neurons are reciprocally connected to $M$ uncoupled thalamic
+neurons, with $M \ll N$. Thalamocortical weights are updated with a local
+three-factor rule (RFLO) \cite{murray2019local, lillicrap2016random},
+while corticothalamic weights are optimized either by meta-learning on a
+slow outer-loop timescale \cite{wang2018prefrontal, hospedales2022meta} or
+by idealized alignment with specific cortical subspaces. Our central
+finding is that the optimal corticothalamic structure is strongly
+task-dependent: autonomous motor control benefits most from a projection
+carrying an efference copy of the readout, while working memory benefits
+most from a projection carrying the leading principal components of
+cortical activity. Reanalysis of intracortical and thalamic recordings
+from mice performing grasping and delayed-discrimination tasks
+\cite{sauerbrei2020cortical, guo2017maintenance} is consistent with this
+prediction. Our contributions are:
+
+\begin{itemize}
+  \item We show that a local three-factor plasticity rule succeeds at
+  thalamocortical synapses but fails at corticothalamic synapses, because
+  feedback alignment does not propagate through the thalamic bottleneck.
+  \item We demonstrate that meta-learning identifies task-specific
+  corticothalamic structures that reduce task error by a median factor of
+  5.8 (motor control) and 5.1 (working memory) relative to random
+  projections.
+  \item We show that idealized readout-aligned projections are optimal for
+  motor control while principal-component-aligned projections are optimal
+  for working memory, and that these choices generalize to a composite
+  delayed-reaching task in a model with separate preparatory and
+  execution thalamic modules.
+  \item We reanalyze published neural recordings from motor cortex /
+  motor thalamus (3 sessions, 101 thalamic neurons) and from ALM /
+  VM--VAL thalamus (5 sessions, 72 thalamic neurons) and find that the
+  cortical subspaces captured by thalamus are consistent with the
+  task-specific structures predicted by the model.
+\end{itemize}
+
+\section{Related Work}
+
+\paragraph{Higher-order thalamus and cortico-thalamo-cortical loops.}
+Reciprocal CTC loops are a frequent anatomical motif across rodent
+cortical areas \cite{yamawaki2015synaptic, economo2018distinct,
+collins2018reciprocal, guo2018anterolateral, halassa2019thalamocortical}.
+Inactivation and optogenetic experiments show that these loops are
+required for the maintenance of persistent activity during working
+memory and for the execution of prepared movements
+\cite{guo2017maintenance, bolkan2017thalamic, schmitt2017thalamic,
+sauerbrei2020cortical, rikhye2018thalamic, alcaraz2018thalamocortical}.
+Theoretical models have shown that tuned CTC weights can support motor
+preparation and flexible motor sequencing
+\cite{kao2021optimal, logiaco2021thalamic}, but they rely on numerical
+optimization and do not specify a biological mechanism for acquiring the
+weights. Our work fills this gap by supplying structured corticothalamic
+connectivity and a local plasticity rule that together realize
+biologically plausible learning.
+
+\paragraph{Biologically plausible learning in recurrent networks.}
+Classical recurrent learning is non-local
+\cite{williams1989learning}. To recover locality, a number of
+approximations have been introduced: random feedback alignment
+\cite{lillicrap2016random}, three-factor eligibility rules
+\cite{gerstner2018eligibility, bittner2017behavioral}, dendritic
+segregation for deep credit assignment \cite{guerguiev2017towards},
+stable local learning in spiking RNNs \cite{gilra2017predicting},
+biologically plausible RNN training reproducing task dynamics
+\cite{miconi2017biologically}, and the specific Random-Feedback-Local-Online
+(RFLO) rule that we use here \cite{murray2019local}. These rules have
+been analyzed for synapses that directly drive the readout; our results
+address the less-studied regime of synapses that are two steps removed
+from the readout through the thalamic bottleneck.
+
+\paragraph{Low-rank recurrent network theory and meta-learning.}
+Recent theoretical work conceptualizes recurrent connectivity as the sum
+of a random full-rank component and a tunable low-rank perturbation
+\cite{mastrogiuseppe2018linking}. Because the CTC loop contributes a
+rank-$M$ perturbation to the effective cortical connectivity, our
+analysis inherits these tools. We combine this framework with
+meta-learning \cite{wang2018prefrontal, hospedales2022meta}: a slow outer
+loop optimizes the corticothalamic weights, while a fast inner loop uses
+a local plasticity rule to update thalamocortical weights. This two-timescale
+decomposition is consistent with the view that corticothalamic
+structure reflects evolution or development, while thalamocortical
+synapses are plastic throughout life.
+
+\paragraph{Cortical dynamics during motor learning and cognition.}
+Recurrent dynamics have been shown to support flexible computation in
+prefrontal cortex and to reorganize during motor learning in rodent motor
+cortex \cite{mante2013context, peters2014emergence,
+churchland2012neural}. These studies largely attribute learning-induced
+changes to plasticity within cortex; our results argue that at least some
+of the learning signal is routed through thalamus, and that the ability
+of the thalamus to participate depends on the specific structure of
+corticothalamic projections.

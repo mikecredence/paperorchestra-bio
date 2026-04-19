@@ -1,0 +1,105 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{authblk}
+
+\title{Distinguishing Examples While Building Concepts in Hippocampal and Artificial Networks}
+
+\author[1]{Anonymous Author}
+\affil[1]{Anonymous Institution}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The hippocampal subfield CA3 is thought to function as an autoassociative network that stores experiences as memories. Information arrives to CA3 from entorhinal cortex (EC) via two pathways: a direct perforant-path (PP) projection from EC and an indirect mossy-fibre (MF) projection that routes first through dentate gyrus (DG). DG sparsifies and decorrelates information before also projecting to CA3. The computational purpose of this dual-input architecture has not been firmly established. We model CA3 as a Hopfield-like network that stores both correlated (PP) and decorrelated (MF) encodings of each memory and retrieves them at low and high inhibitory tone, respectively. As more memories are stored, dense correlated encodings merge along shared features while sparse decorrelated encodings remain distinct. An oscillating threshold allows the network to alternate between example and concept representations within each theta cycle. We test this prediction on two publicly available rodent place-cell datasets and find that CA3 neurons exhibit sharper spatial tuning during sparse theta phases (more example-like) and broader tuning during dense theta phases (more concept-like), with a similar effect for turn direction on a W-maze. Finally, we generalise the idea to feed-forward networks for multitask learning, introducing a HalfCorr loss that decorrelates half of the final hidden layer. HalfCorr networks simultaneously reach high accuracy on concept learning (held-out MNIST digit classification) and example learning (corrupted-image set identification), whereas baseline and fully decorrelated (DeCorr) networks trade off one for the other. We use model densities $a_{\mathrm{EC}} = 0.1$, $a_{\mathrm{DG}} = 0.005$, $a_{\mathrm{MF}} = 0.02$, $a_{\mathrm{PP}} = 0.2$ and correlations $\rho_{\mathrm{EC}} = 0.15$, $\rho_{\mathrm{DG}} = 0.02$, $\rho_{\mathrm{MF}} = 0.01$, $\rho_{\mathrm{PP}} = 0.09$, with synapse counts $l_{\mathrm{DG}} = 205$, $l_{\mathrm{MF}} = 8$, $l_{\mathrm{PP}} = 205$, and train multitask perceptrons to $>99.9\%$ training accuracy. Place cells are identified by phase-independent position information $>0.5$.
+\end{abstract}
+
+\section{Introduction}
+
+The hippocampus underlies our ability to recount specific events from daily life \cite{scoville1957}, and its subfield CA3 is widely thought to serve as an autoassociative network \cite{mcnaughton1987,oreilly2001,rolls2006} with abundant recurrent connections and spike-timing-dependent plasticity \cite{bipoo1998,mishra2016}. Information from EC reaches CA3 via two pathways \cite{amaral2006,amaral1990}: a direct perforant path (PP) projection and an indirect mossy-fibre (MF) projection through dentate gyrus (DG). DG sparsifies encodings by maintaining a high tonic inhibition \cite{engin2015}, and sparsification generally decorrelates \cite{marr1971,oreilly1994,vinje2000,pitkow2012,caycogajic2017}. The MF pathway preserves this sparse, decorrelated character because each CA3 pyramidal cell receives input from only $\approx 50$ granule cells, whereas PP connectivity is dense ($\approx 4000$ EC synapses per CA3 cell) \cite{amaral1990}. Prior theories have argued that the MF pathway is crucial for pattern separation during storage, but that retrieval is predominantly mediated by PP \cite{treves1992,mcclelland1996,kaifosh2016}.
+
+We take a different view: CA3 stores \emph{both} MF and PP encodings of each memory, and inhibitory tone selects between them at retrieval. Sparse MF patterns have narrow attractor basins that remain separate (pattern separation) \cite{leutgeb2007,tsodyks1988}; dense PP patterns have wide basins that merge to build concepts. This architecture would reconcile episodic-memory \cite{scoville1957} and invariant-category \cite{quiroga2005} capabilities of hippocampus. We model CA3 as a Hopfield-like network \cite{hopfield1982,amit1985} that stores both encodings; we derive a closed-form relation between presynaptic and postsynaptic statistics; we test the model against place-cell recordings \cite{mizuseki2013crcns,karlsson2015}; and we apply the resulting intuition to feed-forward multitask perceptrons \cite{lecun2015deeplearning}.
+
+\section{Methods}
+
+\paragraph{Memory encodings from images to CA3.} Memories are $256$ images per class from three FashionMNIST classes (sneakers, trousers, coats) \cite{xiao2017fashionmnist}. An autoencoder with hidden layers of size $128$, $1024$, $128$ and a binary middle layer produces EC patterns of density $a_{\mathrm{EC}} = 0.1$ with $N_{\mathrm{EC}} = 1024$ units. Random binary, sparse connectivity matrices then transform EC to DG ($N_{\mathrm{DG}} = 8192$), and separately produce MF and PP inputs to CA3 ($N_{\mathrm{CA3}} = 2048$). Only $10\%$ of EC neurons are allowed to be active (sparse, overcomplete) \cite{olshausen1996,makhzani2014}. A winner-take-all rule enforces the desired density at each postsynaptic layer. We fix $a_{\mathrm{DG}} = 0.005$, $a_{\mathrm{MF}} = 0.02$, and $a_{\mathrm{PP}} = 0.2$, and we do not directly enforce within-concept correlation, which takes values $\rho_{\mathrm{EC}} = 0.15$, $\rho_{\mathrm{DG}} = 0.02$, $\rho_{\mathrm{MF}} = 0.01$, and $\rho_{\mathrm{PP}} = 0.09$. Each DG neuron receives $\approx 4000$ EC synapses and each CA3 neuron receives $\approx 50$ MF and $\approx 4000$ PP synapses \cite{amaral1990}. Accordingly, we set $l_{\mathrm{DG}} = 205$, $l_{\mathrm{MF}} = 8$, and $l_{\mathrm{PP}} = 205$. A closed-form expression relating presynaptic density $a_{\mathrm{pre}}$, presynaptic correlation $\rho_{\mathrm{pre}}$, postsynaptic density $a_{\mathrm{post}}$, and postsynaptic correlation $\rho_{\mathrm{post}}$ follows from the Gaussian approximation to the winner-take-all rule and involves only $\mathrm{erfc}^{-1}$ (Eq.~1 of the paper; derivation in the Supplementary Methods). The autoencoder is trained for $150$ epochs with batch size $64$, Adam optimizer, learning rate $10^{-3}$, weight decay $10^{-5}$, and an L1 KL-divergence sparsity penalty of strength $\lambda = 10$. Binarization in the middle layer uses a Heaviside step with straight-through gradients \cite{bengio2013ste}.
+
+\paragraph{CA3 Hopfield-like network.} Each memory $\mu\nu$ contributes a weighted sum $q^{\mu\nu} = \xi^{\mu\nu}_{\mathrm{MF}} + \zeta \xi^{\mu\nu}_{\mathrm{PP}}$ with $\zeta = 0.1$ (Fig.~3A). The connectivity matrix uses the standard sparse Hopfield form \cite{tsodyks1988}. At retrieval, neurons are asynchronously updated by Glauber dynamics \cite{amit1985} over $10$ cycles with inverse temperature $\beta = 100$. The threshold $\theta$ is rescaled so that $\theta' = 0.5$ retrieves MF patterns and $\theta' = 0$ retrieves PP patterns \cite{kang2023}. Cues are target patterns with $1\%$ of neurons flipped. In the cue-throughout condition a noisy MF cue of strength $\sigma = 0.2$ is supplied as an external input.
+
+\paragraph{Experimental analysis.} We analyzed two public datasets: the CRCNS hc-3 dataset from Buzs\'aki and colleagues (linear track, CA3 and CA1 place cells) \cite{mizuseki2013crcns,skaggs1996}, and the CRCNS hc-6 dataset from Frank and colleagues (W-maze alternation) \cite{karlsson2015,frank2000,wood2000}. To identify place cells, we compute the phase-independent position information per spike using $1$\,cm bins across all theta phases, and we select neurons with values greater than $0.5$. Information per spike estimates are bias-corrected by subtracting the mean information of many null-matched samples \cite{dotson2021yartsev}. Comparisons between sparse and dense halves of theta phases used two-tailed Wilcoxon signed-rank tests; comparisons across populations used two-tailed Mann-Whitney $U$ tests.
+
+\paragraph{Artificial networks.} For digit classification, we train a fully connected two-layer perceptron on MNIST \cite{lecun1998mnist} with $\tanh$ hidden activations and softmax output. For set identification, each image is also assigned a random set label, and we train until networks reach $>99.9\%$ accuracy on the training dataset. Set-identification test images are all train images corrupted by randomly setting $20\%$ of normalized pixel values to $0$. For the multitask variant we train a perceptron with $100$ neurons per hidden layer to simultaneously classify digits and identify sets until training accuracy exceeds $99.9\%$ for both tasks, using a train dataset of $1000$ images and $10$ sets. We define two auxiliary losses: DeCorr (decorrelates encodings in the final hidden layer, across items in a batch) and HalfCorr (applies DeCorr to only the second half of the final hidden layer, leaving the first half correlated). The DeCov loss \cite{cogswell2015decov} is used for comparison.
+
+\section{Results}
+
+\subsection{MF and PP encodings converge at CA3 with complementary statistics}
+Our encoding pathway preserves the biological signature: MF inputs to CA3 have density $0.02$ and average within-concept correlation $0.01$, while PP inputs have density $0.2$ and correlation $0.09$. Decorrelation follows directly from sparsification under the winner-take-all rule: given $a_{\mathrm{pre}}$, $\rho_{\mathrm{pre}}$ and $a_{\mathrm{post}}$, the postsynaptic correlation $\rho_{\mathrm{post}}$ is fully determined and does not depend on network size, synaptic density, or absolute threshold.
+
+\subsection{CA3 stores both encodings and retrieves them via inhibitory tone}
+With $\theta' = 0.5$, the network robustly retrieves MF example patterns across a range of stored patterns; with $\theta' = 0$ at large example load, retrieved PP patterns converge on an average image that captures common class features, i.e.\ a concept (Fig.~3D). Capacity analysis on random MF/PP patterns identifies a regime of intermediate example load in which both example and concept retrieval succeed simultaneously.
+
+\subsection{An oscillating threshold alternates between examples and concepts}
+Cueing the network with an MF pattern and applying a time-varying threshold (abrupt or sinusoidal) produces alternation between MF example encodings during high-threshold phases and PP concept encodings during low-threshold phases. Weak continuous MF cue input locks the network onto a single example/concept pair. Reducing oscillation amplitude stalls the network on one encoding type.
+
+\subsection{Place-cell data support model predictions}
+In the hc-3 linear-track dataset, CA3 place fields convey significantly more sparsity-corrected position information per spike during sparse theta phases than during dense phases (Wilcoxon signed-rank, $p$-values reported per population). This is true for phase-precessing fields and for others (slightly non-significant in the latter), and absent in shuffled data. In contrast, when position is binned coarsely (four contiguous bins at various track scales), dense theta phases convey more position information per spike at the coarsest scales (Spearman's $\rho$ across scales). These two results are complementary: fine (example-like) positions are preferentially encoded during sparse phases, while coarse (concept-like) positions are preferentially encoded during dense phases.
+
+In the hc-6 W-maze dataset, single CA3 neurons carry more turn-direction information per spike during sparse theta phases (both outward and inward runs), and Bayesian population decoding shows that sparse-phase spikes yield both higher confidence and higher maximum-likelihood accuracy for turn direction. Sparse-vs-dense differences are significantly larger in CA3 than in CA1.
+
+\begin{table}[h]
+\centering
+\caption{Summary of experimental predictions and observations. Comparisons are between sparse and dense halves of theta phases using two-tailed Wilcoxon signed-rank tests.}
+\label{tab:expt}
+\begin{tabular}{lll}
+\toprule
+Dataset / signal & Region & Prediction supported \\
+\midrule
+hc-3 single-field position (fine) & CA3 & sparse $>$ dense \\
+hc-3 coarse-scale position (four bins) & CA3 & dense $>$ sparse at coarsest scales \\
+hc-6 W-maze turn direction & CA3 & sparse $>$ dense (outward and inward runs) \\
+Bayesian turn decoding & CA3 population & sparse phases more confident and accurate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DeCorr and HalfCorr: applying the idea to artificial networks}
+For single-task perceptrons on MNIST augmented with random set labels, DeCorr networks outperform baseline (no loss on hidden activations) on example-learning (set identification with $20\%$ pixel noise) but underperform on concept-learning (held-out digit classification). DeCov \cite{cogswell2015decov}, which decorrelates neurons across items rather than items across neurons, improves digit classification but not set identification, confirming that DeCorr captures a different inductive bias.
+
+For multitask perceptrons that simultaneously classify digits and identify sets, HalfCorr networks --- where only the second half of the final hidden layer is decorrelated --- achieve high accuracy on both tasks, while DeCorr networks still show a concept/example trade-off relative to baseline (Table~\ref{tab:multitask}). Per-neuron influence analysis (drop in task accuracy upon clamping a neuron to zero) shows that correlated neurons preferentially influence concept learning while decorrelated neurons preferentially influence example learning (two-tailed unpaired $t$-tests).
+
+\begin{table}[h]
+\centering
+\caption{Multitask perceptron: qualitative ranking of losses. The perceptron is trained until training accuracy exceeds $99.9\%$ in both tasks.}
+\label{tab:multitask}
+\begin{tabular}{lcc}
+\toprule
+Loss & Concept learning (digits) & Example learning (sets) \\
+\midrule
+Baseline & high & low \\
+DeCorr & low & high \\
+HalfCorr & high & high \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We have developed a unified account of how complementary encodings in CA3 support both distinguishing examples and building concepts. In our model, CA3 stores sparse, decorrelated MF patterns and dense, correlated PP patterns in the same autoassociative network. A threshold $\theta$ --- identified physiologically with the theta oscillation --- selects which encoding is retrieved. At high $\theta$ the sparse MF patterns, with narrow attractor basins, win; at low $\theta$ the dense PP patterns, with wide basins that merge along shared features, win. Across a theta cycle, the network alternates between example-like and concept-like representations, enabling the hippocampus to index specific experiences \cite{teyler1986index,scoville1957} while also forming concept-like representations over them \cite{quiroga2005,schapiro2017complementary}.
+
+The model makes specific predictions about how place-cell tuning should depend on theta phase. In two independent datasets \cite{mizuseki2013crcns,karlsson2015}, across two signals (linear-track position and W-maze turn direction), and at both single-neuron and population levels, we find that CA3 conveys more specific information during sparse phases and more general information during dense phases. CA1 behaves differently, consistent with the idea that complementary encodings are a specific feature of CA3's dual-input architecture \cite{amaral1990,oreilly1994,caycogajic2017}. Our analyses also refine the phase-precession literature \cite{okeefe1993,skaggs1996}: CA3 is more sharply tuned at early (future) field positions, whereas CA1 is more sharply tuned at late (past) positions.
+
+Beyond neurobiology, we show that the same principle can be ported into artificial neural networks as a plug-and-play loss function. DeCorr promotes example learning at the expense of concept learning, while HalfCorr supports both simultaneously with the same number of parameters as a baseline network. This provides a biologically grounded but architecturally generic mechanism for multitask learning that does not require specialized sub-modules \cite{lecun2015deeplearning,kowadlo2020}. Limitations include the simplification of separately simulating storage and retrieval, the use of binary units, and the linear summation of MF and PP inputs; extensions with nonlinear dendritic integration, separate storage and retrieval phases \cite{hasselmo2002,colgin2013}, or richer feature extraction would be natural next steps. Our results illustrate how a specific circuit motif in the hippocampus can provide a general computational primitive for flexible, multiscale learning.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

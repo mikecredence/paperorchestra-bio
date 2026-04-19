@@ -1,0 +1,218 @@
+{
+  "metadata": {
+    "working_title": "Distinguishing examples while building concepts in hippocampal and artificial networks",
+    "venue": "Nature Machine Intelligence",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "The hippocampal subfield CA3 is thought to function as an autoassociative network that stores experiences as memories, receiving two distinct encodings of the same sensory information through the mossy fiber (MF) and perforant path (PP) pathways. The computational purpose of this dual-input architecture has not been firmly established.",
+    "gap": "Previous models assume CA3 stores a single hybrid encoding per memory, leaving unexplained why CA3 would receive two inputs with systematically different statistics (sparse, decorrelated MF vs. dense, correlated PP) and how the theta oscillation leverages them.",
+    "approach": "We model CA3 as a Hopfield-like network that independently stores both MF and PP encodings of each memory, with retrieval selected by an inhibitory threshold. We then test model predictions against publicly available CA3 place cell recordings from two datasets, and finally generalize the computational principle to artificial multilayer perceptrons via a novel HalfCorr loss function.",
+    "key_results": "Sparse MF encodings maintain distinct example representations; dense PP encodings merge along shared features to build concept representations. Rat CA3 place cells show sparsity-corrected position information preferentially conveyed by sparse theta phases (p computed by two-tailed Wilcoxon signed-rank tests). W-maze analysis confirms sparser phases preferentially encode turn direction, and Bayesian population decoding is more accurate during sparse phases. In artificial networks, DeCorr improves set identification but harms digit classification, while HalfCorr (applied to half the final hidden layer) excels at both tasks simultaneously.",
+    "impact": "Complementary correlated and decorrelated encodings in CA3 can be biologically implemented through paired pathways and retrieved across theta phases. This principle generalizes to artificial neural networks as a plug-and-play loss function that improves multitask learning."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Hippocampus and episodic memory; CA3 autoassociative network hypothesis",
+        "Dual input architecture to CA3: direct PP from EC (dense, ~4000 synapses) vs. indirect via DG and MF (sparse, ~50 synapses)",
+        "Sparsification in DG promotes decorrelation; MF encodings are sparse and decorrelated, PP dense and correlated",
+        "Open question: computational purpose of dual-input architecture; prior theories favor pattern separation during storage with single retrieved pattern",
+        "Our proposal: CA3 stores both MF and PP encodings per memory and retrieves either depending on inhibitory tone",
+        "Theta oscillation as the physiological threshold that selects between encodings across phases",
+        "Three-part program: model predictions (Figs 2-4), rat place cell analyses (Figs 5-7), artificial network generalization (Fig 8)"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_model_pathways",
+          "title": "MF encodings remain distinct while PP encodings build concepts in our model for CA3",
+          "content_bullets": [
+            "FashionMNIST images from sneakers, trousers, coats as memories",
+            "Binary autoencoder produces EC patterns with NEC=1024, aEC=0.1",
+            "Random binary connectivity EC->DG->MF and EC->PP; WTA enforces target densities aDG=0.005, aMF=0.02, aPP=0.2",
+            "Correlations within concepts: rhoEC=0.15, rhoDG=0.02, rhoMF=0.01, rhoPP=0.09; synapse counts lDG=205, lMF=8, lPP=205",
+            "Equation 1 connects presynaptic density/correlation to postsynaptic correlation via inverse complementary error function",
+            "Visualization pathway: feedforward network maps CA3 back to EC, then image via autoencoder decoder"
+          ]
+        },
+        {
+          "id": "results_hopfield_ca3",
+          "title": "A Hopfield-like CA3 model stores and retrieves both encodings",
+          "content_bullets": [
+            "Linear combination q = xi*xiMF + (1-xi)*xiPP with relative PP strength zeta=0.1",
+            "Asynchronous Glauber dynamics with threshold theta and inverse temperature beta",
+            "theta' = 0.5 retrieves MF; theta' = 0 retrieves PP; beta=100",
+            "Up to 30 cues tested per network; cue inaccuracy 0.01",
+            "MF cues retrieve distinct MF examples at high theta; at low theta, PP examples merge into concept representations as example load increases",
+            "PP cues yield qualitatively similar behavior; network is agnostic to cue type; performs heteroassociation",
+            "Random pattern analysis: MF patterns density 0.01 correlation 0; PP patterns density 0.5; multiscale retrieval regime exists at intermediate loads with more correlated PP"
+          ]
+        },
+        {
+          "id": "results_oscillation",
+          "title": "Oscillating threshold enables alternation between examples and concepts",
+          "content_bullets": [
+            "Four scenarios: baseline abrupt threshold, sinusoidal, alternative values (0.55/0.25 vs 0.6/0.2), cue-throughout",
+            "50 examples stored per concept across 3 concepts",
+            "20 cues tested in each of 20 networks, retrieval behavior summarized between cycles 60-120",
+            "Lower-amplitude oscillations disrupt alternation; stall on one encoding type"
+          ]
+        },
+        {
+          "id": "results_place_example",
+          "title": "CA3 place cells convey more fine-scale position information during sparse theta phases",
+          "content_bullets": [
+            "CRCNS hc-3 dataset (Mizuseki et al., 2013, 2014)",
+            "Place cell selection: phase-independent position information >0.5 using 1 cm bins",
+            "Phase bins 30 deg; min 8 spikes per phase value; theta modulation requires max/min active phase ratio >= 2",
+            "Fig 5L: 35 valid CA3 fields, 47 valid CA1 fields with 5 progress bins and min 5 spikes",
+            "Sparsity correction via 100 null-matched neurons; two-tailed Wilcoxon signed-rank tests; two-tailed Mann-Whitney U for precessing vs. other",
+            "CA3 place fields convey significantly more position information during sparse phases; CA1 does not",
+            "Precession threshold: score > 0.3, slope steeper than -72 deg/field"
+          ]
+        },
+        {
+          "id": "results_place_concept",
+          "title": "CA3 place cells convey more coarse-scale position information during dense theta phases",
+          "content_bullets": [
+            "Coarse position binning across whole track; windows of 4 contiguous bins",
+            "Dense phases most preferentially informative at coarsest scales; trend tested by Spearman's rho",
+            "Valid CA3 neurons at scales 1/16, 1/8, 1/4: 47, 49, 56; CA1: 122, 137, 144",
+            "Shuffled data shows no dense/sparse difference, validating methodology"
+          ]
+        },
+        {
+          "id": "results_wmaze",
+          "title": "W-maze data confirm sparser theta phases encode example-like turn direction",
+          "content_bullets": [
+            "CRCNS hc-6 dataset (Karlsson et al., 2015); 2 turn directions; phase bins 45 deg",
+            "Min 5 spikes per phase value; theta modulation threshold as before",
+            "99 valid CA3 neurons; 187 valid CA1 neurons; 8 valid CA3 sessions, 25 valid CA1 sessions for population decoding",
+            "Bayesian population decoding: sliding windows width 0.5 s, stride 0.25 s; min 2 spikes; min 5 simultaneously recorded neurons; rectify activity below 0.02 * max",
+            "Sparse phases convey more turn information per spike; higher population decoding confidence and accuracy during sparse phases; effects specific to CA3 (not CA1)"
+          ]
+        },
+        {
+          "id": "results_ml",
+          "title": "Complementary encodings improve multitask machine learning",
+          "content_bullets": [
+            "MNIST digit classification (concept task) + random set identification with 20% pixel corruption (example task)",
+            "Single-task MLP: two hidden tanh layers 50 neurons; softmax output; SGD batch 50 lr 1e-4 momentum 0.9; >99.9% train accuracy",
+            "DeCorr loss decorrelates batch items across final hidden layer; epsilon=0.001; lambda=0 baseline, lambda=1 DeCorr",
+            "Baseline better at concept learning; DeCorr better at example learning; 32 networks each",
+            "Multitask MLP: two hidden tanh layers 100 neurons; 1000 train images; 10 sets; 100 epochs; 64 networks per condition",
+            "HalfCorr decorrelates only second half of final hidden layer: solves tradeoff and outperforms baseline and DeCorr in both tasks",
+            "Neuron influence via clamping: correlated neurons dominate concept learning, decorrelated dominate example learning"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Binary autoencoder: 3 hidden layers 128/1024/128; ReLU; sigmoid output; Heaviside binarization with straight-through estimator; KL sparsification lambda=10; Adam lr 1e-3 wd 1e-5; 150 epochs batch 64",
+        "EC->CA3 feedforward: WTA with l synapses; apost enforced; postsynaptic correlations independent of l",
+        "Hopfield storage: linear summation weighted by xi=0.1 PP strength; synaptic matrix with pattern subtraction",
+        "Retrieval: asynchronous Glauber dynamics; rescaled theta' and beta'; 10 update cycles; noisy cue inaccuracy 0.01",
+        "Overlap metric: m = (S.x - a*sum(S))/(a*N*(1-a)); theoretical concept max = sqrt(rho)",
+        "Sparsity correction with 100 null-matched neurons; Wilcoxon signed-rank tests; Mann-Whitney U; Spearman rho",
+        "Bayesian decoding likelihood from Poisson assumption"
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Multiplexed encoding via MF and PP pathways selected by theta-modulated inhibitory threshold",
+        "Compatibility with phase precession observations; CA3 encodes future more sharply, CA1 represents future more broadly",
+        "Connection to prior theoretical work: Tsodyks-Feigelman, Fontanari, Treves-Rolls, McClelland-Goddard, Kaifosh-Losonczy",
+        "Relationship to memory performance and theta power; storage vs. retrieval timing across theta",
+        "HalfCorr as functional heterogeneity within a single layer as alternative to modular networks",
+        "Future directions: spectrum of decorrelation strengths; continual and reinforcement learning; biological brains"
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Key hippocampus model parameters",
+      "columns": ["Region", "Size N", "Density a", "Within-concept correlation rho", "Input synapses l"],
+      "data_source": "experimental_log methods: NEC=1024 aEC=0.1 rhoEC=0.15; NDG=8192 aDG=0.005 rhoDG=0.02 lDG=205; NCA3=2048 aMF=0.02 rhoMF=0.01 lMF=8; aPP=0.2 rhoPP=0.09 lPP=205",
+      "caption_sketch": "Key hippocampus model parameters and their values unless otherwise noted."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Valid place cell counts across analyses",
+      "columns": ["Analysis", "CA3 count", "CA1 count"],
+      "data_source": "experimental_log: Fig 5L 35 CA3 fields, 47 CA1 fields; Fig 6E track scales 1/16,1/8,1/4 yield 47,49,56 CA3 and 122,137,144 CA1; Fig 7 W-maze 99 CA3 neurons, 187 CA1 neurons; population decoding 8 CA3 sessions, 25 CA1 sessions",
+      "caption_sketch": "Numbers of valid cells and sessions passing inclusion criteria per analysis."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Training hyperparameters for artificial networks",
+      "columns": ["Model", "Hidden size", "Optimizer", "Learning rate", "Batch", "Epochs", "lambda"],
+      "data_source": "experimental_log: Autoencoder Adam 1e-3 wd 1e-5 bs 64 150 epochs; Visualization Adam 1e-4 wd 1e-5 bs 128 100 epochs; Single-task MLP SGD 1e-4 momentum 0.9 bs 50 40/100/200 epochs lambda 0 or 1; Multitask MLP SGD 1e-4 bs 50 100 epochs lambda 1 tanh",
+      "caption_sketch": "Hyperparameters used in each neural network component."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig_pathways", "type": "schematic", "file": "fig_pathways.pdf", "caption": "Schematic of hippocampal model pathways: EC to DG via random sparse connectivity, EC to CA3 via perforant path (PP), DG to CA3 via mossy fibers (MF).", "data_source": "Figure 1A,2B description"},
+    {"figure_id": "fig_density_correlation", "type": "data_grounded", "file": "fig_density_correlation.pdf", "caption": "Encoding statistics across regions: density a and within-concept correlation rho.", "data_source": "aDG=0.005, aMF=0.02, aPP=0.2; rhoEC=0.15, rhoDG=0.02, rhoMF=0.01, rhoPP=0.09"},
+    {"figure_id": "fig_valid_cells", "type": "data_grounded", "file": "fig_valid_cells.pdf", "caption": "Valid cell counts passing inclusion criteria at each analysis stage and track scale.", "data_source": "CA3 scales 1/16,1/8,1/4: 47,49,56; CA1: 122,137,144; W-maze CA3 99, CA1 187"},
+    {"figure_id": "fig_ml_schematic", "type": "schematic", "file": "fig_ml_schematic.pdf", "caption": "Multitask multilayer perceptron architecture with HalfCorr loss applied to the second half of the final hidden layer.", "data_source": "Fig 8G-H description"},
+    {"figure_id": "fig_retrieval_schematic", "type": "schematic", "file": "fig_retrieval_schematic.pdf", "caption": "Theta-modulated threshold alternates the Hopfield-like CA3 network between sparse MF example retrieval and dense PP concept retrieval.", "data_source": "Fig 3, Fig 4 description"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "hippocampus CA3 autoassociative memory Hopfield",
+      "dentate gyrus pattern separation mossy fiber",
+      "theta oscillation phase coding hippocampus place cells",
+      "perforant path entorhinal cortex hippocampal circuit",
+      "concept learning generalization episodic memory",
+      "sparse coding autoencoder natural images"
+    ],
+    "micro_queries": [
+      "Hopfield network sparse patterns Tsodyks Feigelman",
+      "Glauber dynamics attractor network neural",
+      "phase precession place cells CA3 CA1",
+      "Bayesian population decoding place cells turn direction",
+      "splitter cells W-maze alternation Frank",
+      "DeCov DeCorr regularization overfitting deep learning",
+      "MNIST FashionMNIST multilayer perceptron",
+      "concept prototype category learning cognitive",
+      "spike-timing-dependent plasticity CA3",
+      "statistical mechanics attractor capacity"
+    ],
+    "must_cite": [
+      "Scoville and Milner 1957",
+      "McNaughton and Morris 1987",
+      "Treves and Rolls 1992",
+      "Hopfield 1982",
+      "Tsodyks and Feigelman 1988",
+      "Mizuseki et al 2013 CRCNS hc-3",
+      "Karlsson et al 2015 CRCNS hc-6",
+      "Olshausen and Field 1996",
+      "Xiao et al 2017 FashionMNIST",
+      "LeCun et al 1998 MNIST",
+      "Skaggs et al 1996",
+      "Bi and Poo 1998",
+      "Cogswell et al 2015 DeCov",
+      "Kang and Toyoizumi 2023",
+      "O'Keefe and Recce 1993 phase precession",
+      "Schapiro et al 2017",
+      "Quian Quiroga et al 2005",
+      "Amaral and Pierre 2006",
+      "Anderson 1991",
+      "Love et al 2004"
+    ],
+    "citation_target": 28
+  }
+}

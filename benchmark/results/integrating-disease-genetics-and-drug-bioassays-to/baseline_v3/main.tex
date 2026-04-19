@@ -1,0 +1,90 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{authblk}
+
+\title{Integrating Disease Genetics and Drug Bioassays to Identify Drug Side Effects}
+
+\author[1]{Anonymous Author}
+\affil[1]{Anonymous Institution}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Drug side effects are a major cause of drug attrition, but predicting them remains difficult because both chemical structure and biological context determine whether a given compound will produce a given phenotype. Here we integrate three classes of data: (i) high-throughput bioassay profiles of $\approx 1{,}000$ environmental and pharmaceutical chemicals from the EPA ToxCast program, (ii) phenotype associations compiled from the SIDER side-effect resource and from DrugBank indications, and (iii) disease-gene associations from GWAS combined with tissue-of-action priors from GTEx. We show that drugs with more similar ToxCast endpoint profiles are more likely to be associated with the same phenotypes ($p = 10^{-22}$, rank-sum, after accounting for the number of endpoints assayed via a linear model, $p = 1.7 \times 10^{-43}$); that drugs sharing one or more known DrugBank targets have more similar ToxCast endpoint effects ($p = 10^{-28}$, rank-sum on Spearman correlations); and that the correlation between disease genetic similarity and disease drug similarity is strong across tissues ($p = 4 \times 10^{-81}$). We build a soft-imputation matrix-completion step to handle the missing-at-random structure of ToxCast and an affinity-regression model that jointly regresses the drug-by-endpoint matrix against the drug-by-phenotype matrix. On held-out drugs, the resulting model achieves a significantly lower Jaccard distance to the true side-effect profile than a nearest-neighbour baseline for a majority of drugs ($p = 3 \times 10^{-8}$, rank-sum). Finally, across $132$ DrugBank targets shared by at least three drugs, we find $28$ targets with one or more significantly associated disease genes at adjusted $p < 0.01$. Together these results establish that coupling chemical bioassays with disease genetics improves prediction of drug side effects and identifies biologically interpretable target-to-phenotype links.
+\end{abstract}
+
+\section{Introduction}
+
+Drug side effects are a dominant cause of attrition in clinical development and are a major source of post-market withdrawal \cite{campillos2008side,lounkine2012large}. The key difficulty is that side effects are polygenic in their biological substrate: they depend not only on the primary target but also on secondary off-targets, tissue-specific gene expression, and pathway context. Two complementary data sources have historically been used to predict side effects. On one hand, side-effect similarity between drugs can be obtained from databases such as SIDER \cite{kuhn2016sider}, and chemical similarity from DrugBank \cite{wishart2018drugbank} and STITCH \cite{szklarczyk2016stitch}. On the other hand, large-scale chemical bioassay profiles are available from EPA ToxCast \cite{kavlock2012toxcast,tice2013improving}, and disease-gene associations can be harvested from the NHGRI-EBI GWAS Catalog \cite{buniello2019gwas,wagner2016gwascatalog} and combined with tissue-of-action priors from GTEx \cite{gtex2020}. Despite the success of human-genetics-supported drug discovery \cite{nelson2015drug,king2019drugindication,claussnitzer2020brief}, existing side-effect-prediction approaches have not yet integrated all three axes (bioassay, side-effect/indication, and disease genetics) in a unified, target-aware model.
+
+Here we do so. We leverage affinity regression \cite{pelossof2015affinity}, originally developed to predict transcription-factor binding preferences from protein-sequence features, as a bilinear matrix regression connecting drug bioassays and drug phenotypes via a learned drug-phenome effect matrix $E$. We handle missing data in the ToxCast matrix with soft-impute matrix completion \cite{mazumder2010softimpute}, we project phenotype similarity into a disease-gene/GTEx-tissue latent space, and we cross-validate on held-out drugs. We report three primary results: (1) drug bioassay similarity predicts phenotype similarity; (2) bioassay similarity tracks shared targets; and (3) affinity regression outperforms a nearest-neighbour baseline on held-out drugs. A target-by-disease-gene association scan identifies $28$ DrugBank targets with significantly associated disease genes.
+
+\section{Methods}
+
+\paragraph{Data.} We harmonize three sources: ToxCast endpoint profiles $T$ (drugs $\times$ endpoints) \cite{kavlock2012toxcast,tice2013improving}, SIDER/DrugBank phenotype associations $P$ (drugs $\times$ phenotypes) \cite{kuhn2016sider,wishart2018drugbank}, and disease-gene associations $D$ (diseases $\times$ genes) from the GWAS Catalog \cite{buniello2019gwas,wagner2016gwascatalog} weighted by GTEx tissue-expression priors \cite{gtex2020}. The ToxCast matrix is missing-at-random: different chemicals were assayed against different subsets of endpoints.
+
+\paragraph{Matrix completion.} We complete the ToxCast matrix with soft-impute \cite{mazumder2010softimpute}, which learns a low-rank factorization $T \approx U_T S_T V_T^\top$ by nuclear-norm regularization. The rank and regularization parameters are selected by holding out $5\%$ of the non-missing values as a validation set and minimizing imputation mean squared error.
+
+\paragraph{Affinity regression.} We adapt affinity regression \cite{pelossof2015affinity} to our setting. Let $T$ be the completed drug-by-endpoint matrix and $P$ the drug-by-phenotype matrix. Affinity regression models $P \approx T E D^\top$, where $E$ is a learned endpoint-by-gene drug-phenome effect matrix and $D$ is a disease-gene matrix weighted by GTEx tissue priors. Because of missing values and the high dimension of $D$, we represent each drug through its soft-imputed low-rank factor $U_D S_D$. The regularization parameter is tuned by holding out $10\%$ of drugs in each fold of cross-validation.
+
+\paragraph{Evaluation.} We predict drug side effects for held-out drugs using five-fold cross-validation on drugs (with $5\%$ of drugs held out per fold). We compare the Jaccard distance between predicted and true side-effect profiles against a nearest-neighbour baseline. For target-wise association, for each DrugBank target $t$ shared by at least three drugs we test whether the drug-phenome effect vector $E_{t,\cdot}$ is enriched for associations with disease-gene $g$, with Benjamini-Hochberg FDR at adjusted $p < 0.01$.
+
+\section{Results}
+
+\subsection{Drugs with similar bioassay profiles share phenotype associations}
+We quantified the association between bioassay similarity (Spearman correlation of ToxCast endpoints) and phenotype similarity (Jaccard index over SIDER/DrugBank phenotypes) across all pairs of drugs. We found that drugs with more similar ToxCast endpoint profiles were more likely to be associated with the same phenotypes ($p = 10^{-22}$, rank-sum test). Because pairs of drugs differ in the number of endpoints they have in common, we controlled for this via a linear model, and the effect strengthened ($p = 1.7 \times 10^{-43}$).
+
+\subsection{Disease genetic similarity tracks disease drug similarity}
+For each pair of diseases we computed two similarities: a genetic one (shared GWAS variants weighted by GTEx tissue expression) and a drug one (shared indicated drugs). Across all pairs and across all tissues, the correlation between disease genetic similarity and disease drug similarity was high, with Spearman $p = 4 \times 10^{-81}$.
+
+\subsection{Shared DrugBank targets imply shared bioassay profiles}
+Pairs of drugs sharing one or more known DrugBank targets have significantly more similar ToxCast endpoint profiles than pairs that do not (rank-sum on Spearman correlations, $p = 10^{-28}$). Thus ToxCast endpoints can be viewed as a diffuse biological fingerprint of a drug's pharmacology.
+
+\subsection{Affinity regression outperforms a nearest-neighbour baseline}
+On held-out drugs (five-fold cross-validation with $5\%$ held out per fold), our affinity-regression model achieves lower Jaccard distance between predictions and true side-effect profiles than a nearest-neighbour baseline for the majority of drugs (rank-sum $p = 3 \times 10^{-8}$). This shows that jointly modelling bioassays, side effects, and disease-gene associations in the factorized latent space of $U_D S_D$ yields better generalization than simple chemical-similarity transfer.
+
+\begin{table}[h]
+\centering
+\caption{Key statistical results.}
+\label{tab:stats}
+\begin{tabular}{ll}
+\toprule
+Analysis & Statistic \\
+\midrule
+Bioassay similarity predicts phenotype similarity (rank-sum) & $p = 10^{-22}$ \\
+Same after linear control for shared endpoints & $p = 1.7 \times 10^{-43}$ \\
+Disease genetic vs.\ drug similarity (Spearman across tissues) & $p = 4 \times 10^{-81}$ \\
+Shared DrugBank targets $\to$ shared bioassay (rank-sum) & $p = 10^{-28}$ \\
+Affinity regression vs.\ nearest-neighbour baseline (Jaccard) & $p = 3 \times 10^{-8}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Target-wise disease-gene associations}
+Across $132$ DrugBank targets shared by at least three drugs, we found $28$ targets with one or more significantly associated disease genes at adjusted $p < 0.01$ (Supplementary Table~2). These represent the target-disease-gene axes that contribute most robustly to predicted side effects and are candidates for follow-up mechanistic investigation.
+
+\subsection{Matrix-completion hyperparameters}
+The rank and regularization of soft-impute were chosen by a cross-validation-like procedure: $5\%$ of the non-missing ToxCast values were treated as missing, and the rank/regularization minimizing imputation MSE were selected. For affinity regression, the regularization parameter was tuned by holding out $10\%$ of drugs in each cross-validation fold.
+
+\section{Discussion}
+
+We have described a unified framework integrating disease genetics, drug bioassays, and drug side effects. Four quantitative findings anchor the framework. First, drugs with more similar ToxCast bioassay profiles share phenotype associations ($p = 10^{-22}$; $p = 1.7 \times 10^{-43}$ after linear control for shared-endpoint count). Second, disease genetic similarity strongly tracks disease drug similarity ($p = 4 \times 10^{-81}$ across tissues), complementing prior observations that human genetic support doubles the probability of drug approval \cite{nelson2015drug,king2019drugindication,finan2017drug}. Third, drugs sharing DrugBank targets share bioassay signatures ($p = 10^{-28}$), consistent with the STITCH chemical-protein interaction network view \cite{szklarczyk2016stitch}. Fourth, our affinity-regression model \cite{pelossof2015affinity} substantially outperforms a nearest-neighbour baseline on held-out drugs (Jaccard, $p = 3 \times 10^{-8}$), suggesting that integrating bioassays with disease genetics provides predictive signal that is not captured by chemical similarity alone. We identify $28$ DrugBank targets with significantly associated disease genes at adjusted $p < 0.01$ among $132$ targets shared by at least three drugs.
+
+Practical implications are twofold. First, the framework provides a principled way to re-purpose existing ToxCast and Tox21 bioassay datasets \cite{kavlock2012toxcast,tice2013improving} to predict clinical side effects. Second, by projecting drug-phenome effects into a disease-gene $\times$ tissue space, the framework produces biologically interpretable predictions that can be used for target prioritization and drug repositioning \cite{so2017analysis,kilpinen2016drugreposition,zitnik2018polypharm,nelson2015drug,claussnitzer2020brief}.
+
+Limitations include the restricted pharmacological coverage of ToxCast (which emphasizes environmental chemicals), the incomplete target annotation in DrugBank, the confounding of GWAS Catalog coverage by study-population ancestry, and the linear-bilinear nature of affinity regression. Extensions could incorporate non-linear factor models (e.g.\ deep variational matrix completion) \cite{mazumder2010softimpute}, connectivity-map transcriptomic signatures \cite{duran2016cmap}, and polypharmacy-specific side-effect modelling \cite{zitnik2018polypharm}. Future datasets integrating tissue-specific phenotype priors, human-genetics-supported targets \cite{finan2017drug}, and expanded bioassay coverage will further sharpen the predictions. Our results support a general picture in which disease genetics and drug bioassays, jointly interrogated, are a powerful substrate for predicting and explaining drug side effects.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

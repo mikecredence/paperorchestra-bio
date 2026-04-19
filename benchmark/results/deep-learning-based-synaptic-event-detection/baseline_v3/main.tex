@@ -1,0 +1,266 @@
+\documentclass[9pt,lineno]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{geometry}
+\usepackage{authblk}
+\usepackage{hyperref}
+\usepackage{natbib}
+\geometry{a4paper, margin=1in}
+
+\title{A deep learning framework for automated and generalized synaptic event analysis}
+
+\author[1]{miniML Authors}
+\affil[1]{Department of Molecular Life Sciences, University of Zurich, Switzerland}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Quantitative information about synaptic transmission is key to our understanding of neural function. Spontaneously occurring synaptic events carry fundamental information about synaptic function and plasticity. However, their stochastic nature and low signal-to-noise ratio present major challenges for reliable and consistent analysis. Here, we introduce miniML, a supervised deep learning-based method for accurate classification and automated detection of spontaneous synaptic events. Comparative analysis using simulated ground-truth data shows that miniML outperforms existing event analysis methods in terms of both precision and recall. miniML enables precise detection and quantification of synaptic events in electrophysiological recordings. We demonstrate that the deep learning approach generalizes easily to diverse synaptic preparations, different electrophysiological and optical recording techniques, and across animal species. miniML provides not only a comprehensive and robust framework for automated, reliable, and standardized analysis of synaptic events, but also opens new avenues for high-throughput investigations of neural function and dysfunction.
+\end{abstract}
+
+\section{Introduction}
+
+Synaptic communication serves as the fundamental basis for a wide spectrum of brain functions, ranging from computation and sensory integration to learning and memory. Synaptic transmission arises either from spontaneous or action potential-evoked fusion of neurotransmitter-filled synaptic vesicles \citep{KaeserRegehr2014}, resulting in electrical responses in the postsynaptic cell. Such synaptic events are a salient feature of all neural circuits and can be recorded using electrophysiological or imaging techniques.
+
+Random fluctuations in the release machinery or intracellular Ca\textsuperscript{2+} concentration cause spontaneous fusions of single vesicles (``miniature events'') \citep{Kavalali2015}, which play important roles in synaptic development and stability \citep{Banerjee2021,KaeserRegehr2014,Kavalali2015,McKinney1999}. Measurements of the amplitude, kinetics, and timing of these events provide essential information about the function of individual synapses and neural circuits. Miniature events are therefore key to our understanding of fundamental processes, such as synaptic plasticity and synaptic computation that support neural function \citep{AbbottRegehr2004,Holler2021}. For example, amplitude changes of miniature events are a proxy of neurotransmitter receptor modulation, which is thought to be the predominant mechanism driving activity-dependent long-term alterations in synaptic strength \citep{HuganirNicoll2013,MalinowMalenka2002} and homeostatic synaptic plasticity \citep{OBrien1998,Turrigiano1998}. In addition to spontaneous vesicle fusions, synaptic events also result from presynaptic action potentials in neural networks. Alterations in spontaneous neurotransmission have been observed in models of diverse neurodevelopmental and neurodegenerative disorders \citep{Alten2021,Ardiles2012,Miller2014}. Comprehensive analysis of synaptic events is therefore paramount for studying synaptic function and understanding neural disease. However, detection and quantification of synaptic events in electrophysiological or fluorescence recordings remains a major challenge. Synaptic events are often small in size, resulting in a low signal-to-noise ratio (SNR), and their stochastic occurrence further complicates reliable detection and evaluation.
+
+Several techniques have been developed for synaptic event detection. Finite-difference approaches use crossings of a predefined threshold, typically in raw data \citep{Kim2021}, baseline-normalized data \citep{KudohTaguchi2002}, or their derivatives \citep{Ankri1994}. Template-based methods use a predefined template and generate a matched filter via a scaling factor \citep{ClementsBekkers1997,Jonas1993}, deconvolution \citep{PerniaAndrade2012}, or an optimal filtering approach \citep{Shi2010,Zhang2021}. In addition, Bayesian inference \citep{Merel2016}, machine learning \citep{Wang2024}, and peak-finding routines \citep{Mori2024} have been used to detect synaptic events. While these techniques have facilitated the analysis of synaptic events, they suffer from several relevant limitations, including strong dependence of detection performance on a threshold and other decisive hyperparameters, or the need for visual inspection by an experienced investigator to avoid false positives. The widespread use of synaptic event recordings and the difficulty of obtaining reliable, inter-laboratory-comparable results highlight the need for an automated, accurate, efficient, and reproducible synaptic event analysis method.
+
+Artificial intelligence technologies such as deep learning \citep{LeCun2015} can significantly enhance biological data analysis \citep{Richards2022} and contribute to a better understanding of neural function. Convolutional neural networks (CNNs) are especially effective for image classification, but can also be used for one-dimensional data \citep{Fawaz2019,Wang2016}. CNNs have been successfully applied in neuroscience to segment brain regions \citep{Iqbal2019}, detect synaptic vesicles in electron microscopy images \citep{Imbrosci2022}, identify spikes in Ca\textsuperscript{2+} imaging data \citep{Rupprecht2021}, and localize neurons in brain slices \citep{Yip2021} or in fluorescence time-series data \citep{Denis2020,Sita2022}.
+
+Here, we present miniML, a novel approach for detecting and analyzing spontaneous synaptic events using supervised deep learning. The miniML model is an end-to-end classifier trained on an extensive dataset of annotated synaptic events. When applied to time-series data, miniML provides high-performance event detection with negligible false-positive rates, outperforming existing methods. The method is fast, robust to threshold choice, and generalizable across diverse data types, allowing for efficient and reproducible analysis, even for large datasets. We anticipate that AI-based synaptic event analysis will greatly enhance the investigation of synaptic function, plasticity, and computation from the individual synapse to the network level.
+
+\section{Methods}
+
+\subsection{Electrophysiological recordings}
+
+Acute cerebellar slices were prepared from mice of either sex. The extracellular artificial cerebrospinal fluid (ACSF) used for slicing and storage contained (in mM) 125 NaCl, 25 NaHCO\textsubscript{3}, 20 D-glucose, 2.5 KCl, 2 CaCl\textsubscript{2}, 1.25 NaH\textsubscript{2}PO\textsubscript{4}, and 1 MgCl\textsubscript{2}, aerated with 95\% O\textsubscript{2} and 5\% CO\textsubscript{2}. Slices were visualized using an upright microscope with a $60\times$, 1 NA water immersion objective, infrared optics, and differential interference contrast (Scientifica, UK). For event-free recordings, we blocked excitatory and inhibitory transmission using ACSF supplemented with 50 \si{\micro\Molar} D-APV, 10 \si{\micro\Molar} NBQX, 10 \si{\micro\Molar} bicuculline, and 1 \si{\micro\Molar} strychnine. Patch pipettes (open-tip resistances of 3--8 M$\Omega$) were filled with a solution containing (in mM) 150 K-D-gluconate, 10 NaCl, 10 HEPES, 3 MgATP, 0.3 NaGTP, and 0.05 EGTA (pH adjusted to 7.3 with KOH). Data were filtered at 2.9 kHz and digitized at 50 kHz.
+
+For recordings in human induced pluripotent stem cell (iPSC)-derived neurons, we recorded spontaneous EPSCs in 8-week-old neuronal cultures of cortical glutamatergic identity at a holding potential of $-80$ mV using ACSF consisting of (in mM) 135 NaCl, 10 HEPES, 10 D-glucose, 5 KCl, 2 CaCl\textsubscript{2}, and 1 MgCl\textsubscript{2} \citep{Asadollahi2023}. The experimental procedures for recordings of spontaneous or miniature EPSCs in zebrafish and \textit{Drosophila} are described in \citet{RupprechtFriedrich2018} and \citet{BaccinoCalace2022}, respectively. Synaptic events were observed in $\sim$51\% of neurons.
+
+\subsection{Combined electrophysiological and optical mEPSP recordings}
+
+Cultured rat hippocampal neurons at 17--20 days \textit{in vitro} were patched and imaged simultaneously at physiological temperature (30--34\,\si{\celsius}) following the procedure described in \citet{Hao2024}. Briefly, the extracellular solution for electrophysiological recordings contained 145 mM NaCl, 3 mM KCl, 2 mM CaCl\textsubscript{2}, 2 mM MgCl\textsubscript{2}, 10 mM HEPES, and 10 mM glucose (pH 7.4, osmolarity 310 mOsm/kg) supplemented with TTX (1 \si{\micro\Molar}) and PTX (50 \si{\micro\Molar}). The pipette solution contained 123 mM K-gluconate, 10 mM KCl, 8 mM NaCl, 1 mM MgCl\textsubscript{2}, 10 mM HEPES, 1 mM EGTA, 0.1 mM CaCl\textsubscript{2}, 1.5 mM MgATP, 0.2 mM Na\textsubscript{4}GTP, and 4 mM glucose (pH 7.2, osmolarity 295--300 mOsm/kg). Patch pipettes (open-tip resistances of 3--5 M$\Omega$) were produced from glass capillaries with filament (outer diameter 1.5 mm, inner diameter 1.0 mm, King Precision Glass). Electrophysiological recordings were digitized at 10 kHz for acquisition and then low-pass filtered with a 1 kHz cut-off in post-processing in Clampfit. ASAP5-Kv was excited using a SOLIS-470C LED light source (Thorlabs) with a 482/18-nm bandpass filter (Semrock); excitation light was set to provide an irradiance of 46 mW/mm\textsuperscript{2}.
+
+\subsection{The miniML model and training}
+
+The miniML model is a deep neural network combining CNN, long short-term memory (LSTM), and fully connected dense layers. A data segment of univariate time-series recording is passed through a convolutional block (1D convolutions, ReLU, and average pooling), a bidirectional LSTM block, and two dense layers, producing an output label in $[0, 1]$. Training data consisted of $\sim$30{,}000 labeled samples from voltage-clamp recordings of cerebellar mossy fiber-to-granule cell (MF--GC) mEPSCs \citep{Delvendahl2019}, split 0.75/0.25 into training and validation sets. Data augmentation was used to include examples of typical false positives. EarlyStopping was used for all models to prevent overfitting (difference between training and validation accuracy $<0.3\%$). The model with the highest validation accuracy was selected, achieving 98.4\% accuracy (SD 0.1, fivefold cross-validation). Saliency maps were computed following \citet{Simonyan2013}.
+
+\subsection{Event detection via sliding window}
+
+Detection in long recordings used a sliding-window approach: time-series data were divided into overlapping sections that match the input shape of the CNN-LSTM classifier. A stride was used to reduce inferences and speed up computation while maintaining detection performance. With stride = 20, a 120-s recording at 50 kHz sampling rate can be analyzed in $\sim$15 s on a laptop computer (Apple M1 Pro, 16 GB RAM). The total number of samples for a 120-s recording at 50 kHz is 6{,}000{,}000. Runtime can be minimized by using stride sizes up to 5\% of the event-window size without impacting detection performance. Given the 50 kHz sampling rate, the window corresponds to 12 ms. Peaks of the prediction trace above a default minimum peak height of 0.5 mark event localizations. Detected sections were then checked for overlapping events, aligned by the steepest slope, and used to calculate individual event statistics.
+
+\subsection{Benchmarking with simulated events}
+
+Event-free recordings from mouse cerebellar GCs (with blockers of excitatory and inhibitory transmission) were superimposed with synthetic events with a two-exponential time course to generate ground-truth data. Event amplitudes were drawn from a log-normal distribution with varying means to cover the range of SNRs typically observed in recordings of miniature events (2--15 dB, data from $n = 170$ GC recordings). Decay time constants were drawn from a normal distribution with mean 1.0 ms and variance 0.25 ms \citep{Delvendahl2019}. Generated events were randomly placed in the event-free recording with an average frequency of 0.7 Hz and a minimum spacing of 3 ms. To test robustness to altered event kinetics, simulated events were created by increasing (mean = 4.5 ms) or decreasing (mean = 0.5 ms) the average decay time constant. Hyperparameter settings of detection methods were: $-4$ for template-matching, $5\times$ SD of the detection trace for deconvolution, and $-4$ pA for the finite-threshold method. We measured detection performance using recall (sensitivity), precision (fraction of correct identifications), and F1 score.
+
+\subsection{Transfer learning}
+
+To adapt miniML to new event waveforms with reduced training-data demands, we used a transfer-learning (TL) strategy in which the convolutional layers of a pre-trained miniML model were frozen and only the LSTM and dense layers were retrained on the new dataset \citep{Caruana1994,Theodoris2023,Yosinski2014}.
+
+\subsection{Event analysis and statistics}
+
+Raw data were filtered with a Hann window for event analysis after detection. Decay times refer to half-decay times (the time to reach 50\% of the amplitude), and rise times were quantified as 10--90\% rise times. Effect sizes are reported as Cohen's $d$ or mean difference, with 95\% confidence intervals obtained by bootstrapping (5000 samples; confidence intervals are bias-corrected and accelerated) \citep{Ho2019}.
+
+\section{Results}
+
+\subsection{miniML enables highly accurate classification of synaptic events}
+
+We designed a CNN-LSTM classifier (``miniML'') that takes a section of a univariate time-series recording as input and outputs a label in the interval $[0, 1]$. We trained the model on $\sim$30{,}000 labeled samples from MF--GC mEPSC recordings \citep{Delvendahl2019}. Across training epochs, loss decreased and accuracy increased, stabilizing after $\sim$30 epochs. The best model achieved 98.4\% accuracy (SD 0.1, fivefold cross-validation). The ROC area under the curve approached 1, indicating near-perfect separability. Saliency analysis indicated that the model primarily relied on the data sections around the peak of synaptic events \citep{Simonyan2013}.
+
+To study how classification performance depends on dataset size, we systematically varied the number of training samples. Accuracy increased with larger datasets, but the performance gain was marginal when exceeding 5{,}000 samples ($<0.2\%$), indicating that relatively small datasets suffice for effective training \citep{Bailly2022}. EarlyStopping was used for all architectures to prevent overfitting (difference between training and validation accuracy $<0.3\%$). These results demonstrate the efficacy of supervised deep learning in accurately classifying segments of neurophysiological data containing synaptic events (Table~\ref{tab:classification}).
+
+\begin{table}[ht]
+\centering
+\caption{miniML classifier training performance on MF--GC mEPSC data.}
+\label{tab:classification}
+\begin{tabular}{lc}
+\toprule
+Metric & Value \\
+\midrule
+Training samples (total) & $\sim$30{,}000 \\
+Train / validation split & 0.75 / 0.25 \\
+Best validation accuracy & 98.4\% (SD 0.1) \\
+Cross-validation & fivefold \\
+Overfitting criterion (train--val accuracy) & $<0.3\%$ \\
+Dataset-size saturation threshold & 5{,}000 samples ($<0.2\%$ gain above) \\
+Event window (at 50 kHz sampling) & 12 ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sliding-window detection in long recordings}
+
+To apply the trained classifier to arbitrarily long recordings, we used a sliding window over overlapping sections. Stride sizes up to 5\% of the event-window size did not impact detection performance but reduced runtime. With stride = 20, a 120-s recording sampled at 50 kHz (6{,}000{,}000 samples) could be analyzed in $\sim$15 s on an Apple M1 Pro laptop (16 GB RAM); GPU computing enables analysis runtimes shorter than 20 s for the same recording. Table~\ref{tab:runtime} summarizes detection runtime and sampling information.
+
+\begin{table}[ht]
+\centering
+\caption{Detection runtime and configuration for miniML on a 120-s recording at 50 kHz.}
+\label{tab:runtime}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Recording length & 120 s \\
+Sampling rate & 50 kHz \\
+Total samples & 6{,}000{,}000 \\
+Stride (default) & 20 \\
+Laptop runtime (Apple M1 Pro, 16 GB RAM) & $\sim$15 s \\
+GPU runtime & $<20$ s \\
+Stride limit preserving performance & up to 5\% of event window \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{AI-based event detection is superior to previous methods}
+
+We benchmarked miniML against template-matching \citep{ClementsBekkers1997}, deconvolution \citep{PerniaAndrade2012}, a finite-threshold approach \citep{KudohTaguchi2002}, a Bayesian method \citep{Merel2016}, SimplyFire \citep{Mori2024}, and MiniAnalysis (Synaptosoft Inc.). Event-free voltage-clamp recordings from cerebellar GCs (with synaptic blockers) were superimposed with synthetic events drawn from a log-normal amplitude distribution, with SNRs spanning 2--15 dB (the range observed in recordings of miniature events; $n=170$ GC recordings). Recall depended on SNR for all methods, with miniML and deconvolution showing the highest values. The precision was highest for miniML, which detected no false positives at any SNR, in contrast to all other methods. miniML provided the highest F1 scores across SNRs and showed superior robustness when varying event kinetics. miniML's detection trace peaks did not depend on event amplitudes, which is a distinguishing feature among the tested methods.
+
+We also evaluated threshold dependence by systematically varying the detection threshold and measuring the number of detected events and F1 score. miniML's detection performance remained consistent over a wide range (5--195\%), with false positives occurring only at the lower threshold limit (5\%, corresponding to a cutoff value of 0.025 in the detection trace). The default hyperparameter values used in the benchmarks were $-4$ for template-matching, $5\times$ SD of the detection trace for deconvolution, and $-4$ pA for the finite-threshold approach. miniML was run using a GPU, and data were downsampled to 20 kHz for the Bayesian analysis. Table~\ref{tab:benchmark} summarizes key benchmarking conditions.
+
+\begin{table}[ht]
+\centering
+\caption{Benchmarking configuration for synthetic ground-truth data.}
+\label{tab:benchmark}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Event-free recording source & Mouse cerebellar GC (blockers; see Methods) \\
+SNR range (miniature events, $n=170$) & 2--15 dB \\
+Average simulated event frequency & 0.7 Hz \\
+Minimum spacing between simulated events & 3 ms \\
+Decay time constants (normal) & mean 1.0 ms, variance 0.25 ms \\
+Altered-kinetics decay mean (faster) & 0.5 ms \\
+Altered-kinetics decay mean (slower) & 4.5 ms \\
+Template-matching threshold & $-4$ \\
+Deconvolution threshold & $5\times$ SD of detection trace \\
+Finite-threshold (raw current) & $-4$ pA \\
+miniML default minimum peak height & 0.5 \\
+miniML threshold-robustness range & 5--195\% (false positives at 5\%) \\
+Bayesian analysis sampling rate & 20 kHz (downsampled) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{miniML detects events in out-of-sample recordings}
+
+We next applied miniML to recordings from preparations not represented in the training data. miniML accurately detected mEPSCs at the mouse calyx of Held, a large axosomatic auditory brainstem synapse. In cerebellar Golgi cells \citep{Kita2021}, miniML reliably identified events despite markedly slower kinetics than the training data (Golgi-cell decay 1.83 ms, SD 0.44 ms, $n = 10$ neurons; versus GC training data 0.9 ms). In cultured human iPSC-derived cortical glutamatergic neurons \citep{Asadollahi2023}, miniML detected spontaneous events with an average frequency of 0.15 Hz (SD 0.24 Hz, $n = 56$ neurons).
+
+\subsection{Transfer learning generalizes miniML to diverse event types}
+
+Simulations indicated that larger differences in event kinetics eventually limit detection with the MF--GC mEPSC model. We therefore used transfer learning (TL), in which the convolutional layers of a pre-trained miniML model are frozen while later layers are retrained on a new, typically small dataset \citep{Caruana1994,Theodoris2023,Yosinski2014}. TL models performed well with as few as 400 samples. Using TL, median accuracy was 95.4\%, only slightly lower than full training with nearly ten times more samples (96.1\%). TL-trained models reached comparable classification performance using only 12.5\% of the samples.
+
+We tested TL for detecting miniature excitatory postsynaptic potentials (mEPSPs) in cerebellar GCs by recording mEPSCs and mEPSPs consecutively from the same neuron. Event frequencies were very similar across recording modes (voltage-clamp: 0.49 Hz, SD 0.53 Hz; current-clamp: 0.54 Hz, SD 0.6 Hz; $n = 15$ for both) and highly correlated across neurons.
+
+For diverse synaptic events recorded from principal neurons of the adult zebrafish telencephalon \citep{RupprechtFriedrich2018}, TL yielded a model that reliably detected spontaneous excitatory currents across a dataset of $n = 34$ neurons, extracting amplitudes, event frequencies, decay times, and rise times. Mean decay and rise times were correlated across neurons. Decay-time distributions became broader when mean decay times were larger. Input resistance (a proxy for cell size) was negatively correlated with decay time, consistent with the hypothesis that diverse event kinetics across neurons are shaped by cell-size-dependent filtering of synaptic events en route to the soma. We did not find a significant anatomical-location dependence of decay time ($p > 0.05$ for all three spatial dimensions).
+
+Table~\ref{tab:generalization} summarizes miniML's event-detection results across the electrophysiological preparations examined here.
+
+\begin{table}[ht]
+\centering
+\caption{miniML event detection across electrophysiological preparations.}
+\label{tab:generalization}
+\begin{tabular}{lll}
+\toprule
+Preparation & Metric & Value \\
+\midrule
+Mouse cerebellar GC (training data) & mEPSC decay time & 0.9 ms \\
+Mouse cerebellar Golgi cell & mEPSC decay time & 1.83 ms (SD 0.44; $n=10$) \\
+Human iPSC-derived neurons & mEPSC frequency & 0.15 Hz (SD 0.24; $n=56$) \\
+Mouse cerebellar GC mEPSC (voltage-clamp) & Event frequency & 0.49 Hz (SD 0.53; $n=15$) \\
+Mouse cerebellar GC mEPSP (current-clamp) & Event frequency & 0.54 Hz (SD 0.6; $n=15$) \\
+Zebrafish telencephalon neurons (TL) & Neurons analyzed & $n = 34$ \\
+TL accuracy (median) & Accuracy & 95.4\% \\
+Full training accuracy (median) & Accuracy & 96.1\% \\
+TL sample fraction & Training samples & 12.5\% of full set \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{miniML resolves genetic perturbations at the \textit{Drosophila} NMJ}
+
+We applied miniML (with TL) to two-electrode voltage-clamp recordings at the \textit{Drosophila} larval NMJ \citep{BaccinoCalace2022}. In wild-type (WT) recordings, a small dataset of manually extracted events was used to train a TL model that reliably identified events. A separate TL model was trained for GluRIIA-mutant recordings, which have reduced mEPSC amplitude and faster kinetics \citep{DiAntonio1999}. We observed a 54\% reduction in mEPSC amplitude compared to WT \citep{DiAntonio1999,Petersen1997}, a 64\% reduction in event frequency, and shorter half-decay and rise times ($-58\%$ and $-18\%$, respectively). These changes are consistent with the faster desensitization of the remaining GluRIIB receptors \citep{DiAntonio1999}. Table~\ref{tab:drosophila} summarizes the genotype comparison.
+
+\begin{table}[ht]
+\centering
+\caption{WT versus GluRIIA mutant \textit{Drosophila} NMJ mEPSC parameters detected by miniML.}
+\label{tab:drosophila}
+\begin{tabular}{lc}
+\toprule
+Parameter (GluRIIA relative to WT) & Change \\
+\midrule
+mEPSC amplitude & $-54\%$ \\
+Event frequency & $-64\%$ \\
+Half-decay time & $-58\%$ \\
+Rise time (10--90\%) & $-18\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Optical detection of synaptic events with iGluSnFR3 and ASAP5}
+
+We applied miniML to fluorescence time-series data. First, we analyzed published recordings from rat neuronal cultures expressing the glutamate sensor iGluSnFR3 \citep{Aggarwal2023}, in which TTX was present. Given the low sampling rate (100 Hz), we upsampled the data 10$\times$ to match the model's input shape. The TL model was applied to all detected sites ($n = 1524$). Optical minis had kinetics consistent with those reported in \citet{Aggarwal2023}: the 10--90\% rise-time median was 21.8 ms and the half-decay median was 48.7 ms. Event frequencies across sites followed a power-law distribution, consistent with fractal behavior of glutamate release \citep{Lowen1997}.
+
+We next performed simultaneous electrophysiological and fluorescence recordings of mEPSPs in cultured rat hippocampal neurons expressing ASAP5-Kv \citep{Hao2024}. ASAP5 linearly reports subthreshold voltage changes, as confirmed by close correlation of optical and current-clamp signals (Pearson's $r = 0.9$; amplitude slope of 0.95 mV per $-\%\Delta F/F_0$, Pearson's $r = 0.83$). Event detection in voltage-imaging data is more challenging than in electrophysiological data: the SNR of mEPSPs in ASAP5 data was 2.26 (SD 0.46) versus 4.79 (SD 0.74) in electrophysiology ($n = 5$ neurons). Despite this lower SNR, miniML detected $\sim$40\% of mEPSPs in optical data, a substantial improvement over template-based methods. With threshold settings of the matched-filtering approaches adjusted to achieve $\sim$90\% precision, miniML had the highest recall (miniML, $0.38 \pm 0.05$; template matching, $0.25 \pm 0.05$, Cohen's $d$, $1.25$; deconvolution, $0.09 \pm 0.01$, Cohen's $d$, $3.87$; mean $\pm$ SEM), with similar precision across methods (miniML, $0.93 \pm 0.01$; template matching, $0.95 \pm 0.02$; deconvolution, $0.8 \pm 0.1$).
+
+F1 scores for ASAP5 data were higher for miniML ($0.53 \pm 0.04$, mean $\pm$ SEM) than for template-matching ($0.39 \pm 0.05$, Cohen's $d$, $1.35$) or deconvolution ($0.17 \pm 0.01$, Cohen's $d$, $5.1$) across $n = 5$ neurons. The number of events detected by each method in the illustrative ASAP5 recording was 101 (miniML), 82 (template-matching), and 15 (deconvolution). The slower observed kinetics in ASAP5 data likely reflect in part the lower imaging sampling rate (400 Hz) relative to electrophysiology (10{,}000 Hz). Table~\ref{tab:optical} summarizes miniML's performance in optical data.
+
+\begin{table}[ht]
+\centering
+\caption{miniML performance on optical recordings of synaptic events.}
+\label{tab:optical}
+\begin{tabular}{ll}
+\toprule
+Measurement & Value \\
+\midrule
+iGluSnFR3 sampling rate & 100 Hz (upsampled $10\times$) \\
+iGluSnFR3 sites analyzed & $n = 1524$ \\
+iGluSnFR3 10--90\% rise time (median) & 21.8 ms \\
+iGluSnFR3 half-decay time (median) & 48.7 ms \\
+ASAP5 SNR (mEPSP) & 2.26 (SD 0.46; $n = 5$ neurons) \\
+Electrophysiology SNR (mEPSP) & 4.79 (SD 0.74; $n = 5$ neurons) \\
+Ephys sampling rate & 10{,}000 Hz \\
+ASAP5 sampling rate & 400 Hz \\
+Amplitude correlation (optical vs. ephys) & Pearson's $r = 0.9$ \\
+Amplitude regression (slope, $r$) & 0.95 mV/$-\%\Delta F/F_0$; $r = 0.83$ \\
+miniML recall (ASAP5) & $0.38 \pm 0.05$ (mean $\pm$ SEM) \\
+Template-matching recall (ASAP5) & $0.25 \pm 0.05$ (Cohen's $d$, 1.25) \\
+Deconvolution recall (ASAP5) & $0.09 \pm 0.01$ (Cohen's $d$, 3.87) \\
+miniML precision (ASAP5) & $0.93 \pm 0.01$ \\
+Template-matching precision (ASAP5) & $0.95 \pm 0.02$ \\
+Deconvolution precision (ASAP5) & $0.8 \pm 0.1$ \\
+miniML F1 (ASAP5) & $0.53 \pm 0.04$ (mean $\pm$ SEM) \\
+Template-matching F1 (ASAP5) & $0.39 \pm 0.05$ (Cohen's $d$, 1.35) \\
+Deconvolution F1 (ASAP5) & $0.17 \pm 0.01$ (Cohen's $d$, 5.1) \\
+Events detected (example ASAP5) & miniML 101; template 82; deconvolution 15 \\
+Precision-adjustment target & $\sim$90\% precision \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We developed and evaluated miniML, a supervised deep learning approach for detecting spontaneous synaptic events. miniML provides a comprehensive and versatile framework for analyzing synaptic events in diverse time-series data, with several important advantages over current methods. miniML outperforms existing methods with respect to false positives, which is crucial for accurate quantification of synaptic transmission. In addition, its detection performance is robust to threshold choice, effectively eliminating the usual trade-off between false-positive and false-negative rates present in other event-detection methods \citep{ClementsBekkers1997,Merel2016,Mori2024,PerniaAndrade2012}. miniML's Python-based software, combined with a graphical user interface akin to MiniAnalysis or SimplyFire, supports automation and analysis of large-scale neurophysiological datasets, facilitating open and reproducible analysis \citep{Ascoli2017,Ferguson2014}.
+
+Our results from a wide variety of preparations---spanning multiple species (mouse, human, rat, zebrafish, \textit{Drosophila}), distinct neuronal types, and multiple recording modalities---demonstrate miniML's robustness and general applicability. Data with event waveforms similar to the original training data can be analyzed immediately. For more distinct event waveforms or data properties, data resampling and/or retraining via transfer learning enables event detection optimized for the respective recording conditions. TL requires only a few hundred labeled events and thus allows straightforward application to novel datasets, including retraining to suppress dataset-specific false positives. This scalability is a key advantage of miniML over traditional methods.
+
+Event detection with miniML is not restricted to electrophysiological data but also applies to optical time-series data---from glutamate \citep{Aggarwal2023}, Ca\textsuperscript{2+} \citep{TranStricker2021}, and membrane-voltage \citep{Li2020} indicators. Optical recordings of subthreshold synaptic events pose particular challenges due to lower sampling rates and SNR, and require efficient detection methods. Recent indicator improvements \citep{Evans2023,Hao2024,ZhangRozsa2023} enable optical recordings of subthreshold events, and our ASAP5 and iGluSnFR3 analyses show that miniML detects small events that template-based methods miss. The approach may similarly support the analysis of evoked postsynaptic responses, unitary event quantification, failure analysis, and functional connectivity studies \citep{Campagnola2022}.
+
+Systematic benchmarking requires standardized ground-truth data, which are generally lacking for spontaneous synaptic event recordings \citep{Theis2016}. We therefore used event-free recordings superimposed with synthetic events, which preserves realistic noise statistics \citep{Merel2016,PerniaAndrade2012}. This pipeline may serve as a general toolbox for evaluating synaptic event detection methods.
+
+The supervised-learning approach of miniML requires labeled training data. Although TL reduces this burden, users must still annotate a small number of events in their data. Future directions include unsupervised representation learning (e.g., autoencoders) to reduce reliance on labels. In addition, at very high event frequencies, individual events may overlap and be difficult to separate; while miniML can detect overlapping events, very close events may be missed. Complementary techniques, such as wavelet analysis or shapelet analysis \citep{BatalHauskrecht2009,YeKeogh2009}, could further improve detection of overlapping events.
+
+miniML presents an innovative data-analysis method that will advance synaptic physiology. Its open-source Python design enables seamless integration into existing pipelines. Despite its deep-learning approach, miniML runs at rapid speed on commodity hardware. Standardized, efficient, reproducible analysis of synaptic events will promote new insights into synaptic physiology and dysfunction \citep{Lepeta2016,ZoghbiBear2012} and advance our understanding of neural function. The optical applications of miniML may open new avenues in imaging-based studies of synaptic activity, complementing ongoing improvements in voltage and glutamate indicators \citep{Abdelfattah2023,Ralowicz2024,SjulsonMiesenbock2007,Wilt2013}.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

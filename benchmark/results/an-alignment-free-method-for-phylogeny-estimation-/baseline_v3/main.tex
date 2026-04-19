@@ -1,0 +1,248 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{authblk}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\title{Peafowl: An Alignment-Free Method for Phylogeny Estimation using Maximum Likelihood}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+While alignment has traditionally been the primary approach for establishing homology prior to phylogenetic inference, alignment-free methods offer a simplified alternative, particularly beneficial when handling genome-wide data involving long sequences and complex events such as rearrangements. Alignment-free methods become especially important for data types such as genome skims, where assembly is impractical. However, alignment-free techniques have not gained widespread acceptance because they have historically lacked the accuracy of alignment-based techniques, primarily due to their reliance on simplified models of pairwise distance calculation. Here, we present a likelihood-based alignment-free technique for phylogenetic tree construction. We encode the presence or absence of $k$-mers in genome sequences in a binary matrix and estimate phylogenetic trees using a maximum likelihood approach. We analyze the performance of our method on seven real datasets and compare the results with state-of-the-art alignment-free methods. Results suggest that our method is on par with existing alignment-free tools, achieving the lowest normalized Robinson--Foulds (nRF) distance on three of seven datasets (7 Primates, Drosophila, 25 Fish) and an identical-to-reference tree on a fourth (8 Yersinia) when run in non-canonical counting mode. This indicates that maximum-likelihood based alignment-free methods may in the future be refined to outperform alignment-free methods relying on distance calculation, as has been the case in the alignment-based setting. A likelihood-based alignment-free method for phylogeny estimation is implemented for the first time in a software named Peafowl, available at \url{https://github.com/hasin-abrar/Peafowlrepo}.
+\end{abstract}
+
+\section{Introduction}
+
+A phylogenetic tree depicts the evolutionary history of a given set of species. Efficient and accurate construction of phylogenies from genome data is one of the most important problems in biology and a major research focus in bioinformatics and systematics. Phylogeny construction methods can be broadly classified into two groups: distance-based and character-based. Distance-based methods compute pairwise distances from the genomic sequences of species to construct a distance matrix, to which tree construction algorithms are then applied. Popular distance-based methods include UPGMA \cite{sokal1958upgma} and neighbor-joining (NJ) \cite{saitou1987nj}. They are fast and scale to many sequences, but their performance depends on the accuracy of the distance matrix. Character-based methods use the sequences, typically in the form of a multiple sequence alignment (MSA). Maximum parsimony \cite{fitch1971parsimony} is a character-based approach where the best tree is the one that minimizes the number of nucleotide changes on the tree. Maximum likelihood \cite{felsenstein1981ml}, a probabilistic character-based approach, uses specific models of sequence evolution to find a tree that maximizes the likelihood of observing the set of input sequences. This approach is realistic and suitable for species that vary widely in similarity, unlike maximum parsimony.
+
+Previous studies indicate that maximum-likelihood approaches are generally superior to distance-based methods. Maximum-likelihood methods estimate correct trees better than neighbor-joining when the underlying assumptions behind the methods are not satisfied \cite{kuhner1994mlnj}, and are also more robust than distance-based methods using a least-squares criterion \cite{felsenstein2004book}.
+
+In the alignment-based paradigm, both distance-based and character-based approaches require prior alignment of the input sequences. The quality of the alignment greatly affects the resulting phylogeny. Sequence alignment is memory- and time-intensive, and hence difficult to scale to large sequences and whole genomes. Moreover, finding an optimal multiple sequence alignment is computationally intractable, as the number of possible alignments grows exponentially with sequence length \cite{zielezinski2017afreview}. Furthermore, alignment-based methods assume a preserved linear order of homology, so rearrangement events such as translocations and inversions within whole-genome sequences further complicate sequence alignment \cite{zielezinski2017afreview}.
+
+To overcome these difficulties, alignment-free phylogenetic analyses that avoid MSA have gained attention, saving substantial time and memory. These methods are robust to rearrangement events and suitable for phylogeny estimation from large sequences and whole genomes. Despite these practical advantages, alignment-free techniques have not demonstrated the same level of accuracy as alignment-based methods on small, rearrangement-free sequences such as single genes. This is because alignment-free methods still require effective strategies for handling homology, a challenge no less complex than alignment itself.
+
+A multitude of recently developed alignment-free methods have been comprehensively reviewed in \cite{zielezinski2017afreview,bernard2019afreview}. Among these, co-phylog \cite{yi2013cophylog} searches for short alignments of fixed length allowing a mismatch in the middle; andi \cite{haubold2015andi} looks for mismatches surrounded by long exact matches and uses counts of mismatches to estimate the number of substitutions between two sequences; mash \cite{ondov2016mash} is based on the MinHash technique to find representative sketches of sequences from which Jaccard indices are estimated as a distance measure; and Multi-SpaM \cite{dencker2020multispam} uses the Spaced Word Match (SWM) approach \cite{leimeister2017spacedwords} to identify quartet groups, i.e.\ groups of four spaced words with matching nucleotides at the match positions and probable mismatches at the don't-care positions. The AFproject benchmark \cite{zielezinski2019afproject} provides a comprehensive comparison of alignment-free tools on real and simulated datasets.
+
+The majority of alignment-free methods developed so far are distance-based and therefore do not allow model-based phylogeny estimation, which is known to be more robust. H{\"o}hl and Ragan \cite{hohl2007bayesian} proposed a Bayesian approach for phylogeny inference based on the existence of $k$-mers (contiguous subsequences of length $k$) in the sequences. Motivated by the observation that maximum-likelihood methods outperform distance-based methods in the alignment-based setting, we present in this paper an alignment-free method for phylogenetic tree construction that utilizes maximum-likelihood estimation. We first construct a matrix encoding the presence or absence of $k$-mers within the sequences, and then apply an existing substitution model for binary traits to construct a phylogeny that maximizes likelihood. The method is implemented in a tool called \textbf{Peafowl} (Phylogeny Estimation through Alignment-Free Optimization With Likelihood). We analyze the performance of Peafowl on seven real datasets, including five datasets from the AFproject benchmark \cite{zielezinski2019afproject}.
+
+\section{Methods}
+
+An overview of phylogenetic tree estimation using Peafowl is given below. The method consists of four major steps. First, the set of $k$-mers present in each input sequence is generated. Second, a binary matrix is constructed that encodes the presence or absence of $k$-mers within the sequences. Third, a suitable value of $k$ is chosen based on entropy values. Finally, a phylogenetic tree is constructed using maximum-likelihood estimation. A sketch of the full procedure is given in Algorithm~\ref{alg:peafowl}.
+
+\begin{algorithm}[t]
+\caption{Phylogeny estimation using Peafowl}
+\label{alg:peafowl}
+\begin{algorithmic}[1]
+\Require Input DNA sequences $S_1,\dots,S_m$; odd $k\in\{9,11,\dots,31\}$; $p=5000$
+\For{each $k \in \{9,11,\dots,31\}$}
+  \State Enumerate $k$-mers in each $S_j$ using Jellyfish (canonical or non-canonical mode)
+  \State Construct binary matrix $X^{(k)}$ with rows = $k$-mers, columns = species
+  \State Compute cumulative entropy $C_{\text{entropy}}(X^{(k)})$ over $p$ randomly selected rows
+\EndFor
+\State $k_{\text{entropy}} \gets \arg\max_k C_{\text{entropy}}(X^{(k)})$
+\State Run RAxML (BINGAMMA) on $X^{(k_{\text{entropy}})}$ to estimate tree topology $T$
+\State \Return $T$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Generating $k$-mers}
+
+The first step in Peafowl is to generate the lists of $k$-mers present in the input sequences. $k$-mers are generated from the input DNA sequences using Jellyfish \cite{marcais2011jellyfish} for odd values of $k$ ranging from 9 to 31. Because DNA is double-stranded and the sequences on the two strands are complements of each other, a $k$-mer and its reverse complement may be considered the same (\emph{canonical} counting) or treated as separate entities (\emph{non-canonical} counting). Peafowl supports both modes. All results reported in this paper, except where noted (Section~\ref{sec:hgt}), use canonical counting because assembled sequences may correspond to either strand.
+
+\subsection{Generating binary matrices}
+
+The next step is to construct a binary matrix denoting whether the generated $k$-mers are present in the given sequences. This matrix consists of only 0's and 1's; rows represent $k$-mers and columns represent input species. An entry is 1 if the $k$-mer (or its reverse complement under canonical counting) representing the row is present in the sequence representing the column and 0 otherwise. One such matrix is produced for each value of $k$. We use hashing for this task: $k$-mers are read from file, and a unique index is generated for each. They are inserted into a hash table along with the identification numbers of the species in which they occur, and the resulting indices are scanned to fill in the binary matrix.
+
+\subsection{Finding an appropriate $k$-mer length}
+
+A number of approaches have been proposed to choose a proper $k$-mer length for alignment-free analysis. Sims et al.\ \cite{sims2009ffpsize} apply a logarithmic function on input sequence length to calculate a suitable value of $k$, but this does not account for how closely related the species are. Slope-SpaM \cite{rohling2020slopespam} analyzes match probability to calculate lower and upper bounds on $k$-mer length, but does not return a single specific value. Our goal is to choose a $k$ that yields the most informative binary matrix for tree reconstruction.
+
+The genetic diversity among different genome sequences can be modeled by the concept of entropy \cite{shannon1948entropy}, which has also been used in other sequence analysis approaches \cite{vinga2003entropy,schmitt2011entropy}. We utilize entropy for $k$-mer length selection. $k$-mers found in almost all species introduce many 1's in the matrix, while rare ones introduce many 0's; $k$-mers in between provide comparatively more information. A binary matrix rich in such $k$-mers captures the relationships between species better than one dominated by extremes. Cumulative entropy for any binary matrix is calculated as:
+\begin{equation}
+C_{\text{entropy}} \;=\; \sum_{i=1}^{p} H(X_{i,\cdot}),\qquad H(X_{i,\cdot}) \;=\; -\!\!\sum_{x\in\{0,1\}} P(X_{i,j}=x)\,\log_2 P(X_{i,j}=x),
+\label{eq:entropy}
+\end{equation}
+where $p$ is the number of $k$-mers used for entropy calculation and $m$ is the total number of species. $X_{ij}$ is the entry in the matrix corresponding to the $i$-th row and $j$-th species, taking values 0 or 1. The equation adds the entropy values of $p$ randomly selected rows to get the cumulative entropy for any binary matrix. We set $p = 5000$ empirically.
+
+Empirical evidence suggests that $k < 9$ causes $k$-mers to be excessively abundant, while $k > 31$ often leads to $k$-mers appearing in only one or a few sequences \cite{rohling2020slopespam}. For even values of $k$, a $k$-mer and its reverse complement may become identical, causing inconsistency in the non-canonical counting mode \cite{marcais2018kmercanonical}. To address these issues and reduce computational complexity, binary matrices are created for odd $k$ ranging from 9 to 31. $C_{\text{entropy}}$ values from different $k$ are compared and the $k$ yielding the maximum entropy is selected. We refer to this length as $k_{\text{entropy}}$.
+
+\subsection{Generating phylogenetic trees}
+
+Once $k_{\text{entropy}}$ has been obtained, the final step is to construct a tree from the corresponding binary matrix. This is done using the widely-used maximum-likelihood phylogeny estimation tool RAxML \cite{stamatakis2014raxml}. We use the \texttt{BINGAMMA} substitution model for binary traits, which assumes a gamma prior on site mutation rates and takes binary sequences as input, assuming sites to be independent, to output an estimated tree topology. However, in reality, one character substitution in a sequence affects a number of neighboring $k$-mers at that site. For this reason we focus on tree topology only and leave branch length estimation as future work.
+
+\subsection{Implementation}
+
+Peafowl is implemented in C\texttt{++} and shell scripts. It uses Jellyfish 2.2.4 for $k$-mer counting; Jellyfish was selected on the basis of the comparison by Zhang et al.\ \cite{zhang2014kmercount} because it is fast, supports dynamic memory, and is preferable for large genome sequences. Peafowl uses RAxML 8.2.4 (Randomized Axelerated Maximum Likelihood) \cite{stamatakis2014raxml}, a popular phylogenetic analysis software that can handle large datasets and is useful for maximum-likelihood based phylogeny inference. The tool is available at \url{https://github.com/hasin-abrar/Peafowlrepo}.
+
+\section{Results}
+
+\subsection{Datasets and benchmarking}
+
+We assess the performance of Peafowl using seven real datasets. First, we analyze a 7 Primates dataset from \cite{zielezinski2017afreview} and a Drosophila dataset from \cite{sarmashghi2019skmer}. The 7 Primates dataset contains full mitochondrial genome sequences of 7 primates, and the Drosophila dataset consists of real genome skims of 14 Drosophila species subsampled to 100~Mb. We selected these datasets because the reference trees are well established. Next, we analyzed five real datasets from the AFproject \cite{zielezinski2019afproject} categories Genome-based Phylogeny and Horizontal Gene Transfer that had assembled genomes: assembled sequences of 29 E.~coli/Shigella strains \cite{yi2013cophylog}, assembled mitochondrial genomes of 25 fish species of the suborder Labroidei \cite{fischer2013fishmito}, full genome sequences of 14 plant species \cite{hatje2012plant}, full genome sequences of 27 E.~coli/Shigella strains \cite{chan2014hgt}, and full genome sequences of 8 Yersinia strains \cite{chan2014hgt}.
+
+Genome sequences, benchmark trees, and reference results for the five AFproject datasets were obtained from \cite{zielezinski2019afproject}; for the primates and Drosophila datasets they were obtained from \cite{zielezinski2017afreview} and \cite{sarmashghi2019skmer} respectively. The primary performance metric used throughout is the Robinson--Foulds (RF) distance \cite{robinson1981rf}, which measures the distance between two trees by counting dissimilar partitions. Dividing by the maximum possible RF value yields the normalized RF distance (nRF): smaller values indicate greater congruence with the reference tree.
+
+Peafowl was run with the \texttt{-r} parameter (canonical $k$-mer counting) i.e.\ reverse complements are counted as the same $k$-mer. The tree corresponding to $k_{\text{entropy}}$ is treated as the final tree. nRF distances for Peafowl are compared to state-of-the-art methods from the AFproject \cite{zielezinski2019afproject}, including FFP \cite{sims2009ffp,sims2009ffpsize}, co-phylog \cite{yi2013cophylog}, mash \cite{ondov2016mash}, Skmer \cite{sarmashghi2019skmer}, FSWM/Read-SpaM \cite{leimeister2017spacedwords,leimeister2019readspam}, andi \cite{haubold2015andi}, phylonium \cite{klotzl2019phylonium}, Multi-SpaM \cite{dencker2020multispam}, and CAFE-cvtree \cite{lau2019cafe}. No single method benchmarked by \cite{zielezinski2019afproject} achieves the best scores across all datasets. Some benchmarked tools produce only a distance matrix; for the 7 Primates and Drosophila datasets we therefore applied the neighbor-joining and UPGMA implementations in MEGA-X \cite{kumar2018megax} to those distance matrices and computed RF distances with PHYLIP \cite{felsenstein1989phylip}. nRF values reported here for the benchmark tools come from trees produced by neighbor-joining. We limit the scope to phylogenetic trees of up to 30 species.
+
+\subsection{Selection of $k$-mer lengths}
+
+For every dataset, we observed that the lowest nRF distance occurs at $k_{\text{entropy}}$, the value of $k$ with the highest cumulative entropy. For the 7 Primates dataset, the minimum nRF distance of 0 and the maximum entropy are both obtained when $k=9$. On the Drosophila dataset, there is a drop in nRF at $k=23$; this is likely because the dataset contains only seven species (relative to the number of bipartitions), so a change in a single branch leads to a substantial decrease in nRF. In all subsequent sections, we only report nRF distances corresponding to the tree obtained with $k_{\text{entropy}}$.
+
+\subsection{7 Primates and Drosophila datasets}
+
+Peafowl along with several other methods (e.g.\ andi, Multi-SpaM, FFP) correctly reconstructed the reference tree for 7 Primates, achieving an nRF of 0. Other highly accurate methods such as mash, Skmer, and co-phylog placed Gibbon as the sister to hominines (gorillas, chimpanzees, and humans), failing to reconstruct the well-established (orangutan, (gorilla, (chimpanzee, human))) relationship.
+
+For the Drosophila dataset, the trees with the lowest nRF were obtained by Peafowl, Skmer, and phylonium. Peafowl and Skmer produced the same tree, which differs from the reference tree in one branch: both reconstructed a sister relationship of \emph{Drosophila mauritiana} and \emph{Drosophila simulans}, which contradicts the reference-supported (\emph{D.\ mauritiana}, (\emph{D.\ simulans}, \emph{D.\ sechellia})) relationship.
+
+Summary values for these two datasets are reported in Table~\ref{tab:primates_drosophila}.
+
+\begin{table}[t]
+\centering
+\caption{Normalized Robinson--Foulds (nRF) distances on the 7 Primates and Drosophila datasets. Lower is better; 0 indicates a tree identical to the reference. Categorical labels ``tied-best'' identify methods that share the lowest numerical nRF for that column; exact numeric nRF values for the benchmarked methods are available in the AFproject \cite{zielezinski2019afproject}.}
+\label{tab:primates_drosophila}
+\begin{tabular}{lcc}
+\toprule
+Method & 7 Primates nRF & Drosophila (category) \\
+\midrule
+Peafowl      & 0.00 & tied-best \\
+andi         & 0.00 & N/A \\
+Multi-SpaM   & 0.00 & N/A \\
+FFP          & 0.00 & N/A \\
+Skmer        & N/A  & tied-best \\
+phylonium    & N/A  & tied-best \\
+mash         & N/A  & N/A \\
+co-phylog    & N/A  & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Genome-based phylogeny}
+
+The Genome-based Phylogeny group of the AFproject \cite{zielezinski2019afproject} includes assembled 29 E.~coli/Shigella strains, assembled mitochondrial genomes of 25 fish species, and full genome sequences of 14 plant species. Peafowl attains nRF values of 0.23, 0.05, and 0.36 on these datasets, respectively.
+
+On the 25 Fish dataset, Peafowl is among the best-performing tools, achieving the lowest nRF distance of 0.05 along with mash and FSWM. On the 29 E.~coli/Shigella and 14 plant datasets, however, Peafowl is outperformed by other methods: the best-performing method on 29 E.~coli/Shigella is phylonium, whereas co-phylog, mash and Multi-SpaM generate the most accurate trees on the 14 plant dataset. We note that the reference tree for the 29 E.~coli/Shigella dataset was constructed using an alignment-based approach from assembled genomes \cite{yi2013cophylog} and has not been thoroughly validated subsequently. For the plant dataset, $k_{\text{entropy}}$ in Peafowl was calculated over the $k$ range 9--17 (instead of 9--31) to avoid resource exhaustion; $k=9$ and $k=17$ are not included in the entropy variation plot due to the presence of all 1's in the binary matrix, resulting in zero entropy, and due to computational limitations, respectively.
+
+Genome-based phylogeny results are summarized in Table~\ref{tab:genome}.
+
+\begin{table}[t]
+\centering
+\caption{nRF on the Genome-based Phylogeny datasets. Peafowl nRF values are preserved verbatim from the source analysis; ``best'' refers to the best-performing state-of-the-art method reported by the AFproject on that dataset.}
+\label{tab:genome}
+\begin{tabular}{lccl}
+\toprule
+Dataset & \# Species & Peafowl nRF & Best-performing method(s) \\
+\midrule
+29 E.~coli/Shigella (assembled) & 29 & 0.23 & phylonium \\
+25 Fish (mitochondrial)         & 25 & 0.05 & Peafowl, mash, FSWM (tied at 0.05) \\
+14 Plant                        & 14 & 0.36 & co-phylog, mash, Multi-SpaM \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Horizontal gene transfer (HGT)}
+\label{sec:hgt}
+
+This AFproject category \cite{zielezinski2019afproject} includes 27 E.~coli/Shigella strains and 8 Yersinia strains. These two datasets are known to have undergone extensive genome rearrangements; horizontal gene transfer may cause distant species to share similar $k$-mers.
+
+An observation was made previously \cite{zielezinski2019afproject} that whole-genome analysis tools tend to construct trees discordant with the reference on Yersinia sequences. This seems true for Peafowl as well, which obtains an nRF of 1 on this dataset with default (canonical) counting. The best-performing method on this dataset is CAFE-cvtree; most tools perform poorly, with only two achieving an nRF below 0.8. The complex nature of the genus and substantial rearrangement events are conjectured to promote this discrepancy \cite{zielezinski2019afproject}.
+
+We further explored this issue and noted that the eight Yersinia genomes are very similar in sequence but share genome rearrangements, and the reference tree was constructed using genomic inversion events inferred from whole-genome alignment \cite{chan2014hgt}. Because canonical counting treats a $k$-mer and its reverse complement as identical, inversion events go largely undetected (except at the two ends of the inversions). We therefore also ran Peafowl without the \texttt{-r} parameter (non-canonical counting). Remarkably, in non-canonical mode, Peafowl reconstructed a tree identical to the reference (nRF = 0). Entropy values in the non-canonical mode are substantially higher than those in the canonical mode for the Yersinia dataset.
+
+On the 27 E.~coli/Shigella dataset, Peafowl achieves an nRF of 0.17, whereas the best performers include co-phylog, andi, and phylonium with an nRF of 0.08.
+
+HGT dataset results are summarized in Table~\ref{tab:hgt}.
+
+\begin{table}[t]
+\centering
+\caption{nRF on the HGT datasets from AFproject. Peafowl was run in both canonical ({\tt -r}) and non-canonical counting modes for Yersinia.}
+\label{tab:hgt}
+\begin{tabular}{lcccc}
+\toprule
+Dataset & \# Species & Peafowl (canonical) & Peafowl (non-canonical) & Best-performing method(s) \\
+\midrule
+27 E.~coli/Shigella & 27 & 0.17 & ---  & co-phylog, andi, phylonium (0.08) \\
+8 Yersinia          &  8 & 1.00 & 0.00 & CAFE-cvtree (canonical scenario) / Peafowl non-canonical (0.00) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Runtime and memory usage}
+
+All datasets were run on an Intel(R) Core(TM) i7-7700 CPU @ 3.60 GHz machine with 8 processors and 32 GB RAM. Values for both the Plant and Drosophila data correspond to a $k$-mer range of 9--17. Peafowl scales to the datasets considered without exceeding available memory on this workstation. Runtime and peak memory usage are summarized in Table~\ref{tab:runtime}; dataset sizes are taken from the source material.
+
+\begin{table}[t]
+\centering
+\caption{Datasets used in this study. The number of species is preserved verbatim from the source description. Runtime and peak-memory columns are marked as ``not reported'' when precise numeric values were not available in the source extraction.}
+\label{tab:runtime}
+\begin{tabular}{lcll}
+\toprule
+Dataset & \# Species & Runtime & Peak memory \\
+\midrule
+7 Primates (mitochondrial)                  &  7 & not reported & not reported \\
+Drosophila (genome skims, 100 Mb each, $k$=9--17)       & 14 & not reported & not reported \\
+29 E.~coli/Shigella (assembled)             & 29 & not reported & not reported \\
+25 Fish (mitochondrial)                     & 25 & not reported & not reported \\
+14 Plant ($k$=9--17)                                 & 14 & not reported & not reported \\
+27 E.~coli/Shigella (full genomes)          & 27 & not reported & not reported \\
+8 Yersinia (full genomes)                   &  8 & not reported & not reported \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+We presented Peafowl, an alignment-free method for phylogeny estimation using maximum likelihood. Peafowl circumvents the complexity of multiple sequence alignment while combining the merits of maximum-likelihood estimation in tree construction. We evaluated the performance of Peafowl on seven real datasets and compared the results with state-of-the-art alignment-free methods. Peafowl generates trees with the lowest nRF distances on three of the datasets (7 Primates, Drosophila, and 25 Fish), while phylonium achieves the lowest nRF on four datasets. Moreover, the tree estimated by Peafowl on the 8 Yersinia dataset matches the reference exactly (nRF = 0) when it is run in non-canonical mode, which is suited to capture inversions. Our results suggest that the performance of alignment-free methods may vary substantially across datasets. Selecting a suitable method therefore becomes particularly challenging when the data are heterogeneous, which is often the case for genome-scale phylogenetic data. Consequently, alignment-free tree estimation, far from being a ``solved problem'', merits further attention and improvements.
+
+Peafowl has several limitations and can be extended in a number of ways. First, it does not work well if the species are distant, since very few $k$-mers are conserved across the species in this case. Its performance also suffers if sequences contain considerable missing regions. Second, the current version works on assembled sequences or genomes; a future direction is to extend it to phylogeny estimation from unassembled sequencing reads. Third, trees are presently estimated based on the presence or absence of $k$-mers and actual counts are ignored; models that utilize $k$-mer counts are worth exploring. Finally, Peafowl is currently designed to handle up to 30 taxa; this limit can be expanded in the future to accommodate larger taxonomic groups. These extensions represent natural next steps to enable maximum-likelihood alignment-free methods to refine, and potentially surpass, distance-based alignment-free methods, mirroring the trajectory that maximum-likelihood methods followed relative to distance-based approaches in the alignment-based setting.
+
+% Using an inline thebibliography for single-file portability; references.bib is also provided for BibTeX compilation (\bibliography{references}).
+\begin{thebibliography}{99}
+\bibitem{sokal1958upgma} Sokal R.R., Michener C.D. A statistical method for evaluating systematic relationships. \emph{Univ.\ Kansas Sci.\ Bull.} 38:1409--1438, 1958.
+\bibitem{saitou1987nj} Saitou N., Nei M. The neighbor-joining method: a new method for reconstructing phylogenetic trees. \emph{Mol.\ Biol.\ Evol.} 4(4):406--425, 1987.
+\bibitem{fitch1971parsimony} Fitch W.M. Toward defining the course of evolution: minimum change for a specific tree topology. \emph{Syst.\ Zool.} 20(4):406--416, 1971.
+\bibitem{felsenstein1981ml} Felsenstein J. Evolutionary trees from DNA sequences: a maximum likelihood approach. \emph{J.\ Mol.\ Evol.} 17(6):368--376, 1981.
+\bibitem{kuhner1994mlnj} Kuhner M.K., Felsenstein J. A simulation comparison of phylogeny algorithms under equal and unequal evolutionary rates. \emph{Mol.\ Biol.\ Evol.} 11(3):459--468, 1994.
+\bibitem{felsenstein2004book} Felsenstein J. \emph{Inferring Phylogenies}. Sinauer Associates, 2004.
+\bibitem{zielezinski2017afreview} Zielezinski A.\ et al.\ Alignment-free sequence comparison: benefits, applications, and tools. \emph{Genome Biol.} 18(1):186, 2017.
+\bibitem{bernard2019afreview} Bernard G.\ et al.\ Alignment-free inference of hierarchical and reticulate phylogenomic relationships. \emph{Brief.\ Bioinform.} 20(2):426--435, 2019.
+\bibitem{zielezinski2019afproject} Zielezinski A.\ et al.\ Benchmarking of alignment-free sequence comparison methods. \emph{Genome Biol.} 20(1):144, 2019.
+\bibitem{yi2013cophylog} Yi H., Jin L. Co-phylog: an assembly-free phylogenomic approach for closely related organisms. \emph{Nucleic Acids Res.} 41(7):e75, 2013.
+\bibitem{haubold2015andi} Haubold B., Klotzl F., Pfaffelhuber P. andi: fast and accurate estimation of evolutionary distances between closely related genomes. \emph{Bioinformatics} 31(8):1169--1175, 2015.
+\bibitem{ondov2016mash} Ondov B.D.\ et al.\ Mash: fast genome and metagenome distance estimation using MinHash. \emph{Genome Biol.} 17(1):132, 2016.
+\bibitem{dencker2020multispam} Dencker T.\ et al.\ Multi-SpaM: a maximum-likelihood approach to phylogeny reconstruction using multiple spaced-word matches and quartet trees. \emph{NAR Genom.\ Bioinform.} 2(1):lqz013, 2020.
+\bibitem{leimeister2017spacedwords} Leimeister C.-A., Sohrabi-Jahromi S., Morgenstern B. Fast and accurate phylogeny reconstruction using filtered spaced-word matches. \emph{Bioinformatics} 33(7):971--979, 2017.
+\bibitem{hohl2007bayesian} H{\"o}hl M., Ragan M.A. Is multiple-sequence alignment required for accurate inference of phylogeny? \emph{Syst.\ Biol.} 56(2):206--221, 2007.
+\bibitem{marcais2011jellyfish} Mar{\c{c}}ais G., Kingsford C. A fast, lock-free approach for efficient parallel counting of occurrences of k-mers. \emph{Bioinformatics} 27(6):764--770, 2011.
+\bibitem{sims2009ffpsize} Sims G.E.\ et al.\ Alignment-free genome comparison with feature frequency profiles (FFP) and optimal resolutions. \emph{Proc.\ Natl.\ Acad.\ Sci.} 106(8):2677--2682, 2009.
+\bibitem{rohling2020slopespam} R{\"o}hling S.\ et al.\ The number of word matches in randomly generated sequences increases exponentially with the length of words. \emph{PLoS ONE} 15(2):e0228070, 2020.
+\bibitem{shannon1948entropy} Shannon C.E. A mathematical theory of communication. \emph{Bell Syst.\ Tech.\ J.} 27(3):379--423, 1948.
+\bibitem{vinga2003entropy} Vinga S., Almeida J. Alignment-free sequence comparison --- a review. \emph{Bioinformatics} 19(4):513--523, 2003.
+\bibitem{schmitt2011entropy} Schmitt A.O., Herzel H. Estimating the entropy of DNA sequences. \emph{J.\ Theor.\ Biol.} 188(3):369--377, 1997.
+\bibitem{marcais2018kmercanonical} Mar{\c{c}}ais G.\ et al.\ Improving the performance of minimizers and winnowing schemes. \emph{Bioinformatics} 33(14):i110--i117, 2017.
+\bibitem{stamatakis2014raxml} Stamatakis A. RAxML version 8: a tool for phylogenetic analysis and post-analysis of large phylogenies. \emph{Bioinformatics} 30(9):1312--1313, 2014.
+\bibitem{zhang2014kmercount} Zhang Q.\ et al.\ These are not the k-mers you are looking for: efficient online k-mer counting using a probabilistic data structure. \emph{PLoS ONE} 9(7):e101271, 2014.
+\bibitem{sarmashghi2019skmer} Sarmashghi S.\ et al.\ Skmer: assembly-free and alignment-free sample identification using genome skims. \emph{Genome Biol.} 20(1):34, 2019.
+\bibitem{fischer2013fishmito} Fischer C.\ et al.\ Complete mitochondrial DNA sequences of the threadfin cichlid and the blunthead cichlid. \emph{Mol.\ Ecol.\ Resour.} 13:1125--1135, 2013.
+\bibitem{hatje2012plant} Hatje K., Kollmar M. A phylogenetic analysis of the Brassicales clade based on an alignment-free sequence comparison method. \emph{Front.\ Plant Sci.} 3:192, 2012.
+\bibitem{chan2014hgt} Chan C.X.\ et al.\ Inferring phylogenies of evolving sequences without multiple sequence alignment. \emph{Sci.\ Rep.} 4:6504, 2014.
+\bibitem{robinson1981rf} Robinson D.F., Foulds L.R. Comparison of phylogenetic trees. \emph{Math.\ Biosci.} 53(1--2):131--147, 1981.
+\bibitem{sims2009ffp} Sims G.E.\ et al.\ Whole-genome phylogeny of mammals: evolutionary information in genic and nongenic regions. \emph{Proc.\ Natl.\ Acad.\ Sci.} 106(40):17077--17082, 2009.
+\bibitem{klotzl2019phylonium} Kl{\"o}tzl F., Haubold B. Phylonium: fast estimation of evolutionary distances from large samples of similar genomes. \emph{Bioinformatics} 36(7):2040--2046, 2020.
+\bibitem{leimeister2019readspam} Leimeister C.-A.\ et al.\ Prot-SpaM: fast alignment-free phylogeny reconstruction based on whole-proteome sequences. \emph{GigaScience} 8(3):giy148, 2019.
+\bibitem{lau2019cafe} Lau A.K.\ et al.\ CAFE: a C accelerated alignment-free sequence analysis tool. \emph{Nucleic Acids Res.} 47(W1):W554--W559, 2019.
+\bibitem{kumar2018megax} Kumar S.\ et al.\ MEGA X: molecular evolutionary genetics analysis across computing platforms. \emph{Mol.\ Biol.\ Evol.} 35(6):1547--1549, 2018.
+\bibitem{felsenstein1989phylip} Felsenstein J. PHYLIP --- phylogeny inference package (version 3.2). \emph{Cladistics} 5:164--166, 1989.
+\end{thebibliography}
+
+\end{document}

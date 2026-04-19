@@ -1,0 +1,223 @@
+{
+  "metadata": {
+    "working_title": "A regression-based approach to phylogenetic reconstruction from multi-sample bulk DNA sequencing of tumors",
+    "venue": "Bioinformatics",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Multi-sample bulk DNA sequencing of tumors enables reconstruction of the clonal evolutionary history of a patient's cancer, but requires joint deconvolution of clones and inference of ancestral relationships from noisy variant allele frequencies.",
+    "gap": "Existing methods for phylogenetic reconstruction from bulk sequencing data do not scale to modern datasets, which can contain dozens of samples and dozens of distinct sub-populations.",
+    "approach": "We separate the reconstruction problem into a structured l1-regression sub-problem for a fixed clonal tree and an optimization over tree space. By exploiting the combinatorial structure of clonal matrices we derive an O(mnd) regression algorithm with warm-start capability under SPR moves, and use it to build fastBE, a deterministic search method for the l1-VAFFP.",
+    "key_results": "On simulated data, fastBE matches or outperforms Pairtree, Orchard, CALDER, and CITUP in reconstruction accuracy while running up to two orders of magnitude faster; on 14 B-ALL patients and two patient-derived colorectal xenograft models, fastBE produces trees with fewer sum-condition violations than Pairtree.",
+    "impact": "fastBE scales phylogenetic reconstruction from bulk tumor sequencing to thousands of clones and supports per-mutation phylogenies, expanding the scope of clonal analysis in cancer genomics."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Tumor evolution through somatic alterations and the role of multi-sample bulk sequencing",
+        "TracerX-style multi-region sequencing reveals hidden heterogeneity: up to 65% of subclones and 76% of subclonal mutations would be missed without it",
+        "Recent datasets reach up to 90 samples and 26 subclones per patient; existing methods fail to scale beyond ~10 subclones",
+        "Contribution: structured l1-regression formulation of VAF factorization, O(mnd) regression algorithm with warm starts, fastBE method, empirical gains on simulated, B-ALL, and PDX colorectal data",
+        "Roadmap of the paper"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "background",
+      "title": "Background and Related Work",
+      "content_bullets": [
+        "Infinite sites model, clonal trees, n-clonal matrices, and the VAFFP",
+        "Frequency-matrix factorization F = UB and loss variants (L0, L1, L2, 0/1, probabilistic)",
+        "Prior methods: AncesTree, CITUP, LICHeE, CALDER, PhyloWGS, PASTRI, Pairtree, Orchard",
+        "Role of the sum condition as a necessary and sufficient condition for exact factorization",
+        "Analogy to minimum-evolution distance-based phylogenetics and FastME/FastTree"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "A structured regression model for the l1-VAFFP",
+      "subsections": [
+        {
+          "id": "methods_regression",
+          "title": "The l1-VAF regression sub-problem",
+          "content_bullets": [
+            "Problem statement: given F and B, minimize |F - UB|_1 over u >= 0 with row sums <= 1",
+            "Reduce to Dot Product Tree Labeling Problem via LP duality and change of variables lambda_i = beta_i - alpha_i",
+            "Inverse identity B = (I - A)^{-1} and the appearance of the sum condition in the dual"
+          ]
+        },
+        {
+          "id": "methods_algorithm",
+          "title": "An O(nd) algorithm for the DPTLP",
+          "content_bullets": [
+            "Recurrence for g_i(psi) using dynamic programming on the tree",
+            "Class L_k of concave piecewise-linear functions with integer breakpoints; compact tuple representation (y, s_1, ..., s_{k+1})",
+            "Closure of L_k under addition and under the max-in-window operation yielding h_j in L_{k+1}",
+            "Theorem: DPTLP solved in O(nd) time"
+          ]
+        },
+        {
+          "id": "methods_warmstart",
+          "title": "Warm-start updates under SPR operations",
+          "content_bullets": [
+            "After pruning and regrafting subtree T_i at vertex j only vertices on paths to delta(i) or j change",
+            "SPR query in O(m d max{d(i), d(j)}) time; vertex-append in O(m d d(i))",
+            "Corollary 1 summarizes preprocessing O(mnd) time/space"
+          ]
+        },
+        {
+          "id": "methods_fastbe",
+          "title": "fastBE: deterministic beam-style search over tree space",
+          "content_bullets": [
+            "Iteratively append mutations in an order O = {o_1, ..., o_n}",
+            "For mutation o_i, find parent p and child-subset S to adopt that minimize the regression loss",
+            "Uses efficient recomputation from Theorem 1 instead of naive evaluation"
+          ]
+        }
+      ],
+      "approx_length": "1.5-2 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_runtime",
+          "title": "Runtime comparison to linear programming solvers",
+          "content_bullets": [
+            "264 simulated (F, B) pairs; structured algorithm versus Gurobi v9.0.3 and CPLEX v22.1.0",
+            "Mean speedups of 95.6x over Gurobi and 105.1x over CPLEX (model-solve time only)",
+            "Warm-start under SPR: 6.2x mean speedup over cold start across 25,000 SPR-perturbed trees per instance"
+          ]
+        },
+        {
+          "id": "results_simulated",
+          "title": "Evaluation of fastBE on simulated data",
+          "content_bullets": [
+            "Small regime n in {3,5,10}, m in {5,10,25}: 108 simulated instances; termination counts fastBE 108/108, Pairtree 108/108, Orchard 108/108, CALDER 106/108, CITUP 107/108",
+            "n=10: mean F1 fastBE 0.965, Pairtree 0.972, Orchard 0.965",
+            "Modest regime n in {20,30,50}: CITUP and CALDER fail to terminate and are excluded; n=50 mean F1 fastBE 0.825, Pairtree 0.749, Orchard 0.805",
+            "fastBE mean 1.21 s at n=50; order-of-magnitude speedup over Pairtree and Orchard",
+            "Large regime n in {100,250,500,1000}, m in {50,100}: fastBE 1229.8 s mean at n=1000, 24/24 terminations; Orchard 71749.1 s mean, 19/24 terminations in 48h on 32 cores; mean F1 fastBE 0.773 vs Orchard 0.783",
+            "Sample efficiency: near-perfect recovery (median F1 0.987) at m >= 50, n < 100; sharp transition in accuracy near m/n = 1"
+          ]
+        },
+        {
+          "id": "results_ball",
+          "title": "B-progenitor acute lymphoblastic leukemia patients",
+          "content_bullets": [
+            "14 B-ALL patients, >200x targeted sequencing; per-patient samples median 42 (min 13, max 90)",
+            "fastBE applied on the mutation clusters from Pairtree; median 8 mutation clusters (min 3, max 17)",
+            "Inferred trees have median >= 8 distinct edges vs Pairtree",
+            "Normalized frequency-matrix estimation error < 1% except in one case; fastBE modestly lower",
+            "Mean total sum-condition violation V: fastBE 1.44 vs Pairtree 2.40 across 14 patients"
+          ]
+        },
+        {
+          "id": "results_pdx",
+          "title": "Patient-derived colorectal cancer models",
+          "content_bullets": [
+            "POP66 (8 samples, 25 clones) and CSC28 (4 samples, 11 clones) from Pal et al.",
+            "Total sum-condition violation CSC28: fastBE 0.273, Pairtree 0.473; POP66: fastBE 3.280, Pairtree 4.770",
+            "Per-sample trend holds, most pronounced for CPT-11 Resistant POP66 samples",
+            "Shannon diversity: similar for CSC28; fastBE finds higher heterogeneity in parent tumor and CPT-11 Resistant POP66 samples"
+          ]
+        }
+      ],
+      "approx_length": "3-4 pages"
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Restate: structured l1-regression view gives O(mnd) algorithm and fastBE, scaling VAFFP to ~1000 clones",
+        "Place fastBE alongside Pairtree, Orchard, CITUP, CALDER; note new ability to operate at mutation rather than cluster level",
+        "Biological implication: lower sum-condition violation on B-ALL and colorectal PDX data yields different heterogeneity interpretations",
+        "Limitations: tightness of O(mnd), restriction to SNVs in copy-neutral regions, no automatic clustering or uncertainty estimates",
+        "Future work: cancer cell fraction / descendant cell fraction, Dollo model, longitudinal consistency"
+      ],
+      "approx_length": "0.75-1 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Summary of VAF factorization variants in the literature",
+      "columns": ["Method", "Loss", "Additional constraint", "Clusters mutations"],
+      "data_source": "idea_summary.md Section 2 Table 1 description",
+      "caption_sketch": "Loss functions and constraints for AncesTree, CITUP, LICHeE, CALDER, PhyloWGS, PASTRI, Pairtree, Orchard, and fastBE."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Runtime speedup over LP solvers",
+      "columns": ["Solver", "Mean speedup factor"],
+      "data_source": "experimental_log.md / idea_summary.md Section 5.1",
+      "caption_sketch": "Mean wall-clock speedup of the structured l1-VAFRP algorithm over Gurobi v9.0.3 and CPLEX v22.1.0 across 264 instances."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Simulated data: termination and mean F1 across regimes",
+      "columns": ["Method", "Small-regime terminations (108)", "Mean F1 at n=10", "Mean F1 at n=50", "Mean F1 at n=100-1000"],
+      "data_source": "idea_summary.md Section 5.2",
+      "caption_sketch": "Termination counts and mean pairwise-relationship F1-scores for fastBE, Pairtree, Orchard, CALDER, and CITUP across simulated regimes."
+    },
+    {
+      "table_id": "tab4",
+      "title": "Runtime on large simulated instances",
+      "columns": ["Method", "Mean runtime n=50 (s)", "Mean runtime n=1000 (s)", "Terminations n=1000"],
+      "data_source": "idea_summary.md Section 5.2",
+      "caption_sketch": "Wall-clock runtime and termination counts for fastBE and Orchard on large simulated instances."
+    },
+    {
+      "table_id": "tab5",
+      "title": "Total sum-condition violation on real data",
+      "columns": ["Dataset", "fastBE", "Pairtree"],
+      "data_source": "idea_summary.md Sections 5.3, 5.4",
+      "caption_sketch": "Mean total violation of the sum condition on 14 B-ALL patients and two colorectal PDX models (CSC28, POP66)."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "tumor clonal evolution multi-sample bulk DNA sequencing",
+      "intra-tumor heterogeneity multi-region sequencing non-small-cell lung cancer",
+      "variant allele frequency factorization cancer phylogeny",
+      "perfect phylogeny infinite sites model tumor",
+      "minimum evolution distance-based phylogenetics FastTree FastME"
+    ],
+    "micro_queries": [
+      "AncesTree tumor phylogeny El-Kebir",
+      "CITUP clonality inference tumor phylogeny",
+      "LICHeE subclonal reconstruction",
+      "CALDER longitudinal cancer phylogeny",
+      "PhyloWGS whole-genome subclonal reconstruction",
+      "PASTRI subclonal reconstruction Bayesian",
+      "Pairtree tumor phylogeny",
+      "Orchard subclonal reconstruction",
+      "TracerX non-small-cell lung cancer heterogeneity",
+      "B-progenitor acute lymphoblastic leukemia targeted deep sequencing Dobson",
+      "patient-derived xenograft colorectal heterogeneity CPT-11 Pal",
+      "Shannon diversity index ecology",
+      "subtree prune regraft SPR operation phylogenetics",
+      "l1 regression linear programming Gurobi CPLEX"
+    ],
+    "must_cite": [
+      "AncesTree (El-Kebir et al. 2015)",
+      "CITUP (Malikic et al.)",
+      "LICHeE (Popic et al.)",
+      "CALDER (Myers et al.)",
+      "PhyloWGS (Deshwar et al.)",
+      "PASTRI (Satas and Raphael)",
+      "Pairtree (Wintersinger et al.)",
+      "Orchard (Kulman et al.)",
+      "FastME (Lefort et al.)",
+      "FastTree (Price et al.)",
+      "TracerX NSCLC (Jamal-Hanjani et al.)",
+      "B-ALL multi-sample dataset (Dobson et al.)",
+      "Colorectal PDX model (Pal et al.)"
+    ],
+    "citation_target": 25
+  }
+}

@@ -1,0 +1,853 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{Distinguishing examples while building concepts in hippocampal and artificial networks}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The hippocampal subfield CA3 is widely regarded as an autoassociative network
+that stores experiences as memories, and it receives two anatomically distinct
+encodings of every sensory input: a sparse, decorrelated mossy-fiber (MF)
+pathway from the dentate gyrus and a dense, correlated perforant-path (PP)
+pathway from the entorhinal cortex. Why the circuit would route the same
+information along two such different channels has remained unclear, and
+previous autoassociative models collapse the two into a single stored pattern
+per memory. We propose instead that CA3 stores both MF and PP encodings for
+each memory and retrieves either of them depending on the inhibitory tone of
+the network, so that sparse MF attractors preserve distinctions between
+examples while dense PP attractors merge similar memories into concept-like
+representations. We develop a Hopfield-like model with this property, driven
+by MF patterns of density 0.02 and PP patterns of density 0.2 and
+within-concept correlations of 0.01 and 0.09 respectively. An oscillating
+threshold alternates the network between distinct MF examples at high
+threshold ($\theta' = 0.5$) and merged PP concepts at low threshold
+($\theta' = 0$). We test a direct prediction of this multiplexed code using
+public rodent recordings (CRCNS hc-3 and hc-6): across 35 CA3 fields and 99
+CA3 W-maze neurons, sparser theta phases convey significantly more
+sparsity-corrected information per spike about fine positions and turn
+directions, while denser phases convey more information at coarser track
+scales, all quantified with two-tailed Wilcoxon signed-rank and Mann-Whitney
+U tests. Finally, we import the principle into artificial networks via a
+HalfCorr loss that decorrelates only half of the final hidden layer of a
+multilayer perceptron; this architecture outperforms both baseline and
+fully decorrelated networks on a joint MNIST digit classification and set
+identification benchmark, with correlated neurons supporting concept
+learning and decorrelated neurons supporting example learning.
+\end{abstract}
+
+\section{Introduction}
+
+The capacity of the hippocampus to support vivid recollection of individual
+experiences is among the most striking features of mammalian memory
+\cite{scoville1957loss}. Within the hippocampal formation, the subfield CA3
+has long been regarded as an autoassociative network in which dense recurrent
+excitation among pyramidal cells, together with spike-timing-dependent
+plasticity at those synapses \cite{bi1998synaptic}, permits the reinstatement
+of stored activity patterns from noisy or partial cues
+\cite{mcnaughton1987hippocampal,hopfield1982neural}. Sensory information
+destined for CA3 enters this circuit along two anatomically segregated routes
+from the entorhinal cortex (EC). A direct perforant path (PP) projects from
+EC layer II onto the distal dendrites of CA3 pyramidal cells, while an
+indirect route passes first through the dentate gyrus (DG) before its mossy
+fibers (MF) contact CA3 on more proximal dendrites. The functional
+justification for this dual-input architecture, despite decades of study,
+has remained unsettled.
+
+The two pathways deliver information with systematically different statistical
+properties. DG is equipped with a large population of granule cells and a
+high tonic inhibitory tone, which keeps their activity sparse and interference
+among overlapping representations low \cite{engin2015tonic,leutgeb2007pattern}.
+Sparsification in feedforward projections is in turn associated with
+decorrelation, so that MF inputs to CA3 inherit both a sparse and a
+decorrelated character. PP connectivity, by contrast, is dense, and natural
+correlations between similar sensory inputs should therefore survive the
+projection to CA3. Previous theories of the circuit have proposed that the
+MF pathway teaches CA3 to store well-separated memory traces during
+encoding, while the PP pathway mediates retrieval from a single hybrid
+attractor \cite{treves1992computational,mcclelland1995why}. Under these
+accounts, each stored experience is represented by one pattern at
+equilibrium, irrespective of which route was used to deliver it.
+
+Here we consider an alternative possibility. We ask whether CA3 can store
+and retrieve two distinct encodings of the same memory, one MF-like and one
+PP-like, and whether the physiological theta oscillation, which rhythmically
+modulates inhibitory tone across phases \cite{tsodyks1996population}, serves
+as the switch that selects between them. If this were true, sparse,
+decorrelated MF encodings and dense, correlated PP encodings would not
+collapse into a single stored pattern; instead, the network would multiplex
+the two, with different inhibitory thresholds favoring different retrieval
+modes. Conceptually, MF attractor basins would remain separate and support
+pattern separation suitable for distinguishing examples, while PP basins
+would merge along shared features and support concept-like generalization
+across similar experiences
+\cite{quiroga2005invariant,knowlton1993learning,zeithamova2019brain}. The
+theta oscillation, on this view, does not simply pace activity in the
+hippocampus; it sweeps the network through a continuum of representational
+scales that are all stored at the same synapses.
+
+The paper develops the proposal in three stages. We first construct a
+biologically motivated model in which EC, DG, MF and PP encodings are
+produced by feedforward networks with realistic statistics, and in which a
+Hopfield-like CA3 network \cite{hopfield1982neural,tsodyks1988enhanced}
+stores linear combinations of MF and PP patterns. Asynchronous retrieval
+dynamics controlled by a threshold \cite{amit1985spin} alternate the network
+between MF-like example representations at high threshold and PP-like
+concept representations at low threshold. We then test the core prediction
+of this account, that single CA3 place cells should convey more information
+per spike about fine, example-like positions during sparse theta phases,
+and more information about coarse, concept-like positions during dense
+phases, using publicly available rodent electrophysiological recordings
+\cite{mizuseki2013hc3,karlsson2015hc6}. Finally, we abstract the principle
+to artificial neural networks: a DeCorr loss term that decorrelates batch
+representations, and a HalfCorr variant that applies the decorrelation to
+only half of the final hidden layer, govern a tradeoff between concept-like
+and example-like learning in a multilayer perceptron trained on MNIST
+\cite{lecun1998gradient}. The contributions of this work are therefore
+threefold: an autoassociative model in which a single CA3 network stores
+two encodings per memory and alternates between them under threshold
+control; empirical confirmation of the model's signature predictions in CA3
+place fields across two datasets; and a plug-and-play loss function that
+imports the same principle into artificial networks and improves multitask
+performance.
+
+\section{Related Work}
+
+The idea that CA3 performs pattern completion through recurrent excitation
+traces back to foundational work in attractor networks
+\cite{hopfield1982neural,tsodyks1988enhanced,amit1985spin} and to the
+complementary learning systems framework
+\cite{mcnaughton1987hippocampal,mcclelland1995why}. Several computational
+accounts have specifically addressed the role of the MF pathway, typically
+concluding that MF inputs support the storage of well-separated patterns that
+are later retrieved through PP cues \cite{treves1992computational}. Our
+model differs in asserting that two distinct encodings per memory coexist in
+CA3 and are retrieved in alternation, rather than collapsing into a single
+attractor. Experimental work has in parallel confirmed that DG decorrelates
+inputs to CA3 more aggressively than CA3 does on its own, by recruiting
+largely non-overlapping granule cell populations when environments differ
+\cite{leutgeb2007pattern} and by maintaining the high tonic inhibition that
+keeps activity sparse \cite{engin2015tonic}. These findings directly motivate
+our choices of pattern statistics for MF and PP inputs in the CA3 model.
+
+Phase precession, in which spikes advance to earlier theta phases as an
+animal traverses a place field, is a robust property of hippocampal place
+cells \cite{okeefe1993phase,tsodyks1996population} and is accompanied by
+phase-dependent changes in tuning sharpness \cite{skaggs1996theta}. Our
+analysis extends this literature by partitioning theta into sparse and
+dense halves and asking, separately for fine and coarse position binning,
+which half of the cycle conveys more sparsity-corrected information. The
+prediction tested is the unique signature of a threshold-switched
+multiplexed code rather than a generic inhibitory effect. Complementary
+evidence from the human medial temporal lobe shows that single neurons can
+respond invariantly to different depictions of a particular individual or
+concept \cite{quiroga2005invariant}, and behavioral and imaging studies
+establish hippocampal involvement in categorization and concept learning
+\cite{knowlton1993learning,zeithamova2019brain}. The prototype- and
+clustering-based accounts of category learning
+\cite{anderson1991adaptive,love2004sustain} provide a natural target
+representation for our PP attractors, which merge similar examples along
+shared features.
+
+Regularizers that shape hidden representations have been used primarily to
+reduce overfitting in deep networks. The DeCov loss decorrelates pairs of
+neurons across all inputs \cite{cogswell2016reducing}, whereas the DeCorr
+loss we introduce decorrelates pairs of inputs across all neurons in a
+layer. The two are complementary rather than equivalent: DeCov improves
+generalization on the concept task, while DeCorr induces the opposite
+effect by encouraging representations that discriminate examples. Our
+HalfCorr variant combines correlated and decorrelated components within a
+single layer to resolve the resulting tradeoff, bridging a biological
+motivation drawn from CA3 \cite{hopfield1982neural,schapiro2017complementary}
+with a concrete machine-learning construction applicable to networks
+trained with standard optimizers \cite{kingma2015adam,lecun2015deep}. The
+specific interpretation of the theta oscillation we adopt, namely that it
+acts as a subtractive threshold on the network, is aligned with the broader
+view that inhibitory interneurons shape cortical activity through both
+subtractive and divisive effects \cite{isaacson2011inhibition}.
+
+\section{Methods}
+
+\subsection{Transformation of memories along hippocampal pathways}
+
+The memories stored in the model are images from the sneaker, trouser and
+coat classes of FashionMNIST \cite{xiao2017fashion}, with 256 images drawn
+from each class. These images are first encoded into entorhinal cortex (EC)
+patterns by a fully connected linear autoencoder with three hidden layers of
+sizes 128, 1024 and 128, batch normalization on each hidden layer, ReLU
+nonlinearities on the first and third hidden layers, a sigmoid nonlinearity
+on the output layer, and a Heaviside step binarization of the middle hidden
+layer with gradients backpropagated through a straight-through estimator
+\cite{bengio2013estimating}. The EC layer has $N_{\mathrm{EC}} = 1024$ units
+with desired density $a_{\mathrm{EC}} = 0.1$, enforced through a
+Kullback-Leibler divergence sparsification term with strength $\lambda = 10$
+between the realized and target activation rates. The autoencoder is
+optimized for 150 epochs with batch size 64 using Adam
+\cite{kingma2015adam} at learning rate $10^{-3}$ and weight decay $10^{-5}$.
+
+The DG, MF and PP encodings are produced from the EC patterns by random
+binary connectivity matrices with a winners-take-all activation rule. Each
+postsynaptic neuron receives $l$ excitatory synapses of equal strength from
+randomly chosen presynaptic neurons; a threshold is then implicitly set so
+that the postsynaptic pattern attains the desired density $a_{\mathrm{post}}$.
+Taking estimates of rodent hippocampal cell counts as a guide, the DG layer
+has $N_{\mathrm{DG}} = 8192$ and the CA3 layer has $N_{\mathrm{CA3}} = 2048$.
+We choose densities $a_{\mathrm{DG}} = 0.005$, $a_{\mathrm{MF}} = 0.02$ and
+$a_{\mathrm{PP}} = 0.2$, and synapse counts $l_{\mathrm{DG}} = 205$,
+$l_{\mathrm{MF}} = 8$ and $l_{\mathrm{PP}} = 205$. We do not directly impose
+within-concept correlations; these emerge from propagation and take values
+$\rho_{\mathrm{EC}} = 0.15$, $\rho_{\mathrm{DG}} = 0.02$,
+$\rho_{\mathrm{MF}} = 0.01$ and $\rho_{\mathrm{PP}} = 0.09$. The relationship
+between presynaptic density $a_{\mathrm{pre}}$ and correlation
+$\rho_{\mathrm{pre}}$ on one hand and postsynaptic correlation
+$\rho_{\mathrm{post}}$ on the other is captured by a closed-form expression
+involving the inverse complementary error function (Eq.~1 in the extracted
+methods); remarkably, the postsynaptic correlation does not depend on the
+size of the network, on the synapse count $l$, or on the absolute threshold
+value. Figure~\ref{fig:density_correlation} summarizes these statistics
+across regions, and Table~\ref{tab:params} lists their numerical values.
+
+To visualize the activity of the CA3 network back in image space, we train a
+separate fully connected feedforward network with one hidden layer of 4096
+units to map MF inputs onto their corresponding EC patterns and PP inputs
+also onto the same EC patterns, with batch normalization and a ReLU on the
+hidden layer and a sigmoid on the output. This visualization network is
+optimized for 100 epochs with batch size 128 using Adam at learning rate
+$10^{-4}$ and weight decay $10^{-5}$. It is used only to render network
+activity as images and is not part of the autoassociative retrieval.
+
+\subsection{Hopfield-like CA3 model}
+
+The CA3 network stores linear combinations
+$q^{\mu\nu} = \zeta\, \xi^{\mathrm{MF},\mu\nu} + (1-\zeta)\, \xi^{\mathrm{PP},\mu\nu}$
+of MF and PP encodings, with relative strength $\zeta = 0.1$ reflecting the
+stronger MF detonator synapses \cite{hopfield1982neural,tsodyks1988enhanced}.
+Here $\mu$ indexes concepts and $\nu$ indexes examples. The synaptic matrix
+follows the standard Hopfield outer-product form with mean-subtracted
+patterns. Cues are formed by randomly flipping the activity of a fraction
+$0.01$ of all neurons, and retrieval proceeds by asynchronous Glauber
+dynamics \cite{amit1985spin} in which one neuron is chosen per simulation
+step and its activation is drawn from a sigmoid whose argument is the
+difference between its total recurrent input and a threshold $\theta$,
+scaled by an inverse temperature $\beta$. We define rescaled variables
+$\theta' = \theta / \left[(1-\zeta)^2 a_{\mathrm{MF}}\right]$ and
+$\beta' = \beta \cdot (1-\zeta)^2 a_{\mathrm{MF}}$; simulations use $\beta = 100$
+and 10 update cycles, with $\theta' = 0.5$ to retrieve MF patterns and
+$\theta' = 0$ to retrieve PP patterns. In the cue-throughout condition,
+the cue is applied continuously as external input $h(t) = \sigma x$ with
+strength $\sigma = 0.2$ rather than only at initialization.
+
+The overlap between the network activity $S$ and a target pattern $x$ is
+$m = (S \cdot x - a\, \sum_i S_i)/(a\, N\, (1-a))$, where $a$ is the density
+of the target pattern. To evaluate concept-level retrieval, we define a
+target PP concept pattern $\xi^{\mathrm{PP},\mu}$ for concept $\mu$ by
+selecting, across all PP examples within $\mu$, the neurons that are most
+active until the density $a_{\mathrm{PP}}$ is reached. The theoretical
+maximum overlap of the network with $\xi^{\mathrm{PP},\mu}$ is the square
+root of the within-concept correlation $\rho_{\mathrm{PP}}$; because this
+estimate is asymptotic in the large-network limit, simulations can modestly
+exceed it.
+
+\subsection{Experimental data analysis}
+
+Public rodent recordings from two datasets are used to test the model's
+predictions. For linear-track analyses we use the CRCNS hc-3 dataset
+\cite{mizuseki2013hc3}, and for the W-maze alternation task we use the CRCNS
+hc-6 dataset \cite{karlsson2015hc6}. Place cells are selected by requiring
+their phase-independent position information per spike, computed using 1-cm
+bins across all theta phases, to exceed 0.5. For each selected cell we then
+bin spikes into positions (or turn directions) and into theta phases of
+width $30^\circ$ for the linear track and $45^\circ$ for the W-maze. To
+ensure robust phase-resolved information estimates, we require at least 8
+spikes per phase value for the linear-track analyses, at least 5 for the
+phase-extracted place fields of Figure~\ref{fig:valid_cells}, and at least 5
+per phase value for the W-maze. Theta modulation is required by demanding
+that the most active phase contains at least twice as many spikes as the
+least active phase.
+
+Information per spike is computed from spike counts $c(r,\phi)$ over spatial
+bins $r$ and phase bins $\phi$, together with trajectory occupancies that are
+distributed uniformly over $\phi$ \cite{skaggs1996theta}. Because
+information estimates are biased by sparsity, we correct them by generating
+100 null-matched surrogate neurons in which the spatial bin of each spike is
+replaced by a uniformly distributed random value while its phase is
+preserved. We subtract the mean null-matched information from the raw
+information to obtain a sparsity-corrected estimate. Theta phases are then
+partitioned into sparse and dense halves according to the total activity,
+the sparsity-corrected information is averaged within each half, a ReLU is
+applied to prevent negative values, and the difference between halves is
+reported. Shuffled controls permute spike positions and phases to disrupt
+any relationship between them, and they confirm that the observed effects
+are not an artifact of the binning or of the sparsity correction.
+
+Phase precession is detected by circular-linear regression between spike
+progresses and phases, with precession score defined as the mean resultant
+length and precession slope defined as the regression slope; cells with
+score greater than $0.3$ and slope steeper than $-72^\circ$ per field are
+classified as precessing. Statistical comparisons between sparse and dense
+halves are carried out with two-tailed Wilcoxon signed-rank tests; the
+comparison between precessing and non-precessing fields uses the two-tailed
+Mann-Whitney U test, and trends across track scales use Spearman's $\rho$.
+All analyses are run separately for the two traveling directions along the
+linear track and for inbound and outbound runs along the W-maze center arm.
+
+Bayesian population decoding of W-maze turn direction uses sliding windows
+of width $\Delta t = 0.5$ s and stride $0.25$ s. Under the assumption of
+independent Poisson-distributed spike counts across neurons and time, the
+likelihood of each turn direction is proportional to the standard Poisson
+population likelihood, consistent with standard Bayesian approaches to
+population decoding of behavioral variables from place cell activity
+\cite{zeithamova2019brain,skaggs1996theta}. We require at
+least 2 spikes per window to decode, and we include sessions with at least
+5 simultaneously recorded neurons. Before decoding, activity values below
+$0.02$ times the maximum for each neuron are rectified to avoid numerical
+instabilities. With these criteria, 8 CA3 sessions and 25 CA1 sessions
+qualify. Confidence is reported as $|2p(R) - 1|$ and accuracy as 1 when the
+maximum-likelihood turn direction matches the ground truth.
+
+\subsection{Artificial neural networks}
+
+The digit classification task uses MNIST \cite{lecun1998gradient} normalized
+to zero mean and unit standard deviation across all images and pixels; each
+image is additionally assigned a random set number. Set identification, our
+example-discrimination task, is evaluated on the training images after
+corrupting 20\% of the normalized pixel values to 0; digit classification,
+our concept-learning task, is evaluated on the held-out test images.
+
+In the single-task setting, a two-hidden-layer multilayer perceptron with
+tanh activations, 50 units per hidden layer and a softmax output is trained
+with stochastic gradient descent at batch size 50, learning rate $10^{-4}$
+and momentum $0.9$. Training continues until the network reaches greater
+than $99.9\%$ accuracy on the training set; as a guide we use 40 epochs for
+digit classification, 100 epochs for set identification with 10 sets and
+200 epochs for set identification with 50 sets. The loss is the sum of a
+cross-entropy term between predicted and true labels and a DeCorr term,
+$\mathcal{L} = \mathcal{L}_{\mathrm{CE}} + \lambda\, \mathcal{L}_{\mathrm{DeCorr}}$,
+where
+\begin{equation}
+\mathcal{L}_{\mathrm{DeCorr}} = \frac{1}{B(B-1)} \sum_{\alpha \neq \beta}
+\frac{\sum_i (s_{i\alpha} - \bar s_i)(s_{i\beta} - \bar s_j)}
+{\sqrt{\left(\sum_i (s_{i\alpha}-\bar s_i)^2 + \epsilon N\right)
+\left(\sum_i (s_{i\beta}-\bar s_i)^2 + \epsilon N\right)}},
+\end{equation}
+the $s_{i\alpha}$ are final hidden-layer activations for image $\alpha$, the
+mean $\bar s_i$ is taken across the batch, $\epsilon = 0.001$ aids numerical
+convergence and $B$ is the batch size. We use $\lambda = 0$ for the baseline
+and $\lambda = 1$ for the DeCorr condition. The DeCov loss of
+\cite{cogswell2016reducing} is included for comparison; it differs from
+DeCorr by decorrelating pairs of neurons across batch items rather than pairs
+of batch items across neurons.
+
+In the multitask setting, the architecture has two fully connected hidden
+layers of 100 tanh units and two softmax output heads, one for digit
+classification and one for set identification
+(Figure~\ref{fig:ml_schematic}). The training dataset contains 1000 images
+and 10 sets, and SGD is used at batch size 50 and learning rate $10^{-4}$
+for 100 epochs. The loss adds the two cross-entropy heads and either the
+DeCorr or the HalfCorr penalty. HalfCorr applies the same DeCorr formula as
+above, but restricted to the second half of the final hidden layer, so that
+the first 50 units remain correlated and the second 50 units are actively
+decorrelated. We use $\lambda = 1$ with tanh activations, $\lambda = 0.04$
+with ReLU, $\lambda = 2$ with no nonlinearity and $\lambda = 0$ for the
+baseline. Neuron influence on each task is computed as the average decrease
+in task accuracy when the activation of that neuron is clamped to zero.
+
+\begin{table}[htbp]
+\centering
+\caption{Key hippocampus model parameters and their values unless otherwise
+noted. Values are those used throughout the model; small deviations in
+specific figures are indicated in the relevant results sections.}
+\label{tab:params}
+\begin{tabular}{lcccc}
+\toprule
+Region & Size $N$ & Density $a$ & Within-concept corr. $\rho$ & Input synapses $l$ \\
+\midrule
+EC & 1024 & 0.1 & 0.15 & --- \\
+DG & 8192 & 0.005 & 0.02 & 205 \\
+CA3 (MF) & 2048 & 0.02 & 0.01 & 8 \\
+CA3 (PP) & 2048 & 0.2 & 0.09 & 205 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Valid cells, fields and sessions passing the inclusion criteria
+used in each analysis. All counts are reported as extracted from the
+experimental log; CA1 counts serve as comparative controls.}
+\label{tab:counts}
+\begin{tabular}{lcc}
+\toprule
+Analysis & CA3 & CA1 \\
+\midrule
+Phase-extracted place fields (Fig.~\ref{fig:valid_cells}, right) & 35 fields & 47 fields \\
+Coarse track scale $1/16$ & 47 cells & 122 cells \\
+Coarse track scale $1/8$ & 49 cells & 137 cells \\
+Coarse track scale $1/4$ & 56 cells & 144 cells \\
+W-maze single-neuron analysis & 99 cells & 187 cells \\
+W-maze population decoding (sessions) & 8 & 25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig_pathways.pdf}
+\caption{Schematic of hippocampal pathways to CA3. Entorhinal cortex (EC)
+projects directly to CA3 through the perforant path (PP, dense, approximately
+4000 synapses per CA3 pyramidal cell), and indirectly via the dentate gyrus
+(DG) and its mossy fibers (MF, sparse, approximately 50 granule cell inputs
+per CA3 pyramidal cell). Anatomical values are taken from the extraction.}
+\label{fig:pathways}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/fig_density_correlation.pdf}
+\caption{Encoding statistics across regions used in the model. Densities $a$
+and within-concept correlations $\rho$ are those imposed by the
+winners-take-all mechanism and measured from the FashionMNIST encodings:
+$a_{\mathrm{EC}} = 0.1$, $a_{\mathrm{DG}} = 0.005$, $a_{\mathrm{MF}} = 0.02$,
+$a_{\mathrm{PP}} = 0.2$ and $\rho_{\mathrm{EC}} = 0.15$,
+$\rho_{\mathrm{DG}} = 0.02$, $\rho_{\mathrm{MF}} = 0.01$,
+$\rho_{\mathrm{PP}} = 0.09$. MF encodings are the sparsest and least
+correlated; PP encodings are the densest and most correlated.}
+\label{fig:density_correlation}
+\end{figure}
+
+\section{Results}
+
+The results below follow the three-part program outlined in the
+introduction. We first examine the encoding statistics and retrieval
+behavior of the CA3 model, then test its predictions in CA3 place-cell
+recordings across two datasets, and finally transfer the computational
+principle to artificial neural networks. All numerical parameters are
+those listed in Table~\ref{tab:params} and the Methods unless explicitly
+stated otherwise, and all inclusion counts for the experimental analyses
+are listed in Table~\ref{tab:counts}.
+
+\subsection{MF encodings remain distinct while PP encodings build concepts}
+
+We first asked whether the transformations from EC to CA3 assumed in the
+model produce MF and PP encodings with the statistics expected from
+anatomy. Concretely, we propagated 256 FashionMNIST images from each of
+the sneaker, trouser and coat classes through the binary autoencoder to
+yield EC patterns, and then through random binary feedforward networks with
+winners-take-all activation to yield DG, MF and PP patterns. The resulting
+encodings separate cleanly on the two axes of density and within-concept
+correlation (Figure~\ref{fig:density_correlation}): MF patterns at CA3 have
+density $0.02$ and correlation $0.01$, making them both the sparsest and
+the least correlated; PP patterns at CA3 have density $0.2$ and correlation
+$0.09$, making them both the densest and the most correlated. A closed-form
+relationship derived in the supplementary methods connects the density and
+correlation of the presynaptic patterns and the desired density of the
+postsynaptic patterns to the correlation of the postsynaptic patterns
+through the inverse complementary error function; notably, this
+relationship does not depend on network sizes, synaptic density or absolute
+threshold values. The empirical statistics obtained from propagating the
+images through the network track the theoretical curves across the range
+of densities and correlations that we explored.
+
+The key observation is that sparsification in feedforward projections
+promotes decorrelation. When we repeat the analysis with randomly generated
+presynaptic patterns at various densities $a_{\mathrm{pre}}$ and
+correlations $\rho_{\mathrm{pre}}$, we find the same trend as for the
+image-derived encodings: decreasing the postsynaptic density monotonically
+decreases the postsynaptic correlation. This is consistent with extensive
+prior work on biological and artificial feedforward networks
+\cite{olshausen1996emergence,leutgeb2007pattern} and motivates the choice
+to build the CA3 model around two complementary encodings with the
+statistics of MF and PP patterns rather than a single hybrid.
+
+Having obtained MF and PP encodings for each memory, we next stored linear
+combinations of the two in a Hopfield-like CA3 network with relative PP
+strength $\zeta = 0.1$, and asked whether the network could retrieve either
+of them depending on the inhibitory threshold. With MF cues corrupted by
+flipping 1\% of the neurons, the network reliably retrieves distinct MF
+representations of examples at high threshold ($\theta' = 0.5$) for all
+stored loads that we tested, up to 30 cues per concept. At low threshold
+($\theta' = 0$), by contrast, the network transitions from retrieving PP
+examples at very low loads to retrieving merged PP concepts at moderate
+loads: the recovered image increasingly resembles the average image across
+all sneakers (or trousers, or coats) rather than any single stored example,
+and the overlap with a target PP concept pattern saturates near the
+theoretical bound $\sqrt{\rho_{\mathrm{PP}}}$. Using PP cues instead of MF
+cues, and using combined cues, yields qualitatively the same pattern of
+results, which implies that retrieval in our model depends primarily on the
+inhibitory threshold rather than the cue type. This in turn implies that
+the network performs heteroassociation between the two encodings of each
+memory (Figure~\ref{fig:retrieval_schematic}).
+
+Finally, we replaced the image-derived MF and PP patterns with randomly
+generated binary patterns spanning a broader range of statistics, to ensure
+that the retrieval behavior is not idiosyncratic to the generation pipeline.
+Random MF patterns had density $0.01$ and correlation $0$, while PP
+patterns had density $0.5$. In these networks, MF and PP examples both
+exhibit a characteristic capacity above which retrieval fails, while PP
+concepts exhibit a characteristic minimum number of stored examples below
+which the concept cannot be built. At intermediate loads, there exists a
+multiscale retrieval regime in which both MF examples and PP concepts are
+recoverable, and this regime widens as the PP correlation increases.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig_retrieval_schematic.pdf}
+\caption{Threshold control of retrieval in the Hopfield-like CA3 model.
+Left: a theta-like oscillation in the rescaled activity threshold alternates
+between a high value ($\theta' = 0.5$) that favors MF example retrieval and
+a low value ($\theta' = 0$) that favors PP concept retrieval. Right: at
+high threshold the network retrieves the sparse, decorrelated MF
+representation of the cued memory; at low threshold, a dense, correlated
+PP representation emerges that merges examples along shared features.}
+\label{fig:retrieval_schematic}
+\end{figure}
+
+\subsection{An oscillating threshold alternates between examples and concepts}
+
+The previous section established that the same CA3 network can be driven
+into either MF-like or PP-like retrieval depending on the threshold. We
+next asked whether a physiologically motivated, time-varying threshold can
+make the network alternate between the two retrieval modes within a single
+simulation, which would make the account testable against phase-dependent
+physiology. To this end we ran the retrieval dynamics while varying the
+threshold through four scenarios: a baseline condition in which the
+threshold switched abruptly between $0.5$ (sparse/MF) and $0$ (dense/PP),
+a sinusoidal variant with the same extrema, a variant with narrower
+extrema of $0.55$ and $0.25$, and a cue-throughout variant in which a
+weakened MF cue continued to drive the network throughout the simulation
+rather than only at initialization. In each scenario, 20 cues were tested
+in each of 20 networks with 50 randomly chosen examples stored from each
+of 3 concepts, for a total of 150 examples per network.
+
+Under the baseline and sinusoidal conditions, the network alternates
+between MF example and PP concept representations on the same schedule as
+the threshold. During the low-threshold phase, the overlap with a target
+PP concept approaches the theoretical bound, and visualization of the
+retrieved pattern reveals a concept-like prototype. During the high-threshold
+phase, the overlap instead concentrates on individual MF examples, and from
+one oscillation cycle to the next the retrieved MF pattern can hop among
+different examples of the same concept: the low-threshold phase preserves
+the concept identity of the cue but loses its example identity, so
+different examples are equally likely at the subsequent high-threshold
+phase. When the MF cue is applied throughout the simulation, this
+multistability disappears and the network settles on the target example;
+when the oscillation amplitude is reduced (the $0.55$/$0.25$ scenario),
+alternation is disrupted and the network instead stalls on one encoding
+type. These behaviors were summarized over update cycles 60 to 120, well
+after initialization transients had decayed.
+
+These simulations yield three experimentally testable predictions for CA3
+physiology. First, sparse theta phases should preferentially encode fine,
+example-like features of an experience, while dense phases should
+preferentially encode coarse, concept-like features. Second, the transition
+between scales should be driven by the inhibitory threshold in a
+subtractive rather than a divisive manner, because divisive modulation
+would scale tuning curves without altering their sharpness. Third, lower
+oscillation amplitudes should reduce access to the range of representational
+scales, consistent with reports that stronger theta power is associated
+with better memory retrieval \cite{okeefe1993phase,tsodyks1996population}.
+
+\subsection{CA3 place cells encode fine positions during sparse theta phases}
+
+To test the first prediction, we turned to publicly available rodent CA3
+place-cell recordings from linear-track navigation
+\cite{mizuseki2013hc3,skaggs1996theta}. We construe each CA3 neuron as
+storing spatial memories that, like FashionMNIST images, can be organized
+at different scales: fine positions within a place field play the role of
+examples, while coarse regions of the track play the role of concepts. The
+model therefore predicts that, within a place field, sparse theta phases
+convey more sparsity-corrected position information per spike than dense
+phases. A priori this is a nontrivial prediction: if theta acted divisively,
+sharper tuning might be expected during denser phases instead
+\cite{isaacson2011inhibition}, as seen for visual tuning curves under
+attention.
+
+We selected place cells with phase-independent position information above
+$0.5$ bits per spike using 1-cm bins, and extracted 35 valid CA3 fields and
+47 valid CA1 fields that passed both this criterion and the theta-modulation
+requirement (Figure~\ref{fig:valid_cells}, right). For each field, we
+partitioned theta into sparse and dense halves, computed sparsity-corrected
+position information per spike within each half, and tested the difference
+with a two-tailed Wilcoxon signed-rank test. CA3 place fields convey
+significantly more position information during sparse theta phases than
+during dense phases, and this effect is present for both phase-precessing
+fields and non-precessing fields, although the effect is slightly
+non-significant in the latter. Precession was detected by circular-linear
+regression with thresholds of score greater than $0.3$ and slope steeper
+than $-72^\circ$ per field. The difference between precessing and
+non-precessing fields was assessed with the two-tailed Mann-Whitney U test.
+Critically, the same effect is absent in data in which spike phases and
+positions are shuffled, which rules out a sparsity-correction artifact,
+and it is also absent in CA1 place fields, which shows that the signature
+is specific to CA3 and is not simply inherited through projection.
+
+When we next asked about coarse positions, partitioning the whole track
+into 4 contiguous bins at track scales $1/16$, $1/8$ and $1/4$, we recovered
+47, 49 and 56 valid CA3 place cells and 122, 137 and 144 valid CA1 place
+cells respectively at those scales (Figure~\ref{fig:valid_cells}, left). At
+the coarsest scales, dense theta phases convey more sparsity-corrected
+position information per spike than sparse phases, exactly reversing the
+trend seen at fine scales. The trend across scales is monotonic, with a
+significant Spearman's $\rho$, and is absent from shuffled controls. CA1
+place cells show the same dense-phase preference at coarse scales. The
+emergent picture is that the same CA3 neurons represent fine,
+example-like features during sparse theta phases and coarse, concept-like
+features during dense phases, consistent with the model's multiplexed
+code.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig_valid_cells.pdf}
+\caption{Numbers of valid cells and fields passing the inclusion criteria
+described in Methods. Left: coarse-position analysis at track scales
+$1/16$, $1/8$, $1/4$ yields 47, 49 and 56 valid CA3 place cells and 122,
+137 and 144 valid CA1 place cells, respectively. Right: the fine-scale
+place field analysis yields 35 valid CA3 fields and 47 valid CA1 fields,
+while the W-maze task yields 99 valid CA3 neurons and 187 valid CA1
+neurons.}
+\label{fig:valid_cells}
+\end{figure}
+
+\subsection{W-maze turn direction is preferentially encoded in sparse phases}
+
+The linear-track results support our model in the single modality of
+position. To test whether the prediction generalizes to a non-spatial
+feature, we analyzed CA3 place cells recorded during a W-maze alternation
+task in which mice must alternately visit the left and right arms between
+runs along the center arm \cite{karlsson2015hc6}. In this task,
+center-arm place cells are known to encode the turn direction in addition
+to position, so turn direction plays the role of a fine example feature
+that distinguishes otherwise similar runs, and position along the center
+arm plays the role of a coarse concept feature shared across turn
+directions. The model therefore predicts that sparse theta phases will
+preferentially encode turn direction, while dense phases will represent
+position without regard to the upcoming (or past) turn.
+
+We partitioned spikes into 2 turn directions and theta-phase bins of
+width $45^\circ$, requiring at least 5 spikes per phase value and at least
+twice as many spikes at the most active phase as at the least active phase.
+These criteria yield 99 valid CA3 neurons and 187 valid CA1 neurons for
+the single-neuron analysis. For each cell, we computed turn information
+per spike at each phase, corrected it with 100 null-matched samples that
+randomize the turn direction of each spike while preserving its phase, and
+averaged the sparsity-corrected turn information across the sparse and the
+dense halves of the theta cycle. Across both outbound and inbound runs,
+CA3 neurons convey significantly more turn information per spike during
+sparse phases than during dense phases, as assessed by two-tailed Wilcoxon
+signed-rank tests. The comparison between outbound and inbound runs is
+carried out with the Mann-Whitney U test. The same effect is not present
+in shuffled controls, and the difference between sparse and dense phases
+is significantly larger in CA3 than in CA1, consistent with the idea that
+the predicted signature emerges in CA3 and is not trivially propagated
+forward.
+
+At the population level, we asked whether this single-neuron effect
+translates into a more confident and more accurate Bayesian decoding of
+turn direction from the sparse half of the cycle. We included sessions
+with at least 5 simultaneously recorded neurons, yielding 8 valid CA3
+sessions and 25 valid CA1 sessions, and decoded in sliding windows of
+width $0.5$ s and stride $0.25$ s, requiring at least 2 spikes per window.
+Under the Poisson population-likelihood model, the CA3 decoder exhibits
+greater confidence about turn direction during sparse theta phases than
+during dense phases, and its maximum-likelihood estimate is more often
+correct during sparse phases. Both effects are specific to CA3: the CA1
+population does not show the same pattern, consistent with the subfield
+specificity seen at the single-neuron level. Taken together, the linear
+track and W-maze analyses provide model-specified, dataset-independent
+evidence for the multiplexed code across two tasks, two encoding
+modalities, and two levels of spatial resolution.
+
+\subsection{Complementary encodings improve multitask machine learning}
+
+Having found the signatures of the model in CA3, we asked whether the same
+computational principle can improve learning in artificial networks, far
+removed from hippocampal anatomy. We augmented MNIST with a random set
+number for each image and asked a multilayer perceptron to perform either
+digit classification, a concept task that requires building generalizations
+over many examples, or set identification, an example task that requires
+distinguishing images that may be otherwise visually similar
+(Figure~\ref{fig:ml_schematic}). Concept performance was measured on
+held-out test images, while example performance was measured on training
+images with 20\% of their normalized pixel values randomly set to 0, which
+forces the network to commit to an example-level representation rather
+than to rely on memorization of exact pixel values.
+
+In the single-task setting, with two tanh hidden layers of 50 units each,
+the baseline network with $\lambda = 0$ performs better on digit
+classification (the concept task), while the DeCorr network with
+$\lambda = 1$ performs better on set identification (the example task).
+The effect varies consistently with $\lambda$: larger DeCorr strength
+further improves example learning and further degrades concept learning.
+DeCov, which decorrelates pairs of neurons across inputs rather than pairs
+of inputs across neurons, improves digit classification, as expected of a
+generalization-promoting regularizer, but does not substantially improve
+set identification, confirming that DeCorr and DeCov are distinct
+interventions. Each reported condition averages over 32 independent
+networks trained with SGD at batch size 50, learning rate $10^{-4}$ and
+momentum $0.9$ to greater than $99.9\%$ training accuracy.
+
+In the multitask setting, with two tanh hidden layers of 100 units each
+and a joint dataset of 1000 training images labeled with both digit and
+one of 10 sets, the tradeoff becomes explicit. A DeCorr network is better
+than baseline on the example task but worse on the concept task, as
+expected. A HalfCorr network, in which the DeCorr penalty is applied only
+to the second 50 units of the final hidden layer, removes this tradeoff:
+it outperforms both baseline and DeCorr on the example task and matches or
+exceeds baseline on the concept task, over 64 networks per condition. The
+advantage is preserved across a range of architectural choices, including
+ReLU hidden layers at $\lambda = 0.04$ and purely linear hidden layers at
+$\lambda = 2$, which suggests that HalfCorr is not tuned to a particular
+activation function but rather captures a more general computational
+principle.
+
+The mechanism by which HalfCorr achieves this is visible at the
+single-neuron level. When we clamp each neuron's activation to zero in
+turn and measure the decrease in accuracy on each task, we find that the
+correlated half of the final hidden layer is more influential on digit
+classification, while the decorrelated half is more influential on set
+identification. In other words, the network spontaneously learns to use
+its two subpopulations of neurons for the two tasks for which their
+correlation statistics are best suited, in direct parallel with the
+differential contributions of MF and PP encodings in CA3. We did not
+separately manipulate the sparsities of the two halves; in some
+configurations the decorrelated half is also sparser than the correlated
+half, but the primary control is correlation rather than sparsity.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{figures/fig_ml_schematic.pdf}
+\caption{Multitask multilayer perceptron architecture. Two fully connected
+hidden layers of 100 tanh units feed two softmax output heads, one for
+digit classification and one for set identification. The HalfCorr loss
+applies the DeCorr penalty only to the second half of the final hidden
+layer, yielding a correlated half (PP-like, orange) and a decorrelated
+half (MF-like, purple). The DeCorr baseline applies the penalty to all
+neurons, while the baseline condition applies no penalty.}
+\label{fig:ml_schematic}
+\end{figure}
+
+\section{Discussion}
+
+The results reported above converge on a single proposal about how the
+hippocampal subfield CA3 supports both episodic- and category-like
+behavior from the same circuit. Our central claim is that the dual MF and
+PP inputs to CA3 support a multiplexed code in which each memory is
+stored twice, once as a sparse, decorrelated MF pattern and once as a
+dense, correlated PP pattern, and retrieved either as an example or as a
+concept depending on the inhibitory tone of the network. At the level of the circuit, this reframes the theta
+oscillation not as a clock that gates a single stored pattern per memory
+but as a sweep across representational scales, with sparser phases
+preserving example identity and denser phases preserving concept identity.
+At the level of behavior, it predicts that the hippocampus should be able
+to alternate between barcode-like episodic retrieval and prototype-like
+categorical retrieval without modifying its synapses, simply by tracking
+changes in inhibitory tone. The place-cell analyses reported here are
+consistent with this reframing across two datasets, two behavioral tasks
+and two levels of spatial resolution, and the HalfCorr results show that
+the same principle can be transplanted into artificial networks without
+the full mechanistic apparatus of recurrent attractor dynamics.
+
+Our work connects a specific anatomical feature of the hippocampal circuit
+to foundational attractor theory
+\cite{hopfield1982neural,tsodyks1988enhanced,amit1985spin}. Prior
+computational models have either assigned MF and PP inputs to different
+operating regimes, typically MF for storage and PP for retrieval from a
+single hybrid attractor \cite{treves1992computational}, or have proposed
+that both example-like and concept-like representations coexist but
+converge at CA1 rather than at CA3 \cite{schapiro2017complementary}. Our
+model diverges from both of these by positing that two encodings of each
+memory coexist at CA3 itself, are retrieved by the same recurrent network
+under different thresholds, and manifest as the sparse- and dense-phase
+information signatures that we identify in CA3 place cells. Because the
+connection to statistical-mechanics accounts of capacity in sparse networks
+is explicit, our model also inherits their predictions for how capacity
+scales with network size and pattern density, making it possible in
+principle to calibrate it against large-scale recordings of CA3 activity.
+
+The analyses of theta phase coding reported here enrich the existing
+literature on phase precession and phase-dependent tuning in several ways
+\cite{okeefe1993phase,tsodyks1996population,skaggs1996theta}. Previous
+work has largely focused on CA1, and the subfield-specific signatures we
+report in CA3, including the dense-phase preference for coarse positions
+and the sparse-phase preference for turn direction in the W-maze, are not
+obviously inherited from CA1 and are not predicted by accounts of theta
+that treat it purely as a divisive modulator \cite{isaacson2011inhibition}.
+The observation that some CA3 neurons encode turn direction only at
+certain theta phases, rather than across the whole cycle, suggests that
+the population of cells traditionally labeled as splitter cells may be
+broader than is apparent from phase-averaged analyses, because neurons
+that are theta-specific splitters will be discarded by whole-cycle
+analyses. This resonates with broader views of the hippocampus as
+representing the external world in a richly multiplexed fashion across
+oscillation phases.
+
+The extension to artificial neural networks, mediated by the DeCorr and
+HalfCorr loss terms, deserves discussion in its own right. DeCorr and the
+previously studied DeCov loss \cite{cogswell2016reducing} operate on
+different axes of the activation matrix, and the contrast is empirically
+important: DeCov reduces overfitting by encouraging different neurons to
+respond to different inputs, while DeCorr actively pulls apart the
+representations of different inputs within the same layer, which is
+useful when the task is to tell those inputs apart. HalfCorr, which
+applies DeCorr to only a designated subset of neurons, realizes within a
+single layer the kind of functional heterogeneity that is more commonly
+achieved by modular architectures \cite{lecun2015deep}. It is natural to
+speculate that a spectrum of decorrelation strengths, assigned neuron by
+neuron, could produce a continuous family of representational scales
+analogous to the continuum swept out by a theta-like inhibitory
+oscillation in CA3. Whether this heterogeneity would be useful in
+continual learning, reinforcement learning or natural biological learning
+is beyond the scope of the current paper, but the results reported here
+suggest that correlation-based regularizers are an underexplored design
+dimension for multitask learning.
+
+Several important limitations of the present work should be noted. Our
+model does not include CA1 in its circuitry, and although we report
+comparative analyses in this subfield that serve as controls, a fuller
+account of how CA3 outputs are combined with temporoammonic inputs at
+CA1 is needed to connect the proposal to behavior and to downstream
+neocortical targets. Our model also treats memory storage and retrieval
+as separate simulation regimes, which is a strong simplification given
+that storage and retrieval likely coexist at different theta phases in
+vivo \cite{tsodyks1996population}. We have not attempted to fit the
+model's parameters to any single empirical dataset, preferring instead to
+choose values that reflect the anatomy in order of magnitude and to
+verify that the qualitative phenomena are preserved across a wide range.
+The machine-learning experiments likewise use relatively small MNIST
+subsets and a simple multilayer perceptron, chosen to expose the
+representational principle rather than to compete for state-of-the-art
+accuracy. Scaling HalfCorr to larger, more naturalistic tasks, and to
+architectures with depth and attention, is a natural next step.
+
+Taken together, the biological and computational results reported here
+argue that multiplexing two encodings of each memory at CA3, and using the
+theta oscillation to select between them, provides a principled account of
+why CA3 receives two systematically different inputs and how it can
+support both example- and concept-level retrieval. The success of HalfCorr
+as a plug-and-play loss function further suggests that the same principle
+can benefit artificial systems that must simultaneously distinguish similar
+inputs and generalize over them \cite{quiroga2005invariant,lecun2015deep}.
+More broadly, the results support the view that cortical inhibition should
+not be treated simply as a damper on activity but as an active, oscillatory
+control variable that selects among coexisting representational scales
+\cite{isaacson2011inhibition}. Future work combining large-scale recordings
+of CA3 during theta, fits of the Hopfield-like model to those recordings,
+and scaled-up HalfCorr-like losses in large neural networks should make
+it possible to sharpen and test this view.
+
+\bibliography{references}
+
+\end{document}

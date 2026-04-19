@@ -1,0 +1,212 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb}
+\usepackage{authblk}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{setspace}
+\onehalfspacing
+
+\bibliographystyle{unsrtnat}
+
+\title{Sex-specific resilience of neocortex to food restriction}
+\date{}
+\author{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Mammals confronted with food scarcity reduce their energy expenditure in sex-specific ways, but whether the neocortex participates in these adaptations remains poorly understood. Here, we asked whether the mouse primary visual cortex (V1) lowers its energy usage and alters its coding precision during moderate food restriction, and whether it does so differently in males and females. Adult male and female mice were fed either ad libitum or were food restricted to 85\% of free-feeding bodyweight for two to three weeks, and V1 was probed with biochemical assays, bulk RNA sequencing, two-photon FRET-based ATP imaging, and GCaMP6s calcium imaging of orientation tuning. Achieving a 15\% bodyweight loss required a 40\% greater daily food restriction in females (39\% vs 27\% of ad libitum intake), and serum leptin dropped 72\% in males (6.45 to 1.84~ng/mL; $p<0.0001$) but only 28\% non-significantly in females ($p=0.32$). In parallel, V1 AMPK Thr172 phosphorylation rose 2.9-fold in males ($p=0.022$) but 1.4-fold non-significantly in females ($p=0.11$), and RNA sequencing revealed male-selective regulation of oxidative phosphorylation, mTORC1, fatty acid metabolism, and PI3K/AKT/mTOR pathways. Cortical ATP half-time slowed 24\% in males ($p=0.0067$) but only 12\% non-significantly in females ($p=0.18$), and orientation selectivity dropped 27\% in males ($p=0.0009$) versus 13\% non-significantly in females ($p=0.08$). Bayes factor analysis confirmed that the evidence for food-restriction effects was several-fold stronger in males than females across all outcomes. The neocortex therefore contributes to sex-specific energy-saving adaptations, with females exhibiting greater cortical resilience to metabolic stress.
+\end{abstract}
+
+\section{Introduction}
+
+Mammals confronted with food scarcity reduce whole-body energy expenditure, and the nature of these adaptations is known to differ between the sexes. Peripheral studies have repeatedly shown that female rodents preserve fat mass and bodyweight better than males under comparable restriction, while simultaneously suppressing energy-costly reproductive functions such as ovulation and maintenance of uterine tissue~\citep{lovdel2024hsd11b1, lopezdominguez2016omega3, greenfield2025lifespan, ryu2023timerestricted, jeromson2024gdf15}. This asymmetry is thought to reflect the differential importance of adipose stores versus reproductive investment to survival and fitness in males and females~\citep{nestor2014crosstalk}. The resulting picture for peripheral physiology is consistent across species and protocols: females weather a period of caloric limitation by sacrificing reproduction-related mass rather than fat.
+
+In striking contrast, far less is understood about whether and how the brain participates in these sex-specific energy-saving programs. Neural tissue is metabolically expensive: per unit mass, grey matter consumes more ATP than almost any peripheral organ, with the bulk of that cost attributable to action potentials, postsynaptic currents, and the Na$^+$/K$^+$ pumping needed to restore the resting potential after signalling~\citep{attwell2001energy, niven2008energy}. Evolutionary analyses argue that this high metabolic price has shaped sensory systems toward energy-efficient codes, making sensory cortex a plausible site for state-dependent energy savings~\citep{niven2008energy}. If the cortex can flexibly lower its energy budget during periods of scarcity, this would constitute a meaningful contribution of the brain itself to whole-organism metabolic adaptation, beyond its classical role as the consumer of peripheral energy reserves.
+
+The mouse primary visual cortex (V1) is a tractable testbed for such questions because both its energy use and its coding output can be measured longitudinally in awake animals. Leptin, the adipocyte-derived hormone first identified by positional cloning of the \textit{ob} gene, is regarded as a key signal by which the brain senses peripheral energy availability and it couples to intracellular effectors including AMP-activated protein kinase (AMPK), the mechanistic target of rapamycin (mTOR), and peroxisome proliferator-activated receptor alpha (PPAR$\alpha$)~\citep{zhang1994positional, steinberg2023ampk, laplante2013mtorc1, yao2022ampk, ward2016ampk, su2019hsf1, lopezdominguez2016omega3}. In male mice, a decrease in circulating leptin during moderate food restriction has been linked to reduced V1 ATP usage during visual processing and to a measurable loss of orientation tuning precision. Whether the analogous circuit operates in females is unclear, and in practice the assumption that it does often goes untested.
+
+The question matters for two reasons that extend beyond basic physiology. First, food restriction protocols are routinely used in systems neuroscience to motivate animals during behavioural tasks that probe cortical function~\citep{scott2023cisplatin, heinz2021foraging}, so sex-specific differences in the cortical response to such restriction could confound task design and interpretation. Second, calorie-restricted diets are being investigated as interventions for neurological diseases including epilepsy and Alzheimer's disease~\citep{greenfield2025lifespan}, and any sex asymmetry in the cortical response is directly relevant to the translational value of such interventions. Peripheral evidence already suggests that males and females do not enter the same metabolic state after a matched relative bodyweight loss, because their fat reserves and leptin dynamics differ~\citep{kwon2014gpr30, nestor2014crosstalk, elsehrawy2025eralpha}. If that asymmetry propagates into the neocortex, our interpretation of cortical physiology in restricted animals needs revision.
+
+Here we address this gap directly. Adult male and female mice were food restricted to 85\% of free-feeding bodyweight over two to three weeks and we probed V1 with four complementary readouts: biochemistry of AMPK Thr172 phosphorylation and PPAR$\alpha$ DNA-binding activity; bulk RNA sequencing analysed with DESeq2~\citep{love2014moderated} and Gene Set Enrichment Analysis against the Hallmark collection~\citep{subramanian2005gsea}; two-photon FRET imaging of cortical ATP dynamics with the ATeam1.03YEMK sensor~\citep{imamura2009visualization, tsuyama2013ateam, ando2012visualization, kishikawa2011ateam}; and GCaMP6s-based calcium imaging of V1 layer 2/3 orientation tuning during drifting-grating presentation~\citep{mcclure2019puretones, petousakis2023apical}. We complemented classical frequentist tests with Bayes factor analysis~\citep{sekulovski2024bayes} to assess the strength of evidence for and against sex-specific effects. Our central finding is that cortical energy regulation and coding precision are largely preserved in females under food restriction while they are robustly reduced in males, extending the concept of sex-specific metabolic resilience from peripheral tissue to the neocortex.
+
+\section{Methods}
+
+\subsection{Animals and food-restriction protocol}
+Adult C57BL/6 male and female mice aged 7--9 weeks were housed under standard conditions. Control (CTR) animals were given ad libitum access to standard chow, whereas food-restricted (FR) animals received a daily ration titrated so that bodyweight was maintained at 85\% of free-feeding baseline for two to three weeks. Because females were more resistant to weight loss, the percentage reduction of daily intake required to reach the 15\% bodyweight target was titrated separately for each sex, and was monitored daily. Before any recording, tissue collection, or imaging session, all animals (both CTR and FR) were given ad libitum access to food until sated, so that the long-term effects of caloric restriction rather than acute hunger were probed.
+
+\subsection{Serum leptin, AMPK, and PPAR$\alpha$ assays}
+Blood was collected from restrained awake mice and serum leptin was assayed by enzyme-linked immunoassay. V1 tissue was rapidly dissected on ice and processed for western blotting of phosphorylated AMPK (Thr172) normalised by total AMPK protein and expressed as AU/$\mu$g protein. PPAR$\alpha$ activity in V1 was assessed as DNA-binding to a consensus response element and normalised to protein level. AMPK and PPAR$\alpha$ are canonical cellular energy regulators: AMPK is activated by phosphorylation of Thr172 under metabolic stress, after which it suppresses ATP-consuming anabolic processes including mTORC1 signalling and promotes oxidative phosphorylation~\citep{steinberg2023ampk, ward2016ampk, yao2022ampk, su2019hsf1}, while PPAR$\alpha$ regulates fatty-acid oxidation downstream of leptin signalling~\citep{lopezdominguez2016omega3, laplante2013mtorc1}.
+
+\subsection{V1 bulk RNA sequencing}
+V1 was dissected from $n=4$ CTR male, $n=4$ FR male, $n=4$ CTR female, and $n=4$ FR female mice. RNA was extracted and sequenced, and differential expression was assessed using DESeq2 with a significance threshold of adjusted $p < 0.1$~\citep{love2014moderated}. Pathway-level changes were evaluated by Gene Set Enrichment Analysis against the Hallmark collection with a significance threshold of adjusted $p < 0.05$~\citep{subramanian2005gsea}.
+
+\subsection{Two-photon ATP imaging}
+ATP dynamics in V1 of awake head-fixed Thy1-ATeam1.03YEMK mice were measured by two-photon FRET imaging of layer 2/3 neurons. ATeam1.03YEMK is a FRET-based biosensor derived from the bacterial F$_\text{o}$F$_1$-ATP synthase $\varepsilon$ subunit sandwiched between cyan and yellow fluorescent proteins~\citep{imamura2009visualization, tsuyama2013ateam, ando2012visualization, kishikawa2011ateam}. During imaging, ATP synthesis inhibitors were focally applied over the visual cortex so that the decay of the FRET signal became proportional to net ATP usage; the time to 50\% decay (half-time) is the reported readout. Data were acquired during presentation of natural outdoor scenes and, separately, in the absence of visual stimulation (dark screen). Animals were imaged while in a cardboard tube in which they did not locomote.
+
+\subsection{Two-photon calcium imaging and orientation selectivity}
+V1 layer 2/3 neurons expressing GCaMP6s were imaged with two-photon microscopy in awake head-fixed mice viewing drifting gratings at six orientations~\citep{mcclure2019puretones, petousakis2023apical}. For each responsive neuron, tuning curves were normalised to the preferred-orientation response and the orientation selectivity index (OSI) and direction selectivity index (DSI) were computed. Male cohort data used in figures was obtained under similar conditions as in prior work and is plotted alongside newly acquired female data for direct comparison. Pupil diameter was also extracted from eye-tracking video as a control for behavioural state.
+
+\subsection{Statistical analysis}
+Primary between-group comparisons used two-way ANOVAs on (sex) $\times$ (diet), with reported $t$ statistics, degrees of freedom, $p$-values, and 95\% confidence intervals (CIs). To quantify the relative support the data provide to the hypothesis that food restriction has an effect, we complemented $p$-values with Bayes factor analysis (BF$_{10}$)~\citep{sekulovski2024bayes}. BF$_{10} > 3$ is conventionally interpreted as moderate evidence for an effect, whereas BF$_{10} < 0.33$ indicates moderate evidence for the null; values between these thresholds indicate that the data are uninformative. Effect sizes and 95\% CIs are reported alongside BF$_{10}$ for the parameters of Figures~\ref{fig:weight_leptin_ampk}--\ref{fig:atp_osi}.
+
+\section{Results}
+
+%% --- FIGURE: SCHEMA ---
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/fig_schema_experiment.pdf}
+\caption{Experimental pipeline. Adult male and female mice (7--9 weeks) were either fed ad libitum (CTR) or food-restricted (FR) to 85\% of free-feeding bodyweight for 2--3 weeks. V1 tissue was analysed for serum leptin, AMPK Thr172 phosphorylation, PPAR$\alpha$ DNA binding, and bulk RNA sequencing (DESeq2 and GSEA). In parallel, two-photon FRET imaging of ATeam1.03YEMK reported cortical ATP usage and GCaMP6s imaging reported orientation selectivity of V1 layer 2/3 neurons. Sex-specific effects were assessed with two-way ANOVA and Bayes factor analysis.}
+\label{fig:schema}
+\end{figure}
+
+\subsection{Sex-specific impact of food restriction on body composition and serum leptin}
+
+We first asked whether the moderate food-restriction protocol produced the same physiological state in male and female mice. Establishing this is essential before interpreting any downstream cortical measurement, because systemic metabolic signals such as leptin are known to mediate the cortical response to caloric limitation.
+
+Prior to any restriction, males and females consumed the same ad libitum daily food intake, even though females weighed on average 80\% of their age-matched male counterparts (males 27.82~g [95\% CI 26.84--28.79] vs females 23.21~g [22.35--24.07]; $t=7.58$, $df=66$, $p<0.001$; $n=8$ males and $7$ females). To achieve a similar relative magnitude and rate of weight loss in both sexes, we had to impose a substantially greater restriction of daily food intake in females. Females were restricted to an average of 39\% of ad libitum intake ($n=7$ mice) whereas males reached the same 15\% bodyweight target with 27\% of ad libitum intake ($n=8$ mice), corresponding to a 40\% greater restriction in females. This difference is consistent with prior demonstrations that female mice resist weight loss more effectively than males under matched protocols~\citep{lovdel2024hsd11b1, lopezdominguez2016omega3, greenfield2025lifespan, jeromson2024gdf15}.
+
+Serum leptin, which is secreted by adipocytes in proportion to fat mass and which signals peripheral energy availability to the brain~\citep{zhang1994positional}, diverged sharply between the sexes despite matched bodyweight loss (Figure~\ref{fig:weight_leptin_ampk}). In males, leptin fell 72\%, from 6.45~ng/mL [4.47--8.43] to 1.84~ng/mL [0.90--2.79] ($t=4.58$, $df=66$, $p<0.0001$; $n=17$ CTR, $19$ FR). In females, leptin decreased only 28\% and non-significantly, from 3.94~ng/mL [2.53--5.35] to 2.83~ng/mL [1.20--4.47] ($t=1.00$, $df=66$, $p=0.32$; $n=23$ CTR, $11$ FR). Females therefore required a larger caloric deficit to match males' bodyweight loss and, even then, they did not produce the same drop in the adipose-derived metabolic signal that is most strongly linked to cortical energy regulation. Given that leptin reduction is the trigger previously associated with cortical energy savings, this peripheral asymmetry already predicts a cortical asymmetry.
+
+%% --- FIGURE 1 ---
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1_weight_leptin_ampk.pdf}
+\caption{Sex-specific impact of food restriction on body composition and V1 energy-regulating pathways. Baseline bodyweight differed by sex (males 27.82~g [26.84--28.79] vs females 23.21~g [22.35--24.07]; $t=7.58$, $df=66$, $p<0.001$). Serum leptin dropped from 6.45~ng/mL [4.47--8.43] to 1.84~ng/mL [0.90--2.79] in males ($t=4.58$, $df=66$, $p<0.0001$; $-72\%$) but only from 3.94~ng/mL [2.53--5.35] to 2.83~ng/mL [1.20--4.47] in females ($t=1.00$, $df=66$, $p=0.32$; $-28\%$). AMPK Thr172 phosphorylation rose 2.9-fold in male V1 (13.19 [7.68--18.71] to 38.21~AU/$\mu$g [16.50--59.93]; $t=2.28$, $df=39$, $p=0.022$) but only 1.4-fold non-significantly in females (20.94 [9.42--32.46] to 29.52~AU/$\mu$g [8.52--50.53]; $t=0.64$, $df=39$, $p=0.11$). PPAR$\alpha$ DNA-binding activity increased in males ($t=4.81$, $df=30$, $p=0.013$) but was unchanged in females ($t=0.0016$, $df=30$, $p=0.99$). Error bars span 95\% confidence intervals.}
+\label{fig:weight_leptin_ampk}
+\end{figure}
+
+\subsection{V1 energy-regulating pathways are engaged by food restriction in males but not in females}
+
+Because serum leptin diverged between sexes, we next asked whether the classical intracellular energy-regulating pathways downstream of leptin showed a correspondingly sex-biased response in the cortex. We focused first on AMPK phosphorylation at Thr172, the canonical activating mark that drives downstream suppression of anabolic ATP-consuming processes and promotion of catabolic ATP-producing ones~\citep{steinberg2023ampk, ward2016ampk, su2019hsf1, yao2022ampk}.
+
+In V1 of males, AMPK Thr172 phosphorylation was markedly and significantly elevated 2.9-fold with food restriction, from 13.19~AU/$\mu$g [7.68--18.71] to 38.21~AU/$\mu$g [16.50--59.93] ($t=2.28$, $df=39$, $p=0.022$; $n=11$ CTR, $15$ FR). In females, by contrast, the same protocol produced only a 1.4-fold increase that did not reach statistical significance, from 20.94~AU/$\mu$g [9.42--32.46] to 29.52~AU/$\mu$g [8.52--50.53] ($t=0.64$, $df=39$, $p=0.11$; $n=11$ CTR, $6$ FR). PPAR$\alpha$ DNA-binding activity in V1, a second leptin-responsive energy node that regulates fatty-acid oxidation~\citep{lopezdominguez2016omega3, laplante2013mtorc1}, showed the same pattern: significantly up-regulated in males ($t=4.81$, $df=30$, $p=0.013$) but unchanged in females ($t=0.0016$, $df=30$, $p=0.99$; $n=5$ CTR male, $11$ FR male, $9$ CTR female, $9$ FR female) (Figure~\ref{fig:weight_leptin_ampk}).
+
+To test whether these protein-level asymmetries had a transcriptomic correlate, we performed bulk RNA sequencing on V1 tissue from $n=4$ mice per group and analysed it with DESeq2~\citep{love2014moderated}. Food restriction altered the expression of 657 genes in males and 585 genes in females at an adjusted $p < 0.1$, but only 125 of these genes were shared between the sexes, pointing to largely distinct transcriptional responses (Figure~\ref{fig:rnaseq}). Gene Set Enrichment Analysis against the Hallmark collection~\citep{subramanian2005gsea} similarly returned 34 significantly regulated gene sets in males versus 14 in females (adjusted $p < 0.05$), with 13 shared. Four canonical energy-regulating Hallmark pathways were significantly enriched in males but not in females: oxidative phosphorylation ($t=0.48$, $p<0.0001$ vs $t=-0.17$, $p=0.96$), mTORC1 signalling ($t=0.46$, $p<0.0001$ vs $t=-0.18$, $p=0.98$), fatty-acid metabolism ($t=0.43$, $p<0.0001$ vs $t=0.20$, $p=0.88$), and PI3K/AKT/mTOR signalling ($t=0.34$, $p=0.027$ vs $t=0.17$, $p=0.98$). Oestrogen-response pathways as well as inflammation- and reactive oxidative species-associated transcriptional programs were also male-selective, consistent with reports that oestrogen itself engages leptin-like appetite-suppressing and energy-expending effects in hypothalamic circuits~\citep{kwon2014gpr30, nestor2014crosstalk, elsehrawy2025eralpha}.
+
+Taken together, these biochemical and transcriptomic results converge on the same picture: canonical cellular energy-regulating pathways in V1 are engaged by food restriction in males but remain largely quiescent in females, despite the females receiving a comparatively more severe dietary manipulation.
+
+%% --- FIGURE 2 ---
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig2_rnaseq.pdf}
+\caption{Sex-specific transcriptomic response in V1 to food restriction ($n=4$ per group). DESeq2 identified 657 differentially expressed genes in males and 585 in females ($p$-adj~$<0.1$), with 125 shared. Gene Set Enrichment Analysis on Hallmark sets returned 34 significantly regulated sets in males and 14 in females ($p$-adj~$<0.05$), with 13 shared. Canonical energy-regulating pathways showed male-selective enrichment: oxidative phosphorylation ($t=0.48$, $p<0.0001$ in males; $t=-0.17$, $p=0.96$ in females), mTORC1 signalling ($t=0.46$, $p<0.0001$ vs $t=-0.18$, $p=0.98$), fatty acid metabolism ($t=0.43$, $p<0.0001$ vs $t=0.20$, $p=0.88$) and PI3K/AKT/mTOR signalling ($t=0.34$, $p=0.027$ vs $t=0.17$, $p=0.98$).}
+\label{fig:rnaseq}
+\end{figure}
+
+\subsection{V1 ATP usage during visual stimulation is reduced in males but not in females}
+
+Activation of AMPK and downstream suppression of mTOR predict reduced ATP expenditure. We therefore asked whether the sex asymmetry we observed at the molecular level translated into a measurable asymmetry in in vivo cortical ATP consumption. We imaged layer 2/3 neurons of V1 in awake head-fixed Thy1-ATeam1.03YEMK mice while focally applying ATP synthesis inhibitors, so that the decay of the FRET signal during a defined visual stimulus tracked net ATP usage~\citep{imamura2009visualization, tsuyama2013ateam, ando2012visualization, kishikawa2011ateam}.
+
+During presentation of natural outdoor scenes, food restriction robustly slowed the half-time of FRET decay in males by 24\%, from 8.48~min [7.59--9.37] to 10.51~min [9.08--11.93] ($t=2.87$, $df=37$, $p=0.0067$; $n=11$ CTR, $10$ FR), indicating reduced ATP consumption (Figure~\ref{fig:atp_osi}). In females, the corresponding change was 12\% and did not reach significance: half-time of FRET decay moved from 8.66~min [7.49--9.84] to 9.66~min [8.92--10.39] ($t=1.36$, $df=37$, $p=0.18$; $n=12$ CTR, $8$ FR). The same measurement performed in the absence of visual stimulation (dark screen; Supplemental Figure~1 in source extraction) produced no significant effect of diet in either sex (males $t=0.14$, $df=24$, $p=0.89$, $n=8$ CTR, $6$ FR; females $t=0.64$, $df=37$, $p=0.52$, $n=8$/$8$), indicating that the male effect is stimulus-driven rather than a change in baseline cortical metabolism.
+
+These in vivo readouts reinforce the molecular data: moderate food restriction reduces stimulus-evoked cortical ATP usage in males, consistent with engagement of the AMPK/mTOR axis, but leaves it essentially unchanged in females.
+
+\subsection{V1 orientation selectivity is reduced in males but not in females}
+
+We next asked whether the male-specific drop in cortical energy usage was accompanied by a corresponding drop in coding precision, as would be expected if the cortex traded metabolic cost for signalling fidelity. We quantified orientation selectivity of V1 layer 2/3 neurons by two-photon GCaMP6s imaging during drifting-grating presentation, using a previously published male cohort for direct comparison with newly collected female data~\citep{mcclure2019puretones, petousakis2023apical}.
+
+In males, orientation selectivity was significantly reduced by 27\% under food restriction: OSI fell from 0.58 [0.51--0.65] in CTR to 0.42 [0.36--0.49] in FR ($t=3.75$, $df=27$, $p=0.0009$; $n=8$ CTR, $8$ FR). In females, the reduction was only 13\% and did not reach significance: OSI fell from 0.60 [0.52--0.67] to 0.52 [0.45--0.58] ($t=1.90$, $df=27$, $p=0.08$; $n=7$ CTR, $9$ FR) (Figure~\ref{fig:atp_osi}). Direction selectivity followed the same sex-biased pattern: DSI was significantly reduced in males ($t=2.16$, $df=12$, $p=0.023$; $n=6$ CTR, $8$ FR) but not in females ($t=1.49$, $df=14$, $p=0.16$; $n=7$ CTR, $9$ FR). Critically, these differences could not be attributed to a difference in behavioural or attentional state: animals were imaged while stationary in a cardboard tube, and pupil diameter during drifting-grating presentation was comparable across sex and diet ($t=0.82$, $df=18$, $p=0.42$).
+
+Together with the ATP imaging, these results establish that in males food restriction reduces both cortical energy expenditure and the fidelity with which V1 represents visual features, whereas in females both quantities are largely preserved.
+
+%% --- FIGURE 3 ---
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/fig3_atp_osi.pdf}
+\caption{V1 ATP usage and orientation selectivity are reduced by food restriction in males but not in females. Left, half-time of FRET decay of the ATeam1.03YEMK signal (shorter half-time = faster ATP usage) during natural-scene visual stimulation. In males, FR slowed ATP use by 24\% (8.48~min [7.59--9.37] to 10.51~min [9.08--11.93]; $t=2.87$, $df=37$, $p=0.0067$; $n=11$ CTR, $10$ FR). In females, the change was 12\% and non-significant (8.66~min [7.49--9.84] to 9.66~min [8.92--10.39]; $t=1.36$, $df=37$, $p=0.18$; $n=12$ CTR, $8$ FR). Right, orientation selectivity index (OSI) from GCaMP6s imaging of V1 layer 2/3 neurons during drifting gratings. Males: 0.58 [0.51--0.65] to 0.42 [0.36--0.49] ($-27\%$; $t=3.75$, $df=27$, $p=0.0009$; $n=8$/$8$). Females: 0.60 [0.52--0.67] to 0.52 [0.45--0.58] ($-13\%$; $t=1.90$, $df=27$, $p=0.08$; $n=7$/$9$). Error bars span 95\% confidence intervals.}
+\label{fig:atp_osi}
+\end{figure}
+
+\subsection{Bayes factor analysis confirms a sex-biased effect and constrains the female null}
+
+Classical null-hypothesis significance testing does not distinguish absence of evidence from evidence of absence, which is a particularly acute problem when reporting a sex-biased effect based on non-significant female outcomes. We therefore complemented the preceding analyses with Bayes factor (BF$_{10}$) hypothesis testing~\citep{sekulovski2024bayes}, which quantifies how much more likely the data are under the alternative (effect) hypothesis than under the null.
+
+Across the ten parameters of energy usage and visual coding that we tested (corresponding to the measurements summarised in Figures~\ref{fig:weight_leptin_ampk}--\ref{fig:atp_osi}), BF$_{10}$ was consistently several-fold greater for males than for females, confirming that the frequentist asymmetry reflects a genuine asymmetry in the strength of evidence for an effect. At the same time, only 3 of the 10 parameters in females reached BF$_{10} < 0.33$, the conventional threshold for substantive evidence against an effect. This means that our study does not definitively exclude a smaller, below-detection effect of food restriction in the female cortex; the female data are compatible either with true null effects or with modest effects that our experimental groups were underpowered to detect.
+
+Taken as a whole, the Bayes factor analysis strengthens the qualitative conclusion that cortical function and energy usage are more robustly modulated by food restriction in males than in females, while acknowledging that residual, smaller effects in females remain possible.
+
+\section{Summary Tables}
+
+\begin{table}[htbp]
+\centering
+\caption{Primary physiological and molecular outcomes by sex and diet. Means given with 95\% CIs; two-way ANOVA $t$, $df$, and $p$ are for the within-sex CTR vs FR comparison.}
+\label{tab:primary}
+\begin{tabular}{lllll}
+\toprule
+Measure & Sex & CTR mean [95\% CI] & FR mean [95\% CI] & $t$, $df$, $p$ \\
+\midrule
+Serum leptin (ng/mL) & Male & 6.45 [4.47--8.43] & 1.84 [0.90--2.79] & 4.58, 66, $<0.0001$ \\
+Serum leptin (ng/mL) & Female & 3.94 [2.53--5.35] & 2.83 [1.20--4.47] & 1.00, 66, 0.32 \\
+pAMPK Thr172 (AU/$\mu$g) & Male & 13.19 [7.68--18.71] & 38.21 [16.50--59.93] & 2.28, 39, 0.022 \\
+pAMPK Thr172 (AU/$\mu$g) & Female & 20.94 [9.42--32.46] & 29.52 [8.52--50.53] & 0.64, 39, 0.11 \\
+PPAR$\alpha$ activity (V1) & Male & N/A & N/A & 4.81, 30, 0.013 \\
+PPAR$\alpha$ activity (V1) & Female & N/A & N/A & 0.0016, 30, 0.99 \\
+Daily intake (\% ad lib) & Male & 100 & 27 & 4.81, 25, $<0.0001$ \\
+Daily intake (\% ad lib) & Female & 100 & 39 & 6.59, 25, $<0.0001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{V1 in vivo functional outcomes. FRET decay half-time measures cortical ATP usage during natural-scene viewing; OSI measures orientation selectivity of layer 2/3 neurons during drifting gratings.}
+\label{tab:functional}
+\begin{tabular}{llllll}
+\toprule
+Measure & Sex & CTR [95\% CI] & FR [95\% CI] & \% change & $t$, $df$, $p$ \\
+\midrule
+FRET half-time (min) & Male & 8.48 [7.59--9.37] & 10.51 [9.08--11.93] & $+24$ & 2.87, 37, 0.0067 \\
+FRET half-time (min) & Female & 8.66 [7.49--9.84] & 9.66 [8.92--10.39] & $+12$ & 1.36, 37, 0.18 \\
+OSI (unitless) & Male & 0.58 [0.51--0.65] & 0.42 [0.36--0.49] & $-27$ & 3.75, 27, 0.0009 \\
+OSI (unitless) & Female & 0.60 [0.52--0.67] & 0.52 [0.45--0.58] & $-13$ & 1.90, 27, 0.08 \\
+DSI (unitless) & Male & N/A & N/A & N/A & 2.16, 12, 0.023 \\
+DSI (unitless) & Female & N/A & N/A & N/A & 1.49, 14, 0.16 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{GSEA Hallmark pathway $t$-statistics and $p$-values for canonical energy-regulating gene sets in V1.}
+\label{tab:gsea}
+\begin{tabular}{lllll}
+\toprule
+Gene set & Male $t$ & Male $p$ & Female $t$ & Female $p$ \\
+\midrule
+Oxidative phosphorylation & 0.48 & $<0.0001$ & $-0.17$ & 0.96 \\
+mTORC1 signalling & 0.46 & $<0.0001$ & $-0.18$ & 0.98 \\
+Fatty acid metabolism & 0.43 & $<0.0001$ & 0.20 & 0.88 \\
+PI3K/AKT/mTOR signalling & 0.34 & 0.027 & 0.17 & 0.98 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+In female mice, cortical energy usage and visual coding precision are largely preserved under moderate food restriction, whereas in males both are robustly reduced. This asymmetry reproduces across four independent levels of analysis---biochemistry (AMPK and PPAR$\alpha$), transcriptomics (DESeq2 and GSEA), in vivo ATP imaging (ATeam1.03YEMK FRET), and in vivo orientation tuning (GCaMP6s)---and it is confirmed by Bayes factor analysis, which quantifies the relative strength of the evidence for an effect in each sex. Taken together, these results establish that the neocortex itself contributes to sex-specific energy-saving adaptations during metabolic challenge, extending the concept of female metabolic resilience from peripheral tissue to the brain.
+
+The most parsimonious explanation links the cortical asymmetry back to the peripheral leptin response. Matching 15\% bodyweight loss between the sexes required imposing a 40\% greater daily caloric restriction in females, yet despite this larger dietary insult, females showed only a 28\% non-significant drop in serum leptin compared to the 72\% drop seen in males. Since reductions in circulating leptin have previously been shown to be necessary for triggering the energy-saving cortical changes we measured here in male animals, females effectively do not receive the peripheral signal that would normally engage the AMPK/mTOR/PPAR$\alpha$ axis in V1~\citep{zhang1994positional, steinberg2023ampk, laplante2013mtorc1, lopezdominguez2016omega3}. Our peripheral findings are in turn consistent with a broader literature demonstrating that female mice protect fat stores during caloric restriction and that their weight loss comes preferentially from reproductive and lean tissues~\citep{lovdel2024hsd11b1, greenfield2025lifespan, jeromson2024gdf15, ryu2023timerestricted}. The cortical asymmetry we report here is, in this view, a downstream consequence of a leptin asymmetry that is itself a consequence of a fat-preservation strategy.
+
+A second, non-exclusive factor is the interaction between oestrogens and cellular energy regulation in females. Oestrogen is known to suppress food intake and promote energy expenditure, in part by augmenting leptin-induced STAT3 phosphorylation in the hypothalamus and in part by directly sensitising insulin signalling and enhancing mitochondrial activity~\citep{kwon2014gpr30, nestor2014crosstalk, elsehrawy2025eralpha}. In our RNA-seq data, oestrogen-response pathways were among the gene sets significantly regulated by food restriction in male V1 but not in female V1, consistent with the interpretation that the constitutive oestrogen tone in young cycling females overlaps with pathways that food restriction would otherwise recruit, diminishing the marginal response. This view predicts that the female cortical resilience we observe should weaken with age, as reproductive decline lowers oestrogen levels and the protective overlap dissipates~\citep{greenfield2025lifespan}. Future work in older cycling and post-cycling females, and in young females with experimental oestrogen manipulation, will be needed to test this prediction directly.
+
+Our findings extend to the neocortex a set of sex- and tissue-specific regulation patterns that have been established in peripheral organs. In skeletal muscle and cardiac tissue, AMPK and mTOR signalling are differentially modulated by metabolic stress in males and females~\citep{steinberg2023ampk, laplante2013mtorc1}, and a similar sex bias appears to hold for PPAR$\alpha$-mediated fatty-acid oxidation~\citep{lopezdominguez2016omega3}. Our data are consistent with an emerging view in which the same core cellular energy-regulating axis operates across tissues but is engaged in a sex-biased manner depending on the tissue's physiological role and on the organism's reproductive investment. The neocortex---energetically expensive, dispensable on a short timescale relative to reproduction, and tightly coupled to fat stores through leptin---fits naturally into this picture, with females apparently spared cortical ATP savings precisely because their fat stores are spared.
+
+The functional implications for experimental and translational neuroscience are direct. Food restriction is widely used in behavioural studies of cortical function, on the assumption that the resulting metabolic state is comparable across sexes~\citep{scott2023cisplatin, heinz2021foraging}. Our data argue against that assumption: identical bodyweight targets produce markedly different cortical states in male and female mice, and behavioural performance that depends on V1 coding precision should therefore be interpreted with sex in mind. Calorie-restricted diets have also been proposed as interventions for neurological diseases including epilepsy and Alzheimer's disease~\citep{greenfield2025lifespan}. If, as our data suggest, the neocortex responds asymmetrically to caloric restriction, the translational utility of such interventions may also differ between sexes. Systematic inclusion of both sexes, and of multiple age groups, in studies of dietary manipulation will be essential for interpreting such interventions.
+
+Several limitations should be acknowledged. First, our moderate 2--3 week 85\%-bodyweight protocol is only one point in a much larger space of possible restriction paradigms; duration, magnitude, and macronutrient composition are known to alter the physiological response to caloric limitation~\citep{lopezdominguez2016omega3, greenfield2025lifespan, ryu2023timerestricted}. Second, we focused exclusively on adult primary visual cortex in young cycling mice, so we cannot generalise to other cortical areas, to juveniles or aged animals, or to non-cycling post-reproductive females. Third, although our within-sex statistical comparisons are robust, we did not have the statistical power to perform a direct sex~$\times$~diet interaction test on every outcome, and our Bayes factor analysis indicates that for most female outcomes the evidence is compatible either with a true null or with a modest effect below the detection threshold. Despite these limitations, the convergence of four independent readouts on the same sex-biased pattern provides a strong basis for the central conclusion.
+
+In conclusion, the mouse primary visual cortex participates in sex-specific metabolic adaptation to food restriction, with females exhibiting biochemical, transcriptomic, metabolic, and functional resilience compared to males. This resilience tracks the sex-specific preservation of fat mass and serum leptin and is plausibly reinforced by oestrogen signalling. The neocortex, therefore, should be regarded not as a passive consumer of peripheral energy reserves but as an active participant in the sex-specific whole-organism response to metabolic stress. Recognising this will sharpen the interpretation of cortical physiology in food-motivated behavioural studies and will inform the design of dietary interventions for neurological disease.
+
+\bibliography{references}
+
+\end{document}

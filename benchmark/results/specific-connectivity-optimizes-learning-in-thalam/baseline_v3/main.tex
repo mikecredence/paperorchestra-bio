@@ -1,0 +1,114 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\title{Specific Connectivity Optimizes Learning in Thalamocortical Loops}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Cortico-thalamo-cortical (CTC) loops have a central role in cognition and motor control, but how thalamus contributes is unclear. Since corticothalamic projections compress cortical activity into a lower-dimensional thalamic activity space, we hypothesized that the computational role of thalamus depends on the structure of corticothalamic connectivity. We constructed a combined cortex-thalamus model with $N = 256$ cortical neurons and $M = 32$ thalamic neurons (varied from 1 to 128). Thalamocortical synapses were trained using a biologically plausible three-factor rule (RFLO), while corticothalamic weights were optimized on a slower timescale by meta-learning. We found that corticothalamic connectivity that communicates an efference copy of the cortical output is optimal for autonomous motor control, while corticothalamic connections that communicate the principal components of cortical activity optimize working memory performance. Using meta-learning, the median factor of reduction in performance error across initializations was 5.8 for motor control and 5.1 for working memory. We analyzed neural recordings from mice performing grasping and delayed discrimination (Motor control: $n=3$ sessions, $n=101$ thalamic neurons; Working memory: $n=5$ sessions, $n=72$ thalamic neurons). Behavior was well explained by cortical activity (R$^2$: motor control 0.93; working memory 0.97). Thalamic variance explained by cortex was higher in the working memory task ($0.70 \pm 0.01$ vs $0.46 \pm 0.01$); the fraction of explainable thalamic variance captured by the top 5 cortical PCs was greater in working memory ($0.63 \pm 0.04$) than in motor control ($0.29 \pm 0.02$). These results suggest that thalamus orchestrates cortical dynamics via structured connectivity.
+\end{abstract}
+
+\section{Introduction}
+Higher-order thalamus does not receive peripheral inputs, and recent work suggests it acts as a higher-order relay between cortical areas \cite{sherman2007thalamus,sherman2018thalamus}. Reciprocal CTC loops have been identified in rodent sensory \cite{guo2020anterior}, motor \cite{yamawaki2015corticothalamic,guo2018maintenance,economo2018distinct,munoz2021cellular}, and prefrontal cortices \cite{collins2018reciprocal}. Such loops are required for many cognitive functions \cite{bolkan2017thalamic,guo2017maintenance,schmitt2017thalamic,rikhye2018thalamic,alcaraz2018flexible}. Reciprocal CTC loops feature compression (cortex to thalamus) and expansion (thalamus to cortex) \cite{zhaoping2006theoretical,druckmann2012framework,olshausen1996emergence,zhu2013visual,zhang2016readout,qin2019nonlinear,litwin2017optimal,muscinelli2022optimal,xie2022taskdependent}. Prior theoretical work has shown that CTC loops can perform computations via tuned synapses \cite{kao2021optimal,logiaco2021thalamic}, consistent with evidence for thalamocortical plasticity in adult brain \cite{herry1999plasticity,oberlaender2012functional,biane2016motor,audette2019plasticity,hasegawa2020selective,adam2021context,sohn2022tonic}. However, these studies did not address whether corticothalamic synapses can be learned via biologically plausible local rules. We hypothesize that thalamic contribution to learning depends on the structure of corticothalamic synapses, and identify what forms of corticothalamic connectivity optimize learning.
+
+\section{Methods}
+\subsection{Model}
+A cortical network of $N = 256$ neurons is reciprocally connected with $M = 32$ thalamic neurons (varied 1--128). Cortical activity $h_t \in \mathbb{R}^N$, thalamic activity $r_t \in \mathbb{R}^M$, external input $x_t \in \mathbb{R}^S$. Cortical activity evolves:
+\begin{equation}
+\tau \dot{h}_t = -h_t + \phi(W_{CC} h_t + W_{CT} r_t + W_I x_t)
+\end{equation}
+with $\phi = \tanh$. Thalamic activity $r_t = \phi(W_{TC} h_t)$ is an $M$-dimensional projection of cortical activity. Output $y_t = W^\circ h_t$ is a linear readout. The effective recurrent weight is $W_{\mathrm{eff}} = W_{CC} + W_{CT} V W_{TC}$, a rank-$M$ perturbation of $W_{CC}$ \cite{mastrogiuseppe2018linking,schuessler2020dynamics,dubreuil2022role}.
+
+\subsection{Thalamocortical learning rule (RFLO)}
+Thalamocortical synapses $W_{CT}$ are updated via Random-Feedback-Local-Online (RFLO) learning \cite{murray2019local}, a three-factor rule combining presynaptic (thalamic) activity, postsynaptic (cortical) activity, and a random-feedback-projected error. Readout weights $W^\circ$ are updated by a delta rule. The feedback matrix $B \in \mathbb{R}^{N\times R}$ is random, with alignment $B^T \approx W^\circ$ emerging during learning \cite{lillicrap2016random}.
+
+\subsection{Meta-learning of corticothalamic weights}
+Corticothalamic weights were optimized across thousands of outer-loop epochs, each of which comprised hundreds of inner-loop trials of thalamocortical learning \cite{wang2021metalearning,hospedales2022metalearning,wang2018prefrontal,jiang2021metalearning,tyulmankov2022metalearning}. Thalamocortical weights were reset at the start of each outer-loop epoch; all other weights were fixed and feedback alignment ($B^T = W^\circ$) was enforced during meta-learning. Test-time thalamocortical learning then used the fixed optimized $W_{TC}$.
+
+\subsection{Tasks}
+\textbf{Autonomous motor control:} Output a complex temporal waveform without external inputs. \textbf{Working memory:} Output the amplitude of one of eight possible transient input pulses during a subsequent delay. \textbf{Goal-directed reaching:} two thalamic modules (preparation, execution) with $M=2$ each; output controls angular accelerations of a two-joint arm to reach one of eight targets.
+
+\subsection{Neural data analyses}
+Motor control data from mice reaching for food pellets with simultaneous motor cortex / motor thalamus recordings \cite{sauerbrei2020cortical} ($n=3$ sessions, $n=101$ thalamic neurons). Working memory data from ALM/VM/VAL recordings during a delayed discrimination task \cite{guo2017maintenance} ($n=5$ sessions, $n=72$ thalamic neurons). Linear regression decoded behavior (hand acceleration or choice) and each thalamic neuron's activity from the cortical population. Analyses were restricted to the movement period (motor control) or the delay period (working memory).
+
+\section{Results}
+\subsection{Local plasticity at thalamocortical but not corticothalamic synapses supports learning}
+In models with $N = 256$ cortical neurons and $M$ varied from 1 to 128 thalamic neurons, learning performance improved with thalamic population size when RFLO was applied to $W_{CT}$. Applying an analogous local rule to $W_{TC}$ failed to improve learning; applying both rules simultaneously was no better than only updating thalamocortical synapses. This failure reflects inadequate feedback alignment for thalamic neurons (no greater than chance), indicating that error signals cannot mediate learning via local plasticity in corticothalamic synapses.
+
+\subsection{Meta-learned corticothalamic weights are task-specific}
+With $N = 256$ cortical neurons and $M = 32$ thalamic neurons, meta-learning reduced thalamocortical-learning error several-fold vs random $W_{TC}$: median factor of reduction 5.8 (motor control) and 5.1 (working memory). Alignment of meta-learned $W_{TC}$ with the readout direction exceeded alignment with the leading PC for motor control; for working memory the pattern was inverted (stronger alignment with the leading PC).
+
+\begin{table}[h]
+\centering
+\caption{Meta-learning improvements and optimal corticothalamic alignment.}
+\begin{tabular}{lll}
+\toprule
+Task & Median factor error reduction & Dominant alignment \\
+\midrule
+Motor control & 5.8 & Readout direction \\
+Working memory & 5.1 & Leading principal components \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Subspace-aligned corticothalamic connectivity supports task-dependent learning}
+With $M = 1$, learning thalamocortical synapses is sufficient if the corticothalamic projection is chosen appropriately. Median $-\log(1 - R^2)$: for motor control, Random 1.2, PC 1.2, Readout 2.1; for working memory, Random 1.9, PC 2.5, Readout 1.8. The advantage of readout-aligned (motor) or PC-aligned (working memory) connectivity persists for larger $M$. The choice of optimal structure is robust to task complexity. Random corticothalamic connectivity learned poorly across all task variants.
+
+\begin{table}[h]
+\centering
+\caption{$M=1$ corticothalamic structures and task performance (median $-\log(1-R^2)$).}
+\begin{tabular}{lll}
+\toprule
+Structure & Motor control & Working memory \\
+\midrule
+Random & 1.2 & 1.9 \\
+PC-aligned & 1.2 & 2.5 \\
+Readout-aligned & 2.1 & 1.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Composite task: Delayed reaching}
+A minimal model with $M=2$ thalamic neurons per module (preparation and execution) achieved maximal reaching performance when preparation-module corticothalamic weights conveyed PCs and execution-module weights conveyed readout signals. The best model reached all eight targets successfully, robust to number of target locations and delay distribution.
+
+\subsection{Neural data are consistent with model predictions}
+Behavior was well explained by cortical activity in both tasks (R$^2$: motor control 0.93; working memory 0.97). In working memory, leading cortical PCs had large influence on behavioral choice; in motor control, lower-variance PCs dominated the readout. Fraction of variance in thalamic neurons explained by cortical activity: motor control $0.46 \pm 0.01$; working memory $0.70 \pm 0.01$. Fraction of explainable thalamic variance captured by top 5 cortical PCs was greater in working memory than motor control: $0.63 \pm 0.04$ vs $0.29 \pm 0.02$. Trial-by-trial motor thalamus activity was better predicted by same-trial cortical activity; corticothalamic weights capturing trial-by-trial activity were better aligned with readout weights than those capturing trial-averaged activity---suggesting motor thalamus receives an efference copy of the motor command.
+
+\begin{table}[h]
+\centering
+\caption{Neural data summary.}
+\begin{tabular}{lll}
+\toprule
+Metric & Motor control & Working memory \\
+\midrule
+Sessions & $n=3$ & $n=5$ \\
+Thalamic neurons & $n=101$ & $n=72$ \\
+Behavior R$^2$ from cortex & 0.93 & 0.97 \\
+Thalamic variance from cortex & $0.46 \pm 0.01$ & $0.70 \pm 0.01$ \\
+Explainable thalamic variance (top 5 PCs) & $0.29 \pm 0.02$ & $0.63 \pm 0.04$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+We showed that biologically plausible local feedback-driven learning algorithms \cite{miconi2017biologically,alemi2018learning,murray2019local,gilra2017predicting} are effective for thalamocortical synapses but ineffective for corticothalamic synapses. We resolved this by proposing that corticothalamic weights are optimized on evolutionary or developmental timescales, and identifying task-specific optima: readout alignment for motor control (efference-copy-like) and PC alignment for working memory. The efferent-copy interpretation is consistent with the evolutionarily conserved layer-V pyramidal to higher-order thalamus pathway via corticofugal branching \cite{bourassa1995cortico,bourassa1995parallel,kakei2001efferent,kita2012role,sherman2016cortical,guillery2011branched,sherman2021thalamic}, though recent work shows some corticofugal branches primarily target midbrain rather than spinal cord \cite{economo2018distinct}.
+
+For working memory, the PC-aligned structure could be established by unsupervised plasticity (e.g., Hebbian) which does not require credit assignment \cite{magee2020synaptic}. Evidence for plasticity in higher-order thalamus is limited \cite{ding2003gfap}, but the ALM-to-VM/VAL pathway is a candidate to examine Hebbian plasticity.
+
+Limitations include homogeneous neural populations, single plasticity rule (RFLO), neglect of reward-based rules \cite{hosp2011dopaminergic,li2017dopamine}, and simplified CTC architecture. Recent findings of convergent inputs \cite{sampathkumar2021integration}, layer-specific wiring \cite{munoz2021cellular}, and thalamic diversity \cite{phillips2019diverse}, as well as interactions with BG and cerebellum \cite{tanaka2018learning} are important extensions. Our model expands prior work on low-rank modifications \cite{mastrogiuseppe2018linking,schuessler2020inter}, connecting theories of CTC computation \cite{kao2021optimal,logiaco2021thalamic} to biologically plausible learning. It also suggests that cortical representational changes observed during learning \cite{huber2012multiple,peters2014emergence,masamizu2014two} may partly arise from thalamocortical plasticity rather than solely from corticocortical plasticity \cite{biane2015spinocortical,biane2019motor,hasegawa2020selective,wang2022thalamocortical}.
+
+Our results establish a direct link between anatomical motifs, local plasticity rules, and computational capabilities of CTC loops, showing that task-specific structured corticothalamic connectivity is necessary to optimize learning under biologically plausible plasticity.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

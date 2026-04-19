@@ -1,0 +1,205 @@
+{
+  "metadata": {
+    "working_title": "Factorized visual representations in the primate visual system and deep neural networks",
+    "venue": "Nature Neuroscience",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Object classification has been proposed as a principal objective of the primate ventral visual stream and has been used as an optimization target for deep neural network (DNN) models, but visual brain areas represent many types of information and classification alone does not constrain how other information should be encoded.",
+    "gap": "It is unclear whether the brain achieves simultaneous representation of multiple scene parameters by invariance (discarding non-class information), factorization (encoding non-class variance in orthogonal subspaces), or by entangled codes, and whether this factorization principle predicts which DNN models best match neural data.",
+    "approach": "We introduce quantitative metrics for factorization and invariance in population codes (PCA based and covariance based), apply them to macaque V4/IT neural recordings (n=128 multi-unit sites in V4 and 128 in IT) and to a diverse library of DNN models tested on 12 primate datasets, and introduce a representational rotation lesion that decreases factorization while preserving invariance and firing-rate statistics.",
+    "key_results": "Factorization of object identity from non-identity information increased from V4 to IT and was necessary for decoding (chance=1/64); models that factorized scene parameters most strongly best matched neural, fMRI, and behavioral data across 12 datasets; combining factorization with classification significantly improved cross-validated prediction of the most brainlike models (n=4 datasets for each of V4, IT/HVC, and behavior; 80/20 splits, 100 resamples).",
+    "impact": "Factorized encoding of behaviorally relevant scene variables is a normative principle of biological visual representations, complementing classification performance as a desideratum for building more brainlike models."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "DNNs are the most predictive models of primate high-level visual cortex; classification-trained DNNs resemble V4 and IT, and higher-performing models often match neural data better.",
+        "Beyond a threshold of classification performance, further gains fail to translate into better neural predictivity, motivating new normative principles beyond classification alone.",
+        "High-level cortical neurons simultaneously encode multiple visual attributes (identity, pose, position), so invariance cannot fully explain how these variables coexist in a population code.",
+        "We introduce factorization as a quantifiable representational geometry distinct from invariance: orthogonal subspace coding of non-class variance, related to manifold disentanglement but generalized to multidimensional generative factors.",
+        "We quantify factorization in macaque V4/IT populations and in a broad DNN library, and ask whether factorization predicts brainlikeness across species, cortical areas, and measurement modalities."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_framework",
+          "title": "A framework for quantifying factorization and invariance",
+          "content_bullets": [
+            "Disentangled coding of object identity from other scene parameters can arise via invariance (compact spheres in identity subspace) or via factorization (orthogonal axes for non-identity variance) or by an entangled representation that degrades decoding.",
+            "Factorization is defined as the fraction of parameter-induced variance orthogonal to the other-parameter subspace (Eq. 2, PCA based) or as 1 minus the normalized dot product of parameter covariance matrices (Eq. 4, covariance based).",
+            "Simulations with N=10 binary features, two of which varied in alignment a from 0 to 1, show that non-orthogonal (entangled) codes yield poor linear classifier generalization from few training samples when Gaussian noise is present."
+          ]
+        },
+        {
+          "id": "results_neural",
+          "title": "Factorization increases from V4 to IT and supports object decoding",
+          "content_bullets": [
+            "Using a macaque dataset that independently varied identity vs pose/background, both V4 and IT populations exhibited significant factorization above a shuffle control; factorization increased from V4 to IT (Figure 2A).",
+            "Invariance to non-identity information also increased from V4 to IT; when measured inside the top-90%-variance identity subspace it was even more pronounced, a consequence of increased factorization (Figure 2A, right, dashed lines).",
+            "A linear basis rotation (Eq. 1) that preserves mean firing rates, invariance, and covariance but decreases factorization of identity from non-identity factors significantly reduced object class decoding performance (chance = 1/64; n=128 multi-unit sites in V4 and 128 in IT) (Figure 2B)."
+          ]
+        },
+        {
+          "id": "results_dnn",
+          "title": "Factorization in DNN models predicts brainlikeness",
+          "content_bullets": [
+            "We augmented a synthetic scene library by independently varying four scene parameters (foreground object pose, background identity, scene lighting, camera viewpoint) with n=10 parameter levels for each of n=100 base scenes, yielding 4000 images.",
+            "Across a diverse DNN library (supervised classification, contrastive self-supervised, auxiliary self-supervised; Table S2), trained networks consistently showed higher factorization of all four scene parameters than an untrained ResNet-50 control, while invariance increased for background/lighting but decreased for object pose and viewpoint (Figure 4A).",
+            "Model factorization scores were positively correlated with encoding-fit scores to macaque IT single-unit data (E2 dataset) and with human I2 behavioral patterns (Figure 4B)."
+          ]
+        },
+        {
+          "id": "results_generality",
+          "title": "Generality across 12 datasets and methods",
+          "content_bullets": [
+            "Across 12 datasets (6 macaque: 2 V4, 2 IT, 2 behavior; 6 human: 2 V4, 2 HVC, 2 behavior; Table S1), factorization of scene parameters consistently correlated with model brainlikeness (Figure 5A).",
+            "Invariance to appearance factors (background, lighting) correlated with brainlike models, but invariance to spatial transforms (object pose, camera viewpoint) did not (zero or negative correlations; Figure 5C).",
+            "Re-computing camera-viewpoint and object-pose factorization from natural movies (MIT Moments in Time, UT-Austin Egocentric; 200 ms frame separation) produced similar predictions of brainlikeness (Figure 5B).",
+            "Results were robust to PCA variance threshold over 50-99% (Figure S5), to restricting to ResNet-50 architectures (Figure S3), and to using RDMs instead of linear encoding fits (Figure S4)."
+          ]
+        },
+        {
+          "id": "results_combine",
+          "title": "Factorization combined with classification improves brain predictions",
+          "content_bullets": [
+            "A saturating and sometimes reversing relationship was observed between classification performance alone and neural/voxel predictivity on IT/HVC data (Figure 7, top row).",
+            "Linearly combining factorization with classification in a regression model produced significant improvements in predicting the most brainlike models (cross-validated across models, averaged across datasets; n=4 datasets for each of V4, IT/HVC and behavior; 80/20 train/test splits, 100 resamples; Figure 6, Figure 7 middle/bottom rows).",
+            "The same boost was not observed when combining classification with overall dimensionality (Figure 6, pink bars), indicating factorization carries information beyond dimensionality."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Monkey datasets: single-unit V4/anterior-ventral-IT recordings, multi-unit V4/IT recordings, and image-by-image object classification behavior.",
+        "Human datasets: two fMRI sets (V4 and HVC voxels) and one behavioral object-classification set.",
+        "Synthetic scene augmentation: for each of 100 base scenes, 10 parameter levels for each of four parameters (pose, background, lighting, viewpoint).",
+        "Scene parameter ranges: object angle [-90, 90] on all three axes; in-plane position horizontal [-30%, 30%] and vertical [-60%, 60%]; size [x1/1.6, x1.6]; camera crop scale 20%-100%; lighting jitters [-0.4, 0.4] for brightness/contrast/saturation and [-0.1, 0.1] for hue.",
+        "Factorization metrics: PCA based (Eq. 2) using top PCs capturing 90% of variance; covariance based (Eq. 4) using normalized dot product of covariance matrices.",
+        "Neural fit procedure: ridge regression on top 300 PCA components of model features, regularization selected by cross-validation; last 5 model layers averaged.",
+        "Lesion transformation (Eq. 1): basis change matrix W_{inter→intra} rotates class centers; intra-class variance preserved exactly; reduces factorization while preserving invariance.",
+        "Natural movie factorization: contiguous frames separated by 200 ms; MIT Moments in Time for stationary observer; UT-Austin Egocentric for non-stationary observer.",
+        "Cross-validated combined metric: 80/20 model split, 100 random train/test resamples, Spearman correlation on held-out."
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Factorization is a normative principle of primate visual coding, complementary to classification and dimensionality.",
+        "Relationship to manifold disentanglement, abstraction, and representational straightening.",
+        "Limitations: correlational analysis; heuristic scene-parameter choice; unspecified within-subspace coding geometry.",
+        "Future directions: factorization as a direct optimization objective; unsupervised discovery of latent scene factors; single-unit tuning analyses to disambiguate coding strategies."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Datasets used for measuring brainlikeness",
+      "columns": ["Dataset", "Species", "Region / modality", "Measurement type"],
+      "data_source": "experimental_log.md Table S1 description",
+      "caption_sketch": "Neural, fMRI, and behavioral datasets aggregated from prior studies: 6 macaque (2 V4 multi/single-unit, 2 IT multi/single-unit, 2 behavior) and 6 human (2 V4 fMRI, 2 HVC fMRI, 2 behavior)."
+    },
+    {
+      "table_id": "tab2",
+      "title": "DNN model families tested",
+      "columns": ["Family", "Training objective", "Architecture note"],
+      "data_source": "experimental_log.md Methods / Table S2 description",
+      "caption_sketch": "Supervised classification (AlexNet, ResNet), contrastive self-supervised (MoCo, SimCLR), and auxiliary self-supervised (reconstruction, colorization). Most models use ResNet-50; untrained ResNet-50 is the control."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Scene parameter augmentation ranges",
+      "columns": ["Parameter", "Range", "Axis / note"],
+      "data_source": "experimental_log.md Methods parameter block",
+      "caption_sketch": "Parameter ranges used to generate the synthetic augmented image set: object pose, in-plane position, size, camera crop scale, lighting jitters."
+    },
+    {
+      "table_id": "tab4",
+      "title": "Stimulus set dimensions",
+      "columns": ["Quantity", "Value"],
+      "data_source": "experimental_log.md statistical reports",
+      "caption_sketch": "n base scenes, n parameter levels per scene, total images, parameters varied."
+    }
+  ],
+  "figure_plan": [
+    {
+      "figure_id": "fig_framework",
+      "type": "schematic",
+      "description": "Framework schematic: invariance vs factorization vs entangled coding; the three geometric strategies for encoding identity in the presence of non-identity variance.",
+      "data_source": "Figure 1A/B description in experimental_log.md"
+    },
+    {
+      "figure_id": "fig_simulation",
+      "type": "schematic",
+      "description": "Simulation schematic showing square vs parallelogram coding geometry with two binary variables out of N=10.",
+      "data_source": "Figure 1C description; N=10 binary features from statistical_sentences"
+    },
+    {
+      "figure_id": "fig_neural",
+      "type": "schematic",
+      "description": "Schematic summary of the V4->IT factorization/invariance trend and the rotation-lesion experiment.",
+      "data_source": "Figure 2 description; chance = 1/64; n=128 V4 and 128 IT multi-unit sites"
+    },
+    {
+      "figure_id": "fig_pipeline",
+      "type": "schematic",
+      "description": "DNN evaluation pipeline: scene augmentation (100 base scenes x 10 levels x 4 parameters = 4000 images) -> factorization/invariance metrics -> brain predictivity across 12 datasets.",
+      "data_source": "Figure 3 description; n=10 levels, n=100 base scenes"
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "deep neural networks models primate ventral visual stream",
+      "object recognition invariance primate IT cortex",
+      "manifold disentanglement visual cortex representations",
+      "population coding high-dimensional neural representations",
+      "factorized representations neural population coding"
+    ],
+    "micro_queries": [
+      "ResNet neural predictivity Brain-Score macaque IT",
+      "SimCLR contrastive self-supervised visual representation",
+      "MoCo momentum contrast self-supervised learning",
+      "representational similarity analysis RSA fMRI",
+      "representational dissimilarity matrix RDM neural",
+      "disentangled representation learning variational autoencoder",
+      "macaque IT single-unit object classification",
+      "macaque V4 multi-unit recording object images",
+      "human fMRI object category ventral visual cortex",
+      "behavioral signatures image object classification Rajalingham",
+      "representational straightening natural movies visual cortex",
+      "participation ratio neural dimensionality",
+      "abstraction geometry neural population Bernardi",
+      "few-shot classification neural population geometry",
+      "object pose viewpoint invariance IT neurons",
+      "HMAX AlexNet visual hierarchy predictive model"
+    ],
+    "must_cite": [
+      "Yamins DiCarlo 2014 performance optimized hierarchical models V4 IT",
+      "Rajalingham Issa 2018 large-scale deep neural network behavioral signatures",
+      "Hong Yamins 2016 explicit information object identity position scale IT",
+      "Schrimpf Brain-Score 2018 integrative benchmarking primate ventral stream",
+      "DiCarlo Zoccolan Rust 2012 how does the brain solve visual object recognition",
+      "Chen SimCLR 2020 simple framework contrastive learning visual representations",
+      "He MoCo 2020 momentum contrast unsupervised visual representation learning",
+      "Krizhevsky AlexNet 2012 ImageNet deep CNN",
+      "He ResNet 2016 deep residual learning image recognition",
+      "Kriegeskorte representational similarity analysis 2008",
+      "Higgins beta-VAE 2017 disentangled representations",
+      "Bernardi 2020 geometry abstract representations prefrontal cortex hippocampus",
+      "Henaff straightening natural videos visual cortex 2019 2021",
+      "Conwell 2022 what can 1.8 billion regressions tell us about primate visual system"
+    ],
+    "citation_target": 25
+  }
+}

@@ -1,0 +1,199 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\title{Novel Cyclic Homogeneous Oscillation Detection Method for High Accuracy and Specific Characterization of Neural Dynamics}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Detecting temporal and spectral features of neural oscillations is essential to understanding dynamic brain function. Traditionally, the presence and frequency of neural oscillations are determined by identifying peaks over 1/f noise within the power spectrum. However, this approach solely operates within the frequency domain and thus cannot adequately distinguish between the fundamental frequency of a non-sinusoidal oscillation and its harmonics. Non-sinusoidal signals generate harmonics, significantly increasing the false-positive detection rate---a confounding factor in the analysis of neural oscillations. To overcome these limitations, we define the fundamental criteria that characterize a neural oscillation and introduce the Cyclic Homogeneous Oscillation (CHO) detection method that implements these criteria based on an auto-correlation approach that determines the oscillation's periodicity and fundamental frequency. We evaluated CHO by verifying its performance on simulated sinusoidal and non-sinusoidal oscillatory bursts convolved with 1/f noise. Our results demonstrate that CHO outperforms conventional techniques in accurately detecting oscillations. Specifically, we determined the sensitivity and specificity of CHO as a function of signal-to-noise ratio (SNR). We further assessed CHO by testing it on electrocorticographic (ECoG, 8 subjects) and electroencephalographic (EEG, 7 subjects) signals recorded during the pre-stimulus period of an auditory reaction time task and on electrocorticographic signals (6 SEEG subjects and 6 ECoG subjects) collected during resting state. In the reaction time task, the CHO method detected auditory alpha and pre-motor beta oscillations in ECoG signals and occipital alpha and pre-motor beta oscillations in EEG signals. Moreover, CHO determined the fundamental frequency of hippocampal oscillations in the human hippocampus during the resting state (6 SEEG subjects). In summary, CHO demonstrates high precision and specificity in detecting neural oscillations in time and frequency domains. The method's specificity enables the detailed study of non-sinusoidal characteristics of oscillations, such as the degree of asymmetry and waveform of an oscillation. Furthermore, CHO can be applied to identify how neural oscillations govern interactions throughout the brain and to determine oscillatory biomarkers that index abnormal brain function.
+\end{abstract}
+
+\section{Introduction}
+Neural oscillations in the mammalian brain are thought to play an important role in coordinating neural activity across different brain regions, allowing for the integration of sensory information, the control of motor movements, and the maintenance of cognitive functions \citep{pfurtscheller1999,caplan2003,buzsaki2004,jensen2010,giraud2012,schalk2015,fries2015}. Detecting neural oscillations is important in neuroscience as it helps unravel the mysteries of brain function, understand brain disorders, investigate cognitive processes, track neurodevelopment, develop brain-computer interfaces, and explore new therapeutic approaches. Thus, detecting and analyzing the ``when'', the ``where'', and the ``what'' of neural oscillations is an essential step in understanding the processes that govern neural oscillations.
+
+Detecting the onset and offset of a neural oscillation (i.e., the ``when'') is necessary to understand the relationship between oscillatory power/phase and neural excitation, an essential step in explaining an oscillation's excitatory or inhibitory function \citep{pfurtscheller1999,canolty2006,klimesch2007,haegens2011,depesters2016}. Localizing the brain area or layer that generates the oscillation (i.e., the ``where'') provides neuroanatomical relevance to cognitive and behavioral functions \citep{buzsaki2004,miller2010}. Determining the oscillation's fundamental frequency (i.e., the ``what'') indicates underlying brain states \citep{penfield1954,buzsaki2004}. Together, the ``when'', the ``where'', and the ``what'' can be seen as the fundamental pillars in investigating the role of oscillations in interregional communication throughout the brain \citep{fries2015}.
+
+Historically, neural oscillation detection has been extensively studied in the frequency \citep{wen2016,donoghue2020,ostlund2022}, time \citep{hughes2012,gips2017}, and time-frequency domains \citep{chen2011,wilson2022,neymotin2022}. With the notable exception of \citet{gips2017}, these studies assume that neural oscillations are predominantly sinusoidal and stationary in their frequency. However, there is an increasing realization that neural oscillations are actually non-sinusoidal and exhibit spurious phase-amplitude coupling \citep{belluscio2012,cole2017,scheffer2016,gips2017,donoghue2022}. A recent review paper on methodological issues in analyzing neural oscillations \citep{donoghue2022} identified determining the fundamental frequency of non-sinusoidal neural oscillations as the most challenging problem in building an understanding of how neural oscillations govern interactions throughout the brain.
+
+The Fast Fourier Transform (FFT) is the most commonly used method to detect neural oscillations. When applied to non-sinusoidal signals, the FFT produces harmonic phase-locked components at multiples of the fundamental frequency. While the asymmetric nature of the fundamental oscillation can be of great physiological relevance \citep{mazaheri2008,cole2017,donoghue2022}, its harmonics are considered to be an artifact produced by the FFT that can confound the detection and physiological interpretation of neural oscillations \citep{belluscio2012,donoghue2022}.
+
+In this study, we introduce the Cyclic Homogeneous Oscillation (CHO) detection method to identify neural oscillations using an auto-correlation analysis to determine whether a neural oscillation is an independent oscillation or a harmonic of another oscillation. Auto-correlation is a statistical measure that assesses the degree of similarity between a time series and a delayed version of itself; it can explain the periodicity of a signal without assuming that the signal is sinusoidal. We combine auto-correlation with a modified Oscillation Event (OEvent) procedure \citep{neymotin2022} to determine the onset and offset of oscillations. CHO identifies neural oscillations that fulfill three criteria: (1) oscillations (peaks over 1/f noise) must be present in the time and frequency domains; (2) oscillations must exhibit at least two full cycles; and (3) oscillations must have consistent auto-correlation with the time-frequency representation. These criteria are supported by the neuroscience literature \citep{buzsaki2004,niedermeyer2005,buzsaki2006,cohen2014,decheveigne2019,donoghue2020,donoghue2022}.
+
+To validate CHO, we applied these criteria to simulated non-sinusoidal signals and human electrophysiological signals, including ECoG, EEG, and stereo EEG (SEEG) recordings. We compared CHO to established methods, including FOOOF (also known as specparam) \citep{donoghue2020}, OEvent \citep{neymotin2022}, and Spectral Parameterization Resolved in Time (SPRiNT) \citep{wilson2022}. The selection of FOOOF, SPRiNT, and OEvent is based on their fundamental approaches: FOOOF is the most representative method for detecting the peak frequency of neural oscillations; SPRiNT expands the FOOOF method into the time-frequency domain; and OEvent can determine the onset/offset of detected oscillations.
+
+\section{Methods}
+\subsection{Electrophysiological Data}
+Eight human subjects implanted with ECoG electrodes (x1--x8, 4 females, average age = 41$\pm$14) participated in an auditory reaction time task at the Albany Medical Center in Albany, New York. The subjects were mentally and physically capable of participating in our study (average IQ = 96$\pm$18, range 75--120, \citealp{wechsler1997}). All subjects were patients with intractable epilepsy who underwent temporary placement of subdural electrode arrays to localize seizure foci before surgical resection. The platinum-iridium electrodes were 4\,mm in diameter (2.3\,mm exposed), spaced 10\,mm center-to-center, and embedded in silicone. Postoperative CT images, in conjunction with MRI, were used to construct three-dimensional subject-specific cortical models and derive the electrode locations \citep{coon2016}.
+
+Seven healthy human subjects (y1--y7, all males, average age = 27$\pm$3.6) served as a control group for which we recorded EEG while performing the same auditory reaction time task. These subjects were fitted with an elastic cap \citep{blom1982} with tin \citep{polich1985} scalp electrodes in 64 positions according to the modified 10--20 system \citep{acharya2016}.
+
+Six human subjects implanted with ECoG electrodes (ze1--ze6, 1 female, mean age 46, range 31--69) participated in resting state recording at the Albany Medical Center. All six subjects had extensive electrode coverage over the lateral STG. Electrodes were composed of platinum-iridium and spaced 3--10\,mm (PMT Corp., Chanhassen, MN).
+
+Six human subjects implanted with SEEG electrodes (zs1--zs6, three females, average age = 46$\pm$16.6) participated in resting state recordings at the Barnes Jewish Hospital in St. Louis, Missouri. The platinum-iridium SEEG electrodes were 2\,mm in length (0.8\,mm diameter) and spaced 3.5--5\,mm center-to-center.
+
+\subsection{Data Collection and Pre-processing}
+We recorded EEG, ECoG, and SEEG signals at bedside using BCI2000 software \citep{schalk2004}, interfaced with eight 16-channel g.USBamp devices (for EEG), one 256-channel g.HIamp device (g.tec, Graz, Austria; for ECoG), or one Nihon Kohden JE-120A long-term recording system (Nihon Kohden, Tokyo, Japan; for SEEG). Sampling rates were 1{,}200\,Hz for EEG and ECoG and 2{,}000\,Hz for SEEG.
+
+Signals were offset-corrected using a 2nd-order Butterworth highpass filter at 0.05\,Hz, common-median referenced \citep{liu2015} after excluding channels with excessive 60\,Hz line noise (i.e., ten times the median absolute deviation), and downsampled (using MATLAB's \texttt{resample}) to 400\,Hz or 500\,Hz.
+
+\subsection{Task}
+Subjects responded with a button press to a salient 1\,kHz tone using their thumb contralateral to the ECoG implant. The pre-stimulus interval was randomized between 1--3\,s. The stimulus was terminated by the button press or after a 2\,s time-out. False-start trials (response less than 100\,ms after stimulus onset) were penalized and excluded. We defined baseline periods as the 0.5\,s before stimulus onset (auditory response) and 1\,s to 0.5\,s before button press (motor response), and task periods as the 1\,s after stimulus onset (auditory) and $-0.5$\,s to $+0.5$\,s around the button press (motor).
+
+\subsection{Phase-Phase Coupling}
+To demonstrate phase-locking between theta and beta oscillations, we used the $n{:}m$ phase-phase coupling method of \citet{belluscio2012}. The mean radial distance $R_{n{:}m}$ equals 1 when $\Delta\phi_{n{:}m}(t_j)$ is constant for all time samples and 0 when uniformly distributed, where $\Delta\phi_{n{:}m}(t_j) = n\phi_{f_1}(t_j) - m\phi_{f_2}(t_j)$.
+
+\subsection{CHO: A Novel Oscillation Detection Method}
+CHO adheres to three principle criteria: (1) oscillations (peaks over 1/f noise) must be present in the time and frequency domain; (2) oscillations must exhibit at least two full cycles; and (3) the periodicity of an oscillation must equal its fundamental frequency, as determined by auto-correlation. The procedural steps are as follows:
+
+\begin{enumerate}
+\item \textbf{1/f removal and bounding-box generation.} We divide the time domain into four periods and estimate the minimum 1/f aperiodic fit across these periods. After subtraction, we compute the averaged power difference $\sigma$ between the signal and the 1/f fit. If the spectral power exceeds $2\sigma$, the time-frequency pixel is flagged as an oscillatory candidate. Adjacent flagged pixels are clustered into initial bounding boxes \citep{neymotin2022}.
+\item \textbf{Cycle-count rejection.} Bounding boxes exhibiting fewer than two full cycles are rejected to suppress evoked potentials (EPs), event-related potentials (ERPs), and spike artifacts \citep{decheveigne2019,donoghue2020,donoghue2022}.
+\item \textbf{Auto-correlation periodicity check.} Positive peaks in the auto-correlation of the raw signal within each bounding box indicate the fundamental frequency. A bounding box whose center frequency does not match its auto-correlation-derived fundamental frequency is rejected (e.g., a 24\,Hz bounding box whose raw signal has 7\,Hz periodicity is rejected). Remaining bounding boxes that neighbor each other in frequency and overlap more than 75\% in time are merged \citep{neymotin2022}.
+\end{enumerate}
+
+The MATLAB implementation is available at \url{https://github.com/neurotechcenter/CHO}.
+
+\subsection{Hyper-Parameters}
+Four principal hyper-parameters govern CHO:
+\begin{itemize}
+\item \textit{Number of time windows $N$ for 1/f estimation.} Set to 4 (250\,ms per window).
+\item \textit{Minimum cycle count.} Set to 2. Increasing rejects spurious oscillations but lowers sensitivity.
+\item \textit{NumSTD.} Number of standard errors a positive auto-correlation peak must exceed. Set to 1. Higher values increase specificity at the cost of sensitivity.
+\item \textit{Bounding-box merge overlap.} Set to 75\%. Lower values reduce onset/offset accuracy.
+\end{itemize}
+
+\subsection{Validation on Synthetic Non-Sinusoidal Oscillations}
+We generated 5\,s-long segments of pink (1/f) noise at 10\,$\mu$V amplitude and added non-sinusoidal oscillations with amplitudes ranging 5--20\,$\mu$V. SNR was computed using MATLAB's \texttt{snr()} function. Ten iterations were run per amplitude; four oscillation lengths were tested (one cycle, two-and-a-half cycles, 1\,s, and 3\,s). Non-sinusoidal oscillations were constructed by applying a 9:1 ratio between trough and peak amplitudes, and a Tukey (tapered cosine) window with 0.40 taper ratio \citep{bloomfield2004}. An accurate peak-frequency detection was defined as $|\text{ground-truth} - \text{detected}| < 1.5$\,Hz. Onset/offset detection was declared accurate if the correlation between ground-truth and detected envelopes was positive with $p < 0.05$.
+
+\section{Results}
+\subsection{Synthetic Results}
+CHO outperformed FOOOF \citep{donoghue2020}, OEvent \citep{neymotin2022}, and SPRiNT \citep{wilson2022} in specificity and accuracy in detecting the peak frequency of non-sinusoidal oscillations, though not in sensitivity. The average specificity of SPRiNT was below 0.3, significantly lower than CHO across the entire SNR range. Based on our physiological datasets, the average SNR of oscillations in EEG and ECoG was $-7$\,dB and $-6$\,dB, respectively. At these physiologically-motivated SNR levels, CHO's sensitivity in detecting the peak frequency of non-sinusoidal oscillations was comparable to that of SPRiNT, and its overall accuracy was higher than all other methods. For onset/offset detection (comparison limited to OEvent since FOOOF and SPRiNT cannot determine onset/offset of short oscillations), CHO outperformed OEvent in specificity but not sensitivity. Key numerical operating points are summarized in Table~\ref{tab:synth}.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of synthetic-data operating points and parameters for CHO.}
+\label{tab:synth}
+\begin{tabular}{lc}
+\toprule
+Quantity & Value \\
+\midrule
+Pink-noise segment length & 5\,s \\
+Pink-noise amplitude & 10\,$\mu$V \\
+Non-sinusoidal burst amplitude range & 5--20\,$\mu$V \\
+Non-sinusoidal burst length (cycles) & 2.5 \\
+Oscillation duration range & 1--3\,s \\
+Trough:peak amplitude ratio & 9:1 \\
+Tukey taper ratio & 0.40 \\
+Iterations per amplitude & 10 \\
+Frequency-accuracy tolerance & $< 1.5$\,Hz \\
+Average EEG alpha SNR (physiological) & $-7$\,dB \\
+Average ECoG alpha SNR (physiological) & $-6$\,dB \\
+CHO sensitivity at physiological SNR & 50--60\% \\
+Mean SPRiNT specificity (all SNRs) & $<0.3$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Electrocorticographic (ECoG) Results}
+We compared neural oscillation detection rates between CHO and FOOOF across eight ECoG subjects, using FreeSurfer \citep{fischl2012} to associate each ECoG location with a cerebral region. Each subject performed approximately 400 trials of a simple auditory reaction-time task; oscillations were analyzed during the 1.5\,s pre-stimulus period. CHO and FOOOF showed statistically comparable results in the theta and alpha bands despite CHO exhibiting smaller median occurrence rates. Within the beta band, excluding specific regions such as precentral, pars opercularis, and caudal middle frontal areas, CHO's beta oscillation detection rate was significantly lower than that of FOOOF (Wilcoxon rank-sum test, $p < 0.05$ after Bonferroni correction). This suggests that beta oscillations detected by FOOOF in non-premotor regions, such as the temporal area, may represent harmonics of theta or alpha oscillations. FOOOF exhibited higher sensitivity in detecting delta, theta, and low gamma oscillations overall.
+
+\subsection{Electroencephalographic (EEG) Results}
+We assessed CHO and FOOOF across seven EEG subjects; electrode locations followed the 10--10 system \citep{nuwer2018}. Each subject performed 200 trials; oscillations were analyzed during the 1.5\,s pre-stimulus period. In the alpha band, CHO and FOOOF produced statistically comparable outcomes. CHO exhibited a greater alpha detection rate for visual than for pre-motor cortex. Entropy values (max entropy across 64 electrodes $=4.16$) are reported in Table~\ref{tab:entropy}.
+
+\begin{table}[htbp]
+\centering
+\caption{Entropy of oscillation occurrence across 64 EEG channels (maximum entropy $=4.16$).}
+\label{tab:entropy}
+\begin{tabular}{lcc}
+\toprule
+Method & Alpha-band entropy & Beta-band entropy \\
+\midrule
+CHO   & 3.82 & 4.05 \\
+FOOOF & 4.15 & 4.15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CHO found fewer alpha oscillations in pre-motor cortex (FC2 and FC4) than in occipital cortex (O1 and O2), while FOOOF found more beta oscillation occurrences in pre-motor cortex than in occipital cortex. FOOOF showed heightened sensitivity to delta, theta, and low gamma oscillations. Contrary to the ECoG findings, FOOOF detected more low gamma oscillations in EEG than in ECoG subjects.
+
+\subsection{Onset and Offset of Neural Oscillations}
+Applied to signals recorded from auditory cortex during the reaction-time task, CHO successfully detected offset times of 7\,Hz neural oscillations. During the pre-stimulus period, the onset-time distribution remained uniform. After stimulus onset, the onset-time distribution became Gaussian with a peak 950\,ms post-stimulus---significantly later than the button press, which occurred on average 200\,ms post-stimulus. Offset-time distribution likewise remained uniform during the pre-stimulus period; after stimulus onset, it became Gaussian with a peak 300\,ms post-stimulus (i.e., 200\,ms post-response). In summary, the detected 7\,Hz oscillations de-synchronized at approximately 250\,ms post-stimulus and re-synchronized at approximately 900\,ms post-stimulus. Key temporal landmarks are summarized in Table~\ref{tab:timings}.
+
+\begin{table}[htbp]
+\centering
+\caption{Temporal landmarks of 7\,Hz auditory-cortex oscillations during the reaction-time task.}
+\label{tab:timings}
+\begin{tabular}{lc}
+\toprule
+Event & Time (post-stimulus) \\
+\midrule
+Button press (mean reaction time)         & 200\,ms \\
+Peak of offset-time distribution          & 300\,ms \\
+Onset of de-synchronization               & $\sim$250\,ms \\
+Peak of onset-time distribution (re-sync) & 950\,ms \\
+Re-synchronization                        & $\sim$900\,ms \\
+Pre-stimulus analysis window length       & 1.5\,s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Stereoelectroencephalographic (SEEG) Results: Hippocampus}
+Applied to resting-state SEEG recordings, CHO detected distinct hippocampal fast theta bursts \citep{lega2012,goyal2020}. In contrast to the ECoG/EEG findings, the frequency of beta-band oscillations in the hippocampus was close to the alpha band (8--14\,Hz). When comparing CHO and FOOOF across hippocampal locations, CHO exhibited more specific results with less overlap between alpha and beta locations and almost no detection in the low-gamma band (30--40\,Hz). We did not find a statistically significant difference between CHO and FOOOF due to the small number of SEEG subjects and variable electrode locations within hippocampus.
+
+\subsection{Frequency and Duration of Resting-State Oscillations}
+Using VERA \citep{adamek2022}, we determined the Brodmann area of each recording electrode. For primary auditory cortex (Brodmann areas 41/42), 7 and 11\,Hz oscillations were predominant; the average duration of an 11\,Hz oscillation was 450\,ms. In primary motor cortex (Brodmann area 4), 7\,Hz was the predominant frequency with 450\,ms average duration; motor cortex exhibited more beta-band oscillations (around 500\,ms duration) than auditory cortex. Broca's area showed characteristics similar to motor cortex, with a predominant beta-band frequency of 17\,Hz---lower than the 22 or 24\,Hz oscillations found in motor cortex. The hippocampus predominantly exhibited 8\,Hz oscillations with 450\,ms average duration. During the resting state, alpha- and beta-band oscillations within the hippocampus were shorter than in motor cortex ($p<0.05$, Wilcoxon rank-sum test, $N=6$). Results are summarized in Table~\ref{tab:freqdur}.
+
+\begin{table}[htbp]
+\centering
+\caption{Predominant frequency and average duration of resting-state oscillations per brain region.}
+\label{tab:freqdur}
+\begin{tabular}{lccc}
+\toprule
+Region & Predominant frequency (Hz) & Average duration (ms) & Secondary features \\
+\midrule
+Primary auditory cortex (BA 41/42) & 7 and 11 & 450 (at 11\,Hz) & few beta \\
+Primary motor cortex (BA 4)        & 7        & 450             & beta $>$500\,ms; 22/24\,Hz peaks \\
+Broca's area                       & 17 (beta) & $\sim$450      & fewer beta than motor cortex \\
+Hippocampus (SEEG)                 & 8        & 450             & alpha/beta shorter than motor ($p<0.05$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+Our novel CHO method demonstrates high precision and specificity in detecting neural oscillations in time and frequency domains. This high specificity directly results from the three principle criteria: (i) peaks over 1/f noise must be present in the time and frequency domain; (ii) oscillations must exhibit at least two full cycles; and (iii) oscillations must share the same periodicity as their auto-correlation. The first criterion rejects aperiodic oscillatory power \citep{donoghue2020}. The second distinguishes periodic oscillations from EPs/ERPs and spike artifacts, which have similar spectral characteristics to theta/alpha oscillations but never exhibit more than two cycles. The third rejects harmonic peaks over 1/f noise and spurious oscillations broadly generated by spike activity \citep{decheveigne2019}. Evaluated on purely sinusoidal oscillations, CHO still outperformed existing methods in specificity; both FOOOF and SPRiNT exhibited reasonable specificity for sinusoidal signals but were susceptible to noise, detecting spurious oscillations.
+
+\paragraph{Focal localization of beta oscillations.}
+Beta oscillations occur within the 13--30\,Hz band throughout various brain regions, including the motor cortex, where they are thought to be involved in motor planning and execution \citep{pfurtscheller1999,jenkinson2011,doyle2005,senkowski2006}. In our ECoG results, CHO found focal beta oscillations to occur within pre-motor and frontal cortex prior to the button response. Conventional methods found alpha and beta oscillations in auditory cortex; CHO found only select beta oscillations there, suggesting that most beta detected by conventional methods in auditory cortex may be harmonics of the predominant asymmetric alpha oscillation. Similarly, low-gamma oscillations detected by conventional methods in pre-motor and frontal areas are likely harmonics of beta. In the EEG results, CHO found focal visual alpha and motor beta, while FOOOF found frontal/visual alpha and beta across broad scalp regions.
+
+\paragraph{Harmonic oscillations in human hippocampus.}
+Recent studies suggest that the frequency range of hippocampal oscillations is wider than previously assumed ($<40$\,Hz in \citealp{cole2019}, or 3--12\,Hz in \citealp{li2022}) and does not match the conventional theta/alpha rhythm range \citep{buzsaki2006}. Harmonics can occur in any brain area and frequency band because neural oscillations are inherently non-sinusoidal \citep{davis2020}. CHO can determine the fundamental frequency of non-sinusoidal oscillations across a wide band and also provides onset/offset and frequency range, permitting investigation of non-sinusoidal features such as peak/trough asymmetry \citep{cole2019}.
+
+\paragraph{Onset/offset and applications to closed-loop neuromodulation.}
+Knowing the onset/offset and duration of a neural oscillation is essential for closed-loop neuromodulation. Phase-locked deep-brain stimulation can reduce the stimulation necessary to achieve the desired therapeutic effect \citep{cagnan2017,cagnan2019}, improving efficiency and battery life \citep{chen2011,zanos2018,shirinpour2020}. CHO's specificity thus enables neuromodulation and neurofeedback applications.
+
+\paragraph{When, where, what, why, how, whom.}
+CHO illuminates temporal dynamics (``when'') by detecting the onset/offset of fundamental non-sinusoidal oscillations, spatial distribution (``where'') across EEG, SEEG, and ECoG, and fundamental frequency (``what'') across auditory cortex, motor cortex, Broca's area, and hippocampus. Potential pathology-related applications (``whom'') include \citet{cole2017} and \citet{jackson2019} on Parkinson's disease and \citet{hu2023} on seizure onset zone localization via harmonic peaks.
+
+\paragraph{Limitations.}
+CHO favors specificity over sensitivity when SNR is low. The average SNR of alpha oscillations in EEG ($-7$\,dB) and ECoG ($-6$\,dB) lies in a regime where CHO detects 50--60\% of true oscillations. Sensitivity could be improved by averaging across spatially correlated locations (e.g., within hippocampus) or replacing the Hilbert-based time-frequency step with wavelet, state-space \citep{matsuda2017,beck2022,brady2022,he2023}, or empirical-mode-decomposition \citep{fabus2022,quinn2021} representations. Gabor or matching-pursuit approaches \citep{kus2013,morales2022} may improve onset/offset detection of short bursts. In our development, we found no significant differences across FFT/wavelet/Hilbert estimates, consistent with \citet{bruns2004}. CHO does not currently distinguish between oscillations that share a fundamental frequency but differ in non-sinusoidal properties; prior work linking harmonic structure to cognitive and clinical features \citep{vandijk2010,schalk2015,mazaheri2008,cole2017,jackson2019,hu2023} suggests a path toward this extension.
+
+\paragraph{Conclusions.}
+Neural oscillations are thought to coordinate activity across brain regions, supporting sensory integration, motor control, and cognition \citep{buzsaki2004,fries2015}. We present CHO as a method to reveal the ``when'', ``where'', and ``what'' of neural oscillations, overcoming the confounding effect of harmonics from non-sinusoidal neural oscillations \citep{donoghue2022}. We demonstrated scientific insights into local beta oscillations in pre-motor areas, the onset/offset of oscillations in the time domain, and the fundamental frequency of hippocampal oscillations, supporting closed-loop neuromodulation, neurofeedback, and neural-oscillation-based diagnostic and therapeutic systems.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

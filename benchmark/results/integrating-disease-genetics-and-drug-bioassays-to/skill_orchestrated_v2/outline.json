@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "working_title": "Draphnet: Integrating drug bioassays and disease genetics to map drug impacts on the human phenome",
+    "venue": "Nature Genetics",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Many drugs have unintended effects on human phenotypes, creating both safety concerns and drug-repurposing opportunities, yet the biological basis of these effects is rarely known.",
+    "gap": "Existing computational methods predict drug-phenotype relationships but do not jointly learn how drug molecular effects propagate through disease driver genes to produce phenotypic effects.",
+    "approach": "We develop Draphnet, a supervised logistic affinity-regression model trained on 429 compounds, 1391 ToxCast endpoints, 10,027 PhenomeXcan disease genes, and 197 UK Biobank phenotypes, that learns a shared drug-endpoint-to-disease-gene network.",
+    "key_results": "Drug molecular similarity tracks phenotypic similarity (p=1e-22; linear model p=1.7e-43); held-out side-effect predictions beat a nearest-neighbor baseline (rank-sum p=3e-8); 28 of 132 DrugBank targets have significantly associated disease genes (adjusted p<0.01), including HTR2C->PPM1M and PPARalpha->CETP.",
+    "impact": "Draphnet provides an interpretable, biology-anchored view of drug effects that can generate mechanistic hypotheses for repurposing and personalized medicine."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Unintended drug effects are common and of major public-health importance; repurposing opportunities motivate systematic approaches.",
+        "Existing data resources (SIDER, DrugBank, Drug Repurposing Hub) catalog drug-phenotype annotations, while ToxCast/Tox21 and PhenomeXcan provide molecular and genetic profiles.",
+        "Prior computational approaches (connectivity score; S-PrediXcan-based drug-disease contrast; matrix completion) focus on prediction, not biological interpretation.",
+        "Gap: no method has jointly integrated bioassay profiles with phenome-wide disease genetics in an interpretable model.",
+        "We propose Draphnet, which learns a shared network W from endpoints to disease genes across thousands of drug-phenotype pairs, enabling both prediction and mechanistic interpretation."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_premise", "title": "Drug molecular similarity predicts phenotypic similarity", "content_bullets": [
+          "Compile D (429 compounds x 1391 endpoints) with ~100 endpoints per drug; use SoftImpute to obtain U_D S_D.",
+          "Drugs with similar ToxCast profiles share more SIDER phenotypes (Spearman p=1e-22; linear model adjusted for shared-endpoint count p=1.7e-43).",
+          "Diseases with more similar PhenomeXcan profiles share more drugs (p=4e-81; Spearman = -0.11, Fig 1C).",
+          "Similarity is preserved after dimensionality reduction (Spearman = 0.21 between D-space and U_D S_D-space similarity)."
+        ]},
+        {"id": "results_prediction", "title": "Draphnet generalizes to held-out drugs and outperforms a nearest-neighbor baseline", "content_bullets": [
+          "Logistic affinity regression over (V_P otimes U_D S_D) * stack(W_DP) = logit(p(Y)).",
+          "Selected hyperparameters: r_P=131, r_D=95, lasso regularization=1.",
+          "20-fold CV with 5% of drugs held out per fold; Draphnet Jaccard distance < nearest neighbor for majority of drugs (rank-sum p=3e-8, Fig 2A).",
+          "Qualitative top predictions include fludrocortisone-eczema, methyclothiazide-glaucoma, and dasatinib-cancers (despite leukemia being absent from P)."
+        ]},
+        {"id": "results_phenome_effect", "title": "The drug phenome-effect matrix recapitulates known drug biology", "content_bullets": [
+          "Drugs sharing >=1 known target have more similar ToxCast endpoint effects (rank-sum p=1e-28).",
+          "True projection distinguishes drugs sharing targets better than a permutation null for most targets (Fig 2B).",
+          "Within pairs sharing a target, phenome-effect Spearman correlation is systematically higher in true vs null projection (Fig 2C; stars denote significance thresholds, including p<1e-5).",
+          "CHRM1 exemplifies polypharmacology-driven exceptions (14 drugs, median 19 other targets)."
+        ]},
+        {"id": "results_disease_genome", "title": "Mapping drugs onto the disease genome reveals shared-target disease genes", "content_bullets": [
+          "Project each drug into 10,027-gene disease-genome space via inverse SVD of P (equation 2).",
+          "Significance by empirical null (10,000 Y permutations), Benjamini-Yekutieli-adjusted per drug.",
+          "Median 7 disease genes per drug; 28 of 132 DrugBank targets (shared by >=3 drugs) show disease-gene enrichments at adj. p<0.01 (Fig 3A calibration).",
+          "t-SNE of drug target significance clusters by ATC category (Fig 3B).",
+          "Notable associations: PPM1M with HTR2C-targeting neuroleptics (top PhenomeXcan gene for bipolar disorder); CETP with fenofibrate and PPARalpha-targeting drugs (prior experimental support as fenofibrate/PPARalpha effector)."
+        ]},
+        {"id": "results_cliques", "title": "A novel drug categorization from disease-gene cliques", "content_bullets": [
+          "Construct a drug-drug graph connecting pairs with more shared disease genes than a weighted random null (1,000 simulations); extract maximal cliques with networkx.",
+          "Recovered cliques include anti-inflammatories + PPARalpha-agonists + pyridoxine; calcium channel blockers (bepridil, verapamil) + pimozide; mecamylamine + pindolol + gabapentin.",
+          "Visualize as bipartite drug-gene graph with igraph (Fig 4); keep only disease genes associated with >=1 target and <15 drugs; only cliques with >=3 drugs."
+        ]}
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "PhenomeXcan construction: |Phi^-1(multiXcan_p)| * consensus S-PrediXcan sign across tissues; keep top-half of most-variable genes (10,027); match to SIDER via UMLS CUIs.",
+        "ToxCast Level 5 matrix D (429 x 1391) with ~100 endpoints per drug; SoftImpute with CV-like masking of 5% non-missing entries for rank/regularization choice.",
+        "Affinity regression reformulation via P = U_P S_P V_P^T and Kronecker product; L1-regularized logistic regression; tuning via 10% drug hold-out per fold.",
+        "Phenome-effect matrix U_D S_D W_DP; disease-genome matrix via equation 2 using inverses of the SVD of P.",
+        "Permutation null: 10,000 Y permutations, BY-adjusted empirical p-values per drug-gene; target-enrichment hypergeometric tests with BH correction.",
+        "Drug-drug graph construction for cliques: weighted-random disease-gene null with 1,000 simulations; maximal cliques via networkx; bipartite visualization via igraph."
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Restate: Draphnet integrates two untapped data modalities (ToxCast, PhenomeXcan) into a shared, interpretable model of drug effects on disease.",
+        "Prior work either predicts without interpretation (connectivity score, matrix completion) or uses gene expression for narrow disease families (So et al.); we generalize and enrich with genetic drivers.",
+        "Interpretability lets us suggest disease-gene mechanisms for unexpected effects (e.g., PPM1M for HTR2C-modulating neuroleptics; CETP for fenofibrate).",
+        "Limitations: training-set size relative to parameter count, ambiguity of GWAS-to-gene mapping (example: RP11-54O7.17 vs PERM1), incompleteness of SIDER (latent positives appearing as negatives).",
+        "Future directions: integration of LINCS Connectivity Map, personalized-risk extensions using individual-level allele profiles, pathway-level projections, analysis of shared pathways across unexpected disease groupings."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_matrices",
+      "title": "Summary of matrices used in Draphnet",
+      "columns": ["Matrix", "Meaning", "Dimensions", "Source"],
+      "data_source": "experimental_log.md: Data sources and matrices table",
+      "caption_sketch": "Draphnet integrates three input matrices and learns a compact interaction matrix."
+    },
+    {
+      "table_id": "tab_hparams",
+      "title": "Selected hyperparameters and cross-validation settings",
+      "columns": ["Hyperparameter", "Value"],
+      "data_source": "experimental_log.md: Final selected ranks and regularization",
+      "caption_sketch": "All values selected by held-out-drug cross-validation."
+    },
+    {
+      "table_id": "tab_enrichment",
+      "title": "Drug-target disease-gene enrichment summary",
+      "columns": ["Quantity", "Value"],
+      "data_source": "experimental_log.md: Experiment 5",
+      "caption_sketch": "Per-target enrichment statistics for drug-disease-gene associations."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig_schematic", "type": "schematic", "file": "fig_schematic.pdf", "caption": "Draphnet connects drug endpoints to disease genes to phenotypes through a shared learned network.", "data_source": "Fig 1A/1B description"},
+    {"figure_id": "fig_prediction", "type": "data_grounded", "file": "fig_prediction.pdf", "caption": "Draphnet achieves lower Jaccard distance than nearest neighbor for predicted side-effect profiles (rank-sum p=3e-8).", "data_source": "Experiment 2; p=3e-8"},
+    {"figure_id": "fig_enrichment", "type": "data_grounded", "file": "fig_enrichment.pdf", "caption": "Fraction of DrugBank targets (of 132) with disease-gene enrichments at adjusted p<0.01.", "data_source": "Experiment 5: 28/132 targets"},
+    {"figure_id": "fig_associations", "type": "placeholder", "file": "fig_associations.pdf", "caption": "Selected drug-disease-gene associations including PPM1M/HTR2C and CETP/PPARalpha. Full data in Supplementary Table 2.", "data_source": "Fig 3C analog; individual drug-gene matrix values not extracted"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "drug side effects repurposing computational prediction",
+      "ToxCast Tox21 high-throughput screening drug toxicity",
+      "PhenomeXcan S-PrediXcan S-MultiXcan transcriptome-wide association",
+      "UK Biobank phenome-wide GWAS common phenotypes",
+      "SIDER drug side effects database UMLS",
+      "DrugBank therapeutic targets database"
+    ],
+    "micro_queries": [
+      "affinity regression bilinear regression interaction matrix",
+      "connectivity map CMap LINCS drug gene expression signatures",
+      "matrix completion drug-target interaction prediction",
+      "SoftImpute matrix imputation singular value",
+      "Benjamini-Yekutieli multiple testing dependent",
+      "CETP fenofibrate PPARalpha cholesterol effector",
+      "PPM1M schizophrenia bipolar disorder GWAS locus",
+      "HTR2C serotonin receptor neuroleptic antipsychotic",
+      "gene-based GWAS S-PrediXcan neuropsychiatric drug",
+      "matrix completion drug side effect prediction"
+    ],
+    "must_cite": [
+      "SIDER database (Kuhn)",
+      "DrugBank (Wishart)",
+      "Drug Repurposing Hub (Corsello)",
+      "EPA ToxCast (Richard/Kavlock)",
+      "PhenomeXcan (Pividori)",
+      "S-PrediXcan (Barbeira)",
+      "S-MultiXcan (Barbeira)",
+      "Connectivity Map / CMap (Lamb; Subramanian)",
+      "So et al. neuropsychiatric S-PrediXcan drug repurposing",
+      "SoftImpute (Mazumder / Hastie)",
+      "Affinity regression (Pelossof)",
+      "UK Biobank (Bycroft)",
+      "Benjamini-Yekutieli",
+      "Therapeutic Targets Database"
+    ],
+    "citation_target": 25
+  }
+}

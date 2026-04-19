@@ -1,0 +1,230 @@
+{
+  "metadata": {
+    "working_title": "Specific Corticothalamic Connectivity Optimizes Biologically Plausible Learning in Thalamocortical Loops",
+    "venue": "Nature Neuroscience",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Cortico-thalamo-cortical (CTC) loops play a central role in cognition and motor control, but the computational role of thalamus and how corticothalamic connectivity shapes learning remains unclear.",
+    "gap": "Prior theoretical work shows CTC loops can perform computations when weights are tuned, but does not address how these weights could be learned with biologically plausible, local plasticity rules. Credit assignment at corticothalamic synapses is particularly challenging because they are upstream of the behavioral readout.",
+    "approach": "We construct a recurrent model with N cortical and M thalamic neurons (M<<N), apply a three-factor local plasticity rule (RFLO) to thalamocortical synapses, and use meta-learning plus idealized subspace-aligned connectivity to identify the optimal structure of corticothalamic weights for motor control and working memory tasks.",
+    "key_results": "Local plasticity fails at corticothalamic synapses but works for thalamocortical synapses. Meta-learning reduces task error by a median factor of 5.8 (motor control) and 5.1 (working memory). Readout-aligned corticothalamic weights optimize motor control, while principal-component-aligned weights optimize working memory. Neural recordings from mice grasping (n=101 thalamic neurons, 3 sessions) and performing delayed discrimination (n=72 thalamic neurons, 5 sessions) match these predictions: 5 leading cortical PCs explain 0.29 +/- 0.02 of explainable thalamic variance in motor control versus 0.63 +/- 0.04 in working memory.",
+    "impact": "Structured corticothalamic connectivity is necessary for biologically plausible learning in CTC loops, establishing a link between evolutionarily conserved anatomy and computation. Motor thalamus receives an efference copy, while higher-order frontal thalamus receives principal components."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Higher-order thalamus is not a simple sensory relay; CTC loops support cognitive and motor functions.",
+        "Reciprocal CTC loops are observed in rodent sensory, motor, and prefrontal cortices and are required for many cognitive functions.",
+        "Thalamocortical plasticity has been demonstrated experimentally, but corticothalamic connectivity is also central because it compresses cortical activity into a low-dimensional thalamic space.",
+        "Normative models of compression in feedforward networks do not directly apply to recurrent CTC loops.",
+        "Prior theoretical studies tune CTC weights numerically but do not explain how biologically plausible rules could learn them.",
+        "We hypothesize that corticothalamic structure determines the ability of thalamus to support learning, and we ask what connectivity optimizes learning under a local three-factor rule.",
+        "Preview: the optimal structure is task-dependent -- efference copy for motor control, principal components for working memory -- and neural data are consistent with this prediction."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Higher-order thalamus and CTC loops in cognition and motor control.",
+        "Biologically plausible learning in recurrent networks: RFLO and three-factor rules.",
+        "Low-rank recurrent network theory and meta-learning of neural architectures.",
+        "Compressed sensing and efficient coding in feedforward networks.",
+        "Experimental evidence for thalamocortical plasticity and for the limited evidence of corticothalamic plasticity."
+      ],
+      "approx_length": "0.5-0.75 pages"
+    },
+    {
+      "id": "model",
+      "title": "Thalamocortical model and learning rule",
+      "content_bullets": [
+        "Architecture: N cortical neurons (recurrent) reciprocally connected to M uncoupled thalamic neurons, M<<N; N=256, M varied 1 to 128.",
+        "Dynamics: tau dh/dt driven by W_CC h, W_CT r, W_I x with tanh nonlinearity; r_t = phi(W_TC h_t).",
+        "Effective interaction W_eff = W_CC + W_CT V W_TC is a low-rank (rank-M) perturbation of W_CC.",
+        "Output: linear readout y_t = W_o h_t.",
+        "Thalamocortical synapses W_CT updated via RFLO (Random-Feedback-Local-Online) three-factor rule with eligibility trace p_ij and random feedback B.",
+        "Readout updated by delta rule; feedback alignment allows error to propagate without precise symmetric weights."
+      ],
+      "approx_length": "0.75 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_local_plasticity",
+          "title": "Local plasticity succeeds for thalamocortical but fails for corticothalamic synapses",
+          "content_bullets": [
+            "Context: we test whether a local plasticity rule can update both types of synapses in the CTC loop.",
+            "Approach: apply RFLO-style update to W_CT alone, W_TC alone, or both; vary M from 1 to 128 with N=256.",
+            "Finding: learning performance improves with M when W_CT is plastic (green in Figure 1C) but not when only W_TC is plastic (black); joint updating gives no additional benefit over W_CT alone (gray vs green).",
+            "Interpretation: feedback alignment reaches above-chance levels in cortex but not thalamus, so error signals cannot mediate local learning at corticothalamic synapses; credit assignment upstream of the readout requires global information that local rules lack."
+          ]
+        },
+        {
+          "id": "results_metalearning",
+          "title": "Meta-learning identifies task-specific corticothalamic structure",
+          "content_bullets": [
+            "Context: if local rules cannot learn W_TC, another mechanism (evolution or development) must set it. We use meta-learning to find the structure that best supports thalamocortical learning.",
+            "Approach: inner loop trains W_CT with RFLO; outer loop optimizes W_TC across thousands of epochs via backprop through time, with W_CT reset each epoch. N=256, M=32.",
+            "Finding: meta-learned W_TC reduces task error by median factors 5.8 (motor control) and 5.1 (working memory) relative to random W_TC. In motor control, meta-learned W_TC aligns more with readout than with the leading PC; in working memory, the opposite pattern holds.",
+            "Interpretation: there is a nontrivial interplay between corticothalamic structure and task demands; the optimal projection is task-specific, and this result is robust to pre-aligning W_TC with the readout at the start of meta-learning."
+          ]
+        },
+        {
+          "id": "results_subspace",
+          "title": "Idealized subspace-aligned corticothalamic connectivity",
+          "content_bullets": [
+            "Context: to test whether these subspaces are individually sufficient, we consider three idealized forms of W_TC -- random, PC-aligned, and readout-aligned.",
+            "Approach: fix W_TC to each idealized form with maximum compression M=1, train W_CT with RFLO, and measure median -log(1-R^2).",
+            "Finding: motor control is best with readout alignment (Random: 1.2, PC: 1.2, Readout: 2.1); working memory is best with PC alignment (Random: 1.9, PC: 2.5, Readout: 1.8). The advantage persists across values of M up to N and across a range of task complexities, and learning can benefit even when signals are not perfectly segregated across thalamic units or when structure emerges gradually with plasticity.",
+            "Interpretation: random connectivity learns poorly even on the simplest tasks; the optimal subspace is determined by the type of task -- readout for temporal motor output, PCs for stimulus identity maintenance. In motor control the leading cortical PCs are too slow to reconstruct the high-frequency target; in working memory the leading PCs encode input identity needed for persistent activity."
+          ]
+        },
+        {
+          "id": "results_composite",
+          "title": "Composite task: delayed reaching",
+          "content_bullets": [
+            "Context: naturalistic tasks combine memory and motor control. We ask whether the same structure principles extend to a composite task.",
+            "Approach: two thalamic nuclei (preparatory and execution), M=2 each, reciprocally connected to a single cortical network; two-joint arm driven by 2D output; 8 targets with randomized delay.",
+            "Finding: maximum performance is achieved when the preparatory thalamic nucleus receives PC-aligned signals and the execution nucleus receives readout-aligned signals; robust to number of targets and distribution of delays.",
+            "Interpretation: a single cortex paired with distinct structured thalamic modules can learn both components of reaching, consistent with experimental reports of distinct preparatory and execution thalamic populations."
+          ]
+        },
+        {
+          "id": "results_data",
+          "title": "Neural data from mice are consistent with model predictions",
+          "content_bullets": [
+            "Context: we reanalyze cortex+thalamus recordings from mice performing reach-to-grasp (motor cortex + motor thalamus; n=3 sessions, n=101 thalamic neurons) and delayed discrimination (ALM + VM/VAL; n=5 sessions, n=72 thalamic neurons).",
+            "Approach: linear regression of cortical population activity against behavior and against each thalamic neuron to estimate readout and corticothalamic weights; compute fraction of thalamic variance explained by the top k cortical PCs.",
+            "Finding: behavior is well predicted by cortex (R^2 = 0.93 motor, 0.97 working memory); thalamic variance captured is 0.46 +/- 0.01 (motor) and 0.70 +/- 0.01 (working memory); the top 5 cortical PCs capture 0.29 +/- 0.02 of explainable thalamic variance in motor control vs 0.63 +/- 0.04 in working memory. Trial-by-trial fluctuations in motor cortex propagate to thalamus, and the trial-varying corticothalamic weights align with readout more strongly than trial-averaged weights.",
+            "Interpretation: motor thalamus receives a signal consistent with an efference copy of the motor command, while higher-order frontal thalamus receives signals aligned with the leading principal components of ALM activity -- matching the task-specific structures predicted by the model."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Summary: structured corticothalamic connectivity is required for local thalamocortical learning to succeed, and the structure is task-specific.",
+        "Anatomical constraints: an evolutionarily conserved pathway from layer V pyramidal neurons via axonal branching of corticofugal projections can carry an efference copy to motor thalamus; the ALM-to-VM/VAL pathway is a candidate for PC-carrying projections shaped by unsupervised plasticity.",
+        "Assumptions and extensions: coarse-grained homogeneous populations, single plasticity rule (RFLO); real systems include diversity in membrane properties, convergent inputs from multiple cortical areas, reward-based plasticity, and interactions with cerebellum, BG, and TRN.",
+        "Relationship to other work: extends low-rank recurrent theory and recent CTC-loop models (Kao et al., 2021; Logiaco et al., 2021) by supplying a biologically plausible learning mechanism; also bears on continual learning and on cortical plasticity observed during training.",
+        "Conclusion: understanding corticothalamic structure is key to understanding the computational role of higher-order thalamus, and our findings establish a concrete link between anatomy and computation."
+      ],
+      "approx_length": "1.25 pages, >= 5 paragraphs"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Network equations and parameters: tau, tanh nonlinearity, N=256 cortical units, M varied.",
+        "RFLO update rule for W_CT with eligibility trace p_ij and random feedback B; delta rule for readout.",
+        "Equation 6: analogous local update for W_TC used to test whether local plasticity succeeds there.",
+        "Meta-learning procedure: outer loop of thousands of epochs, inner loop of hundreds of trials, W_CT reset at start of each epoch, feedback alignment B^T = W_o enforced during meta-learning.",
+        "Idealized subspace-aligned W_TC: random, leading PCs of cortical activity, readout direction; alignment metric (beta - beta_0) / (1 - beta_0).",
+        "Tasks: autonomous control waveform generation; working memory with 8 transient input amplitudes; delayed reaching with 8 targets and two-joint arm.",
+        "Neural data: motor control dataset (Sauerbrei et al., 2020) and working memory dataset (Guo et al., 2017); linear regression to decode behavior and thalamic activity from cortical populations; trial-shuffling controls."
+      ],
+      "approx_length": "1 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_idealized_m1",
+      "title": "Performance of idealized corticothalamic connectivity at maximum compression (M=1)",
+      "columns": ["Connectivity type", "Motor control -log(1-R^2)", "Working memory -log(1-R^2)"],
+      "data_source": "experimental_log results_subspace block",
+      "caption_sketch": "Median -log(1-R^2) for random, PC-aligned, and readout-aligned corticothalamic connectivity on the autonomous motor control and working memory tasks. Values: Random (1.2, 1.9); PC (1.2, 2.5); Readout (2.1, 1.8)."
+    },
+    {
+      "table_id": "tab_thalamic_variance",
+      "title": "Fraction of thalamic variance explained by cortical activity",
+      "columns": ["Task", "R^2 all cortex", "Explained variance captured by top 5 PCs"],
+      "data_source": "experimental_log results_data block",
+      "caption_sketch": "Motor control: 0.46 +/- 0.01 total, 0.29 +/- 0.02 by top 5 PCs. Working memory: 0.70 +/- 0.01 total, 0.63 +/- 0.04 by top 5 PCs."
+    },
+    {
+      "table_id": "tab_metalearning_gain",
+      "title": "Error reduction from meta-learned vs random corticothalamic weights",
+      "columns": ["Task", "Median factor of error reduction"],
+      "data_source": "experimental_log results_metalearning block",
+      "caption_sketch": "Motor control: 5.8x. Working memory: 5.1x."
+    },
+    {
+      "table_id": "tab_behavior_decoding",
+      "title": "Decoding behavior from cortical activity",
+      "columns": ["Task", "R^2", "Sessions (n)", "Thalamic neurons (n)"],
+      "data_source": "experimental_log results_data block",
+      "caption_sketch": "Motor control: R^2=0.93, 3 sessions, 101 thalamic neurons. Working memory: R^2=0.97, 5 sessions, 72 thalamic neurons."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "higher-order thalamus cognition cortex reciprocal loop",
+      "thalamocortical plasticity learning adult brain",
+      "thalamus motor control efference copy",
+      "working memory prefrontal thalamus persistent activity",
+      "cortico-thalamo-cortical loop motor preparation"
+    ],
+    "micro_queries": [
+      "biologically plausible three-factor learning rule recurrent neural network",
+      "random feedback local online learning RFLO",
+      "feedback alignment credit assignment deep learning",
+      "low-rank recurrent neural network connectivity",
+      "meta-learning learning to learn neural network optimization",
+      "principal component analysis cortical population activity",
+      "compressed sensing efficient coding feedforward",
+      "reach-to-grasp motor cortex thalamus recording mice",
+      "delayed discrimination ALM ventromedial thalamus optogenetics",
+      "two-joint arm reaching neural network model"
+    ],
+    "must_cite": [
+      "Sherman 2007 higher-order thalamus",
+      "Sherman and Guillery 2018 functional connections brain",
+      "Guo Yamawaki 2017 flexible motor sequence ALM thalamus Nature",
+      "Sauerbrei Guo 2020 cortical pattern generation thalamus Nature",
+      "Bolkan 2017 thalamic projections sustain prefrontal activity Nature Neuroscience",
+      "Schmitt 2017 thalamic amplification cognitive control Nature",
+      "Rikhye Gilra Halassa 2018 thalamic regulation switching between cortical representations",
+      "Murray 2019 local online learning recurrent networks eLife",
+      "Lillicrap Cownden 2016 random feedback alignment Nature Communications",
+      "Mastrogiuseppe Ostojic 2018 linking connectivity dynamics computations low-rank Neuron",
+      "Kao Sadabadi Hennequin 2021 optimal anticipatory control thalamocortical PNAS",
+      "Logiaco Abbott Escola 2021 thalamic control motor cortex Cell Reports",
+      "Wang 2021 meta-learning learning to learn neuroscience",
+      "Hospedales Antoniou 2022 meta-learning survey",
+      "Ganguli Sompolinsky 2012 compressed sensing efficient coding",
+      "Economo 2018 distinct descending motor cortex pathways Nature",
+      "Yamawaki Shepherd 2015 synaptic organization motor cortico-thalamic circuit",
+      "Guo Shepherd 2018 corticothalamic ALM circuit anatomy",
+      "Collins Anastasiades Marlin Carter 2018 reciprocal circuits prefrontal mediodorsal thalamus",
+      "Halassa Sherman 2019 thalamocortical circuit motifs",
+      "Churchland Cunningham Kaufman 2012 neural population dynamics reaching Nature",
+      "Gaidica Hurst Cyr Leventhal 2018 distinct populations motor thalamus preparation execution",
+      "Sohn 2022 thalamocortical plasticity adult learning",
+      "Hasegawa Ebina 2020 selective suppression local circuits",
+      "Biane Takashima 2016 thalamocortical synaptic plasticity motor cortex",
+      "Audette Bernhard Ray Stewart Barth 2019 auditory thalamocortical plasticity",
+      "Adam Schaeffer Johnston Menon Everling 2021 thalamic plasticity",
+      "Oberlaender Ramirez Bruno 2012 thalamocortical map adult mouse",
+      "Tanaka 2018 basal ganglia thalamus motor learning",
+      "Schuessler Mastrogiuseppe Dubreuil Ostojic Barak 2020 dynamics training learning low-rank",
+      "Dubreuil Valente Beiran 2022 role population structure low-rank",
+      "Williams Zipser 1989 learning algorithm recurrent networks"
+    ],
+    "citation_target": 30
+  },
+  "figure_plan": [
+    {"figure_id": "fig_schematic", "type": "schematic", "file": "figures/fig_schematic.pdf", "caption": "Thalamocortical loop architecture", "data_source": "methods text and figure 1 caption in experimental_log (N=256, M=32)"},
+    {"figure_id": "fig_metalearning_gain", "type": "data_grounded", "file": "figures/fig_metalearning_gain.pdf", "caption": "Meta-learned vs. random W_TC fold error reduction", "data_source": "results_metalearning: Motor 5.8x, WM 5.1x"},
+    {"figure_id": "fig_idealized_m1", "type": "data_grounded", "file": "figures/fig_idealized_m1.pdf", "caption": "Idealized corticothalamic alignment at M=1", "data_source": "results_subspace: (Random 1.2, PC 1.2, Readout 2.1); (Random 1.9, PC 2.5, Readout 1.8)"},
+    {"figure_id": "fig_thalamic_variance", "type": "data_grounded", "file": "figures/fig_thalamic_variance.pdf", "caption": "Top-5 PCs vs all cortex explained thalamic variance", "data_source": "results_data: Motor 0.29+/-0.02 top5 vs 0.46+/-0.01 all; WM 0.63+/-0.04 top5 vs 0.70+/-0.01 all"},
+    {"figure_id": "fig_behavior_decoding", "type": "data_grounded", "file": "figures/fig_behavior_decoding.pdf", "caption": "R^2 and dataset sizes for reanalyzed recordings", "data_source": "results_data: Motor R^2=0.93 n=3 sess n=101 neurons; WM R^2=0.97 n=5 sess n=72 neurons"}
+  ]
+}

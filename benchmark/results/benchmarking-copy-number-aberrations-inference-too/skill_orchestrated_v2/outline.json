@@ -1,0 +1,205 @@
+{
+  "metadata": {
+    "working_title": "Benchmarking computational methods for inferring copy number aberrations from single-cell RNA-seq using paired single-cell multi-omics",
+    "venue": "Genome Biology",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Copy number aberrations (CNAs) drive cancer initiation and progression, and several tools now infer them directly from scRNA-seq data, but an independent head-to-head evaluation against ground-truth scDNA-seq has been lacking.",
+    "gap": "No prior benchmark has used paired single-cell multi-omics (scDNA-seq + scRNA-seq in the same cell) to evaluate tumor-normal classification, CNA profile accuracy, subclonal structure inference, and aneuploidy detection in non-malignant cells across the five most widely used methods.",
+    "approach": "We evaluated inferCNV, CopyKAT, SCEVAN, Numbat, and CaSpER on eight colorectal cancer samples, two acute lymphoblastic leukemia samples, one glioma, one neuroendocrine tumor, an NPC43 cell line, HUVEC normal controls, and a gastric sample with paired scDNA/scRNA-seq, systematically varying tumor purity, sequencing depth, and reference selection.",
+    "key_results": "Numbat outperformed all others across most criteria; CopyKAT was the top choice when only an expression matrix was available and was uniquely robust at 1K UMIs per cell; SCEVAN achieved the best F1 for clonal breakpoint detection; Numbat showed high sensitivity for cnLOH but 14 of 17 LOH calls (~82%) were actually non-neutral CNV events; adding tumor microenvironment cells rescued inferCNV F1 scores for CRC02, CRC22, and CRC03 from 0, 0.5, 0.55 to 1.0, 0.9, 0.99 respectively.",
+    "impact": "These findings offer practical guidance for tool selection and parameter tuning in single-cell CNA inference and identify open challenges for spatial transcriptomics and low-burden aneuploidy detection."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "scRNA-seq reveals transcriptomic heterogeneity in tumors and their microenvironment",
+        "CNAs play crucial roles in cancer initiation, progression, and therapy resistance",
+        "scDNA-seq is ideal but expensive and low-coverage",
+        "Expression-based tools (inferCNV, CopyKAT, SCEVAN) vs. expression+allele tools (Numbat, CaSpER)",
+        "No independent head-to-head benchmark with paired scDNA-seq ground truth exists",
+        "This study covers five tools, four tasks, and systematic purity/depth perturbations"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Benchmark datasets: CRC (n=8, HRA000201), glioma + NPC43 + HUVEC (GSE185269), neuroendocrine (PRJCA002946), ALL (n=2, GSE144296), gastric GX109",
+        "Tool versions: inferCNV 1.18.1, CopyKAT 1.1.0, SCEVAN 1.0.1, Numbat 1.3.2.1, CaSpER 0.2.0",
+        "Parameter choices: inferCNV tumor_subcluster_partition_method=random_trees; SCEVAN plotTree=FALSE; Numbat gamma=5 for Non-UMI, CRC22 min_LLR=1 max_entropy=0.6, CRC15 min_cells=1; CaSpER cnv.scale=loh.scale=3",
+        "Downsampling for purity: T:N ratios 1:100, 1:20, 1:4, 1:2, 2:1, 4:1, 20:1, 100:1, each resampled 50 times",
+        "Sequencing depth downsampling: ~10K, 3K, 1K UMIs/cell via samtools view -s with seeds 555, 666, 777",
+        "Subclonal hierarchical clustering: Euclidean + Ward.D2; optimal k by average silhouette",
+        "Genome heatmaps: 1Mb bins, weighted mean by intersection width",
+        "Statistics: paired Wilcoxon rank-sum (panel 2E), Kruskal-Wallis (panels 2C, 2H, 2J, 2L), unpaired two-tailed Wilcoxon + Benjamini-Hochberg (panel 3B); significance code NS: p>0.05, *: p<0.01, **: p<0.001, ***: p<0.0001",
+        "Visualization: R 4.1.2, ComplexHeatmap 2.10.0, ggpubr 0.4.0; pseudo-bulk CNV via DNAcopy 1.68.0 CBS + MergeLevels; LOH AB-allele via Sequenza",
+        "Breakpoint TP criterion: within 200kb of scDNA-seq breakpoint"
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "framework",
+          "title": "Benchmarking framework and datasets",
+          "content_bullets": [
+            "Five tools, two categories (expression-only vs expression+allele)",
+            "Paired scDNA/scRNA-seq as ground truth across CRC, glioma, neuroendocrine, ALL, cell lines",
+            "Four evaluation tasks: tumor-normal classification, CNA profile accuracy, subclonal inference, non-malignant aneuploidy"
+          ]
+        },
+        {
+          "id": "tumor_normal",
+          "title": "Distinguishing tumor from normal cells",
+          "content_bullets": [
+            "Numbat performed best overall; CopyKAT best among expression-only tools",
+            "SCEVAN failed when tumor fraction <40% (CRC11, CRC12, CRC16, CRC15)",
+            "inferCNV was reliable except in tumor-dominated CRC02 (~88% tumor)",
+            "Including TME cells rescued inferCNV F1 in CRC02, CRC22, CRC03 from 0, 0.5, 0.55 to 1.0, 0.9, 0.99",
+            "In extreme low purity (CRC15 6% tumor), inferCNV performed well after TME inclusion",
+            "Numbat degraded sharply below 10K UMIs/cell; CopyKAT robust down to 1K UMIs/cell",
+            "SCEVAN's paradoxical F1 increase at low depth reflects filtering of non-malignant cells"
+          ]
+        },
+        {
+          "id": "cna_accuracy",
+          "title": "Accuracy of inferred CNA profiles",
+          "content_bullets": [
+            "Two-pass mode significantly improved inferCNV similarity in 8/9 cases",
+            "No single tool dominated CNA profile accuracy; Numbat and CaSpER output integer calls, others continuous",
+            "Tools performed well on solid tumors with sufficient tumor + normal cells (glioma, CRC13, CRC11, CRC12)",
+            "All four tools except Numbat performed poorly on cell lines alone",
+            "Breakpoint detection F1: SCEVAN best, inferCNV best precision, Numbat conservative; CopyKAT and SCEVAN produced thousands of segments/cell, Numbat/CaSpER tens to hundreds",
+            "LOH: 14/17 (~82%) of Numbat LOH calls were actually CNV amplifications or deletions; however Numbat correctly recovered all four cnLOH events in GX109 and identified chr5q, chr12q, chr17p cnLOHs in CRC13"
+          ]
+        },
+        {
+          "id": "subclones",
+          "title": "Subclonal structure inference",
+          "content_bullets": [
+            "Optimal k for CRC samples was typically 2 by silhouette analysis",
+            "Glioma C1 subclone: only Numbat correctly assigned as tumor (14/15 cells)",
+            "CRC03: only inferCNV failed; TME inclusion rescued it",
+            "CRC11: all tools achieved ARI > 0.8",
+            "CRC12: inferCNV and SCEVAN detected single-cell subclone"
+          ]
+        },
+        {
+          "id": "aneuploidy",
+          "title": "Aneuploidy detection in non-malignant cells",
+          "content_bullets": [
+            "All tools performed poorly on fibroblast, T, B, endothelial aneuploidy",
+            "Non-malignant cells have lower UMI and gene counts than malignant",
+            "Non-malignant CNAs are typically whole-chromosome events with lower complexity"
+          ]
+        },
+        {
+          "id": "speed",
+          "title": "Computational performance",
+          "content_bullets": [
+            "CopyKAT and SCEVAN fastest",
+            "inferCNV and CaSpER moderate",
+            "Numbat slowest; BAM-based allele counting dominates runtime",
+            "Laptop handles <1000 cells; larger datasets require HPC especially for Numbat and inferCNV"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Numbat best overall; CopyKAT best for expression-only and low-depth scenarios",
+        "Tumor purity drives inferCNV centering errors; TME inclusion mitigates this",
+        "Numbat LOH over-calls are genotype-modeling artifacts (1,0 vs 2,0 resolution)",
+        "Solid tumors easier than hematopoietic cancers or cell lines; less CNA complexity may explain",
+        "Non-malignant aneuploidy detection remains an unmet need",
+        "Depth matters differently across tools; Numbat most depth-sensitive",
+        "Parameter choices are sample- and task-specific (e.g., Numbat gamma)",
+        "Recommend pairing Numbat+SCEVAN/inferCNV when BAF is available, CopyKAT+SCEVAN/inferCNV otherwise",
+        "Limitations: scarce paired datasets, small cell counts, parameter sensitivity",
+        "Implications extend to spatial transcriptomics"
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Benchmark datasets and tools",
+      "columns": ["Dataset", "Cancer type", "Accession", "Tools evaluated"],
+      "data_source": "experimental_log Datasets table",
+      "caption_sketch": "Single-cell multi-omics datasets used for benchmarking and the tools applicable to each."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Method characteristics",
+      "columns": ["Tool", "Version", "Input", "Category", "Output", "CNV segments", "Clonal breakpoints"],
+      "data_source": "idea_summary methods block and Figure 5 summary",
+      "caption_sketch": "Summary of the five benchmarked CNA inference tools."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Effect of TME inclusion on inferCNV F1 for tumor-normal classification",
+      "columns": ["Sample", "Tumor purity", "F1 (epithelial only)", "F1 (+ TME)"],
+      "data_source": "statistical_sentences line 3",
+      "caption_sketch": "Including tumor microenvironment cells rescues inferCNV accuracy in tumor-dominated CRC samples."
+    },
+    {
+      "table_id": "tab4",
+      "title": "Statistical tests used",
+      "columns": ["Panel", "Test", "Multiple testing correction"],
+      "data_source": "statistical_sentences significance codes",
+      "caption_sketch": "Statistical tests applied per panel."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig1", "type": "schematic", "file": "figures/fig_workflow.pdf", "caption": "Overview of the benchmarking workflow.", "data_source": "idea_summary Figure 1 description"},
+    {"figure_id": "fig2", "type": "data_grounded", "file": "figures/fig_tme_rescue.pdf", "caption": "TME inclusion rescues inferCNV F1 in tumor-dominated samples.", "data_source": "statistical_sentences line 3"},
+    {"figure_id": "fig3", "type": "data_grounded", "file": "figures/fig_loh_breakdown.pdf", "caption": "14 of 17 Numbat LOH calls are non-neutral CNV events.", "data_source": "statistical_sentences line 7"},
+    {"figure_id": "fig4", "type": "schematic", "file": "figures/fig_two_pass.pdf", "caption": "One-pass vs two-pass inferCNV reference setting.", "data_source": "idea_summary Methods block"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "copy number aberration cancer progression",
+      "single cell RNA sequencing tumor heterogeneity",
+      "single cell DNA sequencing copy number",
+      "spatial transcriptomics copy number inference"
+    ],
+    "micro_queries": [
+      "inferCNV moving average tumor",
+      "CopyKAT Bayesian segmentation",
+      "SCEVAN multichannel segmentation",
+      "Numbat haplotype HMM allele specific",
+      "CaSpER multiscale signal processing BAF",
+      "ComplexHeatmap R visualization",
+      "Sequenza allele-specific copy number",
+      "DNAcopy circular binary segmentation",
+      "loss of heterozygosity TP53 tumor suppressor",
+      "single cell multi-omics DNA RNA paired",
+      "aneuploidy non-malignant cells",
+      "glioma single cell heterogeneity",
+      "colorectal cancer single cell"
+    ],
+    "must_cite": [
+      "inferCNV (Tickle 2019)",
+      "CopyKAT (Gao 2021)",
+      "SCEVAN (De Falco 2023)",
+      "Numbat (Gao 2023)",
+      "CaSpER (Serin Harmanci 2020)",
+      "Zhou CRC multi-omics dataset",
+      "Yu glioma/NPC43 multi-omics",
+      "Zachariadis ALL",
+      "Sequenza",
+      "DNAcopy",
+      "ComplexHeatmap",
+      "ggpubr"
+    ],
+    "citation_target": 30
+  }
+}

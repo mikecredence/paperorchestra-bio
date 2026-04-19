@@ -1,0 +1,137 @@
+\section{Introduction}
+
+A phylogenetic tree depicts the evolutionary history of a given set of species
+and efficient, accurate estimation of phylogenies from genome data remains a
+central problem in bioinformatics and systematics. Traditional tree-inference
+approaches fall into two broad groups. Distance-based methods, such as UPGMA
+\citep{sokal1958upgma} and neighbor-joining \citep{saitou1987nj}, first
+summarize every pair of input sequences as a scalar distance and then apply an
+agglomerative algorithm to the resulting matrix. Character-based methods, such
+as maximum parsimony \citep{fitch1971parsimony} and maximum likelihood
+\citep{felsenstein1981ml, posada2021felsenstein}, retain the per-site character
+information throughout inference and score candidate trees under an explicit
+model of substitution. Within the alignment-based paradigm, maximum likelihood
+has repeatedly been shown to be more accurate and more robust than
+distance-based methods, particularly when the assumptions of the distance
+model are violated \citep{felsenstein1981ml, posada2021felsenstein}.
+
+Both character- and distance-based approaches in the alignment-based paradigm
+rely on a multiple sequence alignment (MSA) of the input sequences. The
+quality of that alignment directly governs the quality of the inferred tree,
+but constructing an optimal MSA is computationally intractable in the general
+case \citep{elias2006msa}, and even heuristic multi-genome alignment is
+memory- and time-intensive for genome-scale inputs. A further, biological
+limitation is that alignment assumes a preserved linear order of homology, so
+that rearrangement events such as translocations and inversions inside
+whole-genome sequences complicate alignment and can degrade downstream
+phylogenetic inference.
+
+To circumvent these limitations, a growing body of work has turned to
+\emph{alignment-free} methods, which replace MSA with sequence summaries such
+as $k$-mer frequency vectors or MinHash sketches and derive a distance
+directly from these summaries \citep{vinga2003review, zielezinski2017review}.
+Alignment-free methods scale to whole genomes and, unlike assembly-based
+alignment pipelines, apply to genome skims in which the nuclear genome is not
+assembled. The community benchmarking effort of the AFproject
+\citep{zielezinski2019afproject} has compared dozens of such methods and
+documented a persistent accuracy gap between alignment-free and alignment-based
+approaches, with no single alignment-free method dominating across the
+benchmark's heterogeneous datasets.
+
+Despite the clear methodological parallel between alignment-based inference
+(where maximum likelihood outperforms distance-based inference) and
+alignment-free inference (which remains almost entirely distance-based), no
+widely used maximum-likelihood alignment-free phylogeny tool exists. The
+pattern-based Bayesian approach of \citet{hohl2007alignmentfree} is the main
+prior attempt to bring likelihood machinery to alignment-free inference, but
+it was shown not to improve on classical distance-based alignment-free
+methods in their own benchmarks, and no established software pipeline has
+emerged. More recent spaced-word-based work \citep{dencker2020multispam}
+incorporates quartet-level maximum likelihood on gap-free micro-alignments,
+which is an important step but still differs from a full binary-trait
+likelihood model over all shared $k$-mers.
+
+In this paper, we present Peafowl (Phylogeny Estimation through Alignment
+Free Optimization With Likelihood), the first alignment-free tool that
+estimates a phylogenetic tree by running a standard nucleotide-scale
+maximum-likelihood engine directly on a binary, $k$-mer presence/absence
+matrix of the input species. The contributions of this work are:
+\begin{itemize}
+\item a likelihood-based alignment-free framework that encodes each species
+as a binary vector of $k$-mer presence/absence and estimates tree topology
+under the two-state BINGAMMA substitution model of RAxML
+\citep{stamatakis2014raxml};
+\item a data-driven, entropy-based procedure for selecting the $k$-mer
+length by maximizing cumulative Shannon entropy \citep{shannon1948mathematical}
+over a fixed number of sampled matrix rows across odd $k$ from 9 to 31;
+\item an empirical evaluation on seven real phylogenomic datasets, including
+five AFproject benchmarks, comparing Peafowl against nine state-of-the-art
+alignment-free tools;
+\item the observation that non-canonical $k$-mer counting recovers the
+reference tree on an inversion-dominated Yersinia benchmark on which most
+tools fail, demonstrating a principled way to expose rearrangement signal.
+\end{itemize}
+
+\section{Related Work}
+
+\paragraph{$k$-mer based distance methods.}
+The earliest alignment-free methods compared sequences by summarizing them
+with $k$-mer frequency vectors and computing vector distances, an idea that
+underlies feature frequency profiles (FFP) \citep{sims2009ffp}, composition
+vectors (CVTree / CAFE-cvtree) \citep{gao2007cvtree, lu2017cafe}, and
+general-purpose $k$-mer counting infrastructure such as Jellyfish
+\citep{marcais2011jellyfish}. MinHash-based sketches later reduced the
+storage and runtime cost of such comparisons: mash \citep{ondov2016mash}
+uses a small MinHash sketch to estimate a mutation distance, and phylonium
+\citep{klotzl2020phylonium} extends this idea by indexing a single
+representative genome to produce accurate distances on very large samples of
+closely related genomes.
+
+\paragraph{Match-anchor and spaced-word methods.}
+A second family of methods identifies conserved $k$-mer-like anchors and
+derives evolutionary distances from them. The tool andi
+\citep{haubold2015andi} searches for pairs of maximal unique matches of a
+minimum length and uses the short ungapped regions between them as
+micro-alignments. Co-phylog \citep{yi2013cophylog} uses fixed-length
+``context'' micro-alignments with a single middle-mismatch position to
+recover phylogenies from assembled or unassembled sequences. Filtered
+Spaced-Word Matches (FSWM) \citep{morgenstern2015spacedwords}, its
+low-coverage variant Read-SpaM \citep{lau2019readspam}, Slope-SpaM
+\citep{rohling2020slopespam}, and Prot-SpaM \citep{leimeister2019protspam}
+use carefully chosen patterns of match and don't-care positions to improve
+the statistical reliability of inferred distances over contiguous $k$-mers.
+
+\paragraph{Likelihood in alignment-free inference.}
+Attempts to use likelihood ideas without a full MSA are comparatively rare.
+\citet{hohl2007alignmentfree} introduced a Bayesian formulation over $k$-mer
+presence on a small benchmark but did not outperform classical distance-based
+alignment-free methods. Multi-SpaM \citep{dencker2020multispam} computes
+maximum-likelihood quartet trees on gap-free micro-alignments and combines
+them via Quartet MaxCut, which introduces likelihood at the quartet level
+but still relies on spaced-word micro-alignments rather than on a global
+character-by-character substitution model. Peafowl occupies a
+previously empty niche: it runs a standard ML engine
+\citep{stamatakis2014raxml} directly on a binary $k$-mer presence/absence
+matrix, obtaining tree topologies without any alignment step at all.
+
+\paragraph{Genome skims and assembly-free settings.}
+Skmer \citep{sarmashghi2019skmer} extends alignment-free phylogenetic
+placement to unassembled, low-coverage genome skims and has been adopted in
+several taxonomic settings. Read-SpaM \citep{lau2019readspam} and co-phylog
+\citep{yi2013cophylog} similarly support unassembled reads. Peafowl in its
+current form operates on assembled genomes and so addresses a complementary
+but overlapping regime; extension to unassembled reads is a natural next
+step.
+
+\paragraph{Benchmarking.}
+We use the AFproject benchmark \citep{zielezinski2019afproject}, which
+exercises alignment-free methods on five real-data categories including
+genome-based phylogeny and horizontal gene transfer. Previous analyses
+using this benchmark have observed that no single alignment-free method
+wins on all datasets, and that inversion- and rearrangement-heavy datasets
+(e.g., Yersinia) are particularly challenging. Tree comparisons throughout
+this paper use the normalized Robinson--Foulds distance
+\citep{robinson1981rf}, computed with PHYLIP
+\citep{felsenstein1989phylip}; distance-only competitors are post-processed
+into trees with neighbor-joining \citep{saitou1987nj} and UPGMA
+\citep{sokal1958upgma} in MEGA X \citep{kumar2018megax}.
