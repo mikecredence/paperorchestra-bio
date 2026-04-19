@@ -84,32 +84,32 @@ User Inputs (idea + results + venue)
 - **Stage-isolated execution**: Each sub-skill runs in its own context, communicating only through shared workspace files
 - **BiomedWritingBench**: 143 test cases across 10 biomedical subfields
 
-## Evaluation Results (n=49 papers, LLM-as-judge)
+## Evaluation Results (n=50 papers, LLM-as-judge)
 
-Head-to-head benchmark on 49 diverse biomedical papers spanning neuroscience, bioinformatics, cancer genomics, structural biology, drug discovery, reproductive medicine, ecology, epidemiology, and more. Each paper has two conditions sharing identical v3 extraction inputs, scored by the same 9-axis rubric. Statistical significance via paired Wilcoxon signed-rank test (one-sided).
+Head-to-head benchmark on **50 diverse biomedical papers** spanning neuroscience, bioinformatics, cancer genomics, structural biology, drug discovery, reproductive medicine, ecology, epidemiology, clinical research, and more. Each paper has two conditions sharing identical v3 extraction inputs, scored by the same 9-axis rubric. Statistical significance via paired Wilcoxon signed-rank test (one-sided).
 
-### Mean scores across 49 papers
+### Mean scores across 50 papers
 
 | Axis | Baseline | **Orchestrated skill** | Delta | p-value | Sig |
 |------|----------|------------------------|-------|---------|-----|
-| Clarity | 82.6 | **87.7** | +5.1 | <0.0001 | *** |
-| Rigor | 83.1 | **86.9** | +3.8 | <0.0001 | *** |
-| Completeness | 80.0 | **89.2** | **+9.1** | <0.0001 | *** |
-| Writing | 80.5 | **88.4** | +8.0 | <0.0001 | *** |
-| Presentation | 80.1 | **86.3** | +6.2 | <0.0001 | *** |
-| Citations | 79.5 | **86.4** | +6.9 | <0.0001 | *** |
+| Clarity | 82.5 | **87.8** | +5.3 | <0.0001 | *** |
+| Rigor | 83.0 | **86.9** | +4.0 | <0.0001 | *** |
+| Completeness | 79.9 | **89.2** | **+9.4** | <0.0001 | *** |
+| Writing | 80.3 | **88.5** | +8.2 | <0.0001 | *** |
+| Presentation | 79.9 | **86.3** | +6.4 | <0.0001 | *** |
+| Citations | 79.1 | **86.4** | +7.3 | <0.0001 | *** |
 | Correctness | 94.6 | 94.9 | +0.3 | 0.071 | n.s. |
-| Figures | 0 (by design) | **75.7** | new axis | — | — |
-| **Overall** | **82.7** | **87.4** | **+4.8** | **<0.0001** | *** |
+| Figures | 0 (by design) | **75.8** | new axis | — | — |
+| **Overall** | **82.5** | **87.5** | **+4.9** | **<0.0001** | *** |
 
-### Per-paper wins: **46/49 wins, 2 ties, 1 loss (94% win rate)**
+### Per-paper wins: **47/50 wins, 2 ties, 1 loss (94% win rate)**
 
-### Correctness details (2,340 numerical claims spot-checked)
+### Correctness details (2,386 numerical claims spot-checked)
 
 | Condition | Correct | Incorrect | Hallucinated |
 |-----------|---------|-----------|--------------|
-| Baseline | 1,105/1,125 (98.2%) | 19 | 1 |
-| **Orchestrated skill** | **1,199/1,215 (98.7%)** | **13** | **1** |
+| Baseline | 1,127/1,147 (98.3%) | 19 | 1 |
+| **Orchestrated skill** | **1,223/1,239 (98.7%)** | **13** | **1** |
 
 **The orchestrated skill significantly outperforms the single-agent baseline on every non-correctness axis (all p<0.001 after paired Wilcoxon).** Correctness is tied, with 98.2-98.7% numerical fidelity in both conditions and essentially zero hallucinations. The stage-isolated pipeline adds structure, figures, prose depth, and verified citations without sacrificing numerical fidelity.
 
