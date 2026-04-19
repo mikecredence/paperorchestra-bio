@@ -1,0 +1,224 @@
+{
+  "metadata": {
+    "working_title": "Boosting biodiversity monitoring using smartphone-driven, rapidly accumulating community-sourced data",
+    "venue": "Methods in Ecology and Evolution",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Comprehensive biodiversity data is crucial for conservation planning, protected-area designation (e.g., KM-GBF 30by30), and nature-related financial disclosure, yet traditional expert surveys cannot supply the required spatiotemporal resolution.",
+    "gap": "Community-sourced observations accumulate rapidly but typically suffer from spatial and taxonomic biases and variable identification accuracy, limiting their utility for species distribution modelling, particularly for endangered and underrepresented taxa.",
+    "approach": "We evaluate 'Biome', a Japan-deployed smartphone app that combines AI-assisted species identification with gamification, and test whether blending Biome records (at 50% share) with traditional survey data improves MaxEnt species distribution models (SDMs) for 132 terrestrial plants and animals.",
+    "key_results": "Biome accumulated 5,275,457 records (40,957 species) by 7 July 2023; species-level identification accuracy exceeded 95% for birds, reptiles, mammals, and amphibians and was 90% for seed plants; Biome+Traditional SDMs reached Boyce index > 0.9 with 294 plus-or-minus 471 records versus 2,129 plus-or-minus 4,157 records for Traditional-only models, and 338 plus-or-minus 571 versus 2,336 plus-or-minus 3,718 for endangered species.",
+    "impact": "Smartphone-driven community science, when combined with statistical safeguards on sampling effort, can meaningfully support 30by30 conservation planning, OECM designation, and corporate TNFD disclosures, especially for data-deficient endangered species."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Biodiversity underpins ecosystem services that are declining rapidly, motivating KM-GBF goals including 30by30 and TNFD-aligned corporate disclosure.",
+        "Conservation planning requires high-resolution species distribution knowledge, but expert surveys cannot scale.",
+        "Community-sourced platforms (eBird, iNaturalist) already contribute to phenology, invasion tracking, trait mapping, and distribution modelling, but their data are spatially biased and presence-only.",
+        "Gamified mobile applications can broaden participation beyond expert volunteers and accelerate data accumulation.",
+        "We introduce Biome, a Japan-deployed app launched in 2019 that amassed 6 million records by 17 October 2023, roughly four times the GBIF-sourced Japanese total over the same period.",
+        "MaxEnt SDMs can exploit presence-only records while correcting for sampling effort via pseudo-absence selection.",
+        "Paper contributions: (i) quantify Biome data quality across taxa and species rarity, and (ii) compare SDM accuracy for 132 species using Traditional versus Biome+Traditional training data."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Community science platforms and their ecological applications (eBird, iNaturalist).",
+        "Quality assessment of citizen-science observations (e.g., volunteer invasive-plant surveys, 72% correct; plant-ID app benchmarks, 69%).",
+        "Statistical treatment of presence-only data: MaxEnt and sampling-effort correction for pseudo-absences.",
+        "Prior work combining traditional and community-sourced data for SDMs, mostly focused on birds.",
+        "Gamification and engagement in citizen science."
+      ],
+      "approx_length": "0.75 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {
+          "id": "methods_app",
+          "title": "The Biome application and record filtering",
+          "content_bullets": [
+            "Biome, launched April 2019, downloaded 839,844 times by 13 September 2023.",
+            "Image + geolocation + timestamp ingestion; CNN-based image recognition refined by local species-frequency priors.",
+            "Ask-Biomers identification requests and gamified points/levels, with rare/endangered/invasive species weighted higher.",
+            "Invalid-record filtering: user reports, private records, non-wild labels, cultural-centre and pet-store locations, certified-user gating (<15% misidentification rate, <0.5% inappropriate records, >20 public records)."
+          ]
+        },
+        {
+          "id": "methods_accuracy",
+          "title": "Assessing record accuracy",
+          "content_bullets": [
+            "1,420 records audited across 8 taxonomic groups.",
+            "Rare species defined as <=10 occurrences; common species as top 15% of records per taxon.",
+            "145 records per rare/common class for insects and seed plants; 70 for other taxa.",
+            "Experts reidentified photographs; correctness scored at species, genus, and family levels."
+          ]
+        },
+        {
+          "id": "methods_sdm",
+          "title": "Species distribution modelling",
+          "content_bullets": [
+            "MaxEnt implemented via ENMeval 2.0 on R 4.1.3.",
+            "Training datasets: Traditional survey (GBIF, NCRE, Forest Ecosystem Diversity Basic Survey, curated literature, post-1970 records cleaned with CoordinateCleaner) and Biome+Traditional (Biome fixed at 50%).",
+            "Predictors: land use, bioclim, vegetation, lithology, elevational range, biogeographic-region categoricals (Blakiston's Line, oceanic-island indicator), linear + quadratic + hinge features, regularisation multiplier 2.5.",
+            "10,000 pseudo-absences per model selected with picking probabilities proportional to sampling effort; two complementary schemes combined for Biome+Traditional.",
+            "Test-set construction: 25% Biome + 75% Traditional, intermediate to 0% vs. 50% training mixtures; Biome test records accepted only when >=99% estimated posterior true presence under multi-user co-observation.",
+            "Central Japan region (33.7-37.7N, 136.2-137.6E) used as spatial block.",
+            "Boyce index computed on test species with >=50 test occurrences (132 species).",
+            "Downsampling sweep from 20 to 20,000 training records with three iterations per condition (12,351 runs total)."
+          ]
+        },
+        {
+          "id": "methods_stats",
+          "title": "Statistical comparison",
+          "content_bullets": [
+            "Per-species, per-data-size mean Boyce index across three iterations, Fisher z-transformed.",
+            "Generalised linear mixed model in lme4/lmerTest with fixed effects for data type, log(amount of records), and their interaction, and species-level random intercepts."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_amount_quality",
+          "title": "Amount and environmental coverage of Biome data",
+          "content_bullets": [
+            "5,275,457 records of 40,957 species by 7 July 2023; ~5,407 submissions/day on average in 2022.",
+            "PC1 of environmental variables accounts for 6.1% of total variation and separates Biome (urban-natural uniform) from Traditional (natural-biased) data.",
+            "Taxonomic mix: seed plants 41.8%, insects 31.2% of records.",
+            "After automatic filtering, 2,373,303 records (45.0%) retained for analysis."
+          ]
+        },
+        {
+          "id": "results_quality",
+          "title": "Identification quality across taxa and rarity",
+          "content_bullets": [
+            "Wild-individual fraction >97% for insects and birds; <90% for molluscs, seed plants, mammals, fishes.",
+            "Species-level identification >95% in birds, reptiles, mammals, amphibians; <90% in insects, fishes, seed plants.",
+            "Genus-level accuracy >90% for all taxa except insects; fishes and seed plants gain 5-6% moving from species to genus.",
+            "Family-level accuracy >94% across all examined taxa.",
+            "Common vs. rare species: 95% vs. 87% average identification accuracy."
+          ]
+        },
+        {
+          "id": "results_sdm",
+          "title": "SDM accuracy with Biome-blended training data",
+          "content_bullets": [
+            "Intercept of Boyce Index did not differ between datasets (beta=0.02 plus-or-minus 0.03, t=0.60, P=0.55).",
+            "Slope of BI on log(records) higher for Biome+Traditional (beta=0.02 plus-or-minus 0.01, t=3.72, P<0.001).",
+            "BI > 0.9 reached with 294 plus-or-minus 471 records for Biome+Traditional vs. 2,129 plus-or-minus 4,157 for Traditional.",
+            "Endangered species: 338 plus-or-minus 571 vs. 2,336 plus-or-minus 3,718 records for the same threshold.",
+            "Best attainable BI per species equivalent across datasets (0.81 plus-or-minus 0.20 vs. 0.83 plus-or-minus 0.20), reflecting capped data volume under the 50% constraint.",
+            "Sensitivity analysis shows 50-70% Biome blends yield the highest relative improvement (Appendix 1)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Biome's identification accuracy (90% for seed plants) compares favourably with published plant-ID app benchmarks (69%) and volunteer invasive-plant reports (72%).",
+        "Two mechanisms explain the SDM improvement: (i) greater environmental coverage of urban-natural gradients and (ii) increased training volume when the 50% constraint is relaxed.",
+        "For endangered species, Biome data reduces the data requirement for accurate SDMs by roughly an order of magnitude, making community data especially valuable where expert records are sparse.",
+        "Seed plants remain the hardest taxon due to mixed wild/non-wild status and limited identification traits; certified-user filtering and multi-image submissions could help.",
+        "Limitations: spatial-only transferability test, limited data for some taxa (molluscs, amphibians, reptiles, mammals), and presence-only outputs that are not absolute presence probabilities.",
+        "Future directions: OECM and protected-area prioritisation, invasion and phenology tracking, time-series analysis using two-step ML frameworks, and integration into TNFD-aligned corporate disclosures."
+      ],
+      "approx_length": "1.5-2 pages"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Data quality of Biome across taxa",
+      "columns": ["Taxon", "Wild-individual fraction (%)", "Species-level accuracy (%)", "Genus-level accuracy (%)", "Family-level accuracy (%)"],
+      "data_source": "experimental_log Table 1 narrative: wild fraction >97% insects/birds; wild fraction <90% molluscs/seed plants/mammals/fishes; species accuracy >95% birds/reptiles/mammals/amphibians; species accuracy <90% insects/fishes/seed plants; genus >90% all except insects; family >94% all taxa",
+      "caption_sketch": "Data quality of Biome: fraction of records documenting wild individuals and identification accuracy at species, genus and family levels among wild-individual records."
+    },
+    {
+      "table_id": "tab2",
+      "title": "SDM record requirements for Boyce Index > 0.9",
+      "columns": ["Species set", "Traditional records (mean +/- SD)", "Biome+Traditional records (mean +/- SD)"],
+      "data_source": "experimental_log: all-species 2,129 +/- 4,157 vs. 294 +/- 471; endangered 2,336 +/- 3,718 vs. 338 +/- 571",
+      "caption_sketch": "Amount of training records needed to exceed a Boyce Index of 0.9 for SDMs trained on Traditional versus Biome+Traditional data."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Best per-species Boyce Index by dataset",
+      "columns": ["Dataset", "Boyce Index (mean +/- SD)"],
+      "data_source": "experimental_log: Biome+Traditional 0.81 +/- 0.20; Traditional 0.83 +/- 0.20",
+      "caption_sketch": "Best Boyce Index attained per species when allowing the full data budget for each dataset."
+    },
+    {
+      "table_id": "tab4",
+      "title": "Mixed-effects model coefficients for Boyce Index",
+      "columns": ["Term", "Estimate +/- SE", "t", "P"],
+      "data_source": "experimental_log: intercept difference beta=0.02 +/- 0.03, t=0.60, P=0.55; slope difference beta=0.02 +/- 0.01, t=3.72, P<0.001",
+      "caption_sketch": "Generalised linear mixed-model estimates for the effect of dataset and sample size on Fisher-z-transformed Boyce Index."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "citizen science biodiversity monitoring smartphone",
+      "Kunming-Montreal Global Biodiversity Framework 30 by 30 protected areas",
+      "community science species occurrence data quality",
+      "species distribution model presence-only MaxEnt",
+      "gamification citizen science participation",
+      "biodiversity ecosystem services decline",
+      "sampling bias citizen science urban rural"
+    ],
+    "micro_queries": [
+      "MaxEnt maximum entropy species distribution model",
+      "Boyce index presence-only SDM evaluation",
+      "pseudo-absence selection sampling effort bias",
+      "eBird population trend machine learning",
+      "iNaturalist data quality species identification",
+      "plant identification mobile app accuracy PlantNet",
+      "invasive species citizen science detection",
+      "species distribution model endangered species data scarce",
+      "Boyce index model accuracy presence only",
+      "CoordinateCleaner GBIF record cleaning",
+      "TNFD nature-related financial disclosure"
+    ],
+    "must_cite": [
+      "IPBES 2019 global assessment",
+      "Phillips MaxEnt 2006",
+      "Phillips Dudik 2008 MaxEnt entropy",
+      "Elith et al. 2011 statistical explanation MaxEnt",
+      "Hirzel et al. 2006 Boyce index",
+      "Valavi et al. 2022 SDM algorithm comparison",
+      "Milanesi et al. 2020 pseudo-absence",
+      "Phillips et al. 2009 sample selection bias",
+      "Johnston et al. 2018 eBird SDM accuracy",
+      "Robinson et al. 2020 citizen science SDM",
+      "Feldman et al. 2021 community data SDM bias",
+      "Steen et al. 2019 opportunistic SDM",
+      "Fink et al. 2023 eBird trends",
+      "Hart et al. 2023 plant-ID app accuracy",
+      "Crall et al. 2011 volunteer invasive plant accuracy",
+      "Chandler et al. 2017 citizen science global monitoring",
+      "Kobori et al. 2016 citizen science Japan",
+      "Pocock et al. 2018 citizen science",
+      "Newbold et al. 2015 land use biodiversity",
+      "Booth et al. 2014 bioclim",
+      "Kass et al. 2021 ENMeval 2.0",
+      "Bates et al. 2015 lme4",
+      "Kuznetsova et al. 2017 lmerTest",
+      "Kendal et al. 2020 urban citizen science bias",
+      "Soga Gaston 2023 nature experience"
+    ],
+    "citation_target": 25
+  }
+}

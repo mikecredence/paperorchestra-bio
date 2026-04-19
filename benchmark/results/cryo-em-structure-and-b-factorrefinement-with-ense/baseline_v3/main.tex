@@ -1,0 +1,88 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Cryo-EM structure and B-factor refinement with ensemble representation}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Cryo-EM experiments produce images of macromolecular assemblies that are combined to produce three-dimensional density maps. It is common to fit atomic models of the contained molecules to interpret those maps, followed by a density-guided refinement. Here, we propose TEMPy-REFF, a method for atomic structure refinement in cryo-EM density maps. By representing atomic positions as components of a mixture model, their variances as B-factors, and a model ensemble description, we significantly improve the fit to the map compared to current state-of-the-art methods. We validate our method on a large benchmark of 366 cryo-EM maps from EMDB at 1.8--7.1\,\AA{} resolution and their corresponding PDB assembly models. We also show that our approach can provide newly-modelled regions in EMDB deposited maps by combining it with AlphaFold-Multimer. Finally, our method provides a natural interpretation of maps into components, allowing us to accurately create composite maps.
+\end{abstract}
+
+\section{Introduction}
+Cryo-EM can resolve biomolecules at ever-improving resolution. Interpretation hinges on fitting atomic models of the macromolecules in the complex \citep{r1,r2,r3}. Map fitting approaches use the map as a scalar field with gradient-driven forces \citep{r4,r5}, cross-correlation (CCC) optimisation \citep{r6}, or Bayesian expectation-maximisation \citep{r7,r8}. Sampling commonly uses molecular dynamics \citep{r4,r9}, minimisation \citep{r10}, normal modes and gradient methods \citep{r11,r12}, Fourier-space methods \citep{r2}, or manual inspection \citep{r13,r14,r15}. Forcefields such as CHARMM \citep{r16} or AMBER \citep{r17} reduce clashes.
+
+Most methods blur the model to compare with the experiment \citep{r18}, an issue for flexible systems with heterogeneous resolution, which also arise when composite maps are assembled from multibody or focused refinements \citep{r19,r20}. No systematic composition strategy exists. Ensemble methods \citep{r21,r22,r23,r24,r25,r26} can represent flexibility. Mixture modelling \citep{r8} provides a principled framework for estimating local spread of density. We propose TEMPy-REFF, an expectation-maximisation scheme with a mixture model that provides self-consistent estimates for atomic positions and local B-factors, a new per-residue resolvability score, and a natural mechanism for map segmentation and composition that compares favourably to state-of-the-art methods like Phenix \citep{r27}.
+
+\section{Methods}
+\subsection{Simulated cryo-EM map and responsibilities}
+Given an experimental 3D map $M_E$ with estimated resolution $R$, and a model of $N$ atoms with coordinates $X$ and B-factors $B$ (occupancy fixed to 1), the simulated map $M_S$ is the sum over Gaussians $G_i$, one per atom $i$, parameterised by atomic number $N_i$, position $x_i$, and scalar B-factor $B_i$. The background is a uniform distribution $k_{bg}$ estimated from the residual between $M_E$ and $M_S$. The responsibility of atom $i$ for a voxel is $G_i / M_S$. The re-estimated atomic position is the centre of mass of the intensity-weighted map, and the B-factor is the variance of the estimated distribution $M_{Ei}$ attached to atom $i$.
+
+\subsection{Refinement algorithm}
+The algorithm alternates: (i) compute conformation-based energy and forces using a forcefield (AMBER with GB-Neck2 implicit solvent, $\kappa=3$) in OpenMM \citep{r31}; (ii) compute simulated map $M_S$; (iii) compute a map-derived fictitious force $F_\text{map}=K\,\delta(x_i)$ with $K=400$ and $\delta(x_i)$ the Gaussian-fitting displacement; (iv) update coordinates $X$ via molecular dynamics or l-BFGS minimisation \citep{r30}; (v) re-estimate B-factors from $M_E$.
+
+\subsection{Ensemble generation and RMSF}
+We generate an ensemble by randomly perturbing atom positions with displacements drawn from Gaussians with variance equal to the per-atom B-factor, then locally minimise each perturbed model (l-BFGS in OpenMM) \citep{r31,r32}. We generate an ensemble map by averaging blurred maps from all structures. The number of models is increased until CCC saturates. The per-residue RMSF$_e$ is the root mean square fluctuation of C$\alpha$ positions around the ensemble mean structure.
+
+\subsection{LoQFit and SMOC$_f$}
+We introduce LoQFit, a per-residue local quality-of-fit score: a local FSC \citep{r53} between $M_E$ and $M_S$ is evaluated inside a soft-edged spherical mask of diameter $5\times$ the global map resolution centred at each C$\alpha$. The score is the frequency at FSC$=0.5$, computed by linear interpolation. SMOC$_f$ \citep{r33} uses a local window around each residue and computes a Manders overlap coefficient between simulated and observed maps.
+
+\subsection{Map composition and segmentation}
+For segmentation, we partition a ``parent'' map into ``child'' maps per chain by weighting voxel intensity with the chain responsibility. For composition, multiple focused or multibody maps are combined using their responsibilities. Composition addresses overcounting (summing) and undercounting (averaging) at boundaries; responsibility-weighted composition transitions smoothly from one map's weight to another's.
+
+\subsection{Benchmark dataset and assessment}
+Our benchmark extends the CERES database \citep{r29} with additional cases (CERES+), comprising 388 protein complexes; 366 have maps between 2 and 5\,\AA{} and are used for scoring. We compared the initial (PDB-deposited) model, the CERES re-refined model, and our TEMPy-REFF ensemble. Metrics were CCC (using Chimera's \texttt{fitmap} \citep{r39,r46}), MolProbity and clash score (\texttt{phenix.molprobity} \citep{r34}), CaBLAM (\texttt{phenix.cablam} \citep{r35,r56}), and SMOC$_f$. Local resolution was estimated with ResMap \citep{r49}. Maps and models were obtained from EMDB \citep{r54} and PDB \citep{r55}. We tested AMBER \citep{r17} and CHARMM36 \citep{r16} forcefields; final CCC was slightly higher with AMBER.
+
+\section{Results}
+\subsection{Mixture modelling applied to refinement}
+TEMPy-REFF represents each atom as a Gaussian, with a uniform background, giving self-consistent estimates for atomic positions and B-factors. The responsibility attributed to each chain allows map segmentation; the responsibilities attributed to multiple focused maps allow composition. ``Soft-mixing'' improves convergence by allowing structural elements to slide towards their best-fitting density.
+
+\subsection{B-factor refinement}
+The B-factor converges in 10--11 iterations or less, with the recovered values robust to initial B-factor assignment. Across 366 cases, B-factors deviate by $\pm 0.87$\,\AA$^2$ after convergence, even for starting values $B=1$, $B=1000$, uniformly random $B$, or B-factors distributed according to the experimental distribution. B-factor convergence is demonstrated on Faba bean necrotic stunt virus (FBNSV, EMD-10097) and SARS-CoV-2 RNA-dependent RNA polymerase (EMD-30127).
+
+\subsection{Ensemble representation}
+We illustrate the ensemble on rotavirus VP6 (EMD-6272) at 2.6\,\AA{}. The ensemble map exhibits higher quality-of-fit to the experimental map than any single model. SMOC$_f$ and RMSF$_e$ per residue are anti-correlated. We determine the optimal number of models by tracking CCC versus ensemble size.
+
+\subsection{CERES benchmark refinement}
+TEMPy-REFF obtains large improvements in CCC, even for deposited models already well fit. The TEMPy-REFF ensemble CCC stays constantly high across 1\,\AA{} resolution bands, while deposited and CERES-refined CCC drop with lower resolution. Paired-sample $t$-tests on the 366 CERES entries show average CCC improvements of 0.197 ($p=0.0006$) versus deposited EMDB models and 0.150 ($p=0.003$) versus CERES-refined models. MolProbity and CaBLAM scores are consistent with deposited models; CERES MolProbity variability is narrower than TEMPy-REFF.
+
+\begin{table}[h]
+\centering
+\caption{CCC improvements on CERES benchmark (366 cases, paired $t$-test).}
+\begin{tabular}{lcc}
+\toprule
+Comparison & Mean CCC improvement & $p$-value \\
+\midrule
+TEMPy-REFF vs.\ deposited EMDB & 0.197 & 0.0006 \\
+TEMPy-REFF vs.\ CERES re-refined & 0.150 & 0.003 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Segmentation and composition}
+We segment the glycoprotein B-neutralizing antibody complex from Herpes Simplex Virus 1 (EMD-21247) into 9 submaps corresponding to single chains. We compose three focused maps for the RNA polymerase II super-elongation complex (EMD-12966, EMD-12967, EMD-12968) into a composite map and compare with the deposited composite map (EMD-12969). Because the responsibility decays smoothly, there are no ``seams'' between segmented submaps or within composite maps.
+
+\subsection{Case studies}
+\paragraph{Yeast RNA polymerase III (PDB 5FJ8, EMD-3178, 3.9\,\AA).} The deposited model has model-map correlation of 0.82 (ChimeraX \texttt{fitmap}), clash score 14, Ramachandran outliers 1.1\%, sidechain outliers 2.1\%, and MolProbity score 2.8. After TEMPy-REFF refinement, ensemble CCC improves to 0.94; the single-model CCC is 0.83. The average LoQFit score for the deposited model was 10.1\,\AA{} (chain A: 5.4\,\AA; chain B: 5.6\,\AA; chain M: 7.4\,\AA; chain N: 7.0\,\AA); after refinement, the overall average LoQFit improved to 9.0\,\AA. Chain O average improved from 7.3 to 5.9\,\AA; chains M and N improved to 6.0 and 5.7\,\AA.
+
+\paragraph{Nucleosome-CHD4 complex (PDB 6RYR, EMD-10058).} The deposited map has resolution range 3--10\,\AA. Refinement improves DNA geometries and hydrogen-bond formation in base pairs (e.g., chain I/J base pair 54).
+
+\paragraph{SARS-CoV-2 RNA polymerase (PDB 6M71, EMD-30127, 2.9\,\AA) with AlphaFold2.} Starting from an AlphaFold2 \citep{r41,r42} prediction of residues 4393--5324 of UNIPROT P0DTD1 with templates restricted to at least a year before deposition, the refined model matches the deposited model at most positions. SMOC$_f$ plots show that residues absent from the deposited model but present in the AlphaFold2 model can be placed into the density with fitting scores far above chance, supported by plDDT \citep{r41,r44}.
+
+\section{Discussion}
+TEMPy-REFF jointly estimates position and B-factor in a single expectation-maximisation framework and outputs a model ensemble, together with an ensemble map that better represents the experimental map than any single model. The ensemble approach is particularly useful for double occupancy sites and regions of lower local resolution. LoQFit provides a per-residue local resolvability score; its trends match ResMap \citep{r49} local resolution.
+
+Improvements over Phenix \citep{r27} are most apparent at lower resolutions, where CCC for single-model refinements drops while ensemble CCC stays near-constant. The composition and segmentation procedures avoid seams and over/undercounting by smooth responsibility weighting, as illustrated on the RNA polymerase II super-elongation complex (EMD-12969). Errors in modelling will propagate to segmentation or composition, so iterative refinement and quality-of-fit assessment are important.
+
+Starting refinements from AlphaFold2 \citep{r41,r42} models produces results on par with manual refinement while supporting automated pipelines \citep{r43,r51}. Further work will explore ensemble representations sampled from continuous conformational distributions via larger-scale molecular dynamics.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,73 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Spatial landmark detection and tissue registration with deep learning}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Spatial landmarks are crucial for describing histological features between samples or sites, tracking regions of interest in microscopy, and registering tissue samples within a common coordinate framework (CCF). Existing unsupervised landmark detection methods require many training images, cannot handle non-linear deformations, and are ineffective for z-stack alignment or multimodal data. We introduce ELD (Effortless Landmark Detection), a landmark detection and registration method using neural-network-guided thin-plate splines. We demonstrate superior performance in accuracy and stability across single-modality, 3D, and multimodal datasets.
+\end{abstract}
+
+\section{Introduction}
+Spatial landmarks support comparisons between sites, tracking regions of interest, and registration to a CCF \citep{r1,r2,r3}. Obtaining landmarks experimentally \citep{r4}, via microscopy \citep{r2}, or with manual/semi-manual annotation \citep{r5} is labor-intensive. Supervised \citep{r6,r7} and unsupervised \citep{r8,r9} deep-learning approaches have been explored. Unsupervised methods typically couple a landmark detector with a generative model that uses landmarks to guide registration \citep{r10}. Three challenges remain for spatial omics: (1) small datasets (often fewer than ten samples), (2) non-linear transformations \citep{r11}, and (3) multimodal data (histology, spatial transcriptomics, MSI). Building on Sanchez et al.\ \citep{r8}, we introduce ELD to address these challenges.
+
+\section{Methods}
+\subsection{Architecture and registration}
+We remove the generative network, retaining only the landmark detector. Registration is performed with thin-plate splines (TPS) \citep{r12}, chosen for elastic deformations over homography \citep{r11}. The landmark detector is an hourglass network with approximately 6 million parameters, identical to \citep{r8}.
+
+\subsection{Cost function and training}
+We use Multi-Scale Structural Similarity (MS-SSIM) \citep{r19} via the PyTorch Image Quality Assessment (PIQA) package with default parameters and window size 5. Landmark drop-out at 10\% probability helps escape local minima. Data augmentation includes rotation (random $-15^\circ$ to $15^\circ$), scaling, and elasticdeform-based elastic noise. Images are resized to 128$\times$128 via \texttt{cv2.resize} with INTER\_AREA. Input images must be consistently oriented. Missing image regions due to augmentation are cropped based on a 0.1 black-threshold mask.
+
+\subsection{3D modelling}
+For z-stack alignment, ELD is modified to produce anchor points with fixed $(x,y)$ coordinates rather than morphology-matching landmarks, by controlling the area change during TPS transformation (Figure 3a).
+
+\subsection{Multimodal alignment}
+Separate landmark detectors are used per modality. Random samples from both modalities are selected, one registered to the other, and their alignment scored in the latent space of the landmark detector.
+
+\subsection{Visium preprocessing}
+Visium spots with $<200$ detected genes and genes in $<3$ spots were removed; data were normalised (Scanpy) and log1p-transformed. The same genes as \citep{r13} were chosen when selecting three genes. For more genes, Leiden clustering on PCA neighborhoods plus \texttt{rank\_genes\_groups} with $t$-test identified the top-ranked genes per sample; common genes across samples were retained.
+
+\subsection{Benchmarks}
+Training: CelebA; evaluation: MAFL and AFLW. Metrics: forward error, backward error, and consistency error \citep{r8}. Runtimes were measured on an NVIDIA A100-SXM 81\,GB GPU with 12 AMD EPYC 7742 64-core CPUs as the number of genes/channels and landmarks varied.
+
+\section{Results}
+\subsection{Benchmark vs.\ state-of-the-art}
+On MAFL/AFLW, ELD showed superior consistency error across images and superior backward error, indicating more stable landmarks. ELD showed marginally worse forward error, reflecting a sacrifice of generalisation in favour of consistency. Runtime tests with varying number of genes/channels (10 landmarks) and varying number of landmarks (3 channels) demonstrated efficient convergence.
+
+\subsection{Single-modality data}
+Using 12 mouse olfactory bulb Visium samples (10 registered + 1 reference \citep{r13}) and three target genes (Nrgn, Apoe, Omp), ELD landmarks yield results at least as accurate as manual annotation in Eggplant whether histology or expression from 3 or 100 genes is used. For 14 landmarks, ELD matches or exceeds manual correlation performance. On three mouse brain coronal ISS sections \citep{r14}, ELD achieves higher k-nearest-neighbor anatomical-region prediction accuracy than STAlign \citep{r15} in both replicates.
+
+\subsection{3D modeling}
+On a mouse prostate dataset with 260 slices \citep{r16} and two annotators providing 4 corresponding landmarks per consecutive-section pair, with 20 landmarks for alignment: ELD's Target to Registration Error (TRE) is comparable to eight other registration models, but its Accumulated TRE (ATRE) is significantly better (all values normalised to the manual-landmark score of 1). ELD was compared with seven models from \citep{r16} and CODA \citep{r17}.
+
+\subsection{Multimodal data}
+On the Human Developing Heart Visium + histology dataset \citep{r13} (4 samples), ELD used 16 landmarks, with the Visium image constructed from MYH6, ELN, and MYH7. Eggplant correlation using ELD landmarks performs comparably to manual annotation. On three mouse striatum Visium + MSI samples \citep{r18}, PCA embeddings of each modality are aligned with ELD; detected landmarks are qualitatively consistent across sections and mark biologically relevant anatomical features.
+
+\begin{table}[h]
+\centering
+\caption{ELD configurations across experiments.}
+\begin{tabular}{lcc}
+\toprule
+Experiment & Number of landmarks & Notes \\
+\midrule
+Olfactory bulb Visium (single-modality) & 14 & 3 or 100 genes \\
+Prostate 3D (z-stack) & 20 & 260 slices \\
+Heart Visium + histology (multimodal) & 16 & MYH6, ELN, MYH7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+ELD addresses overfitting in small datasets by removing the generative network and retaining the landmark-detecting network. Better consistency and backward error come at a small cost in forward error (the model sacrifices a little generalisation for stability). ELD's flexibility supports single-modality registration, 3D alignment, and multimodal alignment. For z-stack alignment, ELD's anchor-point reformulation delivers a better ATRE than eight other methods on the mouse prostate dataset. For multimodal alignment, a latent-space similarity objective allows registration of histology, Visium, and MSI. We propose TPS registration here; combining ELD landmarks with more advanced registration (e.g., STAlign, CODA) could further improve results.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

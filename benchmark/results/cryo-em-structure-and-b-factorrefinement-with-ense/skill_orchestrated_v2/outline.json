@@ -1,0 +1,183 @@
+{
+  "metadata": {
+    "working_title": "Ensemble mixture-model refinement of atomic structures in cryo-EM density maps with joint B-factor estimation (TEMPy-REFF)",
+    "venue": "Nature Structural Biology",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Cryo-EM density maps are routinely interpreted by fitting atomic models, but existing density-guided refinement methods assume a single-structure representation and struggle with maps that have heterogeneous local resolution arising from conformational flexibility, multibody reconstructions, or composite maps.",
+    "gap": "No current method jointly estimates atomic positions and B-factors in a self-consistent probabilistic framework, nor provides a principled procedure for segmenting a map into its constituent chains or composing multiple focused maps without seams or double-counting.",
+    "approach": "TEMPy-REFF formulates each atom as a Gaussian component of a mixture model with a uniform background term, iterating an expectation-maximisation scheme that yields self-consistent estimates of position and B-factor, then generates a structural ensemble by perturbing atoms according to their B-factors and locally minimising with openMM under the AMBER forcefield.",
+    "key_results": "On a benchmark of 366 cryo-EM maps from EMDB spanning 1.8-7.1 Angstrom resolution, TEMPy-REFF reaches ensemble CCC close to 0.9 and yields average CCC improvements of 0.197 over deposited models (p=0.0006) and 0.150 over CERES (p=0.003). B-factors converge within 10-11 iterations and deviate by only 0.87 Angstrom-squared across 366 cases when the initialisation is varied. On RNA polymerase III (EMD-3178, PDB 5FJ8) ensemble CCC rises from 0.82 to 0.94, and AlphaFold2-initialised refinement of SARS-CoV-2 RNA polymerase (EMD-30127) recovers residues absent from the deposited PDB 6M71 model.",
+    "impact": "The mixture-model formulation unifies position refinement, B-factor estimation, ensemble generation, map segmentation, and composite-map construction within one probabilistic framework, enabling automated and reproducible model building for flexible macromolecular assemblies."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Cryo-EM reaches near-atomic resolution but interpretation requires fitting atomic models with accurate resolution estimates that vary locally",
+        "Existing density-guided refinement uses scalar-field gradients, CCC optimisation, or Bayesian expectation-maximisation, with MD, minimisation, normal modes, or Fourier methods for sampling",
+        "All existing methods rely on blurring a single model globally or locally; this fails for flexible systems and for composite maps assembled from multibody or focused reconstructions",
+        "Population-of-models approaches capture flexibility; mixture modelling offers a principled density representation when iterated to local optimum",
+        "We introduce TEMPy-REFF: expectation-maximisation with one Gaussian per atom plus uniform background, jointly estimating positions and B-factors and supporting ensemble, segmentation, and composition tasks"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Density-guided refinement: Phenix real-space refinement, MDFF, Flex-EM, gradient-based and CCC-based optimisation",
+        "Sampling strategies: molecular dynamics, minimisation, normal-mode analysis, Fourier-space methods",
+        "Ensemble and population-of-models approaches in cryo-EM and NMR; X-ray crystallography multi-conformer refinement",
+        "Gaussian mixture model representations of maps (coarse-grained) and EM-Fit style Bayesian fitting",
+        "Local quality scores: SMOCf, Q-score, EMRinger, CaBLAM, and local FSC",
+        "Composite and focused maps: current ad hoc addition or averaging procedures",
+        "Protein structure prediction: AlphaFold2 and RoseTTAFold as sources of initial models"
+      ],
+      "approx_length": "0.75-1 page"
+    },
+    {
+      "id": "method",
+      "title": "Method",
+      "subsections": [
+        {"id": "method_mm", "title": "Mixture-model formulation of the cryo-EM map", "content_bullets": ["Each atom a 3D Gaussian with atomic-number weighting, scalar B-factor as variance", "Uniform background distribution with scalar kbg parameter", "Responsibility G_i / M_S as soft-assignment"]},
+        {"id": "method_em", "title": "Expectation-maximisation updates", "content_bullets": ["Map-weighted position update as intensity-weighted centre of mass over voxels", "B-factor update as variance of weighted distribution", "Uniform background re-estimation from residual intensity", "Occupancies fixed to 1 to reduce degrees of freedom"]},
+        {"id": "method_forces", "title": "Forcefield coupling and MD/minimisation", "content_bullets": ["openMM with AMBER and GB-Neck2 implicit solvent (kappa=3)", "Fictitious map-derived force F_map = K delta(x_i), K=400", "Alternative CHARMM36 tested; AMBER gave slightly higher CCC on average"]},
+        {"id": "method_ensemble", "title": "Ensemble generation and map composition", "content_bullets": ["Perturb atoms with Gaussian noise matched to per-atom B-factor, locally minimise each conformer with l-BFGS in openMM", "Average the blurred maps from ensemble members; grow ensemble size until CCC plateaus", "Segmentation: weight each voxel by per-chain responsibility", "Composition: combine multiple maps weighted by responsibilities with average k_bg"]},
+        {"id": "method_loqfit", "title": "LoQFit local scoring and benchmark construction", "content_bullets": ["Soft-edged spherical mask centred on Calpha, diameter 5 times global resolution", "FSC 0.5 threshold with linear interpolation for smoothness", "Benchmark from CERES database, 366 maps at 1.8-7.1 Angstrom, compared against CERES and deposited models"]}
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_benchmark_bfactor", "title": "B-factor convergence and robustness", "content_bullets": [
+          "B-factor converges in 10-11 iterations, minimal changes thereafter",
+          "Across 366 cases recovered B-factors deviate by 0.87 Angstrom squared across initialisations (B=1, B=1000, U(1,1000), experimental distribution)",
+          "Case examples: FBNSV (EMD-10097) and SARS-CoV-2 RdRp (EMD-30127)"
+        ]},
+        {"id": "results_ensemble", "title": "Ensemble representation on rotavirus VP6", "content_bullets": [
+          "Rotavirus VP6 (EMD-6272) at 2.6 Angstrom: ensemble map exhibits higher CCC than any single model",
+          "SMOCf and RMSFe are anticorrelated along the chain",
+          "Mobile side chains (Arg107) yield spread density; rigid side chains (Arg217) yield sharp density"
+        ]},
+        {"id": "results_ceres", "title": "CERES benchmark comparison at 366 maps", "content_bullets": [
+          "Ensemble CCC approaches 0.9 and remains constant across resolution bands while deposited and CERES CCCs decline",
+          "Paired t-test: +0.197 vs EMDB (p=0.0006); +0.150 vs CERES (p=0.003)",
+          "MolProbity and CaBLAM remain in line with deposited models with wider variability than CERES",
+          "Glutamate dehydrogenase (PDB 5K12, EMD-8194, 1.8 Angstrom) illustrates per-residue SMOCf gains; ensemble captures alternative H195 conformers"
+        ]},
+        {"id": "results_segcomp", "title": "Segmentation and composition", "content_bullets": [
+          "Herpes Simplex Virus 1 glycoprotein B complex (EMD-21247) segmented into 9 chain submaps without seams",
+          "Composition of EMD-12966, EMD-12967, EMD-12968 into a composite; FSC against deposited composite EMD-12969 improves",
+          "Responsibility decay yields smooth transitions avoiding double-counted or undercounted boundaries"
+        ]},
+        {"id": "results_rnapolIII", "title": "Case study: yeast RNA polymerase III (PDB 5FJ8, EMD-3178)", "content_bullets": [
+          "Deposited model fit by ChimeraX fitmap: CCC 0.82; TEMPy-REFF single model CCC 0.83; ensemble CCC 0.94",
+          "Deposited MolProbity 2.8, clash score 14, Ramachandran outliers 1.1 percent, sidechain outliers 2.1 percent",
+          "Average LoQFit chain A: 5.4 Angstrom; chain B: 5.6 Angstrom; chain M: 7.4; chain N: 7.0; chain O: 7.3",
+          "Post-refinement averages: chain M 6.0, chain N 5.7, chain O 5.9 Angstrom; global LoQFit improves from 10.1 to 9.0"
+        ]},
+        {"id": "results_nucleosome", "title": "Case study: nucleosome-CHD4 complex", "content_bullets": [
+          "EMD-10058, PDB 6RYR, resolution range 3-10 Angstrom",
+          "Refinement restores DNA base-pair geometry and hydrogen bonding in chains I/J",
+          "LoQFit tracks ResMap local resolution"
+        ]},
+        {"id": "results_alphafold", "title": "Case study: AlphaFold2 model into SARS-CoV-2 RdRp map", "content_bullets": [
+          "SARS-CoV-2 RdRp at 2.9 Angstrom (EMD-30127, deposited PDB 6M71)",
+          "AlphaFold2 prediction from P0DTD1 residues 4393-5324 with templates older than deposition date",
+          "Refinement places residues absent from deposited model with high SMOCf; regions of low plDDT correspond to poor SMOCf and low density"
+        ]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Para 1: joint position/B-factor EM yields a unified probabilistic view of local variability",
+        "Para 2: ensemble maps beat single simulated maps for heterogeneous-resolution regions; H195 double conformation is a decisive example",
+        "Para 3: ensemble CCC plateaus at moderate ensemble sizes; connection to NMR and X-ray multi-conformer traditions",
+        "Para 4: reduced MolProbity/CaBLAM spread relative to Phenix reflects weaker structural restraints; trade-off between outlier suppression and fidelity to data",
+        "Para 5: segmentation and composition are naturally resolved by responsibility weighting, avoiding seams; limitations are error propagation from mis-modelled regions",
+        "Para 6: AlphaFold2-initialised refinement demonstrates end-to-end automation, opening reproducible, restartable model-building pipelines"
+      ],
+      "approx_length": "1-1.5 pages"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Benchmark summary: CCC gains versus deposited and CERES models on the 366-map CERES benchmark",
+      "columns": ["Comparison", "Mean Delta CCC", "p-value (paired t-test)", "Cases"],
+      "data_source": "experimental_log Results/Benchmarking structure refinement",
+      "caption_sketch": "Paired t-test improvements of TEMPy-REFF ensemble CCC versus deposited PDB models and CERES re-refined models on the 366-case CERES+ benchmark."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Case-study CCC and LoQFit summary for RNA polymerase III elongation complex (PDB 5FJ8, EMD-3178, 3.9 Angstrom)",
+      "columns": ["Quantity", "Deposited", "Prepared (H added)", "TEMPy-REFF single", "TEMPy-REFF ensemble"],
+      "data_source": "experimental_log Case study I",
+      "caption_sketch": "Comparison of model-map fit for yeast RNA polymerase III across deposited, prepared, single-model refined, and ensemble representations."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Per-chain LoQFit averages (Angstrom) in the RNA polymerase III case study before and after TEMPy-REFF refinement",
+      "columns": ["Chain", "LoQFit before", "LoQFit after"],
+      "data_source": "experimental_log Case study I",
+      "caption_sketch": "Per-chain LoQFit averages showing the largest improvements on solvent-exposed low-resolution chains M, N, and O."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig_ccc_bands", "type": "bar", "data_source": "experimental_log Fig. 3a narrative"},
+    {"figure_id": "fig_pipeline", "type": "schematic", "data_source": "experimental_log Fig. 1"},
+    {"figure_id": "fig_loqfit_chains", "type": "bar", "data_source": "experimental_log Case study I LoQFit values"},
+    {"figure_id": "fig_tempy_reff_overview", "type": "schematic", "data_source": "experimental_log Introduction/Methods"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "cryo-EM atomic model refinement density-guided",
+      "cryo-electron microscopy model-map fit quality",
+      "flexible fitting molecular dynamics cryo-EM",
+      "cryo-EM composite map multibody refinement",
+      "ensemble refinement crystallography NMR multi-conformer"
+    ],
+    "micro_queries": [
+      "Phenix real-space refinement cryo-EM",
+      "MDFF molecular dynamics flexible fitting",
+      "Flex-EM normal mode cryo-EM",
+      "Gaussian mixture model cryo-EM density",
+      "AlphaFold2 cryo-EM model building",
+      "Q-score EMRinger validation cryo-EM",
+      "SMOC TEMPy local score",
+      "ResMap local resolution cryo-EM",
+      "CERES database cryo-EM re-refinement",
+      "Namba isolde Coot interactive model building"
+    ],
+    "must_cite": [
+      "TEMPy package Farabella Topf 2015",
+      "MDFF Trabuco Schulten 2008",
+      "Flex-EM Topf Lasker 2008",
+      "Phenix real-space refinement Afonine 2018",
+      "AlphaFold2 Jumper 2021",
+      "RoseTTAFold Baek 2021",
+      "ResMap Kucukelbir 2014",
+      "SMOC Joseph Lau 2017",
+      "CERES cryo-EM Liebschner 2019",
+      "openMM Eastman 2017",
+      "CHARMM36 Huang MacKerell 2013",
+      "AMBER Case 2005 2018",
+      "Q-score Pintilie 2020",
+      "EMRinger Barad 2015",
+      "CaBLAM Williams 2018",
+      "MolProbity Williams 2018",
+      "Multibody RELION Nakane 2018",
+      "ChimeraX Goddard Pettersen 2018",
+      "Coot Emsley 2010",
+      "FSC gold standard Rosenthal Henderson 2003",
+      "GB-Neck2 implicit solvent Nguyen 2013"
+    ],
+    "citation_target": 25
+  }
+}

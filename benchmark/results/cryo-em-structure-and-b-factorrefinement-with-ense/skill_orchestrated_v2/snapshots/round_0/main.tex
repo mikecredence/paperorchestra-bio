@@ -1,0 +1,219 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{authblk}
+
+\title{Cryo-EM structure and B-factor refinement with ensemble representation}
+\author{Anonymised for submission to \emph{Nature Structural \& Molecular Biology}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Cryo-electron microscopy (cryo-EM) produces three-dimensional density maps whose
+interpretation relies on fitting atomic models into the observed density and
+refining them against it, but standard density-guided refinement assumes a
+single-structure representation and fails to capture the local resolution
+heterogeneity of flexible assemblies, multibody reconstructions, and composite
+maps. We introduce TEMPy-REFF (REsponsibility-based Flexible-Fitting), a
+refinement method in which each atom is modelled as a Gaussian component in a
+mixture model with a uniform background term, and an expectation-maximisation
+update jointly re-estimates atomic positions, per-atom B-factors, and the
+background level in a self-consistent way. The converged model supports the
+generation of structural ensembles whose averaged blurred map describes the
+experimental density better than any single conformer, and the same
+responsibility weights allow principled map segmentation into chain-specific
+submaps and principled composition of multiple focused maps without seams or
+double-counting. Across a benchmark of 366 cryo-EM maps from EMDB at
+resolutions between 1.8 and 7.1~\AA, the ensemble representation attains
+cross-correlation coefficients close to 0.9 across all resolution bands,
+delivering an average CCC improvement of 0.197 over deposited models
+(paired $t$-test $p=0.0006$) and 0.150 over CERES-re-refined models
+($p=0.003$), with B-factors that converge within 10--11 iterations and differ
+by only 0.87~\AA$^{2}$ across initialisations. On yeast RNA polymerase III
+(PDB 5FJ8, EMD-3178) the ensemble CCC rises from 0.82 to 0.94; on the
+nucleosome--CHD4 complex (EMD-10058, PDB 6RYR) DNA base-pair geometry and
+hydrogen bonding are restored; and refinement of an AlphaFold2-initialised
+model of SARS-CoV-2 RNA polymerase (EMD-30127) recovers residues absent from
+the deposited PDB entry. The mixture-model formulation unifies position
+refinement, B-factor estimation, ensemble generation, segmentation, and
+composition inside a single probabilistic framework and enables an automated,
+reproducible model-building pipeline compatible with deep-learning-based
+initial models.
+\end{abstract}
+
+\section{Introduction}
+Single-particle cryo-electron microscopy (cryo-EM) now routinely produces three-dimensional density maps of macromolecular assemblies at near-atomic resolution, but the biological interpretation of those maps hinges on fitting atomic models into the observed density and refining them against it. The difficulty of that step has grown rather than diminished with improved reconstructions: larger complexes are imaged in multiple conformations, local resolution varies across a single map, and composite maps are increasingly deposited in which different regions were reconstructed with different particle subsets and orientations. In this regime, a single rigid or locally blurred model is a blunt tool for probing the map, because it must simultaneously describe both tightly ordered cores and flexible peripheries.
+
+A diverse set of density-guided refinement procedures has emerged to address this. Several treat the map as a scalar field from which a gradient provides a driving force towards higher density, exemplified by the flexible fitting of atomic structures with molecular dynamics pioneered in MDFF~\cite{trabuco2008} and by the Flex-EM framework built on restrained refinement and comparative modelling~\cite{topf2008}. Others optimise the correlation coefficient between map and model directly, as in the real-space refinement module of \textsc{Phenix}~\cite{afonine2018,liebschner2019}, or adopt Bayesian formulations that weigh the experimental map against prior stereochemical knowledge~\cite{bonomi2018}. Sampling strategies include molecular dynamics with explicit or implicit solvent, gradient minimisation, and normal-mode analysis with elastic-network models~\cite{tama2004}. Interactive model-building tools such as \textsc{Coot}~\cite{emsley2010} and \textsc{ISOLDE}~\cite{croll2018} remain central at high resolution, and visualisation packages such as \textsc{UCSF ChimeraX}~\cite{goddard2018,pettersen2021} couple fitting utilities to structure exploration. All of these methods, however, inherit a common assumption: that the relationship between map and model is adequately captured by a single structure blurred by a global or locally adaptive B-factor.
+
+That assumption breaks wherever the underlying ensemble matters. Multibody refinement in \textsc{RELION}~\cite{nakane2018}, focused refinement, and composite-map deposition all produce maps whose local resolution reflects the motion of a part of the complex rather than the quality of the overall reconstruction. Side chains that visit multiple rotameric states, loops that refold between conformers, and nucleic-acid strands whose phosphate backbone samples a band of positions are systematically misrepresented by a single-structure fit. Ensemble refinement in X-ray crystallography~\cite{levin2007,burnley2012} showed decades ago that multi-conformer descriptions capture features single models cannot, and similar intuition has long driven NMR structural analysis. Cryo-EM is now at the resolution range where those lessons apply directly.
+
+Here we propose TEMPy-REFF (REsponsibility-based Flexible-Fitting), a refinement scheme that treats the map as a mixture of one Gaussian per atom together with a uniform background component, and iterates an expectation-maximisation update that yields self-consistent estimates of atomic positions, per-atom B-factors, and a scalar background level. The formulation is Bayesian at each step but computationally light: position updates are intensity-weighted centres of mass over voxels assigned to each atom by its responsibility, B-factor updates are variances of the same weighted distributions, and the background parameter is the mean residual intensity. We couple the density-side updates to a forcefield (AMBER with the GB-Neck2 implicit solvent model~\cite{nguyen2013}, $\kappa=3$) evaluated in \textsc{OpenMM}~\cite{eastman2017}, with CHARMM36~\cite{huang2013} available as an alternative. Because the B-factor is estimated directly from the map rather than from the model, we can perturb atoms according to their local spread, locally minimise each perturbed structure, and generate an ensemble whose averaged blurred map is a better descriptor of the experimental density than any single member (Fig.~\ref{fig:pipeline}).
+
+The same responsibility calculation supports two tasks that have lacked a principled cryo-EM solution. Per-chain responsibilities partition each voxel's intensity among chains, giving a segmentation in which no voxel is assigned arbitrarily to one chain and no seams appear at chain boundaries. For composite-map construction, we apply the inverse: multiple focused maps are combined with responsibility-weighted intensities, yielding a smooth transition at boundaries without the seams of simple addition or the dilution of averaging. We benchmark the method on 366 cryo-EM maps from EMDB at resolutions between 1.8 and 7.1~\AA, using the CERES~\cite{liebschner2019} re-refined dataset as a reference; we show case studies on rotavirus VP6, glutamate dehydrogenase, yeast RNA polymerase~III, a nucleosome--CHD4 complex, and SARS-CoV-2 RNA polymerase initialised from an AlphaFold2 prediction~\cite{jumper2021,baek2021}. Quality of fit is assessed against SMOCf~\cite{farabella2015,joseph2017}, Q-score~\cite{pintilie2020}, EMRinger~\cite{barad2015}, MolProbity~\cite{williams2018,chen2010}, and CaBLAM~\cite{williams2018}, and against the local resolution estimated by ResMap~\cite{kucukelbir2014}, with gold-standard FSC conventions~\cite{rosenthal2003}. Across the benchmark the ensemble representation achieves cross-correlation values close to 0.9 and remains near-constant across resolution bands, delivering an average improvement of 0.197 over deposited models (paired $t$-test $p=0.0006$) and 0.150 over CERES ($p=0.003$).
+
+\section{Related Work}
+Our method sits at the intersection of three lines of work: density-guided refinement, ensemble representation of macromolecular structure, and Gaussian mixture modelling of cryo-EM maps. In density-guided refinement, the dominant paradigm has been to treat the map as a scoring target and to sample the atomic coordinates against it. MDFF~\cite{trabuco2008} and its derivatives attach a fictitious force proportional to the local density gradient; Flex-EM~\cite{topf2008,joseph2017} blends restrained refinement with comparative modelling; \textsc{Phenix} real-space refinement~\cite{afonine2018,liebschner2019} optimises a CCC-derived target with geometric restraints; \textsc{Coot}~\cite{emsley2010} and \textsc{ISOLDE}~\cite{croll2018} provide interactive regimes with immediate chemical feedback; and Bayesian methods~\cite{bonomi2018} combine the map with prior information in a single posterior. Ensemble refinement for macromolecular data has a long history outside cryo-EM: multi-conformer refinement in X-ray crystallography~\cite{levin2007,burnley2012} and population-of-models approaches in NMR have shown that a single structure cannot capture the variability hidden in low-resolution or dynamic regions, and analogous observations are now emerging in cryo-EM. The crystallographic ensemble-refinement experience~\cite{burnley2012} also informs our plateau-based stopping criterion for ensemble size. Gaussian mixture modelling has been used to represent maps at coarse resolution~\cite{kawabata2008} and to carry out fitting at the level of a few hundred Gaussians per complex; our contribution is to push this representation to one Gaussian per atom and use it to estimate per-atom B-factors self-consistently. The analysis of local map quality relies on per-residue scores such as SMOCf~\cite{farabella2015,joseph2017}, Q-scores~\cite{pintilie2020}, EMRinger~\cite{barad2015}, and local resolution from ResMap~\cite{kucukelbir2014}; model-side validation uses MolProbity~\cite{williams2018,chen2010} and CaBLAM~\cite{williams2018}. Map-processing support comes from RELION multibody refinement~\cite{nakane2018,scheres2012} and the CCP-EM software suite~\cite{burnley2017,joseph2020}. Finally, recent advances in deep-learning-based structure prediction~\cite{jumper2021,baek2021} have changed what an ``initial model'' means: we show below that TEMPy-REFF integrates cleanly with AlphaFold2 predictions and can place confidently-predicted residues that were absent from the deposited PDB entry.
+
+\section{Method}
+
+\subsection{Mixture-model representation of the map}
+Given a reference experimental 3D map $M_{E}$ with estimated resolution $R$, we represent the model as $N$ atoms with coordinates $\{x_{i}\}$, B-factors $\{B_{i}\}$, and occupancies fixed at unity. A simulated map is assembled by summing a Gaussian intensity per atom,
+\[ G_{i}(\mathbf{r}) = \frac{N_{i}}{(2\pi\sigma_{i}^{2})^{3/2}} \exp\left(-\frac{\|\mathbf{r}-x_{i}\|^{2}}{2\sigma_{i}^{2}}\right),\qquad \sigma_{i}^{2} \propto B_{i}, \]
+with atomic-number-weighted intensity $N_{i}$. A uniform background distribution with a single scalar parameter $k_{\mathrm{bg}}$ absorbs reconstruction errors and noise, and the full simulated map is
+\[ M_{S}(\mathbf{r}) = \sum_{i=1}^{N} G_{i}(\mathbf{r}) + k_{\mathrm{bg}}. \]
+We deliberately formulate the Gaussian component per atom so that the responsibility $G_{i}/M_{S}$ plays a classical mixture-modelling role: for any voxel whose density is close to multiple atoms, the intensity is softly shared among them, and the refinement gains convergence robustness because an atom that currently sits on a spurious high-density peak can slide across a responsibility-weighted landscape towards a better local match.
+
+\subsection{Expectation-maximisation updates}
+The E-step computes per-voxel responsibilities; the M-step updates atomic positions as intensity-weighted centres of mass over voxels assigned to each atom,
+\[ x_{i}^{\mathrm{new}} = \frac{\sum_{\mathrm{vox}} X_{\mathrm{vox}}\, I_{\mathrm{vox}}\, G_{i}(\mathbf{r})/M_{S}}{\sum_{\mathrm{vox}} I_{\mathrm{vox}}\, G_{i}(\mathbf{r})/M_{S}}, \]
+and B-factors as variances of the same weighted distributions (with a rigorous link $B \propto \sigma^{2}$). The background parameter is re-estimated by averaging residual intensities of $M_{E}$ that are not explained by any atomic component. Occupancies could be estimated on the same footing, but as essentially all atoms in a protein chain occur at similar frequency we fix them to 1 to reduce the number of free parameters. The update is iterated until convergence, assessed both by the map-to-model cross-correlation and by the change in B-factors between successive iterations.
+
+\subsection{Forcefield coupling and minimisation}
+To maintain stereochemistry, we couple the density-side updates to a forcefield evaluated by \textsc{OpenMM}~\cite{eastman2017}. Our default choice is AMBER together with the GB-Neck2 implicit solvent model~\cite{nguyen2013} with $\kappa=3$; CHARMM36~\cite{huang2013} is also supported and was benchmarked against AMBER on the same data. A fictitious map-derived force $F_{\mathrm{map}} = K\,\delta(x_{i})$ with $K=400$ is injected during molecular-dynamics intervals, where $\delta(x_{i})$ is the displacement suggested by the responsibility-weighted update, and a limited-memory BFGS (l-BFGS) local minimiser~\cite{eastman2017} is used to recover well-formed stereochemistry after each density-side step. The joint update therefore balances fidelity to the map with chemically reasonable geometry without requiring global optimisation of a combined target.
+
+\subsection{Ensemble generation, segmentation, and composition}
+Once refinement converges, we generate a structural ensemble by perturbing each atom with Gaussian noise whose variance matches its per-atom B-factor, locally minimising each perturbed structure with l-BFGS in the same forcefield, and then simulating blurred maps that we average voxel-by-voxel into an ensemble map. The number of ensemble members is grown until the CCC against the experimental map plateaus, following the logic established in crystallographic ensemble refinement~\cite{levin2007,burnley2012}. Per-chain responsibilities $R_{j}(\mathbf{r}) = \sum_{i\in j} G_{i}(\mathbf{r})/M_{S}$ allow us to segment the map: each voxel is weighted by its chain responsibilities and distributed among chain-specific submaps, so that uncertain boundary voxels are shared smoothly and no seam is introduced. The same machinery composes multiple focused or multibody-refined maps $\{M_{i}\}$ into a composite map by weighting each map by its responsibility and using the averaged background level $\langle k_{\mathrm{bg}}\rangle$, avoiding the seams of simple addition and the dilution of averaging.
+
+\subsection{Local scoring and benchmarking}
+We implemented a new LoQFit score as part of the TEMPy2 Python package~\cite{farabella2015}: a local FSC computed inside a soft-edged spherical mask centred on each C$\alpha$ atom with a diameter of $5R$, where $R$ is the global map resolution, with an FSC-0.5 threshold and linear interpolation between frequency bins for smoothness. We complement LoQFit with SMOCf~\cite{farabella2015,joseph2017} and Q-scores~\cite{pintilie2020}, and use MolProbity~\cite{williams2018,chen2010} and CaBLAM~\cite{williams2018} for model-side validation. Our benchmark extends the CERES~\cite{liebschner2019} database with additional cases (CERES+, 388 complexes) and spans resolutions of 1.8--7.1~\AA; 366 cases are used for the primary CCC/SMOCf comparisons, with paired-sample $t$-tests between TEMPy-REFF ensemble CCC and the deposited or CERES values. Position-optimised correlations are computed using the command-line \textsc{Chimera} interface to \texttt{fitmap}~\cite{goddard2018,pettersen2021}. Forcefield robustness was assessed by repeating representative refinements under AMBER and CHARMM36; both gave effectively identical quality of fit, with AMBER marginally higher on average, motivating its use as the default.
+
+\section{Results}
+
+\subsection{B-factor convergence is fast and essentially initialisation-independent}
+Although the B-factor update is intended to run alongside position refinement, it is illuminating to isolate it by optimising B-factors while keeping coordinates fixed. Across the 388-complex CERES+ benchmark, the B-factor converges within roughly 10--11 iterations and changes only marginally afterwards, consistent with the physical interpretation of B-factors as a statistical property of the local density spread that should be stable once the atomic positions are fixed. Representative cases such as Faba bean necrotic stunt virus (EMD-10097) and SARS-CoV-2 RNA-dependent RNA polymerase (EMD-30127) reproduce this pattern. Over 366 cases, the final B-factors deviate by only $\pm 0.87$~\AA$^{2}$ across a wide range of initialisations (all-unit, all-1000, uniform $U(1,1000)$, and experimental-distribution random values), confirming that the mixture-model update is effectively initialisation-independent. Additional B-factor changes accompanying coordinate updates reflect genuine coupling between the two parameters, rather than numerical drift.
+
+\subsection{Ensemble map outperforms any single conformer: rotavirus VP6}
+On the 2.6~\AA\ map of rotavirus VP6 (EMD-6272), the best-fitted single model is only one solution among many in the converged ensemble. The ensemble-averaged blurred map, however, exhibits a higher CCC to the experimental map than any single member of the ensemble, and visually resembles the experimental density more closely. The anticorrelation between SMOCf and per-residue RMSFe along the chain makes this quantitative: wherever the ensemble is spread out, the local density is itself more diffuse, and wherever the ensemble is tight, the density is sharper. Arg107 illustrates the spread-density extreme (a mobile side chain whose density is visible only at higher contour), whereas Arg217 illustrates the sharp-density extreme (a constrained side chain with well-defined density). This behaviour is not achievable by simply simulating a map from a single structure plus a local B-factor, because the shape of the resulting density under a single-Gaussian blur is inherently isotropic and cannot capture multi-rotameric or branched distributions.
+
+\subsection{CERES benchmark: ensemble CCC close to 0.9 across resolution bands}
+On the CERES benchmark of 366 maps, the TEMPy-REFF ensemble produces CCC values close to 0.9 even when the initial model already fits reasonably well, and critically, those values remain near-constant across resolution bands of 1~\AA\ width while the CCC of deposited and CERES-re-refined models declines at lower resolutions (Fig.~\ref{fig:ccc_delta}). Paired-sample $t$-tests quantify the improvement: $\Delta\mathrm{CCC}=0.197$ against deposited EMDB models ($p=0.0006$) and $\Delta\mathrm{CCC}=0.150$ against CERES ($p=0.003$). MolProbity and CaBLAM scores for TEMPy-REFF remain in line with deposited models, with a broader spread than CERES; we read this as a signal that the refinement follows the data more faithfully rather than collapsing to a narrow distribution of restraint-compliant structures. The benchmark summary is reproduced in Table~\ref{tab:ccc}. The example of glutamate dehydrogenase (PDB 5K12, EMD-8194, 1.8~\AA) makes the per-residue improvements concrete: SMOCf increases across most of the sequence, and insets around H195, Y76, and L78 reveal the structural reason, a histidine in two alternative conformations that requires more than one model, and side-chain ambiguity at two further residues that the ensemble resolves.
+
+\begin{table}[t]
+  \centering
+  \caption{Benchmark summary: CCC gains of the TEMPy-REFF ensemble versus deposited and CERES models on 366 EMDB maps spanning 1.8--7.1~\AA\ resolution.}
+  \label{tab:ccc}
+  \begin{tabular}{lccc}
+    \toprule
+    Comparison & Mean $\Delta$CCC & $p$-value & Cases \\
+    \midrule
+    TEMPy-REFF ensemble vs deposited EMDB model & $0.197$ & $0.0006$ & $366$ \\
+    TEMPy-REFF ensemble vs CERES re-refined model & $0.150$ & $0.003$ & $366$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Segmentation and composition without seams}
+The responsibility formalism gives a principled answer to two ad hoc operations. For segmentation, we demonstrate on the 2.8~\AA\ map of the glycoprotein B--neutralising antibody complex from Herpes Simplex Virus 1 (EMD-21247): the chain-wise responsibility weights split the map into nine submaps that individually correspond to single chains, with uncertain boundary voxels shared rather than arbitrarily assigned. For composition, we combine three focused maps (EMD-12966, EMD-12967, EMD-12968) into a composite and compare against the deposited composite map (EMD-12969): the map-model FSC curve is uniformly closer to the deposited single-composite result, and visual inspection confirms smooth transitions between the contributing maps. Because the responsibility decays smoothly rather than thresholding at a hard boundary, neither seams (from simple addition) nor dilution (from averaging) appear. The main limitation of both operations is that they rely on a well-fitted model; systematic errors in modelling translate into systematic errors in segmentation and composition, which can be diagnosed by scoring the model against the map before applying either.
+
+\subsection{Case study: yeast RNA polymerase III elongation complex}
+Yeast RNA polymerase III (PDB 5FJ8, EMD-3178) at 3.9~\AA\ is a deliberately demanding test: the map has strong resolution heterogeneity, and the deposited model was built with substantial manual effort. A position-optimised fit of the deposited model using the \textsc{ChimeraX} \texttt{fitmap} utility gives CCC~$=0.82$; the deposited validation statistics are reasonable, with a clash score of 14, Ramachandran outliers at 1.1\%, and sidechain outliers at 2.1\%, and an overall MolProbity score of 2.8. Adding hydrogens (required by our pipeline) does not change the correlation materially (CCC~$=0.82$). TEMPy-REFF single-model refinement improves the fit modestly (CCC~$=0.83$), but the ensemble representation lifts CCC to 0.94 (Fig.~\ref{fig:rnapol_iii} and Table~\ref{tab:rnapoliii}), showing that much of the remaining gap to the experimental map is genuinely ensemble-shaped rather than single-model-correctable.
+
+\begin{table}[t]
+  \centering
+  \caption{RNA polymerase III (PDB 5FJ8, EMD-3178, 3.9~\AA) model-map cross-correlation across the pipeline stages. Validation statistics for the deposited model: clash score 14, Ramachandran outliers 1.1\%, sidechain outliers 2.1\%, MolProbity score 2.8.}
+  \label{tab:rnapoliii}
+  \begin{tabular}{lc}
+    \toprule
+    Model state & CCC \\
+    \midrule
+    Deposited & $0.82$ \\
+    Prepared (hydrogens added) & $0.82$ \\
+    TEMPy-REFF single-model refinement & $0.83$ \\
+    TEMPy-REFF ensemble average map & $0.94$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Per-chain average LoQFit (\AA) in the RNA polymerase III case study before and after TEMPy-REFF refinement. Global average LoQFit improves from 10.1 to 9.0~\AA. Post-refinement per-chain averages are not reported for chains A and B in the original analysis.}
+  \label{tab:loqfit}
+  \begin{tabular}{lcc}
+    \toprule
+    Chain & Deposited LoQFit (\AA) & Refined LoQFit (\AA) \\
+    \midrule
+    A & $5.4$ & n/r \\
+    B & $5.6$ & n/r \\
+    M & $7.4$ & $6.0$ \\
+    N & $7.0$ & $5.7$ \\
+    O & $7.3$ & $5.9$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The LoQFit analysis along the chain (Fig.~\ref{fig:loqfit_chains} and Table~\ref{tab:loqfit}) identifies the structural substrate for that gain. In the well-resolved central regions the deposited chain-A and chain-B averages are 5.4 and 5.6~\AA, respectively, but even there LoQFit peaks flag poorer fit around residues 192--210 and 745--759 of chain A, regions that also show elevated B-factors. The larger signal, however, comes from solvent-exposed chains at lower local resolution: the deposited chains M, N, and O average 7.4, 7.0, and 7.3~\AA\ respectively, and TEMPy-REFF lowers them to 6.0, 5.7, and 5.9~\AA, a concentrated improvement that closes much of the gap to the well-resolved core. The global LoQFit average improves from 10.1~\AA\ in the deposited model to 9.0~\AA\ in the ensemble-refined model.
+
+\subsection{Case study: nucleosome--CHD4 complex}
+The nucleosome-CHD4 complex (EMD-10058, PDB 6RYR) has a local resolution that varies between roughly 3 and 10~\AA; the strained DNA wound around the histone core is a notoriously challenging target for model building. Refinement with TEMPy-REFF respects the local details of the map: the ensemble-averaged map captures the high mobility of the more peripheral regions, where RMSFe is largest, while the core remains sharp. The SMOCf score improves most conspicuously on the DNA chains (I and J); visual inspection reveals that the deposited model displays local deformations that pull DNA bases out of the density and prevent hydrogen bonding, and that the refined model restores these hydrogen bonds. LoQFit and ResMap-derived local resolution profiles track each other closely along the chain, confirming that LoQFit is a reliable proxy for local resolution when a well-fitted model is available.
+
+\subsection{Case study: AlphaFold2 initialisation for SARS-CoV-2 RNA polymerase}
+Starting refinement from an AlphaFold2 prediction~\cite{jumper2021} is a natural stress test of end-to-end automation. We predicted the SARS-CoV-2 polymerase (UniProt P0DTD1, residues 4393--5324) using only templates deposited at least a year before the deposited model (PDB 6M71), then refined the prediction into the 2.9~\AA\ cryo-EM map EMD-30127. The resulting structure is highly similar to the deposited model in the well-resolved core, which is itself the product of \textsc{Chimera}, \textsc{Coot}, and \textsc{Phenix} interactive refinement. More striking is what the refinement recovers beyond the deposited model: using SMOCf, several residues present in the AlphaFold2 prediction but absent from the deposited PDB entry fit the map with scores well above random, indicating that the automated pipeline can place additional residues that were missed by the manual procedure, provided that the AlphaFold2 prediction is locally confident. Correspondingly, regions of low plDDT in the prediction consistently coincide with low SMOCf and absent density, showing that the two confidence measures are complementary.
+
+\section{Discussion}
+
+A probabilistic refinement in which every atom is a Gaussian and the map is a mixture unifies several operations that have historically been handled by disconnected tools. Position refinement, B-factor estimation, ensemble generation, segmentation, and composite-map construction all fall out of the same responsibility calculation, and all respect the same soft-assignment logic that lets uncertain assignments remain uncertain. The benefit at the position-refinement level is modest but real, a few percent in CCC on the CERES benchmark in single-model mode; the benefit at the ensemble level is qualitatively different, a step change from CCC~$\approx 0.82$ to $0.94$ on RNA polymerase III, and an approximately constant near-0.9 CCC across resolution bands where both deposited models and CERES decline. That flat dependence on resolution is the clearest operational consequence of moving from a single model to an ensemble: the map-fit quality is decoupled from how well-resolved any single conformer happens to be.
+
+The ensemble map is not a simulated map with better B-factors. A double-occupancy histidine site (H195 in glutamate dehydrogenase) cannot be represented by any single Gaussian-blurred structure, but is represented naturally by a small ensemble whose members visit each conformation and whose averaged blurred map reproduces the two density peaks. Similarly, whenever SMOCf and RMSFe anticorrelate along a chain, the ensemble is capturing the multi-modal structure of the map rather than fitting through it. This is closely related to the lesson of crystallographic ensemble refinement~\cite{burnley2012,levin2007} and of NMR population-of-models analysis: single-structure targets are sufficient only when the underlying distribution is sharply peaked. When it is not, as is common in flexible complexes and in composite maps, the ensemble view is both more accurate and more informative.
+
+The plateau of CCC as ensemble size grows, observed here and in crystallographic work, is a convenient stopping criterion and a reminder that the ensemble we sample is a surrogate for a continuous distribution. There are physical reasons to want more: the true distribution is presumably smooth in conformational space, and even a hundred discrete perturbation-plus-minimisation samples cannot fully characterise it. A natural extension is to couple TEMPy-REFF to explicit enhanced-sampling molecular dynamics, where the map-derived force is treated as a restraint during long trajectories; the responsibility formulation is compatible with such a coupling, because the B-factor is a time-averaged variance rather than an instantaneous attribute. This also offers a principled route to integrating cryo-EM data with simulation ensembles more broadly.
+
+MolProbity and CaBLAM scores of TEMPy-REFF models spread more widely than Phenix re-refined models, but retain the bulk distribution of the deposited models. We take this as a feature rather than a bug. CERES-refined models have a narrow MolProbity distribution because the strong structural restraints pull outliers towards the bulk, which is desirable when the outliers are errors; but the same restraints obscure outliers that are present in the data. Our refinement follows the map more faithfully and allows rare but genuine deviations to persist, which is appropriate when the refined model is a scientific object rather than a deposition target. A more aggressive variant, with tighter CaBLAM priors, is straightforward to implement for users who want a narrower distribution at the cost of some fit quality.
+
+The responsibility-based segmentation and composition procedures close a practical gap: since 2018, composite-map depositions have been increasing as multibody and focused refinement~\cite{nakane2018,scheres2012} have become standard, but there has been no systematic procedure for combining the constituent maps without seams or dilution. Our procedure is self-consistent (the maps are combined exactly in the form they would be reconstructed from a joint mixture model) and smooth (intensity transitions gradually between contributing maps). The main limitation is that the procedure inherits modelling errors: mis-placed atoms will pull responsibility from one region to another and distort the segmented or composite map, so that users should always check map-model quality before applying segmentation or composition. In practice we recommend running a TEMPy-REFF refinement first, inspecting LoQFit, and only then performing the segmentation or composition step.
+
+Finally, the compatibility with AlphaFold2 initial models~\cite{jumper2021,baek2021} is both a practical and a methodological point. Practically, it closes an automated loop from sequence to refined cryo-EM model with no mandatory human intervention, and our RdRp case shows that the loop can even improve on the residue coverage of a manually built deposition. Methodologically, the plDDT confidence of a predicted model and the SMOCf/LoQFit of the refined model are complementary: high plDDT does not guarantee density support, and low plDDT does not necessarily preclude it, so the refinement test is the one that tells us whether a predicted residue is sustained by the map. Further work will be needed to characterise the limits of this combined pipeline for inherently flexible complexes, to explore its integration with enhanced-sampling MD, and to develop scoring metrics that are specifically designed for ensembles rather than single models; the unified mixture-model formulation presented here is a natural substrate for those extensions.
+
+\section{Methods}
+We summarise here the computational procedure used above. The full mathematical derivation, benchmark composition, and implementation details are deposited alongside the TEMPy2 release~\cite{farabella2015} and in the CCP-EM software suite~\cite{burnley2017}.
+
+\paragraph{Map simulation and EM updates.} Atoms are modelled as Gaussian components with atomic-number-weighted intensity and scalar B-factors. A uniform background term absorbs reconstruction noise. An expectation-maximisation update iterates the responsibility-weighted position, B-factor, and background updates until both the map-to-model CCC and the B-factor change between iterations stabilise, typically within 10--11 iterations for B-factor alone and a few more when coordinates are co-refined. A fictitious map-derived force $F_{\mathrm{map}}=K\delta(x_{i})$ with $K=400$ drives molecular dynamics intervals in \textsc{OpenMM}~\cite{eastman2017}, using AMBER plus GB-Neck2 implicit solvent with $\kappa=3$~\cite{nguyen2013}.
+
+\paragraph{Ensemble generation.} After convergence, each atom is perturbed with Gaussian noise whose variance is set by its B-factor, each perturbed structure is minimised in \textsc{OpenMM} by l-BFGS, blurred maps are simulated, and voxel-wise averaged. Ensemble size is grown until the CCC plateau is reached. The ensemble map is the final output used for CCC comparisons.
+
+\paragraph{Local scoring.} LoQFit is a local FSC calculated inside a soft-edged spherical mask centred on each C$\alpha$, with diameter $5R$ and an FSC-0.5 threshold. SMOCf follows the Manders overlap coefficient on a local window~\cite{farabella2015,joseph2017}. Q-scores are computed as described in~\cite{pintilie2020}.
+
+\paragraph{Benchmark.} The primary benchmark is CERES+~\cite{liebschner2019} with additional cases (388 complexes in total, 366 used for the CCC comparisons after filtering for map quality). CCC is computed via the command-line \textsc{ChimeraX}/\textsc{Chimera} \texttt{fitmap} utility~\cite{goddard2018,pettersen2021}; MolProbity and CaBLAM come from \texttt{phenix.molprobity} and \texttt{phenix.cablam}~\cite{williams2018,chen2010}. Statistical comparisons use paired-sample $t$-tests over the 366 cases.
+
+\paragraph{Code and data.} An implementation of TEMPy-REFF is available in the TEMPy2 release alongside the CCP-EM software suite. Input maps and initial models were obtained from EMDB and the PDB. Local resolution was calculated with ResMap~\cite{kucukelbir2014}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.7\linewidth]{figures/fig_pipeline_schematic.pdf}
+  \caption{Overview of the TEMPy-REFF pipeline. A cryo-EM map and an initial atomic model are represented as a per-atom Gaussian mixture with a uniform background; responsibility-weighted expectation-maximisation jointly updates atomic positions $x$, per-atom B-factors $B$, and the background level $k_{\mathrm{bg}}$. The converged model supports ensemble generation, LoQFit scoring, and responsibility-weighted map segmentation or composition.}
+  \label{fig:pipeline}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.65\linewidth]{figures/fig_ccc_delta.pdf}
+  \caption{Mean improvement in ensemble cross-correlation (CCC) across the 366-complex CERES+ benchmark. Paired $t$-tests give $\Delta\mathrm{CCC}=0.197$ against deposited EMDB models ($p=0.0006$) and $\Delta\mathrm{CCC}=0.150$ against CERES re-refined models ($p=0.003$).}
+  \label{fig:ccc_delta}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.7\linewidth]{figures/fig_rnapol_iii_ccc.pdf}
+  \caption{Model-to-map cross-correlation for the yeast RNA polymerase III elongation complex (PDB 5FJ8, EMD-3178, 3.9~\AA). Deposited and hydrogen-prepared models both yield CCC~$=0.82$; TEMPy-REFF single-model refinement gives CCC~$=0.83$; the ensemble representation reaches CCC~$=0.94$.}
+  \label{fig:rnapol_iii}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.75\linewidth]{figures/fig_loqfit_chains.pdf}
+  \caption{Per-chain average LoQFit (\AA) for yeast RNA polymerase III before and after TEMPy-REFF refinement. Chains A and B lie in the well-resolved core (5.4 and 5.6~\AA, respectively; post-refinement per-chain values not reported). Solvent-exposed low-resolution chains M, N, and O improve from 7.4, 7.0, and 7.3~\AA\ to 6.0, 5.7, and 5.9~\AA.}
+  \label{fig:loqfit_chains}
+\end{figure}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

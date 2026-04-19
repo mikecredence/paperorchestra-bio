@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "working_title": "Effortless Landmark Detection (ELD): neural-network-guided thin-plate splines for spatial landmark discovery and tissue registration across modalities",
+    "venue": "Nature Methods",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Spatial landmarks underpin comparison of histological heterogeneity across samples, tracking regions of interest in microscopy, and aligning tissue sections to a common coordinate framework, yet manual annotation remains a bottleneck for spatial omics.",
+    "gap": "Existing unsupervised landmark detectors require very large training sets, struggle with the non-linear deformations characteristic of tissue sections, are poorly suited to z-stack alignment, and rarely cope with cross-modality data.",
+    "approach": "We introduce ELD (Effortless Landmark Detection), which couples an hourglass-style landmark-detection network to a thin-plate spline (TPS) registration module and trains it end-to-end using a multi-scale structural-similarity (MS-SSIM) loss, landmark drop-out (p = 10%), and data augmentation including elastic deformation.",
+    "key_results": "ELD achieves superior mean consistency and backward error on MAFL and AFLW face landmark benchmarks, matches or exceeds manual annotation for Eggplant-based Visium registration (three target genes: Nrgn, Apoe, Omp), outperforms STAlign on ISS data in two replicates using a k-nearest-neighbour region classifier, beats eight competing 3D-registration models on an Accumulated Target-Registration-Error (ATRE) benchmark across a 260-section mouse prostate dataset, and produces modality-agnostic landmarks across Visium-H&E and Visium-MSI pairs in developing heart and striatum tissue.",
+    "impact": "By removing the generative network while keeping an unsupervised landmark detector, ELD turns small-sample spatial omics registration from a manual chore into an automatic, modality-agnostic pipeline that integrates cleanly with existing tools such as Eggplant, STAlign and CODA."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Spatial landmarks underpin histological comparison, ROI tracking in microscopy, and registration to a common coordinate framework",
+        "Manual landmark annotation is a bottleneck for spatial-omics scalability; automation would unlock larger experiments",
+        "Supervised landmark detection exists but is limited by labelled-data scarcity; unsupervised approaches combining a detector network with a generative model have shown promise",
+        "Three outstanding challenges: limited spatial-omics datasets (fewer than ten samples versus ~100,000 typical for deep learning), non-linear elastic-plus-rigid tissue deformations, and concurrent handling of histology, transcriptomics, and mass-spectrometry imaging modalities",
+        "Building on Sanchez et al., we introduce ELD which drops the generative head and couples the detector to a TPS registrar, yielding superior stability and efficiency across single-modality, 3D, and multimodal tasks"
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_benchmark",
+          "title": "Benchmarking ELD against existing landmark-detection methods",
+          "content_bullets": [
+            "Architectural justification: small-data generalisation achieved by removing the generative network, using dropout and lighter models; TPS replaces deep registration for elasticity with fewer unlearnable parameters",
+            "Workflow (Fig. 1a): detect or manually set landmarks on slices A and B, register B to A via TPS/Homography, then project to a common coordinate framework",
+            "Error metrics used: consistency, forward and backward errors (Sanchez et al. definitions), trained on CelebA, evaluated on MAFL and AFLW face-landmark datasets",
+            "ELD exhibits superior mean consistency error (Fig. 1b) with competing methods penalised by large outlier mis-localisations (Fig. 1c)",
+            "ELD yields significantly lower backward error (Fig. 1d) but marginally worse forward error (Fig. 1e), trading generalisation for landmark stability",
+            "Runtime: convergence time measured as a function of genes/channels (fixed 10 landmarks, Fig. 1f) and as a function of landmarks (fixed 3 channels, Fig. 1g); convergence criterion stringent yet empirically faster in real-world runs"
+          ]
+        },
+        {
+          "id": "results_single_modality",
+          "title": "Performance evaluation on single-modality data",
+          "content_bullets": [
+            "Benchmark against Eggplant using manual annotation on 12 mouse olfactory-bulb Visium samples; targets Nrgn, Apoe, Omp with distinct expression patterns",
+            "ELD-derived landmarks match or exceed manual-annotation correlation (Fig. 2a–b); results hold when trained on histology, on 3 genes, or on 100 genes (PCA for visualisation, all genes used during training); 14 landmarks used throughout",
+            "ISS compatibility demonstrated on three mouse-brain coronal sections from Salas et al., using RGB images of ISS clustering as inputs and TPS for registration",
+            "Evaluation via k-nearest-neighbour anatomical-region classifier fit on the reference; ELD outperforms STAlign in both replicates (Fig. 2d)",
+            "Illustrative ELD-predicted landmarks on ISS-cluster RGB image shown in Fig. 2e"
+          ]
+        },
+        {
+          "id": "results_3d",
+          "title": "3D modelling via anchor points",
+          "content_bullets": [
+            "Modification for z-stack: landmarks become anchor points by constraining area change between TPS and rigid mappings (Fig. 3a,c)",
+            "Training loop: select a reference slice, make a noisy counterpart, detect landmarks on all three, map noisy source to reference, compare area change between TPS and rigid maps, iterate",
+            "Dataset: mouse prostate z-stack of 260 slices from Kartasalo et al. with dual-annotator landmarks; 20 landmarks used for alignment",
+            "Metrics: Target Registration Error (TRE) and Accumulated TRE (ATRE), both normalised to manual-landmark registration (score = 1); RMSE excluded because image preprocessing differed across methods",
+            "ELD TRE is comparable to competitors but ATRE is significantly lower, indicating consistent alignment across the full volume; compared against eight models (seven from Kartasalo et al. and CODA) (Fig. 3d)",
+            "Absolute error between manual and ELD alignment across four sections shown in Fig. 3e"
+          ]
+        },
+        {
+          "id": "results_multimodal",
+          "title": "Performance evaluation on multimodal data",
+          "content_bullets": [
+            "Cross-modality training: two landmark detectors, one per modality; register sample A to sample B, assess similarity in detector latent space (Fig. 4a)",
+            "Human Developing Heart dataset (four samples): histology for two samples, Visium-derived images from MYH6, ELN, MYH7 for the others; 16 landmarks used; Fig. 4b",
+            "Eggplant correlation using ELD landmarks comparable to manual annotation (Fig. 4c)",
+            "MSI + Visium alignment on three mouse-striatum samples from Vicari et al.; PCA embeddings of each modality yield qualitatively consistent landmarks marking biologically relevant features (Fig. 4d)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Hardware: NVIDIA A100-SXM 81GB GPU and 12 AMD EPYC 7742 64-core CPUs for training",
+        "Loss: MS-SSIM computed over multiple resolutions via the PIQA PyTorch package with default parameters and window size 5",
+        "Landmark drop-out with p = 10% escapes local minima where landmarks collapse onto similar positions",
+        "Cropping: mask pixels where all channels fall below threshold 0.1 and crop both images to the union mask to remove black-border augmentation artefacts",
+        "Registration: thin-plate spline minimising bending energy between n source and target points; weights solved analytically",
+        "Landmark detector: hourglass network with ~6 million parameters, identical to Sanchez et al.",
+        "Image preprocessing: 128x128 images via cv2.resize with INTER_AREA interpolation; orientation must be consistent (no flipping)",
+        "Data augmentation: random rotation in [-15, 15] degrees with compensating scaling; elastic deformation via the elasticdeform package with experiment-dependent control-point grid and sigma",
+        "Visium preprocessing: remove spots with fewer than 200 detected genes and genes present in fewer than three spots; normalise with Scanpy; log1p transform; for 3-gene experiments use Eggplant's gene list; for larger sets perform Leiden clustering on PCA-neighbour graphs, rank genes via Scanpy rank_genes_groups with t-test, then intersect top-n per sample across all samples"
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "ELD solves small-sample and non-linear-deformation limitations by removing the generative network while retaining an unsupervised landmark detector",
+        "Versatility demonstrated across single-modality Visium and ISS, 3D prostate z-stacks, and multimodal H&E/Visium and MSI/Visium pairings",
+        "Landmark detection is the primary objective; registration via TPS is an added convenience. Integrating ELD's landmarks as ground truth during training of STAlign, CODA or similar may unlock further gains, analogous to Eggplant integration",
+        "Limitations include the requirement for consistent orientation, reliance on 128x128 inputs, and the need for per-modality detectors in cross-modality settings",
+        "Future directions: integrate with higher-capacity registration models; extend beyond bulk tissue to subcellular landmarks; evaluate on additional modalities"
+      ],
+      "approx_length": "0.75 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_datasets",
+      "title": "Datasets and experiments used to benchmark ELD",
+      "columns": ["Experiment", "Dataset / source", "Samples", "Landmarks", "Metric(s)"],
+      "data_source": "experimental_log.md (text): MAFL/AFLW, mouse olfactory bulb Visium (12 samples), three mouse-brain coronal sections (ISS), mouse prostate (260 slices), Human Developing Heart (4 samples), mouse striatum (3 samples)",
+      "caption_sketch": "Summary of datasets and experimental configurations used across the four evaluation studies."
+    },
+    {
+      "table_id": "tab_hyperparameters",
+      "title": "Training and preprocessing hyperparameters",
+      "columns": ["Parameter", "Value"],
+      "data_source": "experimental_log.md Methods: drop-out 10%, 128x128 input, rotation [-15,15], threshold 0.1, MS-SSIM window 5, ~6M-parameter hourglass, Visium filters (>=200 genes/spot, genes in >=3 spots)",
+      "caption_sketch": "Hyperparameters used in all ELD experiments unless otherwise specified."
+    }
+  ],
+  "figure_plan": [
+    {
+      "figure_id": "fig_pipeline",
+      "type": "schematic",
+      "file": "figures/fig_pipeline.pdf",
+      "caption": "Schematic overview of the ELD pipeline: landmark detection network -> TPS registration -> common coordinate framework projection.",
+      "data_source": "experimental_log.md paragraph describing Fig. 1a workflow"
+    },
+    {
+      "figure_id": "fig_errors",
+      "type": "schematic",
+      "file": "figures/fig_errors.pdf",
+      "caption": "Schematic of the three error metrics (consistency, forward, backward) used to benchmark landmark detectors on MAFL and AFLW.",
+      "data_source": "experimental_log.md: definitions of error metrics in Fig. 1 narrative"
+    },
+    {
+      "figure_id": "fig_3d_workflow",
+      "type": "schematic",
+      "file": "figures/fig_3d_workflow.pdf",
+      "caption": "Schematic of the 3D/z-stack adaptation where landmarks become anchor points by constraining area change between TPS and rigid maps.",
+      "data_source": "experimental_log.md paragraph describing Fig. 3a iterative workflow"
+    },
+    {
+      "figure_id": "fig_multimodal_workflow",
+      "type": "schematic",
+      "file": "figures/fig_multimodal_workflow.pdf",
+      "caption": "Schematic of cross-modality training: two detectors per modality, registration in image space, similarity evaluated in detector latent space.",
+      "data_source": "experimental_log.md paragraph describing Fig. 4a"
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "spatial landmark detection deep learning histology",
+      "tissue registration deformable thin-plate spline",
+      "spatial omics transcriptomics common coordinate framework",
+      "unsupervised landmark detection images",
+      "multi-modal tissue image registration"
+    ],
+    "micro_queries": [
+      "Visium spatial transcriptomics analysis Scanpy",
+      "in situ sequencing ISS spatial transcriptomics",
+      "mass spectrometry imaging MSI tissue",
+      "hourglass network keypoint detection",
+      "multi-scale structural similarity MS-SSIM image quality",
+      "STAlign spatial transcriptomics alignment",
+      "Eggplant spatial transcriptomics tool",
+      "CODA 3D tissue registration",
+      "Kartasalo mouse prostate histology reconstruction",
+      "elastic deformation data augmentation medical imaging",
+      "CelebA face landmark dataset",
+      "AFLW MAFL face landmark benchmark",
+      "Sanchez unsupervised landmark detection",
+      "Leiden clustering single cell",
+      "thin-plate spline Keller"
+    ],
+    "must_cite": [
+      "Sanchez et al. unsupervised landmark detector (hourglass architecture, basis for ELD)",
+      "Eggplant Visium registration tool (Mollbrink/Bergenstrahle style) for olfactory-bulb benchmark",
+      "STAlign spatial transcriptomics alignment method (ISS benchmark)",
+      "CODA 3D histology reconstruction (3D benchmark comparator)",
+      "Kartasalo mouse prostate 3D alignment benchmark",
+      "Salas mouse brain ISS dataset source",
+      "Vicari mouse striatum MSI + Visium multimodal dataset",
+      "Wang et al. MS-SSIM image quality metric",
+      "Keller et al. thin-plate spline registration",
+      "Scanpy single-cell analysis framework",
+      "Visium / 10x Genomics spatial transcriptomics platform",
+      "MSI mass spectrometry imaging technology reference",
+      "PIQA PyTorch image quality assessment package",
+      "elasticdeform data-augmentation package",
+      "CelebA face dataset reference",
+      "MAFL / AFLW benchmark datasets"
+    ],
+    "citation_target": 25
+  }
+}

@@ -1,0 +1,69 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{RNAseqCovarImpute: a multiple imputation procedure that outperforms complete case and single imputation differential expression analysis}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Missing covariate data is a common problem in observational RNA-seq studies. We present a multiple imputation (MI) method that accommodates high-dimensional transcriptomic data by binning genes, creating imputed datasets and differential expression models within each bin, and pooling results with Rubin's rules. Simulation studies using real and synthetic data show that this method outperforms complete case (CC) and single imputation (SI) analyses at uncovering true differentially expressed genes (DEGs), limiting false discovery rates (FDRs), and minimizing bias. The method is implemented in an R package, \texttt{RNAseqCovarImpute}, that integrates with the limma-voom pipeline.
+\end{abstract}
+
+\section{Background}
+Missing data is a common problem in observational studies \citep{r1,r2,r3}. Multiple imputation is standard in epidemiology but is rarely applied to RNA-seq studies because including high-dimensional outcome data in the imputation predictor matrix is infeasible \citep{r5,r6,r7}. Following approaches developed for DNA methylation studies \citep{r8,r9}, we implemented a gene-binning method for RNA-seq compatible with limma-voom \citep{r10,r11,r12} and FDR adjustment \citep{r13}.
+
+\section{Methods}
+\subsection{RNAseqCovarImpute pipeline}
+The pipeline (1) randomly bins genes into smaller groups (default $\approx$1 gene per 10 individuals; e.g., 500 individuals and 10{,}000 genes $\to$ 200 bins of 50 genes); (2) creates $M$ imputed datasets separately within each bin using \texttt{mice} \citep{r14} with its default predictive modelling (predictive mean matching for continuous, logistic regression for binary, polytomous regression for categorical, proportional odds for unordered) and with the imputation predictor matrix including all covariates plus log-CPM for the bin; (3) fits a modified voom and \texttt{lmFit} within each bin and imputation, using the mean-variance curve fit across all genes and all $M$ imputations; (4) un-bins and stacks $M$ sets of model results; (5) applies \texttt{squeezeVar} separately on each $M$ set; (6) pools results with Rubin's rules \citep{r2,r3} using the Barnard-Rubin degrees of freedom \citep{r31}; (7) FDR-adjusts $p$-values \citep{r13}.
+
+\subsection{Simulation design}
+We performed three simulations. Simulation 1: real placental RNA-seq and covariate data from ECHO-PATHWAYS \citep{r5} ($N=1{,}044$; retaining protein-coding, processed pseudogenes, and lncRNAs with average log-CPM $\geq 0$; 14{,}027 genes). The full-data limma-voom model on complete covariates defined true DEGs at FDR $<0.05$. Simulation 2: real covariates with synthetic RNA-seq modified via \texttt{seqgendiff} \citep{r16} to hit user-defined coefficients (82.5\% null; sensitivity 50\% null); resulting in 14{,}027 genes. Simulation 3: fully synthetic covariates ($V_1$ predictor, $V_2$--$V_5$ confounders with Spearman $\rho=0.1$ with $V_1$) and synthetic RNA-seq for 2{,}000 randomly sampled genes at sample sizes 500, 200, 100, and 50; sensitivity at $N=200$ with $\rho=0.2, 0.3, 0.4$.
+
+Missingness was introduced with \texttt{ampute} at 5--55\% of participants having at least one missing data point under MCAR or MAR mechanisms. Ten datasets were simulated per missingness mechanism per level. CC dropped individuals with missing data; SI used \texttt{missForest} \citep{r15}. Metrics: percent true DEGs identified; FDR; bias (difference between coefficients from full-data model and each method, as a percent of the full-data coefficient).
+
+\subsection{Application}
+We applied \texttt{RNAseqCovarImpute} to 1{,}045 ECHO-PATHWAYS subjects to examine maternal-age-placental transcriptome associations while controlling for 10 covariates (family income adjusted for region/inflation, maternal race, ethnicity, education, study site, alcohol, tobacco, delivery method, fetal sex, RNA-seq batch). 6\% (61) were missing data for at least one covariate.
+
+\section{Results}
+\subsection{Simulation 1: real covariates and real counts}
+The full-data model yielded 2{,}453 true DEGs. Under MCAR, RNAseqCovarImpute identified 95.6--98.5\% of true DEGs vs.\ SI 56.6--90.7\%; FDR: RNAseqCovarImpute 2.9--13.8\%, SI 1.9--14.8\%, CC 5.3--12.8\%. Under MAR, RNAseqCovarImpute identified 90.3--97.4\% vs.\ SI 55.7--77.6\%; FDR: RNAseqCovarImpute 2.0--8.0\%, SI 1.4--12.2\%, CC 11.4--18.5\%. Bias was more tightly centred around zero for RNAseqCovarImpute across all genes and when restricted to the 2{,}453 true DEGs.
+
+\subsection{Simulation 2: real covariates, synthetic counts (82.5\% null)}
+MCAR: RNAseqCovarImpute 96.8--99.1\%, SI 78.9--95.9\%, CC 58.2--92.9\% of true DEGs; FDR: RNAseqCovarImpute 1.4--6.1\%, SI 1.4--7.6\%, CC 3.0--8.0\%. MAR: RNAseqCovarImpute 94.0--98.2\%, SI 77.6--89.6\%, CC 61.1--93.2\%; FDR: RNAseqCovarImpute 0.9--3.9\%, SI 1.2--7.7\%, CC 6.0--10.9\%. With a 50\% null rate, all methods performed slightly better with the same ordering.
+
+\begin{table}[h]
+\centering
+\caption{Simulation 2 (82.5\% null) summary ranges across 5--55\% missingness.}
+\begin{tabular}{lccc}
+\toprule
+Missingness & Method & True DEGs (\%) & FDR (\%) \\
+\midrule
+MCAR & RNAseqCovarImpute & 96.8--99.1 & 1.4--6.1 \\
+MCAR & SI & 78.9--95.9 & 1.4--7.6 \\
+MCAR & CC & 58.2--92.9 & 3.0--8.0 \\
+MAR & RNAseqCovarImpute & 94.0--98.2 & 0.9--3.9 \\
+MAR & SI & 77.6--89.6 & 1.2--7.7 \\
+MAR & CC & 61.1--93.2 & 6.0--10.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Simulation 3: synthetic covariates and counts}
+RNAseqCovarImpute was best across all tested sample sizes (500, 200, 100, 50). Sensitivity at $\rho=0.2, 0.3, 0.4$: RNAseqCovarImpute remained best in general; at $\rho=0.4$, SI identified slightly more true positives but FDR exceeded 60\% in one instance.
+
+\subsection{Application to maternal age}
+Among 1{,}045 individuals (10 covariates, 6\% with missing data), CC, SI, and MI identified 575, 214, and 382 DEGs respectively. CC and SI captured 96\% (368) and 56\% (214) of MI DEGs, with 30 DEGs exclusive to MI. Top DEGs (e.g., S100A12, S100A8, CXCL8 [IL-8], IL1R2, SAA1, CASC19, LILRA5) play roles in inflammation and immune response \citep{r17}.
+
+\section{Discussion}
+RNAseqCovarImpute identifies more true DEGs than CC or SI while controlling FDR and reducing bias across a wide range of missingness mechanisms and sample sizes. Unlike prior epigenome-wide association work \citep{r8}, which traded higher FDR for more true positives, RNAseqCovarImpute shows no such tradeoff. The package supports gene-set methods that consume ranked gene statistics (e.g., camera \citep{r29}, gage \citep{r30}), but not those that require sample-level gene expression matrices. The package exposes separate functions for binning, imputation, limma-voom, and pooling, enabling users to combine our MI procedure with alternative differential expression methods. Missing data is ubiquitous in large human observational studies \citep{r20,r21,r22,r23,r24,r25}, and our results suggest observational RNA-seq studies should adopt multiple imputation over CC or SI.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

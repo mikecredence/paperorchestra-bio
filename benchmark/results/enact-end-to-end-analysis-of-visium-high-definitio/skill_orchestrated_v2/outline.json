@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "working_title": "ENACT: End-to-End Analysis of Visium High Definition Spatial Transcriptomics Data via Cell Segmentation and Bin-to-Cell Assignment",
+    "venue": "Nature Methods",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Sequencing-based spatial transcriptomics has historically lacked single-cell resolution; Visium HD provides 2 micron by 2 micron bins but aggregating them into 8 micron by 8 micron spots does not cleanly map to individual cells.",
+    "gap": "Existing methods that combine imaging and sequencing (e.g. Bin2cell with Stardist-based outlines) work well for isolated cells but degrade when cells are tightly packed because a single bin can overlap multiple cells.",
+    "approach": "We developed ENACT, a tissue-agnostic end-to-end pipeline that couples deep-learning cell segmentation (Stardist) with four bin-to-cell assignment strategies (a Naive method and three weighted methods) and three downstream cell-type annotation engines (Sargent, CellAssign, CellTypist), and exports SquidPy-compatible AnnData objects for spatial analysis.",
+    "key_results": "On a Xenium-derived synthetic dataset with whole-cell boundaries, 25% of bins overlap more than one cell, causing the Naive method to lose recall; the Weighted-by-Area strategy achieves the highest F1-score. On a seqFISH+-derived synthetic dataset only ~5% of bins overlap more than one cell and all four strategies achieve precision close to 1 and recall close to 0.99. On 20,991 pathologist-annotated cells, Sargent combined with Weighted-by-Area yields accuracy 0.708 and weighted F1 0.758, and the top predicted cell types agree with anatomical landmarks in human colorectal cancer and mouse small intestine tissues.",
+    "impact": "ENACT turns Visium HD bin-by-gene matrices into curated, spatially-resolved cell-type maps, enabling downstream SquidPy workflows (neighborhood enrichment, Moran's I, co-occurrence) at scale and producing paired image-plus-gene datasets for future vision-based cell classifiers."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Spatial transcriptomics enables gene expression mapping within tissue context; two families: sequencing-based (Visium, GeoMX) vs imaging-based (Xenium, MERFISH, CosMX).",
+        "Sequencing-based methods capture the whole transcriptome, splice variants, and support RNA-velocity, but traditional Visium has multi-cell spots.",
+        "Visium HD (10X Genomics) collects 2 micron by 2 micron bins; user-level 8 micron aggregation approximately matches cell size but rarely aligns to a single cell.",
+        "Problem: small or tightly spaced cells cause aggregated spots to overlap multiple cells and vice versa, causing contamination and mis-assignment.",
+        "Prior work (Bin2cell) uses Stardist for segmentation then expanded outlines to assign 2 micron bins by centroid, but struggles when cells are tightly spaced and a bin overlaps multiple cells.",
+        "ENACT contribution: comprehensive pipeline with cell segmentation, four bin-to-cell assignment strategies, three cell-type annotation engines, and SquidPy-ready outputs."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Materials and Methods",
+      "subsections": [
+        {"id": "m_segmentation", "title": "Cell Segmentation", "content_bullets": ["Stardist UNet-based segmentation on full-resolution histology image; known to handle densely packed cells."]},
+        {"id": "m_bin_to_cell", "title": "Bin-to-Cell Assignment", "content_bullets": ["Represent bins and cell outlines as Shapely polygons; compute intersections via spatial join.", "Discard bins intersecting no cell.", "Four strategies: Naive (unique-bin only), plus three weight-based methods."]},
+        {"id": "m_annotation", "title": "Cell Type Annotation", "content_bullets": ["Sargent (score-based, marker-driven), CellAssign (probabilistic, marker-driven), CellTypist (logistic regression, pretrained).", "Marker sources: PanglaoDB, Cell-Marker, and expert curation."]},
+        {"id": "m_downstream", "title": "Downstream Analysis", "content_bullets": ["Output AnnData objects consumable by SquidPy.", "Enables neighborhood enrichment, Moran's I, co-occurrence; visualization via Tissuumaps."]},
+        {"id": "m_datasets", "title": "Evaluation Datasets", "content_bullets": ["Two synthetic Visium HD-like datasets built from Xenium and seqFISH+.", "Pathologist annotations: anatomical landmarks plus manually labelled cell types."]}
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "r_binassign", "title": "Evaluating Bin-to-Cell Assignment Methods", "content_bullets": ["Xenium synthetic, whole cell: Weight-By-Area best F1; Naive best precision but low recall because 25% of bins overlap more than one cell.", "Nuclei-only: gap between Naive and weighted methods narrows; all methods have lower precision than whole-cell.", "seqFISH+ synthetic: all four methods reach precision close to 1 and recall close to 0.99; only about 5% of bins overlap more than one cell; Naive recommended for speed."]},
+        {"id": "r_annotation_pathology", "title": "Cell-Type Annotation Against Pathologist Labels", "content_bullets": ["20,991 cells annotated by pathologists (Epithelial/Stromal/Immune).", "Four bin-to-cell x three annotation methods (12 combinations).", "Weighted methods beat Naive across all annotators.", "Sargent best; CellTypist second; CellAssign last.", "Sargent + Weighted-by-Area: accuracy 0.708, weighted F1 0.758.", "Confusion-matrix pattern: CellAssign misclassifies immune as epithelial; CellTypist confuses immune and epithelial; Sargent separates them well."]},
+        {"id": "r_landmarks", "title": "Cell-Type Enrichment in Anatomical Landmarks", "content_bullets": ["Human colorectal cancer: muscular -> Smooth Muscle, B cells, Fibroblasts; normal epithelial -> Goblet, B cells, Crypt; tumoral epithelium -> Enterocytes, Goblet, B cells; stromal -> Fibroblasts, B cells, Endothelial.", "Mouse small intestine: muscular -> Smooth muscle + Paneth; normal epithelium -> Paneth, Goblet, B cells; lymphoid -> B cells."]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "First end-to-end tissue-agnostic pipeline for Visium HD.",
+        "Weighted methods outperform Naive on overlap-heavy tissues; Weighted-by-Area with Sargent is the recommended default.",
+        "Pipeline yields SquidPy-ready AnnData, enabling statistical spatial analyses.",
+        "Output pairs imaging and gene expression, supporting future training of vision-based cell classifiers.",
+        "Limitations: pathologist landmarks may contain mixed cell populations; marker-driven methods depend on curated marker lists; manual labels can include noise."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_xenium_overlap",
+      "title": "Bin overlap statistics on synthetic datasets",
+      "columns": ["Dataset", "% bins overlapping >1 cell"],
+      "data_source": "experimental_log statistical_sentences (25%, 5%)",
+      "caption_sketch": "Fraction of Visium HD bins intersecting more than one cell in the two synthetic datasets derived from Xenium and seqFISH+."
+    },
+    {
+      "table_id": "tab_sargent_pathology",
+      "title": "Best end-to-end performance on pathologist-annotated cells",
+      "columns": ["Method combination", "# cells", "Accuracy", "Weighted F1"],
+      "data_source": "Sargent + Weighted-by-Area -> 0.708 accuracy, 0.758 F1, n=20,991",
+      "caption_sketch": "Performance of the best bin-to-cell plus cell-type annotation combination on the pathologist-annotated cohort."
+    },
+    {
+      "table_id": "tab_landmarks",
+      "title": "Top predicted cell types per anatomical landmark",
+      "columns": ["Tissue", "Landmark", "Top cell types"],
+      "data_source": "Results section on anatomical landmarks",
+      "caption_sketch": "Agreement between ENACT-predicted cell types and pathologist-defined landmarks in human colorectal cancer and mouse small intestine."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig1_pipeline", "type": "schematic", "file": "figures/fig1_pipeline.pdf", "caption": "ENACT pipeline schematic.", "data_source": "Methods section / Fig. 1 description in experimental_log"},
+    {"figure_id": "fig2_overlap", "type": "data_grounded", "file": "figures/fig2_overlap.pdf", "caption": "Fraction of Visium HD bins overlapping more than one cell (25% on Xenium-based synthetic vs ~5% on seqFISH+-based synthetic).", "data_source": "statistical_sentences (25% and 5%)"},
+    {"figure_id": "fig3_bestperf", "type": "data_grounded", "file": "figures/fig3_bestperf.pdf", "caption": "Accuracy and weighted F1 for the Sargent + Weighted-by-Area combination on 20,991 pathologist-annotated cells.", "data_source": "accuracy=0.708, F1=0.758"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "spatial transcriptomics review technologies",
+      "Visium HD 10X Genomics sub-cellular resolution",
+      "sequencing-based vs imaging-based spatial transcriptomics",
+      "cell segmentation deep learning histology"
+    ],
+    "micro_queries": [
+      "Stardist star-convex cell segmentation",
+      "Bin2cell Visium HD",
+      "CellAssign cell type annotation probabilistic",
+      "CellTypist logistic regression cell type",
+      "Sargent cell type annotation score-based",
+      "Squidpy spatial omics analysis",
+      "Tissuumaps digital pathology visualization",
+      "Xenium in situ spatial transcriptomics",
+      "seqFISH sequential fluorescence in situ hybridization",
+      "PanglaoDB cell marker database",
+      "CellMarker marker genes database",
+      "Shapely geometric python library",
+      "RNA velocity spatial",
+      "MERFISH spatial transcriptomics",
+      "AnnData python scanpy",
+      "Moran's I spatial autocorrelation"
+    ],
+    "must_cite": [
+      "Visium HD (10X Genomics)",
+      "Bin2cell",
+      "Stardist",
+      "CellAssign",
+      "CellTypist",
+      "Sargent",
+      "SquidPy",
+      "Tissuumaps",
+      "Shapely",
+      "PanglaoDB",
+      "CellMarker",
+      "Xenium",
+      "seqFISH+",
+      "RNA velocity"
+    ],
+    "citation_target": 22
+  }
+}

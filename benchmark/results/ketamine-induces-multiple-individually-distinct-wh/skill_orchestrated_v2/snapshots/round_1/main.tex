@@ -1,0 +1,507 @@
+\documentclass[11pt]{article}
+
+% --- Packages (eLife-compatible single-column style) ---------------
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{authblk}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{lineno}
+\usepackage{caption}
+\captionsetup{labelfont=bf,font=small}
+
+\graphicspath{{./}{./figures/}}
+
+% --- Title page ----------------------------------------------------
+\title{\textbf{Ketamine induces multiple individually distinct whole-brain
+functional connectivity signatures}}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+\linenumbers
+
+\begin{abstract}
+\noindent\textbf{Background.} Ketamine has emerged as one of the most promising
+therapies for treatment-resistant depression, yet inter-individual variability
+in response is poorly understood and its molecular mechanisms have not been
+linked to its systems-level neural and behavioral effects.
+\textbf{Methods.} We conducted a double-blind, placebo-controlled study in
+which $N=40$ healthy participants received acute ketamine (initial bolus
+0.23~mg/kg, continuous infusion 0.58~mg/kg/hour). For each subject we
+computed a whole-brain $\Delta$GBC map (ketamine minus placebo) across 718
+functionally-defined parcels and submitted the $718\times40$ matrix to
+principal components analysis. We related the resulting neural gradients to
+cortical SST and PVALB gene expression and to 31 symptom and cognitive
+measures decomposed by a parallel behavioral PCA.
+\textbf{Results.} (i) Ketamine's $\Delta$GBC response is multidimensional:
+five PCs are significant by permutation test, jointly capturing 42.1\% of
+neural variance (PC1 14.1\%, PC2 10.4\%). (ii) Effective dimensionality is
+significantly higher for ketamine (12.8$\pm$0.7) than for LSD (8.7$\pm$0.3)
+or psilocybin (8.6$\pm$0.3); $F(2,60)=564$, $p<0.001$. (iii) Neural PC1 is
+positively correlated with SST cortical gene expression ($r=0.47$,
+$p<0.001$) and negatively with PVALB ($r=-0.22$, $p=0.025$). (iv) Behavioral
+PCA on 31 items yields two significant PCs jointly capturing 41.1\% of
+variance (PC1 29\%, PC2 12\%). (v) Neuro-behavioral PC1 tracks SST
+($r=0.29$, $p=0.009$), separates association from sensory networks, and is
+highly correlated across subjects with behavioral PC1 ($r=0.7$, $p<0.001$)
+and with PANSS Positive ($r=0.69$), Negative ($r=0.93$), and General
+($r=0.89$) maps.
+\textbf{Conclusions.} The neural and behavioral effects of acute ketamine
+are multi-axis and individually distinct, are anchored on SST/PVALB
+microcircuits, and are resolvable at the single-subject level --- supporting
+the feasibility of individually-precise pharmacological biomarkers for
+treatment selection in psychiatry.
+\end{abstract}
+
+\section{Introduction}
+
+Ketamine has become one of the most consequential new tools in clinical
+psychiatry, producing rapid antidepressant responses where conventional
+monoaminergic agents have failed. A single sub-anesthetic infusion relieves
+symptoms within hours in a substantial fraction of patients with
+treatment-resistant depression (TRD), with response rates around 65\%
+\citep{berman2000ketamine,zarate2006randomized,murrough2013antidepressant}.
+This clinical profile has reframed depression as a disorder of synaptic
+function and has motivated an active search for the cellular, circuit, and
+network-level mechanisms that underlie ketamine's action
+\citep{duman2016synaptic,krystal2019ketamine}. Yet despite a decade of
+pharmacological neuroimaging, a striking gap remains: how the molecular
+effects of ketamine propagate into the large-scale connectivity patterns
+that characterize each individual's brain, and how those individual
+differences map onto the heterogeneous behavioral responses that clinicians
+observe at the bedside.
+
+At the cellular level, ketamine is a non-competitive NMDA receptor
+antagonist whose acute action is thought to preferentially silence
+fast-spiking parvalbumin-expressing (PVALB) interneurons, producing a
+transient disinhibition of cortical pyramidal cells and a surge of
+glutamatergic signaling
+\citep{krystal1994subanesthetic,moghaddam1997activation,homayoun2007nmda}.
+Somatostatin-expressing (SST) interneurons form a second major class of
+GABAergic inhibition that gates dendritic integration and has distinct
+laminar and circuit roles \citep{rudy2011three,tremblay2016gabaergic}. The
+relative recruitment of SST versus PVALB inhibition is expected to shape
+where in cortex ketamine exerts its strongest effect, and therefore to be
+reflected in the spatial topography of ketamine-induced connectivity change.
+Bridging these interneuron-level predictions to in-vivo human imaging has
+only recently become tractable through cortex-wide gene expression atlases
+\citep{hawrylycz2012anatomically,burt2018hierarchy}, which allow a neural
+map to be compared statistically with cell-type-specific expression
+gradients across hundreds of parcels.
+
+At the systems level, pharmaco-fMRI studies have shown that ketamine produces
+robust brain-wide increases in resting-state coupling
+\citep{driesen2013relationship,anticevic2014ncs,abdallah2018ketamine}. Global
+brain connectivity (GBC) is a data-driven summary that captures, for each
+parcel, its average connectivity to the rest of the brain
+\citep{cole2010globalbrain}, and has proven sensitive to pharmacological
+perturbations even in modest sample sizes. However, these studies have been
+limited in two ways. First, sample sizes have been small (often $N<10$ for
+interim analyses) and analyses seed-based, so they cannot resolve multiple
+simultaneous axes of neural change. Second, they have typically reported a
+single mean effect, implicitly assuming that all subjects lie along one
+dimension of ketamine response. This obscures the most clinically actionable
+feature of ketamine --- the fact that different patients develop very
+different combinations of dissociative, psychotomimetic, and antidepressant
+effects.
+
+The goal of the present study is to test the hypothesis that the brain-wide
+effects of acute ketamine are \emph{multidimensional}, that these dimensions
+are anchored in specific interneuron cell types (SST and PVALB), and that
+they map onto individual behavioral variation in a manner that is resolvable
+at the single-subject level. We conducted a double-blind placebo-controlled
+study in $N=40$ healthy participants who received acute ketamine (initial
+bolus 0.23~mg/kg, continuous infusion 0.58~mg/kg/hour). For each subject we
+computed a whole-brain $\Delta$GBC map (ketamine minus placebo) across 718
+functionally-defined parcels \citep{glasser2016multi,ji2019mapping} and
+submitted the resulting $718 \times 40$ matrix to principal components
+analysis. We compared the resulting neural gradients to SST/PVALB gene
+expression maps derived from the Allen Human Brain Atlas
+\citep{hawrylycz2012anatomically}. In parallel we collected 31 behavioral
+measures spanning the PANSS subscales \citep{kay1987positive} and a cognitive
+battery, decomposed these into their own data-driven axes, and regressed
+behavioral scores onto each subject's neural map to obtain neuro-behavioral
+gradients. Finally we benchmarked ketamine's effective neural dimensionality
+against the classic psychedelics LSD and psilocybin
+\citep{carhart2016neural,preller2020psilocybin,preller2018effective}.
+
+\section{Related Work}
+
+\paragraph{Ketamine's rapid antidepressant action.} The discovery that
+sub-anesthetic ketamine produces rapid symptom relief in depression
+\citep{berman2000ketamine,zarate2006randomized} motivated a
+reconceptualization of mood disorders in terms of glutamatergic signaling
+and synaptic plasticity \citep{duman2016synaptic}. Subsequent clinical work
+established that response rates in TRD converge around the 65\% figure cited
+above \citep{murrough2013antidepressant,krystal2019ketamine}, but
+inter-individual variability and the lack of pre-treatment biomarkers have
+remained a bottleneck for clinical translation.
+
+\paragraph{Pharmaco-fMRI of ketamine.} Resting-state imaging of acute
+ketamine has consistently shown global increases in functional connectivity,
+with effects concentrated in higher-order association cortex
+\citep{driesen2013relationship,anticevic2014ncs,abdallah2018ketamine}. These
+results are typically reported as a single mean effect, and sample sizes
+have been small. By contrast, the present study leverages a larger cohort
+($N=40$) and a data-driven PCA approach to recover multiple simultaneous
+dimensions of ketamine-induced neural change.
+
+\paragraph{Cell-type inference from cortical gene expression.} The Allen
+Human Brain Atlas \citep{hawrylycz2012anatomically} has made it possible to
+relate macro-scale neuroimaging maps to the transcriptomic profile of
+specific cell types. Combined with the recently established principal
+gradient of cortical organization \citep{margulies2016situating,burt2018hierarchy},
+it provides a substrate in which to test cell-type-specific hypotheses about
+agents that target GABAergic inhibition
+\citep{rudy2011three,tremblay2016gabaergic}.
+
+\paragraph{Other psychedelics and precision psychiatry.} LSD and psilocybin
+produce brain-wide changes in functional connectivity but act primarily at
+serotonergic 5-HT2A receptors
+\citep{carhart2016neural,preller2020psilocybin,preller2018effective}. Against
+this backdrop, the field has moved increasingly toward individually-resolved
+biomarkers of treatment response \citep{insel2014rdoc,drysdale2017resting}.
+Combining these two strands, we ask whether each subject's ketamine response
+can be decomposed into gradient-aligned components that are both biologically
+interpretable via SST/PVALB mapping and behaviorally meaningful via
+regression against symptom-scale PCs.
+
+% -----------------------------------------------------------------
+\section{Results}
+% -----------------------------------------------------------------
+
+\subsection{Acute ketamine produces a multi-axis neural $\Delta$GBC effect}
+
+To test whether ketamine's neural effect is multidimensional, we computed a
+$\Delta$GBC map (ketamine minus placebo) for each of the 40 participants
+across 718 functionally-defined parcels, and performed a PCA across subjects
+(input matrix $718 \times 40$; see Methods). A permutation test (5000
+permutations) identified five significant principal components, which
+together capture 42.1\% of the total neural variance. Because the first two
+PCs each explain substantially more variance than the remaining three (PC1
+14.1\% and PC2 10.4\%, versus $\sim$5\% each for PCs 3--5), we focus on
+PC1 and PC2 in the main text; results for PCs 3--5 are qualitatively
+similar and are reported in Supplement.
+
+% embedded figure 1 inline
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.80\linewidth]{figures/fig1_variance.pdf}
+  \caption{\textbf{Ketamine produces multidimensional neural and behavioral
+  effects.} Variance explained by the significant principal components from
+  (left two bars) PCA on $\Delta$GBC across 718 functionally-defined parcels
+  and (right two bars) PCA on 31 behavioral measures. Neural PC1 and PC2
+  capture 14.1\% and 10.4\% of neural variance; behavioral PC1 and PC2
+  capture 29.0\% and 12.0\%. Five neural PCs were significant by
+  permutation test ($p<0.05$, 5000 permutations), jointly capturing 42.1\%
+  of neural variance; two behavioral PCs were significant, jointly capturing
+  41.1\% of behavioral variance.}
+  \label{fig:variance}
+\end{figure}
+
+PC1 $\Delta$GBC loaded positively on association-network parcels (e.g.\
+default mode and fronto-parietal networks) and negatively on sensory
+network parcels (e.g.\ secondary visual network), whereas PC2 $\Delta$GBC
+traced a more cross-cutting pattern. Although PC1 $\Delta$GBC was moderately
+correlated with the mean $\Delta$GBC map (across parcels, $r=0.56$,
+$p<0.001$, $n=718$), the subsequent PCs 2--5 were only weakly correlated
+with the mean effect, confirming that they capture axes of ketamine response
+that are not visible in a simple average.
+
+Crucially, this multidimensionality is a distinctive property of ketamine.
+When we computed the effective dimensionality of the $\Delta$GBC response
+for ketamine, LSD, and psilocybin (Fig.~\ref{fig:dimensionality}), we found
+that ketamine (12.8$\pm$0.7) was significantly higher-dimensional than
+either LSD (8.7$\pm$0.3) or psilocybin (8.6$\pm$0.3). A one-way ANOVA
+yielded $F(2,60)=564$, $p<0.001$; post-hoc tests (Bonferroni corrected)
+showed $p<0.001$ for ketamine vs.\ LSD and for ketamine vs.\ psilocybin,
+while LSD and psilocybin did not differ ($p=0.6$).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{figures/fig2_dimensionality.pdf}
+  \caption{\textbf{Ketamine's $\Delta$GBC response is higher-dimensional
+  than LSD's or psilocybin's.} Effective neural dimensionality of the
+  $\Delta$GBC response across three psychoactive pharmacological conditions.
+  Ketamine (12.8$\pm$0.7) is significantly higher-dimensional than LSD
+  (8.7$\pm$0.3) and psilocybin (8.6$\pm$0.3) (one-way ANOVA $F(2,60)=564$,
+  $p<0.001$; post-hoc $p<0.001$ for both contrasts, Bonferroni corrected).
+  LSD and psilocybin do not differ significantly from each other ($p=0.6$).}
+  \label{fig:dimensionality}
+\end{figure}
+
+\subsection{The leading ketamine gradient is anchored on SST/PVALB interneurons}
+
+We next asked whether the spatial topography of the leading ketamine
+gradient, PC1 $\Delta$GBC, could be explained by cortical cell-type
+distributions. Using the Allen Human Brain Atlas we constructed cortical
+expression maps for SST and PVALB and correlated each with PC1 $\Delta$GBC
+across the 718 parcels, using 100{,}000 spatial-null permutations for
+inference.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.80\linewidth]{figures/fig3_gene_corr.pdf}
+  \caption{\textbf{The leading ketamine gradient tracks interneuron cell-type
+  gene expression.} Spatial correlation between SST (red) and PVALB (blue)
+  cortical gene expression maps and (left) the leading neural PC1
+  $\Delta$GBC map, and (right) the leading neuro-behavioral PC1 map. For
+  neural PC1, SST $r=0.47$ ($p<0.001$) and PVALB $r=-0.22$ ($p=0.025$). For
+  neuro-behavioral PC1, SST $r=0.29$ ($p=0.009$) and PVALB $r=-0.14$
+  ($p=0.089$). All $p$-values are from 100{,}000 spatial-null permutations.}
+  \label{fig:gene}
+\end{figure}
+
+PC1 $\Delta$GBC was positively correlated with SST expression ($r=0.47$,
+$p<0.001$) and negatively correlated with PVALB expression ($r=-0.22$,
+$p=0.025$). Both correlations were well beyond what would be expected by
+chance alone. Consistent with this cell-type mapping, the parcels at the
+positive extreme of PC1 (the highest positive loaders) showed a similar
+signature: their $\Delta$GBC pattern correlated positively with SST
+($r=0.23$, $p=0.009$) but not with PVALB ($r=-0.07$, $p=0.19$), while the
+parcels at the negative extreme correlated negatively with SST ($r=-0.22$,
+$p=0.046$) and showed a borderline positive correlation with PVALB
+($r=0.16$, $p=0.056$). In contrast, the mean $\Delta$GBC map --- which
+collapses across the multiple significant axes --- did not significantly
+track either gene (SST $r=0.15$, $p=0.363$; PVALB $r=-0.06$, $p=0.627$),
+underscoring that the cell-type signature is only visible once ketamine's
+multidimensional response is decomposed.
+
+\subsection{Ketamine's behavioral effect is also multidimensional}
+
+Before connecting neural and behavioral axes, we first characterized the
+behavioral response. Ketamine produced significant group-mean increases on
+all three PANSS subscales (positive, negative, and general symptoms) and a
+significant impairment of cognition (all $p<0.05$, Bonferroni corrected),
+consistent with its known psychotomimetic and dissociative profile. To move
+beyond mean effects, we ran a PCA on the 31 individual $\Delta$(ketamine
+minus placebo) behavioral items. Two PCs survived permutation testing
+($p<0.05$, 5000 permutations), jointly capturing 41.1\% of all behavioral
+variance; PC1 explained 29\% and PC2 explained 12\% (inset of
+Fig.~\ref{fig:variance}). A paired Pitman--Morgan test confirmed that
+individual subject scores varied more on PC1 than on PC2 ($t=6.4$, $df=38$,
+$p<0.001$).
+
+\subsection{Neuro-behavioral PC1 tracks symptom topography at the
+single-subject level}
+
+To link neural and behavioral axes, we regressed each subject's behavioral
+PC1 score onto their $\Delta$GBC map to obtain a \emph{neuro-behavioral PC1}
+map that summarizes the brain regions whose ketamine-induced connectivity
+change tracks the dominant behavioral direction. This map significantly
+separated association from sensory networks ($p<0.001$), and its spatial
+profile correlated with SST gene expression ($r=0.29$, $p=0.009$) and
+showed a trend-level negative correlation with PVALB ($r=-0.14$, $p=0.089$;
+Fig.~\ref{fig:gene}, right panel). Across subjects, behavioral PC1 scores
+and neuro-behavioral PC1 scores were highly correlated ($r=0.7$, $p<0.001$),
+indicating that individuals with the strongest behavioral effect also showed
+the largest change in GBC within the behaviorally-relevant neural circuit.
+
+We next compared neuro-behavioral PC1 to the established PANSS subscale maps
+(Fig.~\ref{fig:panss}). The spatial correlation across parcels was $r=0.69$
+with PANSS Positive, $r=0.93$ with PANSS Negative, and $r=0.89$ with PANSS
+General (all $p<0.001$, $n=718$). The PANSS subscale maps themselves were
+also correlated with SST and PVALB: PANSS Negative showed $r=-0.34$
+($p<0.001$) with SST and $r=0.16$ ($p=0.05$) with PVALB; PANSS General
+showed $r=-0.26$ ($p=0.019$) with SST and $r=0.18$ ($p=0.04$) with PVALB.
+Neuro-behavioral PC2 did not track SST/PVALB expression; it was essentially
+independent of the cell-type axis and was more weakly tied to clinical
+scales, with only a moderate positive correlation with PANSS Positive
+($r=0.42$).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{figures/fig4_panss_map_corr.pdf}
+  \caption{\textbf{Neuro-behavioral PC1 recapitulates clinical symptom
+  topography.} Spatial correlation across 718 parcels between the
+  neuro-behavioral PC1 map and the three PANSS subscale maps: Positive
+  ($r=0.69$), Negative ($r=0.93$), and General ($r=0.89$); all $p<0.001$,
+  $n=718$ parcels.}
+  \label{fig:panss}
+\end{figure}
+
+\subsection{Individual subjects are resolvable along the SST/PVALB axis}
+
+The analyses above establish that ketamine's dominant neural and behavioral
+axes are group-level concepts. To test whether these axes remain
+interpretable at the level of the single subject, we examined the two
+extreme loaders of behavioral PC1. Subject~22 (the most negative loader)
+exhibited a $\Delta$GBC map that was significantly negatively correlated
+with SST gene expression ($r=-0.33$, $p<0.001$, 100{,}000 permutations) and
+uncorrelated with PVALB ($r=0.08$, $p=0.21$). Subject~19 (the most positive
+loader) exhibited a complementary pattern: a significant negative
+correlation with PVALB ($r=-0.17$, $p=0.027$) and no significant
+relationship with SST ($r=0.1$, $p=0.21$). Both subjects showed robust
+association-vs-sensory network dissociations at the individual level
+($t=-4.99$, $df=1151$, $p<0.001$ for the group-level association vs sensory
+comparison that motivated this analysis). Together, these results show that
+the cell-type-anchored neural axis that emerges at the group level is
+preserved and resolvable at the single-subject level --- a prerequisite for
+individually-precise biomarker development.
+
+% -----------------------------------------------------------------
+\section{Discussion}
+% -----------------------------------------------------------------
+
+\paragraph{A multidimensional fingerprint.} The central contribution of this
+study is empirical: the brain-wide functional connectivity response to
+acute sub-anesthetic ketamine is not captured by any single map but is
+distributed across at least five significant axes that jointly explain more
+than 40\% of between-subject neural variance. In our $N=40$ double-blind
+cohort the two leading axes alone explain nearly 25\% of the neural
+variance and dissociate association from sensory cortex in opposite ways.
+This replicates the mean-effect findings of prior pharmaco-fMRI work
+\citep{driesen2013relationship,anticevic2014ncs,abdallah2018ketamine} while
+revealing structure that is invisible to any single-seed or mean-based
+analysis. The fact that the group-mean $\Delta$GBC map does not correlate
+with SST or PVALB expression, even though PC1 $\Delta$GBC correlates
+strongly with both, is perhaps the clearest demonstration that averaging
+across subjects actively hides ketamine's cellular fingerprint.
+
+\paragraph{Relation to prior GBC and pharmaco-fMRI literature.} Earlier
+studies established that ketamine elevates connectivity broadly across
+association cortex \citep{driesen2013relationship,anticevic2014ncs}, and
+that GBC provides a data-driven framework for pharmacological comparison
+\citep{cole2010globalbrain,abdallah2018ketamine}. Our results are consistent
+with this literature at the level of the group mean but extend it in two
+ways. First, by using a $718 \times 40$ PCA we recover five significant
+dimensions of response, indicating that the broad mean-effect picture
+conceals a substructure of at least five distinguishable ketamine-response
+types. Second, by benchmarking against LSD and psilocybin
+\citep{carhart2016neural,preller2020psilocybin,preller2018effective}, we
+show that this multidimensionality is not a generic feature of psychoactive
+drugs: ketamine's effective dimensionality of 12.8 is nearly 50\% higher
+than that of serotonergic psychedelics.
+
+\paragraph{Comparison with classic psychedelics.} That LSD and psilocybin
+produce neural responses of similar, and lower, dimensionality
+($8.7\pm0.3$ and $8.6\pm0.3$) is itself informative. A simpler, more
+stereotyped response is what one would expect of agents with a single
+dominant molecular target (5-HT2A), whereas ketamine's more distributed
+response may reflect its interaction with a heterogeneous GABAergic
+interneuron population. This interpretation is consistent with the broader
+physiological evidence that NMDA antagonism affects PVALB and SST
+interneurons differently
+\citep{homayoun2007nmda,rudy2011three,tremblay2016gabaergic}.
+
+\paragraph{Clinical implications for TRD biomarker stratification.} The
+observation that individual subjects remain resolvable along the leading
+SST/PVALB axis (subjects 22 and 19 in our cohort) has direct implications
+for precision psychiatry \citep{insel2014rdoc,drysdale2017resting}. If the
+same decomposition can be carried out in patients, it raises the possibility
+that a pre-treatment $\Delta$GBC-like biomarker could stratify likely
+responders from non-responders. The strong correlation between
+neuro-behavioral PC1 and the PANSS Negative ($r=0.93$) and General
+($r=0.89$) maps is particularly noteworthy because these are the symptom
+domains most resistant to conventional antidepressant treatment, and the
+$r=0.7$ cross-subject concordance between behavioral PC1 and neuro-behavioral
+PC1 is of a magnitude compatible with real clinical utility.
+
+\paragraph{Molecular anchor: SST/PVALB microcircuits.} The positive
+correlation between PC1 $\Delta$GBC and SST expression ($r=0.47$), combined
+with the negative correlation with PVALB ($r=-0.22$), is consistent with a
+circuit model in which NMDA antagonism disinhibits pyramidal cells most
+strongly in regions where PVALB inhibition is highest, while simultaneously
+altering SST-mediated dendritic gating elsewhere
+\citep{moghaddam1997activation,homayoun2007nmda}. The topographic signature
+we identify at the whole-brain level is therefore the projection of this
+cellular logic onto the association-sensory axis of cortical hierarchy
+\citep{margulies2016situating,burt2018hierarchy}. Identifying the specific
+molecular targets responsible for the different behavioral effects of
+ketamine, and potentially its metabolites, is critical for the development
+of novel pharmacotherapies that retain antidepressant efficacy while lacking
+ketamine's psychotomimetic and abuse-liability side effects.
+
+\paragraph{Limitations and future directions.} Our study has several
+limitations. First, as is typical of psychoactive pharmacological
+neuroimaging studies, participants were able to correctly identify whether
+they received the substance or saline 100\% of the time, even under a
+double-blind design. This limits the inferences one can draw from the
+placebo condition about expectancy effects. Second, our cohort comprises
+$N=40$ healthy participants receiving acute ketamine, not patients with
+TRD receiving a therapeutic infusion; translation of the SST/PVALB
+biomarker logic into depressed samples will require replication. Third,
+our analysis is cross-sectional: longitudinal tracking of the leading PCs
+across repeated infusions would be needed before the individual axes can
+be deployed as treatment-selection biomarkers. Fourth, the comparator
+datasets for LSD and psilocybin come from separate cohorts and different
+research sites, so the dimensionality contrast should be interpreted as a
+conservative lower bound on ketamine's distinctiveness; a within-subject
+three-way comparison would be even more compelling. Future work should
+also relate the lower-variance PCs (PCs 3--5) to additional clinical
+dimensions such as anxiety, dissociation, and metabolite exposure, and
+should extend the SST/PVALB anchor with expression maps of additional
+GABAergic markers (e.g.\ VIP, 5HT3aR-expressing interneurons) to sharpen
+the cellular interpretation of the higher-order components.
+
+% -----------------------------------------------------------------
+\section{Methods}
+% -----------------------------------------------------------------
+
+\paragraph{Participants and design.} $N=40$ healthy adults enrolled in a
+double-blind, placebo-controlled crossover study received acute ketamine
+on one session and placebo on the other. Ketamine was administered as an
+initial bolus of 0.23~mg/kg followed by a continuous infusion at
+0.58~mg/kg/hour during resting-state functional MRI acquisition. All
+participants gave written informed consent under an approved protocol.
+
+\paragraph{GBC computation.} Functional MRI data from both sessions were
+preprocessed using a standard pipeline, parcellated into 718
+functionally-defined parcels \citep{glasser2016multi,ji2019mapping}, and
+converted to parcel-level time series. Global brain connectivity (GBC) was
+computed for each parcel as the average pairwise Pearson correlation
+between that parcel's time series and every other parcel's, following
+\citet{cole2010globalbrain}. For each participant we then computed
+$\Delta$GBC = GBC(ketamine) $-$ GBC(placebo), yielding a 718-dimensional
+vector per subject.
+
+\paragraph{PCA on neural data.} The $718 \times 40$ $\Delta$GBC matrix was
+submitted to PCA with subjects as columns. Significance of each PC was
+assessed by a permutation test (5000 permutations in which rows were
+shuffled independently across columns; a PC was deemed significant if its
+eigenvalue exceeded the 95th percentile of the null). Effective
+dimensionality was computed from the participation ratio of the
+eigenvalues. For the comparison with LSD and psilocybin, analogous
+$\Delta$GBC PCA pipelines were applied to separately-collected datasets
+using identical parcellation and preprocessing.
+
+\paragraph{Behavioral PCA.} Thirty-one individual behavioral items
+(including PANSS positive, negative, and general subscale items
+\citep{kay1987positive} and items from a standard cognitive battery) were
+collected on both ketamine and placebo sessions. $\Delta$(ketamine -
+placebo) was computed for each item and each subject, and the resulting
+$31 \times 40$ matrix was submitted to PCA. Significance was again assessed
+by permutation (5000 permutations). The first two PCs survived correction,
+capturing 29\% and 12\% of behavioral variance.
+
+\paragraph{Gene expression maps.} SST and PVALB cortical expression maps
+were computed from the Allen Human Brain Atlas
+\citep{hawrylycz2012anatomically} by averaging donor-level expression
+within each of the 718 parcels. Significance of spatial correlations
+between neural (or neuro-behavioral) maps and gene expression maps was
+assessed by 100{,}000 spatial-null permutations.
+
+\paragraph{Neuro-behavioral regression.} For each parcel, $\Delta$GBC
+across the 40 subjects was regressed on their behavioral PC1 scores,
+yielding a Z-scored regression coefficient at every parcel that together
+define the \emph{neuro-behavioral PC1 map}. Analogous maps were computed
+for PANSS Positive, Negative, and General subscale scores.
+
+\paragraph{Statistics.} Group-mean tests on behavioral items used paired
+$t$-tests with Bonferroni correction. ANOVA was used for cross-drug
+dimensionality comparison ($F(2,60)=564$). Variance-of-scores tests across
+PCs used a paired Pitman--Morgan test ($t=6.4$, $df=38$, $p<0.001$). All
+spatial correlations use 100{,}000 spatial-null permutations unless
+otherwise stated.
+
+% -----------------------------------------------------------------
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

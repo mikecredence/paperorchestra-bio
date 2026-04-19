@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "working_title": "A multiscale computational framework linking biochemical pattern formation to tissue-level spine morphogenesis in molluscan shells",
+    "venue": "PLOS Computational Biology",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Connecting molecular-scale biochemical processes to organism-level morphological variation in non-model organisms remains a core challenge in developmental biology.",
+    "gap": "Existing models of shell pattern formation operate either at the biochemical scale (pigmentation) or at the tissue scale (mechanical buckling), but rarely bridge both in a unified framework that maps to empirical phenotypes.",
+    "approach": "We propose a modular multiscale framework that couples a two-species Activator-Substrate reaction-diffusion model at the molecular level to a morphoelastic rod model of mantle deformation at the tissue level, with a Quality-Diversity (MAP-Elites) algorithm that builds a look-up table from molecular parameter sets to tissue-level growth profiles. Spine images from real shells are matched to this look-up table to infer population-level parameter distributions.",
+    "key_results": "Applied to three populations of the gastropod Turbo sazae in Japan (Hayama, Jyogashima, Tateyama; n=12, 16, 9 shells respectively), the framework reveals a statistically significant population-level difference in the tissue-level growth rate g1: Jyogashima shells have g1 values on average 0.25 higher than Hayama (p = 1.202e-5) and 0.4 higher than Tateyama (p = 5.7e-6) by two-sided Wilcoxon rank-sum tests. The corresponding biochemical parameters c2 and c3 also shift between populations, consistent with a molecular-level mechanism.",
+    "impact": "The framework is modular and plug-and-play at each scale, opening a path for linking environmental, biochemical, and mechanical drivers of morphological variation in other non-model organisms."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Connecting across scales is a central challenge in computational biology",
+        "Molluscan shells are a canonical study system for growth and pattern formation",
+        "Existing tissue-mechanical models require a pre-pattern whose origin is unspecified",
+        "Biochemical models exist but have not been coupled to tissue mechanics",
+        "Turbo sazae displays phenotypic plasticity in spine form",
+        "We build a multiscale framework and apply it to three T. sazae populations"
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Background and Related Work",
+      "content_bullets": [
+        "Theoretical morphology of shells from Raup onward",
+        "Mechanical models of shell ornamentation and buckling",
+        "Reaction-diffusion and neural models of shell pigmentation",
+        "Quality-Diversity algorithms and MAP-Elites",
+        "Population-level morphological variation in molluscs"
+      ],
+      "approx_length": "0.75 page"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "subsections": [
+        {"id": "m_molecular", "title": "Molecular-level Activator-Substrate model", "content_bullets": ["Two-species reaction-diffusion with six parameters {c1,c2,c3,c4,d1,d2}", "Autocatalytic activator with substrate consumption", "Fixed diffusion coefficients"]},
+        {"id": "m_tissue", "title": "Tissue-level morphoelastic rod model", "content_bullets": ["Planar elastic rod with moment-curvature constitutive law m=Eb u", "Shell edge forcing f=k(p-r) and calcification evolution", "Gaussian growth profile parameterized by g1 (height) and g2 (width)", "Bending stiffness linked to growth"]},
+        {"id": "m_qd", "title": "Quality-Diversity exploration via MAP-Elites", "content_bullets": ["Use qdpy implementation", "Pre-integrate tissue model across (g1,g2) pairs to build a zoology", "Map molecular Gaussian fit quality to a grid indexed by (g1,g2)"]},
+        {"id": "m_collection", "title": "Shell collection and parameter extraction", "content_bullets": ["Specimens collected from Najima in Hayama, Jyogashima in Miura, Okinoshima in Tateyama", "n=12 Hayama, n=16 Jyogashima, n=9 Tateyama", "Digital and dissection-microscope photography", "Mathematica-based GUI overlay fitting of {g1,g2}"]}
+      ],
+      "approx_length": "1.5 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "r_morphospace", "title": "Growth parameters shape the spine morphospace", "content_bullets": ["Higher g1 yields more curved spines with earlier self-contact", "Higher g2 yields wider spines", "Lower g2 produces narrower spine tip"]},
+        {"id": "r_biochem", "title": "Biochemical parameters map onto the growth morphospace", "content_bullets": ["c1, c2, c3 cluster in distinct (g1,g2) regions", "c4 largely unconstrained", "Upper-right boundary of morphospace matches linear stability analysis"]},
+        {"id": "r_populations", "title": "Population-level differences in spine form", "content_bullets": ["Jyogashima g1 distribution is 0.25 higher than Hayama (p=1.202e-5) and 0.4 higher than Tateyama (p=5.7e-6)", "Hayama vs Tateyama g1 not significantly different", "g2 differences small", "Jyogashima shows higher average c2 and lower c3"]}
+      ],
+      "approx_length": "1.5 pages"
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Interpretation of biochemical-to-tissue differences",
+        "Possible environmental link via food availability and wave exposure",
+        "Limitations: phenomenological biochemical model, single-spine focus",
+        "Plug-and-play extensibility to other systems and more realistic molecular models",
+        "Future directions: whole-shell modelling, transcriptomics"
+      ],
+      "approx_length": "0.75 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab_populations",
+      "title": "Sample sizes and statistical comparison of g1 distributions across populations",
+      "columns": ["Population", "Sample size (n)", "g1 vs Jyogashima (shift)", "p-value (Wilcoxon)"],
+      "data_source": "experimental_log methods_sentences[2] and idea_summary abstract",
+      "caption_sketch": "Sample sizes per population and two-sided Wilcoxon rank-sum test of g1 differences relative to Jyogashima."
+    },
+    {
+      "table_id": "tab_parameters",
+      "title": "Tissue- and molecular-level parameters",
+      "columns": ["Scale", "Parameter", "Role"],
+      "data_source": "idea_summary methods description of {c1,c2,c3,c4,d1,d2} and {g1,g2}",
+      "caption_sketch": "Summary of model parameters at the molecular and tissue scales."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "multiscale computational modeling biology",
+      "tissue biomechanics continuum mechanics morphogenesis",
+      "molluscan shell mathematical model morphology",
+      "reaction-diffusion pigmentation shell pattern"
+    ],
+    "micro_queries": [
+      "Chirat mantle buckling spine molluscan shell",
+      "Turbo sazae phenotypic plasticity horn",
+      "Activator-Substrate reaction diffusion pattern formation",
+      "MAP-Elites Quality-Diversity black-box optimization",
+      "morphoelastic rod growth mechanics",
+      "single-cell RNA sequencing mantle transcriptome mollusc"
+    ],
+    "must_cite": [
+      "Chirat et al. spine formation buckling",
+      "Raup theoretical morphology shells",
+      "Fowler Meinhardt shell pigmentation reaction-diffusion",
+      "Mouronval MAP-Elites qdpy",
+      "Fukuda 2017 Turbo sazae taxonomy"
+    ],
+    "citation_target": 25
+  },
+  "figure_plan": [
+    {
+      "figure_id": "fig_framework",
+      "type": "schematic",
+      "file": "figures/fig_framework.pdf",
+      "caption": "Schematic of the multiscale framework: molecular Activator-Substrate model, tissue-level morphoelastic rod, and the Quality-Diversity look-up table connecting them.",
+      "data_source": "idea_summary framework description"
+    },
+    {
+      "figure_id": "fig_morphospace",
+      "type": "schematic",
+      "file": "figures/fig_morphospace.pdf",
+      "caption": "Qualitative morphospace of spine shape as a function of the Gaussian growth parameters g1 (rate) and g2 (width).",
+      "data_source": "idea_summary results 3.1"
+    },
+    {
+      "figure_id": "fig_population_g1",
+      "type": "data_grounded",
+      "file": "figures/fig_population_g1.pdf",
+      "caption": "Population-level differences in g1. Mean shift and p-values from two-sided Wilcoxon rank-sum tests.",
+      "data_source": "experimental_log methods_sentences[2]"
+    },
+    {
+      "figure_id": "fig_sample_sizes",
+      "type": "data_grounded",
+      "file": "figures/fig_sample_sizes.pdf",
+      "caption": "Shell sample sizes collected per population (n=12, 16, 9).",
+      "data_source": "idea_summary methods shell collection"
+    }
+  ]
+}

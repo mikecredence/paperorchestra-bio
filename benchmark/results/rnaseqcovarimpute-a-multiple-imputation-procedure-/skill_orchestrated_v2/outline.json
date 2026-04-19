@@ -1,0 +1,177 @@
+{
+  "metadata": {
+    "working_title": "RNAseqCovarImpute: A Multiple Imputation Procedure for Differential Expression Analysis with Missing Covariate Data",
+    "venue": "Bioinformatics",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Missing covariate data in observational transcriptomic studies undermines differential expression analyses, yet is rarely handled rigorously.",
+    "gap": "Standard multiple imputation (MI) procedures cannot accommodate the high dimensionality of RNA-seq outcomes; researchers typically default to complete case (CC) analysis or single imputation (SI), both of which can bias estimates.",
+    "approach": "We present RNAseqCovarImpute, an R package that bins genes into small groups, constructs M imputed datasets separately within each bin using the outcome genes as predictors, fits limma-voom models per bin and per imputation, and pools results with Rubin's rules.",
+    "key_results": "Across three simulation studies (N=1,044 with MCAR/MAR missingness at 5-55% levels and null-gene rates of 82.5% and 50%), RNAseqCovarImpute identified 95.6-98.5% of true DEGs under MCAR versus 56.6-90.7% for SI, with comparable FDR (2.9-13.8% vs 1.9-14.8%). Applied to 1,045 ECHO-PATHWAYS placental samples, the MI analysis revealed 382 maternal-age DEGs, with 30 unique to MI.",
+    "impact": "RNAseqCovarImpute enables principled handling of missing covariates in human observational transcriptomic studies and integrates directly with limma-voom."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Missing covariate data is ubiquitous in observational studies and degrades linear models used in differential expression analysis.",
+        "Complete case analysis drops participants, reducing power and introducing bias.",
+        "Single imputation ignores predictive uncertainty and produces over-confident standard errors.",
+        "Multiple imputation addresses uncertainty via M imputed datasets pooled by Rubin's rules, but requires including the outcome in the predictor matrix.",
+        "Including tens of thousands of genes as outcomes in a single MI model is infeasible when the number of predictors exceeds participants.",
+        "Prior DNA-methylation work addressed this by binning CpG sites; no analogous method exists for RNA-seq.",
+        "We contribute RNAseqCovarImpute, an R package built around gene binning and limma-voom, and evaluate it on three simulation studies plus a real placental RNA-seq application."
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "methods",
+      "title": "Materials and Methods",
+      "subsections": [
+        {"id": "methods_binning", "title": "Gene binning and imputation", "content_bullets": [
+          "Default bin size is approximately 1 gene per 10 participants; user-configurable.",
+          "For 500 participants and 10,000 genes, the method constructs 200 bins of 50 genes.",
+          "When gene counts are not divisible by bin size, flexible bins of two sizes are created (e.g., 199 bins of 50 and 1 bin of 51 for 10,001 genes).",
+          "Gene identifiers are randomized prior to binning.",
+          "Within each bin, M imputed datasets are constructed via the mice package with default predictive mean matching, logistic regression, polytomous regression, and proportional-odds modeling for continuous, binary, categorical, and ordered variables."
+        ]},
+        {"id": "methods_dea", "title": "Differential expression analysis", "content_bullets": [
+          "The voom mean-variance trend is estimated across all genes in all M imputations using the full pooled residuals and log-counts.",
+          "A modified voom injects these global precision weights into bin-specific lmFit calls.",
+          "lmFit is applied separately per bin per imputation; model tables are then un-binned and stacked into M gene-wise result sets.",
+          "squeezeVar is applied separately per M set to execute empirical Bayes variance shrinkage.",
+          "Rubin's rules pool coefficients, standard errors, and Barnard-Rubin adjusted degrees of freedom; Wald statistics and two-sided P-values are returned.",
+          "FDR adjustment is applied to the pooled P-values."
+        ]},
+        {"id": "methods_sim", "title": "Simulation design", "content_bullets": [
+          "Simulation 1 uses real ECHO-PATHWAYS placental RNA-seq and covariate data with N=1,044, 14,027 genes.",
+          "Simulation 2 replaces counts with seqgendiff synthetic signal at 82.5% and 50% null-gene rates (2,000 perturbed genes).",
+          "Simulation 3 uses fully synthetic covariates (V1-V5 with Spearman rho = 0.1, 0.2, 0.3, 0.4) at sample sizes 500, 200, 100, 50.",
+          "Missingness induced via mice::ampute at 5-55% under MCAR and MAR; ten datasets per scenario.",
+          "CC drops incomplete rows; SI uses missForest; MI uses RNAseqCovarImpute.",
+          "Metrics: percent of true DEGs recovered, FDR, and bias relative to the full-data model coefficients."
+        ]},
+        {"id": "methods_app", "title": "Placental transcriptome application", "content_bullets": [
+          "N=1,045 ECHO-PATHWAYS individuals with placental RNA-seq (14,029 genes).",
+          "Predictor: maternal age; 10 covariates including race, ethnicity, education, tobacco, alcohol, income, delivery mode, fetal sex, sequencing batch, study site.",
+          "61 of 1,045 individuals (6%) were missing at least one covariate."
+        ]}
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {"id": "results_sim1", "title": "Simulation 1: real covariates, real counts", "content_bullets": [
+          "Full-data limma-voom identified 2,453 true DEGs.",
+          "Under MCAR, RNAseqCovarImpute recovered 95.6-98.5% of true DEGs versus SI 56.6-90.7%.",
+          "FDR was comparable across methods: RNAseqCovarImpute 2.9-13.8%, SI 1.9-14.8%, CC 5.3-12.8%.",
+          "Under MAR, RNAseqCovarImpute recovered 90.3-97.4% versus SI 55.7-77.6%; CC FDR climbed to 11.4-18.5% compared with MI 2.0-8.0% and SI 1.4-12.2%.",
+          "Bias was more tightly centered at zero for RNAseqCovarImpute in both all-gene and true-DEG subsets."
+        ]},
+        {"id": "results_sim2", "title": "Simulation 2: real covariates, synthetic counts", "content_bullets": [
+          "At 82.5% null-gene rate under MCAR, RNAseqCovarImpute recovered 96.8-99.1% of true DEGs versus SI 78.9-95.9% and CC 58.2-92.9%.",
+          "MI and SI had comparable FDR (1.4-6.1% and 1.4-7.6%) while CC FDR was 3.0-8.0%.",
+          "Under MAR with the 82.5% null rate, percent true DEGs were 94.0-98.2% (MI), 77.6-89.6% (SI), 61.1-93.2% (CC); FDR ranges 0.9-3.9%, 1.2-7.7%, 6.0-10.9%.",
+          "At the 50% null-gene rate the same ordering (MI > SI > CC) was preserved across MCAR and MAR."
+        ]},
+        {"id": "results_sim3", "title": "Simulation 3: synthetic covariates and counts", "content_bullets": [
+          "Across N in {500, 200, 100, 50} with covariate correlation 0.1, RNAseqCovarImpute was the top performer for true DEG recovery and FDR.",
+          "Bias for RNAseqCovarImpute was tighter around zero than SI or CC across all missingness mechanisms and levels.",
+          "Sensitivity analyses at rho = 0.2, 0.3, 0.4 preserved the MI advantage except at rho = 0.4 where SI recovered more true positives but with FDR exceeding 60% in one scenario."
+        ]},
+        {"id": "results_app", "title": "Maternal age and placental transcriptome", "content_bullets": [
+          "Among 1,045 participants, 6% (61) had at least one missing covariate.",
+          "CC, SI, and MI identified 575, 214, and 382 DEGs, respectively.",
+          "CC captured 96% (368) and SI captured 56% (214) of MI-identified DEGs; 30 DEGs were MI-exclusive.",
+          "Top genes (S100A12, S100A8, CXCL8/IL-8, IL1R2, SAA1, CASC19, LILRA5) are involved in inflammation and innate immunity."
+        ]}
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "MI with outcome-informed predictor matrix outperformed CC and SI without the FDR tradeoff reported for methylation analyses.",
+        "Higher dimensionality of methylation (~850,000 CpGs) makes direct translation of this approach to EWAS more challenging than transcriptomics.",
+        "Observational RNA-seq studies increasingly resemble epidemiologic cohorts where missing covariates are prevalent but rarely reported.",
+        "Real-world application demonstrated that the missing-data method materially changes the set of DEGs reported.",
+        "Unadjusted analyses of maternal age and offspring outcomes (e.g., ADHD) can reverse sign once confounders are included, underscoring the need for covariate control.",
+        "Limitations: pathway and gene-set enrichment methods requiring sample-level matrices are not directly compatible; MI integrates cleanly with rank-based enrichment (camera, gage).",
+        "Out-of-box integration is limited to limma-voom, but the package exposes imputation and binning functions so users can plug into alternate pipelines."
+      ],
+      "approx_length": "1 page"
+    },
+    {
+      "id": "conclusions",
+      "title": "Conclusions",
+      "content_bullets": [
+        "RNAseqCovarImpute bridges transcriptomic analysis and observational epidemiology by enabling principled handling of missing covariates.",
+        "Across simulation and real-data experiments, MI via RNAseqCovarImpute improved sensitivity while controlling FDR and reducing coefficient bias."
+      ]
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Simulation 1 summary: real covariates, real counts",
+      "columns": ["Missingness", "Method", "True DEG % (range)", "FDR % (range)"],
+      "data_source": "experimental_log statistical_sentences 2-3 and 5-6",
+      "caption_sketch": "Percent of 2,453 true DEGs recovered and FDR by method under MCAR and MAR missingness (5-55%)."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Simulation 2 summary: real covariates, synthetic counts (82.5% null)",
+      "columns": ["Missingness", "Method", "True DEG % (range)", "FDR % (range)"],
+      "data_source": "experimental_log statistical_sentences 7-9",
+      "caption_sketch": "True DEG recovery and FDR under MCAR/MAR at 82.5% null-gene rate."
+    },
+    {
+      "table_id": "tab3",
+      "title": "Placental transcriptome application",
+      "columns": ["Method", "DEGs", "Overlap with MI (%)", "Unique to method"],
+      "data_source": "experimental_log statistical_sentences about maternal age application",
+      "caption_sketch": "DEG counts and overlap between CC, SI, and MI in the maternal-age analysis (N=1,045)."
+    }
+  ],
+  "figure_plan": [
+    {"figure_id": "fig1", "title": "Method schematic", "type": "schematic"},
+    {"figure_id": "fig2", "title": "Simulation 1 true DEG recovery by method and missingness", "type": "bar"},
+    {"figure_id": "fig3", "title": "Simulation 2 true DEG recovery at 82.5% null", "type": "bar"},
+    {"figure_id": "fig4", "title": "Placental DEG overlap across methods", "type": "bar"}
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "multiple imputation missing covariate data",
+      "Rubin's rules pooling",
+      "differential expression RNA-seq limma voom",
+      "missing data observational epidemiology",
+      "imputation high dimensional data"
+    ],
+    "micro_queries": [
+      "mice multivariate imputation chained equations",
+      "missForest random forest imputation",
+      "voom limma RNA-seq precision weights",
+      "seqgendiff synthetic RNA-seq simulation",
+      "multiple imputation epigenome wide association study",
+      "false discovery rate Benjamini Hochberg",
+      "maternal age placental gene expression",
+      "ECHO PATHWAYS pregnancy cohort",
+      "camera gene set enrichment",
+      "gage pathway analysis"
+    ],
+    "must_cite": [
+      "Rubin multiple imputation 1987",
+      "van Buuren mice R package",
+      "Law voom limma-voom",
+      "Ritchie limma empirical Bayes",
+      "missForest Stekhoven",
+      "seqgendiff Gerard",
+      "Barnard Rubin degrees of freedom",
+      "Benjamini Hochberg FDR"
+    ],
+    "citation_target": 25
+  }
+}

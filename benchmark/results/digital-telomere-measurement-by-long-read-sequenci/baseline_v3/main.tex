@@ -1,0 +1,78 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Digital telomere measurement by long-read sequencing distinguishes healthy aging from disease}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Telomere length is an important biomarker of organismal aging and cellular replicative potential, but existing measurement methods are limited in resolution and accuracy. Here, we deploy digital telomere measurement by nanopore sequencing to understand how distributions of human telomere length change with age and disease. We measure telomere attrition and \textit{de novo} elongation with unprecedented resolution in genetically defined populations of human cells, in blood cells from healthy donors, and in blood cells from patients with genetic defects in telomere maintenance. We find that human aging is accompanied by a progressive loss of long telomeres and an accumulation of shorter telomeres. In patients with defects in telomere maintenance, the accumulation of short telomeres is more pronounced and correlates with phenotypic severity. We apply machine learning to train a binary classification model that distinguishes healthy individuals from those with telomere biology disorders. This sequencing and bioinformatic pipeline will advance our understanding of telomere maintenance mechanisms and the use of telomere length as a clinical biomarker of aging and disease.
+\end{abstract}
+
+\section{Introduction}
+Telomere length is classically estimated by Southern blot of terminal restriction fragments (TRF) and fluorescence \textit{in situ} hybridization (FISH), which produce mean telomere lengths by measuring signals from telomeric probes hybridized to genomic DNA \citep{r22,r23,r25}. STELA and TeSLA use PCR on chromosome ends or adapter-ligated telomere restriction fragments to quantify the shortest telomeres. Long-read sequencing on PacBio HiFi and Oxford Nanopore (ONT) platforms can sequence and measure telomeres at unprecedented resolution \citep{r26,r27}. Here we describe Telometer, a preparation and bioinformatic pipeline for measuring telomeres from whole-genome or telomere-enriched long reads, anchored to the telomere-to-telomere (T2T) human genome reference \citep{r28}, and apply it to define aging-associated telomere dynamics and to distinguish healthy individuals from patients with telomere biology disorders (TBDs).
+
+\section{Methods}
+\subsection{Sequencing library preparation}
+Telomere-containing reads were identified by aligning telomeric repeats to the chromosomal termini of the T2T human genome \citep{r28}. We defined the extent of each telomere as the distance from the terminal repeat at the chromosome terminus to the final two consecutive repeats preceding the subtelomeric sequence \citep{r26}. Whole-genome long-read sequencing yields few telomere reads per gigabase. To enrich, we designed an oligonucleotide that hybridises both to the telomeric 3' overhang and to the ONT sequencing adapter, combined with restriction digestion of genomic DNA; this enriched telomeric reads several thousand-fold without significantly shifting the measured telomere length distribution.
+
+\subsection{Cell lines and perturbations}
+We used PARN knock-out hESCs, TIN2 T284R heterozygous and homozygous mutant hESCs, and a TERT knockout hESC line (CDKN2A$^{-/-}$ TERT$^{-/-}$, AAVS1:hTERTflox) passaged for 66, 78, 98, and 105 days post Cre recombinase-mediated TERT inactivation. For \textit{de novo} telomere addition, HEK293T cells were transiently transfected with a plasmid expressing hTR (canonical) or a variant hTR encoding a TSQ1 template (5'-TTGCGG-3') together with TERT, or GFP alone. Capture oligos targeting either the canonical telomere repeat (5'-TTAGGG-3') or the TSQ1 variant were used.
+
+\subsection{Patient samples}
+We sequenced DNA from peripheral blood leukocytes (PBLs) of 14 healthy human donors aged 18 to 77 years; from 7 samples of 6 individuals with RTEL1 variants (diagnosed with TBD or asymptomatic carriers); and from paired bone marrow (TB32-M) and peripheral blood (TB32-B) samples from a patient with CMML, pulmonary fibrosis, and a previously unreported TINF2 frameshift (p.Gln298fs). We analysed previously published, high-coverage ($\sim 30\times$) whole-genome long-read sequencing data from patient-matched colorectal carcinoma and surrounding benign colonic epithelia from 20 individuals aged 50--70 \citep{r34}.
+
+\subsection{Reference and comparison assays}
+TRAP assays quantified telomerase activity in transiently transfected cells. TRF Southern blot and flow-FISH were compared to the sequencing measurements. Statistical comparisons across telomere length distributions used the Wilcoxon rank-sum test.
+
+\subsection{Machine learning classifier}
+Per-sample telomere length distributions and donor age were used as inputs to a binary classifier. Samples were randomly and iteratively split into training and test sets with a training-to-test ratio of 7:3 across three comparisons: (i) symptomatic patients vs.\ healthy donors, (ii) asymptomatic carriers vs.\ healthy donors, and (iii) symptomatic + carrier vs.\ healthy donors.
+
+\section{Results}
+\subsection{Digital telomere measurement at high resolution}
+Digital mean telomere length was highly correlated with TRF (matched samples $n=14$) and flow-FISH (matched samples from RTEL1 mutants, $n=7$). Bootstrapping showed that the standard error of mean telomere length decays exponentially with additional telomere measurements, reaching a maximal precision of 30--40 base pairs. Telomere capture versus whole-genome library preparation yielded matched telomere length distributions from HEK293T DNA, with enrichment of telomere reads per gigabase sequenced.
+
+\subsection{Models of telomere dysfunction and \textit{de novo} addition}
+Digital measurement discriminated wild-type and PARN knock-out hESCs at $p < 2 \times 10^{-16}$ (Wilcoxon rank-sum test), recapitulating TRF observations in the same cells. TIN2 T284R heterozygous and homozygous mutants produced shortened distributions compared with wild type. TERT knockout hESCs sampled at 66, 78, 98, and 105 days post Cre-mediated inactivation showed progressive shortening at an average rate of 40 base pairs per day, and reached replicative limit between 110 and 120 days. Transient transfection of HEK293T cells with hTR or TSQ1 together with TERT yielded a 1000\,bp increase in mean telomere length after 3 days in culture, with chromosomes starting with shorter first-quartile telomeres showing greater elongation. TSQ1-variant capture of non-TSQ1 samples did not produce a successful library, consistent with absence of the variant template.
+
+\subsection{Healthy aging}
+In 14 healthy donors, donor age correlated with the mean, median, first quartile, and third quartile telomere lengths. Mean and median telomere length decreased by approximately 24 base pairs per year. The third-quartile telomere length decreased more steeply with age than the first quartile. Aggregating donors into young (18--20, $n=5$), middle (35--65, $n=6$), and elder ($>$70, $n=3$) cohorts produced significant differences by Wilcoxon rank-sum test. The fraction of distribution comprised of shorter telomeres increased with age while the longer-telomere fraction shrank; the two shortest fractions appeared stable with age in PBLs.
+
+\subsection{Telomere biology disorders}
+Telomeres in individuals with RTEL1 variants or the TINF2 p.Gln298fs mutation were significantly shorter than in age-matched healthy individuals. Mean telomere lengths from sequencing correlated with flow-FISH measurements with $R^2 = 0.84$. TRF systematically overestimated mean telomere length by 1--3 thousand base pairs in all matched samples, likely due to undigested subtelomeric sequence. Digital telomere measurement resolved longer telomeres in the bone marrow (TB32-M) than in PBLs (TB32-B) from the same patient; TRF could not distinguish these. TBD patient distributions were enriched for the two shortest fractions (0--2000\,bp) relative to healthy donors. In RTEL1 patients and carriers, the first-quartile and third-quartile telomere lengths no longer differed in their rate of age-associated decrease.
+
+\subsection{Binary classifier}
+The classifier distinguished healthy donors vs.\ symptomatic patients with 95\% accuracy (AUC $=0.98$); healthy donors vs.\ asymptomatic carriers with 91\% accuracy (AUC $=0.93$); and healthy donors vs.\ symptomatic + carrier with 86\% accuracy (AUC $=0.91$).
+
+\begin{table}[h]
+\centering
+\caption{Binary classifier performance.}
+\begin{tabular}{lcc}
+\toprule
+Comparison & Accuracy & AUC \\
+\midrule
+Healthy vs.\ symptomatic & 95\% & 0.98 \\
+Healthy vs.\ asymptomatic carrier & 91\% & 0.93 \\
+Healthy vs.\ symptomatic + carrier & 86\% & 0.91 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Colorectal carcinoma cohort}
+In 20 patients with matched colorectal carcinoma and benign colonic epithelium, benign epithelium telomere length distributions showed trends consistent with the PBL cohort, including more rapid shortening of the third quartile than the first. No correlation was seen between tumor telomere distribution summary statistics and patient age. Tumor telomeres were significantly shorter than benign epithelia in 75\% of samples (Wilcoxon rank-sum test).
+
+\section{Discussion}
+Long-read sequencing enables high-resolution, high-throughput measurement of individual intact telomeres. Our method recapitulates dramatic telomere shortening across three TBD genotypes, \textit{de novo} telomere addition by telomerase catalytic core overexpression, progressive telomere attrition with age, and preferential action of telomerase at the shortest telomeres \citep{r8,r33,r37}. TRF systematically overestimates mean telomere length. Flow-FISH is more accurate but still overestimates by about 1500\,bp and is limited to mean estimation in PBLs \citep{r15,r16,r17,r21,r23}. Our bioinformatic pipeline Telometer applies generically to ONT or PacBio whole-genome sequencing.
+
+We describe a previously unreported TINF2 DC-patch frameshift (p.Gln298fs) in a patient with CMML, pulmonary fibrosis, and short telomeres for age. The structure of the telomere length distribution -- interquartile lengths, median, mean, and fraction of telomeres of varying length -- contains information about the telomere maintenance mechanism. The shortest telomere fractions are particularly sensitive to telomerase function: inactivating telomerase \textit{in vitro} or impairing it \textit{in vivo} consistently expands the lowest fractions. Differential attrition of long versus short telomeres is attenuated in RTEL1 patients and in TERT-null hESCs, suggesting limiting telomerase (not negative selection on short-telomere cells) drives age-associated accumulation of short telomeres. Digital telomere measurement holds promise for clinical investigation of TBDs, and for profiling tumor ``telomeric rheostat'' setpoints \citep{r39}. Since asymptomatic TBD carriers are not reliably distinguishable by flow-FISH, the classifier's 91\% accuracy on carriers suggests sequencing-based measurement could identify carrier status.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

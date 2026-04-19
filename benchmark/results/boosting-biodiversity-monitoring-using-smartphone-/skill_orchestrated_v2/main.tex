@@ -1,0 +1,218 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage[T1]{fontenc}
+
+\hypersetup{colorlinks=true, linkcolor=blue!40!black, citecolor=blue!40!black,
+            urlcolor=blue!40!black}
+
+\title{Boosting biodiversity monitoring using smartphone-driven, rapidly accumulating community-sourced data}
+
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Comprehensive, spatially resolved species-occurrence data are needed to operationalise the Kunming-Montreal Global Biodiversity Framework, including the 30by30 protected-area target and emerging corporate nature-related disclosure practices, yet expert surveys cannot supply the resolution required at national scale. Community science offers a potentially complementary data stream but typically suffers from taxonomic and environmental biases that limit its value for distribution modelling, particularly for data-deficient endangered species. Here we evaluate Biome, a Japan-deployed smartphone application that combines convolutional species identification with gamified social incentives, and we quantify how blending its records with traditional survey data affects the accuracy of MaxEnt species distribution models for 132 terrestrial plants and animals. By 7 July 2023 Biome had accumulated 5{,}275{,}457 records of 40{,}957 species, with daily submissions averaging 5{,}407 records in 2022; automatic filtering retained 2{,}373{,}303 records (45.0\%). Audited identification accuracy exceeded 95\% at the species level for birds, reptiles, mammals, and amphibians and was 90\% for seed plants. Blending Biome records at 50\% alongside traditional survey data reduced the number of training records required for a Boyce Index $>$ 0.9 from $2{,}129 \pm 4{,}157$ to $294 \pm 471$ overall, and from $2{,}336 \pm 3{,}718$ to $338 \pm 571$ for endangered species. Relative improvements were largest for endangered species, where traditional records are scarcest, and the best attainable per-species Boyce Index was statistically indistinguishable between training regimes ($0.83 \pm 0.20$ Traditional; $0.81 \pm 0.20$ Biome+Traditional), indicating that Biome records lower the data volume required to reach accurate models rather than raise their ceiling. Smartphone-driven community science, paired with sampling-effort-aware modelling, therefore offers a scalable pathway to the spatially resolved biodiversity data required by conservation planning and by emerging nature-related financial disclosure frameworks.
+\end{abstract}
+
+\section{Introduction}
+
+Biological diversity underpins the ecosystem services on which human societies rely, yet successive global assessments have documented accelerating declines in wild populations and ecosystem function \citep{ipbes2019global,newbold2015land}. In response, the Kunming-Montreal Global Biodiversity Framework has set out a portfolio of commitments intended to reverse nature loss by 2030, including the designation of thirty percent of the Earth's terrestrial and marine surface as protected areas. Delivering on these commitments is contingent on knowing where species actually occur at spatial and temporal resolutions fine enough to guide protected-area boundaries, adaptive management, and corporate nature-related disclosure. Traditionally, this information has been produced through on-site surveys performed by specialists, but expert effort alone cannot scale to the resolution and geographic coverage now demanded across multiple taxa and habitat types.
+
+Over the past two decades, community-sourced observations collected through web and mobile platforms have begun to close this gap. Structured schemes such as eBird have demonstrated that broad public participation can sustain continent-scale monitoring when paired with adequate data curation \citep{sullivan2009ebird,bonney2009citizen,chandler2017contribution}, and long-running volunteer networks have shown that opportunistic records can be curated to research-grade standards over decades \citep{pocock2015brc}. The resulting datasets have underpinned analyses of phenological change, invasive-species spread, trait variation across gradients, and species distribution modelling at scales no expert programme could match. These successes, however, come with well-documented caveats: opportunistic records are typically presence-only, spatially biased toward accessible or densely populated areas, and subject to heterogeneity in observer effort and identification skill \citep{isaac2014statistics,feldman2021trends,kendal2020citybias}. How best to extract reliable inference from such data remains an active methodological frontier.
+
+Two complementary strategies are tightening the information yield of community observations. The first widens participation by embedding biological recording into applications that are pleasurable to use, often through gamification elements that reward contributions and facilitate user-to-user communication \citep{bonney2009citizen,chandler2017contribution}. The second tightens the statistical treatment of presence-only records by explicitly modelling sampling effort, most prominently via maximum-entropy species distribution models (MaxEnt) and their bias-correction extensions \citep{phillips2006maxent,phillips2008maxentextensions,phillips2009samplebias,elith2011statistical}. Empirical work has shown that, when sampling effort is handled correctly, blending community records with structured surveys yields more accurate distribution estimates than either source alone \citep{johnston2018estimates,johnston2021analytical,robinson2020integrating,steen2019stringent,milanesi2020observer}. Nearly all of this evidence, however, concerns a narrow set of well-recorded taxa, with birds dominating the published record \citep{feldman2021trends}.
+
+In this work we ask whether a new generation of smartphone-first, artificial-intelligence-assisted, gamified biodiversity applications can deliver community-sourced records of sufficient quality and environmental coverage to improve species distribution models across a broad taxonomic spread that includes historically difficult taxa such as seed plants. We focus on Biome, a mobile application launched in Japan in 2019 that had accumulated six million records by October 2023 (roughly four times the Japanese total deposited in the Global Biodiversity Information Facility over the same period from any source), and we pair an audit of its observational records with a controlled comparison of MaxEnt models trained on traditional survey data alone versus a blend that includes Biome records. Our contributions are fourfold: (i) a large-scale audit of 1{,}420 Biome records spanning eight taxonomic groups, reporting species-, genus-, and family-level identification accuracy stratified by wild-individual status and species rarity; (ii) a benchmark comparison of MaxEnt species distribution models trained on Traditional versus Biome+Traditional data for 132 terrestrial species, using a 25\% Biome / 75\% Traditional test mixture designed not to favour either training regime together with a spatially blocked evaluation protocol; (iii) evidence that incorporating Biome records reduces the number of training records required to reach high SDM accuracy by roughly an order of magnitude, with the largest gains for endangered species; and (iv) a discussion of how smartphone-driven community science concretely supports the Kunming-Montreal Global Biodiversity Framework and its implementation pathways.
+
+\section{Related Work}
+
+Independent audits of community-sourced identification accuracy have proliferated alongside the growth of the platforms themselves, and their conclusions bound what we should expect from Biome. Evaluations of free plant-identification apps report top-one accuracy well below that of structured expert review, with the best tools reaching the mid-eighties for photographs with good framing and popular mobile apps falling between about 46\% and 66\% when aggregated across iNaturalist Seek, Google Lens, PlantSnap, and similar tools \citep{hart2023plantapps}. Early volunteer programmes for invasive-plant reporting in the United States achieved roughly 72\% correctness relative to expert re-identification \citep{crall2011assessing}. These baselines motivate our explicit per-taxon accuracy evaluation and inform the conservative interpretation of our plant-identification results.
+
+MaxEnt remains the workhorse of presence-only species distribution modelling because it balances predictive accuracy with computational efficiency and supports principled treatment of sampling bias via target-group background selection and informative pseudo-absence schemes \citep{phillips2006maxent,phillips2008maxentextensions,phillips2009samplebias,elith2011statistical}. Recent benchmark work confirms that, with careful predictor engineering and regularisation, MaxEnt is competitive with more flexible machine-learning alternatives on standard presence-only tasks \citep{valavi2022predictive}. The \texttt{ENMeval} 2.0 package \citep{kass2021enmeval} provides reproducible tuning, null-model comparison, and spatial cross-validation for MaxEnt and related ecological niche models and underlies our modelling pipeline. Because we work without verified absences, we evaluate models using the Boyce Index \citep{hirzel2006boyce}, which measures how well predicted habitat suitability tracks the observed frequency of presences and is designed for presence-only settings. Bioclimatic predictors trace to the BIOCLIM envelope approach \citep{booth2014bioclim} and to the global land-use dataset that anchors our anthropogenic-pressure predictors \citep{newbold2015land}.
+
+Prior evidence that blending community and structured data improves SDMs has emerged largely in avian contexts, with supportive results for other taxa reported only intermittently \citep{johnston2018estimates,johnston2021analytical,robinson2020integrating,steen2019stringent,milanesi2020observer,feldman2021trends}. Proposed mechanisms include an increase in effective sample size, complementary environmental coverage, and observer-oriented pseudo-absence schemes that exploit sampling-effort proxies from the community dataset itself. Our analysis extends this literature in two directions: we evaluate 132 species spanning seed plants, invertebrates, and vertebrates under a unified sampling-effort-aware pseudo-absence scheme, and we compare Traditional-only against Biome-blended training across a wide range of data volumes rather than at a single operating point. Finally, a recent double-machine-learning framework for eBird trends \citep{fink2023double} hints at how time-series analyses might be enabled once Biome's data accumulate over longer windows, which we return to in the Discussion. With this background in mind, the remainder of the paper describes our implementation of these ideas for Biome and reports the empirical audit and benchmarking results.
+
+\section{Methods}
+
+\subsection{The Biome application and record ingestion}
+
+Biome is a free smartphone application launched in April 2019 for the Japanese market; by 13 September 2023 it had been downloaded 839{,}844 times. Users upload photographs, either taken with the device camera or imported from storage, and the application reads location and timestamp from EXIF metadata or accepts manual entry where EXIF is missing. Species identification combines two mechanisms. First, a convolutional image-recognition model classifies the photograph at higher taxonomic levels, after which the candidate list is refined by the frequency of recent occurrences in the geographical area, so that identification accuracy improves as correctly identified records accumulate locally. Second, users can delegate identification to the community via an ``Ask Biomers'' feature, which surfaces the record on a waiting list for other users to suggest identifications. Social-networking features (comments, suggestions) and gamification (points for submissions and identification help, levels based on cumulative points, additional points for rare, endangered, or invasive taxa, and location- or species-specific ``Quests'') are designed to broaden the participant base beyond expert volunteers \citep{bonney2009citizen,chandler2017contribution}. Endangered-species locations listed on Japan's national or prefectural red lists are automatically concealed from other users.
+
+\subsection{Filtering and certified users}
+
+We obtained all occurrence records submitted to Biome by 7 July 2023 and excluded records that were flagged by users as inappropriate, marked as non-wild individuals, submitted as private records, or geolocated at cultural centres (zoos, botanical gardens, museums, aquariums) or large pet stores. During data correction, suggestions from certified users override the original uploader's label regardless of the uploader's decision. Certified users are defined as users who simultaneously achieved ($<$15\%) of their public records flagged as misidentified by others, submitted few inappropriate records ($<$0.5\% of public records), and created more than 20 public records. Specialist users are a per-taxon subset of certified users who have contributed more than 30 records or identification suggestions in a given taxon with identification accuracy above the certified-user average for that taxon; specialist users' records are used in the sampling-effort-aware pseudo-absence scheme (Section~\ref{sec:pseudo}). These criteria are applied before any modelling so that downstream comparisons reflect realistic, filtered data.
+
+\subsection{Accuracy audit}
+
+To audit record quality, we drew 1{,}420 records from rare and common species across eight taxa: seed plants, molluscs, insects (including Arachnida and Insecta), fishes, mammals, birds, reptiles, and amphibians. Rare species were defined as those with at most ten occurrences in the Biome data; common species as those in the top 15\% of records within each taxon. For seed plants and insects, which together dominate the corpus, 145 records were sampled per rare/common class; for other taxa, 70 records per class. Domain experts (a prefectural-institute technician for fishes, highly experienced field-survey practitioners for plants and insects, post-doctoral researchers for amphibians/reptiles and for mammals, and a museum curator for molluscs) first screened records for whether they targeted an organism at all and whether they documented a wild individual. For wild-individual records they reidentified the image and judged whether the Biome species label was correct at species, genus, and family levels, using both image content and locality context.
+
+\subsection{Species distribution modelling}
+
+We modelled distributions of 132 terrestrial seed plants and animals on a $1 \times 1$ km grid over the Japanese archipelago using MaxEnt \citep{phillips2006maxent,phillips2008maxentextensions,elith2011statistical} via the \texttt{ENMeval} 2.0 package \citep{kass2021enmeval} on R 4.1.3. Two training datasets were compared. ``Traditional survey data'' consisted of expert-driven records from the National Census on River and Dam Environments, the Forest Ecosystem Diversity Basic Survey, curated literature, and GBIF downloads from April 2023 restricted to records post-1970 and cleaned with \texttt{CoordinateCleaner} to remove country capitals, centroids, and biodiversity-institution coordinates. For comparability with prior work that does not separate community records already ingested by GBIF, we classify iNaturalist and eBird records in GBIF as ``Traditional'' here; such community-derived records amount to about 5.5\% of the Traditional data for the modelled species. ``Biome+Traditional data'' combined filtered Biome records with the Traditional dataset, with Biome records fixed at 50\% of the training set for each species. Continuous predictors (land use, bioclim variables \citep{booth2014bioclim}, vegetation, lithology, elevation range) were expanded into linear, quadratic, and hinge feature classes; categorical predictors encoded Blakiston's Line and oceanic-island identity. The regularisation multiplier was set to 2.5.
+
+\subsection{Sampling-effort-aware pseudo-absences}\label{sec:pseudo}
+
+Ten thousand pseudo-absences were drawn per model with picking probabilities that scale with local sampling effort, following the framework of \citet{phillips2009samplebias} and \citet{milanesi2020observer}. Two schemes were combined for the Biome+Traditional models: one using total records of all taxa in each grid cell, and a second using records by specialist users restricted to the taxon of the modelled species. A logarithmic transformation with an additive offset of 1.2 was applied before normalisation, and pseudo-absence cells were excluded from the spatial block reserved for testing. For Traditional-only models, the second scheme alone was used with the full 10{,}000 pseudo-absence budget.
+
+\subsection{Evaluation and statistical analysis}
+
+Because no environmentally unbiased independent test set exists that spans all 132 species, we evaluated models by spatial transferability. A central-Japan block (latitude 33.7$^{\circ}$--37.7$^{\circ}$N, longitude 136.2$^{\circ}$--137.6$^{\circ}$E, spanning alpine to coastal lowland and metropolitan to highly intact environments) was held out from training. The test dataset was constructed as 25\% Biome records and 75\% Traditional records, a mixture intermediate between the 50\% and 0\% Biome proportions used in training, so that it does not systematically favour either regime. Biome records were admitted to the test set only when multiple users had recorded the same species within a single 1-km grid cell, with a posterior-probability threshold of 99\% for true presence given the per-taxon validity rate measured in the audit. The NCRE freshwater subset of Traditional data was downsampled to match the remaining Traditional records in order to limit spatial sampling bias. Model performance was quantified with the Boyce Index \citep{hirzel2006boyce}, which measures the correlation between estimated habitat suitability and the observed frequency of presences in held-out data and ranges between $-1$ and $1$; we retained only species with $\geq 50$ test occurrences, yielding 132 species.
+
+For each species we varied the training-data size by random downsampling between 20 and 20{,}000 records with three iterations per condition, producing 12{,}351 model runs in total. Per-species, per-size mean Boyce Indices were Fisher-$z$ transformed to normalise the correlation scale and then regressed against dataset type, $\log$(amount of records), and their interaction in a generalised linear mixed model with species-level random intercepts, fitted via \texttt{lme4} \citep{bates2015lme4} and tested with \texttt{lmerTest} \citep{kuznetsova2017lmertest}.
+
+\section{Results}
+
+We present results in three parts: the volume and environmental coverage of Biome submissions, the taxonomy-stratified identification accuracy of the retained records, and the performance of species distribution models trained with and without Biome data. Together these analyses quantify the two levers by which a smartphone-first community-science stream can improve biodiversity assessment: the quality of each record and the information added to a distribution model when records are pooled with traditional surveys.
+
+\subsection{Biome accumulates data at scale and with complementary environmental coverage}
+
+By 7 July 2023 Biome had amassed $5{,}275{,}457$ occurrence records covering $40{,}957$ species across the Japanese archipelago, and monthly submissions increased steadily across successive years to an average of $5{,}407$ records per day in 2022. A principal-component analysis of all environmental predictors projected Traditional and Biome records onto markedly different positions along PC1, which accounted for 6.1\% of the total variation and loaded primarily on land use, topography, and climate. Where Traditional records are heavily biased toward natural areas of low urban land-use occupancy, Biome records are approximately uniformly distributed along the natural-urban gradient, yielding substantial complementary coverage of the environmental space in which Japanese biodiversity actually lives.
+
+The corpus is taxonomically uneven but broad (Figure~\ref{fig:taxa}). Seed plants contribute 41.8\% of records and insects 31.2\%, consistent with their accessibility to smartphone photography. The remaining 27.0\% spans birds, mammals, reptiles, amphibians, fishes, molluscs, non-insect arthropods, non-seed plants, and other invertebrates. Automatic filtering retained $2{,}373{,}303$ records (45.0\% of submissions), removing the remainder for reasons catalogued in Figure~\ref{fig:workflow}. Together, these observations establish that smartphone-driven submissions can accumulate rapidly enough to complement traditional surveys in volume, and that they occupy environmental space that traditional surveys under-sample.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig_workflow.pdf}
+\caption{Biome data pipeline. Users upload photographs with EXIF metadata; a convolutional species-identification model refined by geospatial priors produces a candidate list, which can be confirmed directly or submitted for community identification via the ``Ask Biomers'' feature. Automatic filtering (non-wild labels, private records, cultural-centre locations, certified-user gating: $<$15\% misidentification rate, $<$0.5\% inappropriate records, $>$20 public records) retained 2{,}373{,}303 of 5{,}275{,}457 records (45.0\%) for downstream species distribution modelling.}
+\label{fig:workflow}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/fig_taxa_composition.pdf}
+\caption{Taxonomic composition of the 5{,}275{,}457 records submitted to Biome by 7 July 2023. Seed plants (41.8\%) and insects (31.2\%) dominate the submissions, reflecting their accessibility to smartphone photography. The remaining 27.0\% aggregates all other taxa (birds, mammals, reptiles, amphibians, fishes, molluscs, arthropods, non-seed plants, and other invertebrates).}
+\label{fig:taxa}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_records_to_bi09.pdf}
+\caption{Training records required for species distribution models to exceed a Boyce Index of 0.9. For all 132 modelled species, Traditional survey data require $2{,}129 \pm 4{,}157$ records (mean $\pm$ SD) to reach the threshold, whereas Biome+Traditional data (50\% Biome) require only $294 \pm 471$ records. For endangered species listed on Japan's national or prefectural red lists, the corresponding requirements are $2{,}336 \pm 3{,}718$ and $338 \pm 571$ records.}
+\label{fig:records}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/fig_best_bi.pdf}
+\caption{Best Boyce Index attained per species under each training regime. When each dataset is allowed its full data budget, the best per-species accuracy is statistically indistinguishable (Traditional: $0.83 \pm 0.20$; Biome+Traditional: $0.81 \pm 0.20$; mean $\pm$ SD across 132 species). The advantage of Biome blending therefore lies in the amount of data required to reach a given accuracy rather than in the ceiling performance.}
+\label{fig:bestbi}
+\end{figure}
+
+\subsection{Identification accuracy varies with taxon, rarity, and taxonomic level}
+
+We next audited whether the retained records are fit for distribution modelling. The fraction of records documenting wild individuals exceeded 97\% in insects and birds but fell below 90\% in molluscs, seed plants, mammals, and fishes, reflecting the difficulty of distinguishing wild from planted or captive specimens in the latter taxa. Within the wild-individual subset, species-level identification accuracy exceeded 95\% in birds, reptiles, mammals, and amphibians but was below 90\% in insects, fishes, and seed plants. Relaxing the evaluation to the genus level raised identification accuracy above 90\% in all taxa except insects, with fishes and seed plants gaining 5--6 percentage points relative to the species level; family-level identification exceeded 94\% across all eight taxa examined (Table~\ref{tab:quality}). Rarity further modulated accuracy: averaged across taxa, common species were identified correctly on 95\% of audited records versus 87\% for rare species, with the gap most pronounced in the species-diverse insects and seed plants.
+
+These patterns have direct implications for how Biome data should enter downstream analyses. Taxa with intermediate species diversity (amphibians, reptiles, birds, mammals) deliver species-level labels accurate enough for direct use, whereas taxa with high species diversity or cryptic identification traits benefit from coarser taxonomic aggregation or from requiring community confirmation before a record is trusted. Biome's 90\% species-level accuracy in seed plants compares favourably with published baselines for free plant-identification apps (69\% across PlantNet, PlantSnap, LeafSnap, iNaturalist, and Google Lens aggregated by \citet{hart2023plantapps}, and 72\% for volunteer invasive-plant reports \citep{crall2011assessing}), which we attribute to the combined effects of community peer-review through the ``Ask Biomers'' feature and the geographic prior applied by the identification model.
+
+\begin{table}[htbp]
+\centering
+\caption{Qualitative pattern of Biome data quality across taxa, from the audit of 1{,}420 records. Rows are organised by the percentage-based thresholds reported in the experimental log; cell values quote the reported ranges verbatim.}
+\label{tab:quality}
+\begin{tabular}{lcccc}
+\toprule
+Taxon group & Wild records & Species ID & Genus ID & Family ID \\
+\midrule
+Insects & $>$97\% & $<$90\% & $\leq$90\% & $>$94\% \\
+Birds & $>$97\% & $>$95\% & $>$90\% & $>$94\% \\
+Reptiles & not reported & $>$95\% & $>$90\% & $>$94\% \\
+Mammals & $<$90\% & $>$95\% & $>$90\% & $>$94\% \\
+Amphibians & not reported & $>$95\% & $>$90\% & $>$94\% \\
+Fishes & $<$90\% & $<$90\% & $>$90\% & $>$94\% \\
+Molluscs & $<$90\% & not reported & $>$90\% & $>$94\% \\
+Seed plants & $<$90\% & $<$90\% & $>$90\% & $>$94\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Average identification accuracy for common versus rare species, from the audit.}
+\label{tab:rarity}
+\begin{tabular}{lc}
+\toprule
+Species class & Mean species-level identification accuracy \\
+\midrule
+Common species & 95\% \\
+Rare species & 87\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Blending Biome records slashes the data required for accurate SDMs}
+
+Having characterised the raw material, we next asked how much it helps. For each of the 132 modelled species we trained MaxEnt models on Traditional data alone and on Biome+Traditional data (Biome held at 50\%) across a wide range of training volumes, and evaluated each model on the spatially blocked 25\%/75\% test set. At equal training volume, Biome+Traditional data produced more accurate models than Traditional data. The mixed-effects analysis of Fisher-$z$-transformed Boyce Indices showed no difference in intercept between datasets ($\beta = 0.02 \pm 0.03$, $t = 0.60$, $P = 0.55$), but the slope against log(records) was significantly steeper for Biome+Traditional data ($\beta = 0.02 \pm 0.01$, $t = 3.72$, $P < 0.001$), so that accuracy rose faster per additional record when Biome records were included.
+
+The practical consequence is a large reduction in the data volume required to reach operationally useful accuracy (Figure~\ref{fig:records}, Table~\ref{tab:records}). Averaging across all 132 species, a Boyce Index above 0.9 required $2{,}129 \pm 4{,}157$ Traditional records (mean $\pm$ SD) but only $294 \pm 471$ Biome+Traditional records. The advantage persisted, and arguably mattered most, for endangered species listed on Japan's national or prefectural red lists: reaching the same $\mathrm{BI} > 0.9$ threshold required $2{,}336 \pm 3{,}718$ Traditional records but only $338 \pm 571$ Biome+Traditional records, a roughly seven-fold reduction in data demand for species where expert records are hardest to obtain. Importantly, these reductions are not an artefact of the particular Biome fraction we fixed for training. A sensitivity analysis reported in the experimental log indicates that the benefit is robust across a range of blending ratios, with the largest relative improvements obtained when 50--70\% of the training records come from Biome. The 50\% constraint used in our main analysis therefore sits within the favourable region of that range, and strict control over the blend is unlikely to be necessary in operational deployments.
+
+\begin{table}[htbp]
+\centering
+\caption{Training records required for a Boyce Index $>$ 0.9, by species set and dataset. Values are means $\pm$ standard deviations across species, computed per the experimental log.}
+\label{tab:records}
+\begin{tabular}{lcc}
+\toprule
+Species set & Traditional (records) & Biome + Traditional (records) \\
+\midrule
+All modelled species (n=132) & $2{,}129 \pm 4{,}157$ & $294 \pm 471$ \\
+Endangered species           & $2{,}336 \pm 3{,}718$ & $338 \pm 571$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A complementary finding concerns the best attainable accuracy per species. When each dataset was allowed its full per-species data budget (rather than matched training sizes), the best Boyce Index per species was statistically indistinguishable between regimes: $0.83 \pm 0.20$ for Traditional and $0.81 \pm 0.20$ for Biome+Traditional (Figure~\ref{fig:bestbi}, Table~\ref{tab:bestbi}). This is consistent with the 50\% Biome constraint capping the total volume available to the blended models for species where the Traditional corpus is already large. In other words, Biome records do not raise the ceiling per species; they lower the data floor required to approach that ceiling, which is the relevant lever when modelling data-scarce taxa and regions.
+
+\begin{table}[htbp]
+\centering
+\caption{Best per-species Boyce Index attained under each dataset (mean $\pm$ SD across 132 species).}
+\label{tab:bestbi}
+\begin{tabular}{lc}
+\toprule
+Dataset & Best per-species Boyce Index \\
+\midrule
+Traditional & $0.83 \pm 0.20$ \\
+Biome + Traditional & $0.81 \pm 0.20$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Mixed-effects model estimates for Fisher-$z$-transformed Boyce Index as a function of dataset and training-set size (intercept and slope contrasts between Biome+Traditional and Traditional).}
+\label{tab:glmm}
+\begin{tabular}{lccc}
+\toprule
+Term & Estimate ($\beta \pm$ SE) & $t$ & $P$ \\
+\midrule
+Intercept difference (dataset) & $0.02 \pm 0.03$ & $0.60$ & $0.55$ \\
+Slope difference (dataset $\times$ log(records)) & $0.02 \pm 0.01$ & $3.72$ & $<\!0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+Our analysis establishes that a smartphone-first, gamified community-science platform can supply identification-accurate, environmentally complementary, and modelling-useful occurrence data at a rate that materially improves species distribution models, particularly for the taxa and species for which expert records are hardest to obtain. The two key quantitative findings are that Biome's species-level identification accuracy matches or exceeds published plant-app baselines for difficult taxa, and that blending Biome records with traditional survey data reduces the number of training records required to reach a Boyce Index above 0.9 from $2{,}129 \pm 4{,}157$ to $294 \pm 471$ overall, and from $2{,}336 \pm 3{,}718$ to $338 \pm 571$ for endangered species. The second result is especially consequential because it targets exactly the species for which traditional data are scarcest, namely those listed on national or prefectural red lists, and it does so without increasing the ceiling accuracy per species (Table~\ref{tab:bestbi}), indicating that the benefit is a reduction in data demand rather than a qualitative change in modelled ecology.
+
+These results sit at the quantitative end of a literature that has, until recently, been qualitative about the value of integrating community and structured data. Prior work integrating eBird with expert surveys in birds consistently reports accuracy gains when community records are filtered and modelled alongside structured data \citep{johnston2018estimates,johnston2021analytical,robinson2020integrating,steen2019stringent}. Observer-oriented pseudo-absence schemes in particular \citep{milanesi2020observer} extract sampling-effort information from community data to correct spatial bias in presence-only modelling, a strategy we adopt and extend across plants and invertebrates. A recent quantitative review highlights that non-bird taxa remain under-studied in this literature \citep{feldman2021trends}; our results contribute a taxonomically broad, sampling-effort-aware evaluation in exactly that gap, and they support the view that gains from blending are not confined to birds.
+
+The most plausible mechanism for the observed SDM improvement is complementary environmental coverage. Traditional survey data in Japan are biased toward natural areas, whereas Biome records span the urban-natural gradient approximately uniformly. Because pseudo-absences are drawn in proportion to sampling effort, Biome data enlarge the set of locations plausibly informative about species absence as well as presence, which is the asymmetry that presence-only SDMs are most sensitive to. Prior work documenting an urban-population-centre bias in community science data \citep{kendal2020citybias} would predict the opposite imbalance, so the relatively uniform coverage observed for Biome is noteworthy and probably reflects Biome's collaborations with multiple prefectural and municipal partners as well as its engagement of users outside metropolitan cores. Increasing training volume is a second, additive mechanism: once the 50\% Biome constraint is relaxed, the sensitivity analysis described in the experimental log suggests that 50--70\% blends are optimal, implying that in operational use one can largely let the volume of Biome data do its work without fine control over the blend.
+
+Several limitations deserve emphasis. First, identification accuracy remains below 90\% at the species level in insects, fishes, and seed plants, and is further depressed for rare species (87\% averaged across taxa versus 95\% for common species). These limitations call for combining record-level filtering, community peer review, and multi-image submissions, the last of which would capture additional identification traits and may also help users separate wild from planted or captive individuals in plants and fishes. Second, we evaluated spatial rather than temporal transferability because no environmentally unbiased, independent test set exists for all 132 species; accuracy on an unseen spatial block is a conservative but imperfect proxy for performance under environmental change. Third, SDM outputs remain indirect measures of presence in the absence of true absence data \citep{elith2011statistical}, so they support within-species comparison and site prioritisation more readily than absolute across-species ranking. Fourth, limited data availability for certain taxa (molluscs, amphibians, reptiles, mammals) restricts how firmly we can generalise beyond the 132 modelled species.
+
+Looking forward, the practical utility of the Biome-style pipeline is broad. Improved SDMs feed directly into protected-area and OECM prioritisation and into spatial conservation-prioritisation tools. Charismatic-species indicators derived from user ``likes'' can be combined with estimated distributions to screen candidate areas for ecotourism, and bumblebee or insectivorous-animal distributions can be used as taxon-specific proxies for pollination or pest-regulation services as inputs to TNFD-aligned corporate disclosures. As Biome records accumulate over longer time windows, they will enable temporal-transferability evaluations and, in combination with frameworks such as the double-machine-learning trend model developed for eBird \citep{fink2023double}, time-series analyses for multiple taxa. Because SDMs also permit simulation under alternative land-use and climate scenarios \citep{porfirio2014improving}, improved models open a forecasting route to support adaptive conservation planning as conditions change. Finally, the social side of such platforms matters on its own terms: by making outdoor observation enjoyable, they help reconnect people with nature at a moment when the erosion of everyday contact with biodiversity is itself a conservation concern \citep{soga2023biophobia}. Combined with statistical safeguards on sampling effort, smartphone-driven community science offers a scalable pathway to the spatially resolved biodiversity data that the Kunming-Montreal Global Biodiversity Framework requires.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

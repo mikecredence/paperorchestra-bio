@@ -1,0 +1,204 @@
+{
+  "metadata": {
+    "working_title": "Digital telomere measurement by long-read sequencing distinguishes healthy aging from disease",
+    "venue": "Nature Communications",
+    "format": "single-column"
+  },
+  "abstract_sketch": {
+    "problem": "Telomere length is a biomarker of organismal aging and cellular replicative potential, but existing measurement methods (TRF, flow-FISH, qPCR, STELA, TeSLA) are limited in resolution and accuracy.",
+    "gap": "Prior assays either yield coarse mean telomere lengths, relative content estimates, or rely on PCR amplification that preferentially reports the shortest telomeres; none resolves the full distribution of individual telomere lengths with single-telomere precision.",
+    "approach": "We deploy digital telomere measurement by nanopore long-read sequencing combined with a telomere-capture oligonucleotide library preparation and the Telometer bioinformatic pipeline to recover intact, chromosome-anchored telomere reads from either whole-genome or enriched sequencing libraries.",
+    "key_results": "The method reaches a maximal precision of 30-40 bp, correlates with TRF (n=14) and flow-FISH (R2=0.84, n=7), detects ~40 bp/day attrition in TERT-null hESCs, measures ~1000 bp de novo elongation after 3 days of telomerase overexpression, recapitulates ~24 bp/year attrition in PBLs of 14 healthy donors, and supports a machine-learning classifier distinguishing healthy donors from TBD carriers (AUC=0.93), patients (AUC=0.98), and combined cases (AUC=0.91); tumor telomeres were shorter than matched benign epithelia in 75% of 20 colorectal carcinoma patients.",
+    "impact": "Single-molecule telomere distributions reveal that the interquartile structure encodes the state of the telomere maintenance machinery, enable detection of asymptomatic TBD carriers undetectable by flow-FISH, and establish digital telomere measurement as a clinical biomarker platform for aging and disease."
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "content_bullets": [
+        "Telomeres are essential protective structures at chromosome ends whose attrition with division limits replicative potential and contributes to aging.",
+        "Existing telomere length assays (TRF Southern blot, flow-FISH, qPCR, STELA, TeSLA) only provide coarse mean lengths, relative content, or biased views of the shortest fragments.",
+        "Long-read sequencing (PacBio HiFi, Oxford Nanopore) now offers the resolution to measure individual intact telomeres anchored to specific chromosomes.",
+        "Gap: no existing method recovers the full distribution of individual telomere lengths with the throughput needed for clinical cohorts or the precision needed to distinguish healthy aging from disease carriers.",
+        "Contribution: digital telomere measurement via nanopore sequencing combined with telomere-capture enrichment (~several thousand-fold) and the Telometer bioinformatic pipeline for chromosome-anchored telomere quantification.",
+        "We validate the method against TRF and flow-FISH, apply it to cultured hESC models of TBD genotypes, to PBLs from 14 healthy donors spanning ages 18-77, to 7 RTEL1-mutant individuals plus a CMML patient with a novel TINF2 frameshift, and to 20 matched colorectal carcinoma samples.",
+        "Roadmap: validation, aging, disease classification, cancer cohort, and clinical/biological implications."
+      ],
+      "approx_length": "1-1.5 pages"
+    },
+    {
+      "id": "related_work",
+      "title": "Related Work",
+      "content_bullets": [
+        "Analog telomere measurement: Southern blot (TRF), fluorescence in situ hybridization (flow-FISH, Q-FISH), qPCR - strengths and limitations.",
+        "PCR-based short-telomere assays: STELA and TeSLA target the shortest fraction but are limited by polymerase processivity.",
+        "Prior long-read sequencing of telomeres using PacBio HiFi and Oxford Nanopore platforms, and reference-genome advances including the telomere-to-telomere (T2T) human genome.",
+        "Short-read sequencing approaches such as TelSeq estimate relative telomeric content in cohorts such as TCGA.",
+        "Telomere biology disorders (dyskeratosis congenita, RTEL1-related disease) and the clinical diagnostic pathway combining flow-FISH with targeted exon sequencing."
+      ],
+      "approx_length": "0.75 pages"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subsections": [
+        {
+          "id": "results_1_method_validation",
+          "title": "Digital telomere measurement by long-read sequencing measures intact telomeres at high resolution",
+          "content_bullets": [
+            "Telometer pipeline defines each telomere from the terminal repeat to the final two consecutive repeats preceding the subtelomere anchor on the T2T reference.",
+            "Telomere capture oligo targeting the 3' overhang plus restriction digestion enriches telomeric reads several thousand-fold without distorting the length distribution (Fig. 1B-C).",
+            "Digital mean telomere lengths correlate with TRF (n=14, Fig. 1D-E) and flow-FISH (n=7, Fig. 1F-G); TRF systematically overestimates by 1000-3000 bp.",
+            "Bootstrapping shows the standard error of the mean decays exponentially with additional telomere measurements, plateauing at a maximal precision of 30-40 bp (Fig. 1H).",
+            "Digital measurement discriminates wild-type from pathologically short PARN knock-out (p < 2e-16, Wilcoxon rank-sum test) and TIN2 T284R mutant hESCs."
+          ]
+        },
+        {
+          "id": "results_2_culture_dynamics",
+          "title": "Digital telomere measurement captures attrition and de novo elongation in cultured cells",
+          "content_bullets": [
+            "TERT knockout hESCs (CDKN2A-/- TERT-/-) passaged 66, 78, 98, 105 days post Cre-mediated inactivation show progressive shortening at ~40 bp per day (Fig. 2B-C).",
+            "TIN2 T284R heterozygous and homozygous hESCs exhibit progressively shorter distributions relative to wild-type, consistent with the dominant-negative shelterin phenotype.",
+            "Transient transfection of HEK293T with hTR or TSQ1 plus TERT increases telomerase activity (TRAP) and yields a ~1000 bp increase in mean telomere length in 3 days (Fig. 2E-H).",
+            "Chromosome-anchored analysis reveals that chromosomes with shorter first-quartile telomeres elongate most under telomerase overexpression (Fig. 2I), providing evidence of preferential action of telomerase on short telomeres.",
+            "Detection of variant telomere repeats (TSQ1, TTGCGG) via variant-specific capture confirms the method resolves full-length, de novo telomere additions."
+          ]
+        },
+        {
+          "id": "results_3_aging_disease",
+          "title": "High-resolution telomere measurement distinguishes human aging and disease",
+          "content_bullets": [
+            "PBLs from 14 healthy donors (age 18-77) show that mean, median, Q1, and Q3 telomere lengths decline with age (~24 bp/year for mean/median), with Q3 decreasing more steeply than Q1 (Fig. 3A, D-E, H).",
+            "Cohort aggregation (young 18-20, n=5; middle 35-65, n=6; elder >70, n=3) confirms progressive loss of long telomeres and accumulation of shorter fractions.",
+            "RTEL1-mutant individuals (n=7) and a Stanford patient with a novel TINF2 p.Gln298fs frameshift, CMML, and pulmonary fibrosis show significantly shorter telomeres than age-matched healthy donors (Fig. 3B-C, F) and strong correlation with flow-FISH mean lengths (R2=0.84).",
+            "PCA of telomere distributions separates healthy (n=14) from TBD carrier samples (n=9) (Fig. 3G); the shortest two 1000-bp bins are enriched in TBD samples (Fig. 3H-I).",
+            "A binary classifier trained on telomere measurements and age achieves 95% accuracy (AUC=0.98) for healthy vs symptomatic patients, 91% (AUC=0.93) for healthy vs asymptomatic carriers, and 86% (AUC=0.91) for healthy vs combined cases (Fig. 3J)."
+          ]
+        },
+        {
+          "id": "results_4_cancer_cohort",
+          "title": "Telomere length distributions in patient-matched colorectal carcinoma and benign epithelia",
+          "content_bullets": [
+            "Whole-genome long-read data (30X average coverage) from 20 patients (predominantly 50-70 years) with matched benign colon and colorectal tumor tissue were reanalyzed.",
+            "Benign colonic epithelium shows age-related shortening with Q3 declining faster than Q1; tumor telomeres show no correlation with donor age.",
+            "Tumor telomeres are significantly shorter than matched benign epithelia in 75% of patients (Wilcoxon rank-sum test per patient)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "content_bullets": [
+        "Interpretation: digital telomere measurement surpasses TRF and flow-FISH by delivering the full distribution at 30-40 bp precision with chromosome-level anchoring, while requiring less input DNA than either.",
+        "Mechanism: the interquartile structure of the telomere length distribution encodes the state of the telomere maintenance apparatus - limiting telomerase (and not negative selection) appears to drive accumulation of the shortest fractions with age.",
+        "Clinical implication: the classifier distinguishes asymptomatic RTEL1 carriers from healthy donors with AUC=0.93, addressing a blind spot of flow-FISH in carrier diagnosis and supporting genetic-anticipation-aware triage.",
+        "Novel biology: preferential elongation by telomerase of chromosomes with shorter Q1 telomeres, and stable tumor distributions despite attrition in matched benign tissue (75% of 20 patients), point to a tunable telomeric rheostat.",
+        "Unexpected observation: measurable telomeres as short as tens of base pairs are present in every sample, including hESCs, suggesting shelterin-mediated tolerance of extremely short telomeres below a senescence threshold.",
+        "Limitations: cross-sectional cohort, relatively small TBD sample (n=9 variant carriers), reliance on capture efficiency that may vary by telomere state.",
+        "Future directions: longitudinal cohorts, tissue-resolved aging panels, integration with single-cell readouts, investigation of the shelterin/RNA-template/telomerase dosage contributions to the rheostat setpoint, and use of telomere distributions as predictive biomarkers in cancer."
+      ],
+      "approx_length": "1.5 pages"
+    },
+    {
+      "id": "methods",
+      "title": "Methods",
+      "content_bullets": [
+        "Sample sources: HEK293T cells; wild-type, PARN KO, TIN2 T284R het/hom, and TERT knockout hESCs; PBLs from 14 healthy donors aged 18-77; PBLs from 6 individuals with RTEL1 mutations (7 samples, ages 6-50); paired PBL (TB32-B) and bone marrow (TB32-M) DNA from a Stanford CMML/pulmonary-fibrosis patient with TINF2 p.Gln298fs; public 30X WGS from 20 matched colorectal carcinoma and benign epithelia.",
+        "Telomere capture: biotinylated oligonucleotides complementary to the 3' overhang (canonical 5'-TTAGGG-3' or variant 5'-TTGCGG-3') combined with restriction digestion; library loaded on Oxford Nanopore platform.",
+        "Bioinformatic pipeline (Telometer): align telomeric repeats to T2T human reference termini; define telomere extent from the terminal repeat to the last two consecutive repeats before the subtelomere anchor; compute per-read length and per-sample distributions.",
+        "Cell culture and genetics: TERT inactivation via Cre recombinase in CDKN2A-/- TERT-/- AAVSI:hTERTflox hESCs passaged for 66, 78, 98, 105 days; transient transfection of HEK293T with hTR, TSQ1, or GFP plus TERT; TRAP assay for telomerase activity; sampling 3 days post transfection.",
+        "Validation assays: TRF Southern blot on matched samples (n=14 healthy and two TB32 samples); flow-FISH on 7 RTEL1 samples.",
+        "Statistical methods: Wilcoxon rank-sum test for between-group length comparisons; linear regression for age-length summary statistics; bootstrapping for precision estimation; principal component analysis for distribution structure; R2 reporting for method-method correlations.",
+        "Machine learning: training-to-test split 7:3; features include telomere measurements and age; binary classifiers trained for (i) healthy vs symptomatic, (ii) healthy vs asymptomatic carrier, (iii) healthy vs combined cases; performance reported as accuracy and AUC."
+      ],
+      "approx_length": "1 page"
+    }
+  ],
+  "table_plan": [
+    {
+      "table_id": "tab1",
+      "title": "Method comparison: TRF, flow-FISH, STELA, TeSLA, TelSeq, digital nanopore",
+      "columns": ["method", "resolution", "single-molecule", "input DNA", "output type", "key limitation"],
+      "data_source": "idea_summary.md + experimental_log.md method comparison text",
+      "caption_sketch": "Qualitative comparison of telomere measurement methods. Values are taken verbatim from text; only numeric resolution values (30-40 bp plateau; 1000-3000 bp TRF overestimate; 1500 bp flow-FISH overestimate) are used where present."
+    },
+    {
+      "table_id": "tab2",
+      "title": "Classifier performance on healthy-vs-TBD groupings",
+      "columns": ["comparison", "accuracy (%)", "AUC", "training:test split"],
+      "data_source": "experimental_log.md extracted statistical reports",
+      "caption_sketch": "Binary classifier performance for distinguishing healthy donors from RTEL1 symptomatic patients, asymptomatic carriers, or their union."
+    }
+  ],
+  "figure_plan": [
+    {
+      "figure_id": "fig1",
+      "title": "Method validation and precision",
+      "type": "bar_chart",
+      "description": "Classifier AUC and accuracy bar chart (from Fig. 3J); precision-vs-n bootstrapping summary (plateau at 30-40 bp).",
+      "data_source": "experimental_log.md: AUC=0.98/0.93/0.91, accuracy 95/91/86%, precision 30-40 bp",
+      "caption_sketch": "Bar chart comparing binary classifier accuracy (%) and AUC for three healthy-vs-TBD comparisons; precision plateau annotation."
+    },
+    {
+      "figure_id": "fig2",
+      "title": "Telomere attrition in TERT-null hESCs",
+      "type": "line_plot",
+      "description": "Mean telomere length versus days post Cre-mediated TERT knockout at 66, 78, 98, 105 days, slope ~40 bp/day.",
+      "data_source": "experimental_log.md: 40 bp/day, passages 66/78/98/105 days",
+      "caption_sketch": "Line plot of mean telomere length (bp) against days post TERT knockout (66, 78, 98, 105)."
+    },
+    {
+      "figure_id": "fig3",
+      "title": "Schematic of the digital telomere measurement pipeline",
+      "type": "schematic",
+      "description": "Flow from genomic DNA -> telomere capture or WGS -> Oxford Nanopore -> Telometer alignment to T2T -> per-read lengths -> distribution analysis and classifier.",
+      "data_source": "idea_summary.md methods paragraph",
+      "caption_sketch": "Schematic of the Telometer workflow from library preparation through per-chromosome telomere length distributions."
+    }
+  ],
+  "literature_strategy": {
+    "macro_queries": [
+      "telomere length aging human biomarker",
+      "nanopore long-read sequencing telomere",
+      "telomere-to-telomere human reference genome",
+      "dyskeratosis congenita telomere biology disorder",
+      "telomerase catalytic core TERT TER RNA elongation",
+      "shelterin complex TIN2 TRF1 TRF2 telomere"
+    ],
+    "micro_queries": [
+      "terminal restriction fragment TRF Southern blot telomere",
+      "flow-FISH telomere length leukocytes",
+      "quantitative PCR qPCR telomere length assay",
+      "STELA single telomere length analysis",
+      "TeSLA telomere shortest length assay",
+      "TelSeq short-read sequencing telomere TCGA",
+      "PARN poly(A)-specific ribonuclease hTR maturation",
+      "RTEL1 helicase telomere DNA damage",
+      "TINF2 TIN2 mutation dyskeratosis congenita",
+      "colorectal carcinoma telomere length WGS",
+      "hESC human embryonic stem cell telomere length",
+      "telomere rheostat model length homeostasis",
+      "machine learning classifier ROC AUC diagnostic",
+      "colorectal cancer Q-FISH telomere length tumor",
+      "replicative senescence telomere shelterin"
+    ],
+    "must_cite": [
+      "Telomere-to-telomere human genome assembly",
+      "Oxford Nanopore telomere long-read methods",
+      "PacBio HiFi telomere measurement",
+      "TeSLA short-telomere assay",
+      "STELA single telomere length analysis",
+      "TelSeq TCGA short-read telomere",
+      "RTEL1 in telomere biology disorder",
+      "PARN and hTR maturation",
+      "TIN2/TINF2 in dyskeratosis congenita",
+      "Telomere rheostat model",
+      "Preferential elongation of shortest telomeres by telomerase",
+      "Flow-FISH clinical telomere assay in PBLs",
+      "TRF Southern blot telomere measurement foundational",
+      "Colorectal carcinoma WGS long-read cohort (30X)"
+    ],
+    "citation_target": 25
+  }
+}
