@@ -4,7 +4,27 @@ A benchmark corpus for evaluating automated biomedical research paper writing,
 analogous to PaperOrchestra's [PaperWritingBench](https://arxiv.org/abs/2604.05018)
 but focused on life sciences.
 
-**Current status:** 143 test cases across 10 biomedical subfields. 110+ generated papers across 6 conditions. Full 3x2 factorial evaluation complete.
+**Current status:** 143 test cases across 10 biomedical subfields. **n=50 head-to-head benchmark complete** (orchestrated multi-skill pipeline vs single-agent baseline). Skill wins 47/50 papers (94%) with p < 0.0001 on all 6 non-correctness quality axes.
+
+## Head-to-head benchmark (n=50)
+
+| Axis | Baseline | **Orchestrated skill** | Delta | p-value |
+|------|----------|------------------------|-------|---------|
+| Clarity | 82.5 | **87.8** | +5.3 | <0.0001 *** |
+| Rigor | 83.0 | **86.9** | +4.0 | <0.0001 *** |
+| Completeness | 79.9 | **89.2** | **+9.4** | <0.0001 *** |
+| Writing | 80.3 | **88.5** | +8.2 | <0.0001 *** |
+| Presentation | 79.9 | **86.3** | +6.4 | <0.0001 *** |
+| Citations | 79.1 | **86.4** | +7.3 | <0.0001 *** |
+| Correctness | 94.6 | 94.9 | +0.3 | 0.071 n.s. |
+| Figures | 0 (by design) | **75.8** | — | — |
+| **Overall** | **82.5** | **87.5** | **+4.9** | **<0.0001 *** ** |
+
+### Correctness (2,386 numerical claims spot-checked)
+- Baseline: 1127/1147 correct (98.3%), 1 hallucination
+- Skill: 1223/1239 correct (98.7%), 1 hallucination
+
+Results and per-paper scores at `benchmark/results/{slug}/{condition}/llm_judge.json`.
 
 ## Corpus Overview
 
